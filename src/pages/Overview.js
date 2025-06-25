@@ -1,0 +1,320 @@
+import React, { useState, useEffect } from "react";
+import { Typography, Box, Grid, Card, CardContent, Paper, CircularProgress, List, ListItem, ListItemText, Divider, Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert } from "@mui/material";
+import PeopleIcon from '@mui/icons-material/People';
+import ReportIcon from '@mui/icons-material/Report';
+import EventIcon from '@mui/icons-material/Event';
+import CampaignIcon from '@mui/icons-material/Campaign';
+import { collection, getDocs, query, where, orderBy, limit, addDoc } from "firebase/firestore";
+import { db } from "../firebase";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { useNavigate, Link } from "react-router-dom";
+
+export default function Overview() {
+  const [stats, setStats] = useState({
+    students: 0,
+    violations: 0,
+    activities: 0,
+    announcements: 0
+  });
+  const [monthlyData, setMonthlyData] = useState({
+    students: [],
+    violations: []
+  });
+  const [loading, setLoading] = useState(true);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+  const [openEventModal, setOpenEventModal] = useState(false);
+  const [eventForm, setEventForm] = useState({ title: '', description: '', proposedBy: '', date: '', time: '', location: '' });
+  const [eventSubmitting, setEventSubmitting] = useState(false);
+  const [eventSnackbar, setEventSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchOverviewData();
+    fetchRecentActivity();
+  }, []);
+
+  const fetchOverviewData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch students count
+      const studentsSnapshot = await getDocs(collection(db, "students"));
+      const studentsCount = studentsSnapshot.size;
+      
+      // Fetch violations count
+      const violationsSnapshot = await getDocs(collection(db, "violations"));
+      const violationsCount = violationsSnapshot.size;
+      
+      // Fetch activities count (assuming activities collection exists)
+      let activitiesCount = 0;
+      try {
+        const activitiesSnapshot = await getDocs(collection(db, "activities"));
+        activitiesCount = activitiesSnapshot.size;
+      } catch (error) {
+        console.log("Activities collection not found, using default value");
+      }
+      
+      // Fetch announcements count (assuming announcements collection exists)
+      let announcementsCount = 0;
+      try {
+        const announcementsSnapshot = await getDocs(collection(db, "announcements"));
+        announcementsCount = announcementsSnapshot.size;
+      } catch (error) {
+        console.log("Announcements collection not found, using default value");
+      }
+
+      setStats({
+        students: studentsCount,
+        violations: violationsCount,
+        activities: activitiesCount,
+        announcements: announcementsCount
+      });
+
+      // Generate monthly data for the last 6 months
+      const monthlyStudents = await generateMonthlyData("students", "createdAt");
+      const monthlyViolations = await generateMonthlyData("violations", "createdAt");
+
+      setMonthlyData({
+        students: monthlyStudents,
+        violations: monthlyViolations
+      });
+
+    } catch (error) {
+      console.error("Error fetching overview data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateMonthlyData = async (collectionName, dateField) => {
+    const months = [];
+    const currentDate = new Date();
+    
+    for (let i = 5; i >= 0; i--) {
+      const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const monthName = monthDate.toLocaleString('default', { month: 'short' });
+      const year = monthDate.getFullYear();
+      
+      const startOfMonth = new Date(year, monthDate.getMonth(), 1);
+      const endOfMonth = new Date(year, monthDate.getMonth() + 1, 0);
+      
+      try {
+        const q = query(
+          collection(db, collectionName),
+          where(dateField, ">=", startOfMonth.toISOString()),
+          where(dateField, "<=", endOfMonth.toISOString())
+        );
+        const snapshot = await getDocs(q);
+        
+        months.push({
+          month: monthName,
+          count: snapshot.size
+        });
+      } catch (error) {
+        console.log(`Error fetching ${collectionName} for ${monthName}:`, error);
+        months.push({
+          month: monthName,
+          count: 0
+        });
+      }
+    }
+    
+    return months;
+  };
+
+  const fetchRecentActivity = async () => {
+    setActivityLoading(true);
+    try {
+      const q = query(collection(db, "activity_log"), orderBy("timestamp", "desc"), limit(8));
+      const snap = await getDocs(q);
+      setRecentActivity(snap.docs.map(doc => doc.data()));
+    } catch (e) {
+      setRecentActivity([]);
+    }
+    setActivityLoading(false);
+  };
+
+  const statCards = [
+    { 
+      label: 'Students', 
+      value: stats.students, 
+      icon: <PeopleIcon fontSize="large" color="primary" />,
+      color: '#1976d2',
+      to: '/students'
+    },
+    { 
+      label: 'Violations', 
+      value: stats.violations, 
+      icon: <ReportIcon fontSize="large" color="error" />,
+      color: '#d32f2f',
+      to: '/violation-record'
+    },
+    { 
+      label: 'Activities', 
+      value: stats.activities, 
+      icon: <EventIcon fontSize="large" color="success" />,
+      color: '#2e7d32',
+      to: '/activity'
+    },
+    { 
+      label: 'Announcements', 
+      value: stats.announcements, 
+      icon: <CampaignIcon fontSize="large" color="warning" />,
+      color: '#ed6c02',
+      to: '/announcements'
+    },
+  ];
+
+  const handleEventFormChange = (e) => {
+    const { name, value } = e.target;
+    setEventForm(f => ({ ...f, [name]: value }));
+  };
+
+  const handleEventSubmit = async (e) => {
+    e.preventDefault();
+    setEventSubmitting(true);
+    try {
+      await addDoc(collection(db, 'events'), {
+        ...eventForm,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      });
+      setEventSnackbar({ open: true, message: 'Event proposal submitted for approval!', severity: 'success' });
+      setOpenEventModal(false);
+      setEventForm({ title: '', description: '', proposedBy: '', date: '', time: '', location: '' });
+    } catch (e) {
+      setEventSnackbar({ open: true, message: 'Failed to submit event proposal.', severity: 'error' });
+    }
+    setEventSubmitting(false);
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      <Typography variant="h4" gutterBottom>
+        Dashboard Overview
+      </Typography>
+      
+      {/* Statistics Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        {statCards.map((stat) => (
+          <Grid item xs={12} sm={6} md={3} key={stat.label}>
+            <Card
+              onClick={() => navigate(stat.to)}
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                p: 2, 
+                boxShadow: 3, 
+                borderRadius: 2,
+                borderLeft: `4px solid ${stat.color}`,
+                background: stat.label === 'Students' ? '#1976d220' :
+                            stat.label === 'Violations' ? '#d32f2f20' :
+                            stat.label === 'Activities' ? '#2e7d3220' :
+                            stat.label === 'Announcements' ? '#ed6c0220' : '#fff',
+                cursor: 'pointer',
+                transition: 'box-shadow 0.2s, background 0.2s',
+                '&:hover': {
+                  boxShadow: 6,
+                  background: stat.color + '22',
+                },
+              }}
+            >
+              <Box sx={{ mr: 2 }}>{stat.icon}</Box>
+              <CardContent sx={{ flex: 1, p: '8px !important' }}>
+                <Typography variant="h4" fontWeight={700} color={stat.color}>
+                  {stat.value.toLocaleString()}
+                </Typography>
+                <Typography color="text.secondary" variant="body2">
+                  {stat.label}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* Monthly Charts */}
+      <Grid container spacing={3}>
+        {/* Students Monthly Chart */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, height: 400 }}>
+            <Typography variant="h6" gutterBottom>
+              Students Registration (Last 6 Months)
+            </Typography>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={monthlyData.students}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="#1976d2" 
+                  strokeWidth={3}
+                  name="Students"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid>
+
+        {/* Violations Monthly Chart */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, height: 400 }}>
+            <Typography variant="h6" gutterBottom>
+              Violations Reported (Last 6 Months)
+            </Typography>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyData.violations}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar 
+                  dataKey="count" 
+                  fill="#d32f2f" 
+                  name="Violations"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid>
+      </Grid>
+      {/* Recent Activity Section (moved below charts) */}
+      <Paper sx={{ mt: 4, p: 2, maxWidth: 600, mx: 'auto', boxShadow: 2 }}>
+        <Typography variant="h6" sx={{ mb: 1, fontWeight: 700, color: '#1976d2' }}>Recent Activity</Typography>
+        {activityLoading ? (
+          <Typography variant="body2" color="text.secondary">Loading...</Typography>
+        ) : recentActivity.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">No recent activity.</Typography>
+        ) : (
+          <List>
+            {recentActivity.map((item, idx) => (
+              <React.Fragment key={idx}>
+                <ListItem>
+                  <ListItemText
+                    primary={item.message || item.type || 'Activity'}
+                    secondary={item.timestamp ? new Date(item.timestamp).toLocaleString() : ''}
+                  />
+                </ListItem>
+                <Divider component="li" />
+              </React.Fragment>
+            ))}
+          </List>
+        )}
+      </Paper>
+    </Box>
+  );
+} 
