@@ -1,6 +1,6 @@
-import React from "react";
-import { List, ListItem, ListItemIcon, ListItemText, Drawer, Divider, Box, Typography, Avatar } from "@mui/material";
-import { Dashboard, People, Settings, Event, ExitToApp, Campaign, Report, ListAlt, History, Logout, Search } from "@mui/icons-material";
+import React, { useState } from "react";
+import { List, ListItem, ListItemIcon, ListItemText, Drawer, Divider, Box, Typography, Avatar, Collapse, ListItemButton } from "@mui/material";
+import { Dashboard, People, Settings, Event, ExitToApp, Campaign, Report, ListAlt, History, Logout, Search, ExpandLess, ExpandMore, Assignment, MeetingRoom, Timeline, Assessment, Description } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
@@ -10,9 +10,29 @@ import { signOut } from 'firebase/auth';
 const menu = [
   { text: "Overview", icon: <Dashboard sx={{ color: '#1976d2' }} />, path: "/overview" },
   { text: "Students", icon: <People sx={{ color: '#43a047' }} />, path: "/students" },
-  { text: "Violations", icon: <Report sx={{ color: '#d32f2f' }} />, path: "/violation-record" },
+  { 
+    text: "Violations", 
+    icon: <Report sx={{ color: '#d32f2f' }} />, 
+    path: "/violation-record",
+    hasSubmenu: true,
+    submenu: [
+      { text: "Record", icon: <Assignment sx={{ color: '#1976d2' }} />, path: "/violation-record" },
+      { text: "Create Meeting", icon: <MeetingRoom sx={{ color: '#43a047' }} />, path: "/violation-record/create-meeting" },
+      { text: "History", icon: <Timeline sx={{ color: '#fbc02d' }} />, path: "/violation-record/history" },
+      { text: "Status", icon: <Assessment sx={{ color: '#8e24aa' }} />, path: "/violation-record/status" }
+    ]
+  },
   { text: "Activity", icon: <Event sx={{ color: '#fbc02d' }} />, path: "/activity" },
-  { text: "Announcements", icon: <ListAlt sx={{ color: '#0288d1' }} />, path: "/announcements" },
+  { 
+    text: "Announcements", 
+    icon: <ListAlt sx={{ color: '#0288d1' }} />, 
+    path: "/announcements",
+    hasSubmenu: true,
+    submenu: [
+      { text: "Announcements", icon: <Campaign sx={{ color: '#0288d1' }} />, path: "/announcements" },
+      { text: "Report", icon: <Description sx={{ color: '#ff9800' }} />, path: "/announcements/report" }
+    ]
+  },
   { text: "Options", icon: <Settings sx={{ color: '#8e24aa' }} />, path: "/options" },
   { text: "Lost and Found Item", icon: <Search sx={{ color: '#00bcd4' }} />, path: "/students/lost-found" },
   { text: "Exit", icon: <Logout sx={{ color: '#757575' }} />, path: "/exit" }
@@ -21,6 +41,7 @@ const menu = [
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [openSubmenu, setOpenSubmenu] = useState({});
   // const [recent, setRecent] = useState([]);
   // const [loading, setLoading] = useState(true);
 
@@ -45,6 +66,38 @@ export default function Sidebar() {
     navigate('/login');
   };
 
+  const handleMenuClick = (item) => {
+    if (item.text === "Exit") {
+      handleLogout();
+    } else if (item.hasSubmenu) {
+      setOpenSubmenu(prev => ({
+        ...prev,
+        [item.text]: !prev[item.text]
+      }));
+    } else {
+      navigate(item.path);
+    }
+  };
+
+  const handleSubmenuClick = (subItem) => {
+    navigate(subItem.path);
+  };
+
+  const isSubmenuOpen = (itemText) => {
+    return openSubmenu[itemText] || false;
+  };
+
+  const isItemSelected = (item) => {
+    if (item.hasSubmenu) {
+      return item.submenu.some(subItem => location.pathname.startsWith(subItem.path));
+    }
+    return location.pathname.startsWith(item.path);
+  };
+
+  const isSubItemSelected = (subItem) => {
+    return location.pathname.startsWith(subItem.path);
+  };
+
   return (
     <Drawer
       variant="permanent"
@@ -57,30 +110,61 @@ export default function Sidebar() {
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {/* Logo Section */}
         <Box sx={{ mb: 2 }}>
-          <img src="2c.jpg" alt="Logo" style={{ width: 200, height: 160, borderRadius: 10, boxShadow: '0 2px 8px #0002' }} />
+          <img src="gt.jpg" alt="Logo" style={{ width: 200, height: 160, borderRadius: 10, boxShadow: '0 2px 8px #0002' }} />
         </Box>
         <Divider sx={{ width: '100%', mb: 2, bgcolor: '#b2bec3' }} />
       </Box>
       <List>
         {menu.map((item) => (
-          <ListItem
-            button
-            key={item.text}
-            selected={location.pathname.startsWith(item.path)}
-            onClick={() => item.text === "Exit" ? handleLogout() : navigate(item.path)}
-            sx={{
-              cursor: 'pointer',
-              borderRadius: 2,
-              m: 1,
-              boxShadow: 1,
-              transition: 'background 0.2s',
-              "&.Mui-selected": { bgcolor: "#636e72" },
-              "&:hover": { bgcolor: "#636e72", boxShadow: 3 }
-            }}
-          >
-            <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
-          </ListItem>
+          <Box key={item.text}>
+            <ListItem
+              button
+              selected={isItemSelected(item)}
+              onClick={() => handleMenuClick(item)}
+              sx={{
+                cursor: 'pointer',
+                borderRadius: 2,
+                m: 1,
+                boxShadow: 1,
+                transition: 'background 0.2s',
+                "&.Mui-selected": { bgcolor: "#636e72" },
+                "&:hover": { bgcolor: "#636e72", boxShadow: 3 }
+              }}
+            >
+              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemText primary={item.text} />
+              {item.hasSubmenu && (
+                isSubmenuOpen(item.text) ? <ExpandLess /> : <ExpandMore />
+              )}
+            </ListItem>
+            {item.hasSubmenu && (
+              <Collapse in={isSubmenuOpen(item.text)} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding>
+                  {item.submenu.map((subItem) => (
+                    <ListItemButton
+                      key={subItem.text}
+                      selected={isSubItemSelected(subItem)}
+                      onClick={() => handleSubmenuClick(subItem)}
+                      sx={{
+                        pl: 4,
+                        borderRadius: 2,
+                        mx: 1,
+                        mb: 0.5,
+                        transition: 'background 0.2s',
+                        "&.Mui-selected": { bgcolor: "#636e72" },
+                        "&:hover": { bgcolor: "#636e72" }
+                      }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        {subItem.icon}
+                      </ListItemIcon>
+                      <ListItemText primary={subItem.text} />
+                    </ListItemButton>
+                  ))}
+                </List>
+              </Collapse>
+            )}
+          </Box>
         ))}
       </List>
     </Drawer>

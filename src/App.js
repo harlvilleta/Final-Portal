@@ -8,6 +8,9 @@ import Activity from "./pages/Activity";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
 import ViolationRecord from "./pages/ViolationRecord";
+import ViolationCreateMeeting from "./pages/ViolationCreateMeeting";
+import ViolationHistory from "./pages/ViolationHistory";
+import ViolationStatus from "./pages/ViolationStatus";
 import Options from "./pages/Options";
 import Announcements from "./pages/Announcements";
 import RecycleBin from "./pages/RecycleBin";
@@ -15,6 +18,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
+import AnnouncementReport from "./pages/AnnouncementReport";
 
 function App() {
   return (
@@ -33,9 +37,13 @@ function App() {
                 <Route path="/activity/*" element={<Activity />} />
                 <Route path="/history" element={<History />} />
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/violation-record/*" element={<ViolationRecord />} />
+                <Route path="/violation-record" element={<ViolationRecord />} />
+                <Route path="/violation-record/create-meeting" element={<ViolationCreateMeeting />} />
+                <Route path="/violation-record/history" element={<ViolationHistory />} />
+                <Route path="/violation-record/status" element={<ViolationStatus />} />
                 <Route path="/options" element={<Options />} />
                 <Route path="/announcements" element={<Announcements />} />
+                <Route path="/announcements/report" element={<AnnouncementReport />} />
                 <Route path="/recycle-bin" element={<RecycleBin />} />
               </Routes>
             </Box>
