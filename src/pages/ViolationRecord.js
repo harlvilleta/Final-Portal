@@ -72,7 +72,16 @@ export default function ViolationRecord() {
     const fetchStudents = async () => {
       try {
         const snap = await getDocs(collection(db, "students"));
-        setStudents(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        const studentsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Sort students by creation date (newest first)
+        const sortedStudents = studentsData.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          return dateB - dateA; // Descending order (newest first)
+        });
+        
+        setStudents(sortedStudents);
       } catch (e) {
         setStudents([]);
       }
@@ -124,7 +133,21 @@ export default function ViolationRecord() {
   };
   const handleImage = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setImageFile(e.target.files[0]);
+      const file = e.target.files[0];
+      if (!file.type.startsWith('image/')) {
+        setSnackbar({ open: true, message: 'Please select a valid image file', severity: 'error' });
+        return;
+      }
+      if (file.size > 200 * 1024) {
+        setSnackbar({ open: true, message: 'Image file size must be less than 200KB', severity: 'error' });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageFile(reader.result);
+        setSnackbar({ open: true, message: 'Image loaded as base64!', severity: 'success' });
+      };
+      reader.readAsDataURL(file);
     }
   };
   const handleSubmit = async (e) => {
@@ -157,12 +180,105 @@ export default function ViolationRecord() {
           imageUrl = null;
         }
       }
+      
+      // Get student details for notification
+      const student = students.find(s => s.id === form.studentId);
+      const studentEmail = student?.email;
+      const studentName = student ? `${student.firstName} ${student.lastName}` : form.studentName;
+      
       const violationData = {
         ...form,
         image: imageUrl,
         timestamp: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        status: "Pending"
       };
-      await addDoc(collection(db, "violations"), violationData);
+      
+      const violationRef = await addDoc(collection(db, "violations"), violationData);
+      
+      // Create detailed notification for the student
+      if (studentEmail) {
+        try {
+          // Create comprehensive notification message with all violation details
+          const notificationMessage = `
+🚨 NEW VIOLATION REPORTED
+
+Dear ${studentName},
+
+A new violation has been reported for you with the following details:
+
+📋 VIOLATION DETAILS:
+• Type: ${form.violation}
+• Classification: ${form.classification}
+• Severity: ${form.severity || 'Not specified'}
+• Date: ${form.date}
+• Time: ${form.time || 'Not specified'}
+• Location: ${form.location || 'Not specified'}
+
+📝 DESCRIPTION:
+${form.description || 'No description provided'}
+
+👥 ADDITIONAL INFORMATION:
+• Witnesses: ${form.witnesses || 'None specified'}
+• Reported By: ${form.reportedBy || 'Not specified'}
+• Action Taken: ${form.actionTaken || 'Pending review'}
+
+⚠️ IMPORTANT:
+Please review this violation in your student dashboard. You may need to take action or attend a meeting regarding this matter.
+
+For questions or concerns, please contact the administration office.
+
+Best regards,
+School Administration
+          `.trim();
+
+          await addDoc(collection(db, "notifications"), {
+            recipientEmail: studentEmail,
+            recipientName: studentName,
+            title: `🚨 New Violation: ${form.violation}`,
+            message: notificationMessage,
+            type: "violation",
+            severity: form.severity || "Medium",
+            read: false,
+            createdAt: new Date().toISOString(),
+            violationId: violationRef.id,
+            violationDetails: {
+              type: form.violation,
+              classification: form.classification,
+              severity: form.severity,
+              date: form.date,
+              time: form.time,
+              location: form.location,
+              description: form.description,
+              witnesses: form.witnesses,
+              reportedBy: form.reportedBy,
+              actionTaken: form.actionTaken
+            },
+            priority: form.severity === "Critical" ? "high" : 
+                     form.severity === "High" ? "high" : 
+                     form.severity === "Medium" ? "medium" : "low"
+          });
+
+          console.log("Detailed violation notification created for student:", studentEmail);
+        } catch (notificationError) {
+          console.error("Error creating detailed notification:", notificationError);
+          // Fallback to simple notification
+          try {
+            await addDoc(collection(db, "notifications"), {
+              recipientEmail: studentEmail,
+              title: "New Violation Reported",
+              message: `A new violation "${form.violation}" has been reported for you on ${form.date}. Please review the details in your dashboard.`,
+              type: "violation",
+              read: false,
+              createdAt: new Date().toISOString(),
+              violationId: violationRef.id
+            });
+          } catch (fallbackError) {
+            console.error("Error creating fallback notification:", fallbackError);
+          }
+        }
+      }
+      
       await logActivity({ message: `Violation added for student: ${form.studentId}`, type: 'add_violation' });
       setForm({
         studentId: "",
@@ -182,7 +298,7 @@ export default function ViolationRecord() {
       });
       setStudentName("");
       setImageFile(null);
-      setSnackbar({ open: true, message: uploadTimedOut ? "Violation added (image upload failed)" : "Violation added successfully!", severity: uploadTimedOut ? "warning" : "success" });
+      setSnackbar({ open: true, message: uploadTimedOut ? "Violation added (image upload failed) - Student notified!" : "Violation added successfully - Student notified!", severity: uploadTimedOut ? "warning" : "success" });
       setDataRefresh(r => r + 1); // refresh table after add
     } catch (e) {
       console.error("Error saving violation:", e);
@@ -335,7 +451,30 @@ export default function ViolationRecord() {
         <form onSubmit={handleSubmit}>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={3}>
-              <TextField label="Student ID" name="studentId" value={form.studentId} onChange={handleFormChange} required fullWidth helperText={studentName ? `Name: ${studentName}` : "Enter the student's ID number"} />
+              <TextField
+                label="Student"
+                name="studentId"
+                value={form.studentId}
+                onChange={e => {
+                  const selectedId = e.target.value;
+                  setForm(f => {
+                    const student = students.find(s => s.id === selectedId);
+                    return {
+                      ...f,
+                      studentId: selectedId,
+                      studentName: student ? `${student.firstName} ${student.lastName}` : ''
+                    };
+                  });
+                }}
+                select
+                required
+                fullWidth
+                helperText={form.studentName ? `Name: ${form.studentName}` : "Select a student"}
+              >
+                {students.map(s => (
+                  <MenuItem key={s.id} value={s.id}>{s.id} - {s.firstName} {s.lastName}</MenuItem>
+                ))}
+              </TextField>
             </Grid>
             <Grid item xs={12} sm={3}>
               <TextField label="Violation" name="violation" value={form.violation} onChange={handleFormChange} required fullWidth helperText="Type of violation" />
@@ -394,7 +533,7 @@ export default function ViolationRecord() {
               </Tooltip>
               {imageFile && (
                 <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar src={URL.createObjectURL(imageFile)} sx={{ width: 40, height: 40 }} variant="rounded" />
+                  <Avatar src={imageFile} sx={{ width: 40, height: 40 }} variant="rounded" />
                   <Button variant="outlined" color="error" size="small" onClick={() => setImageFile(null)}>Remove</Button>
                 </Box>
               )}
@@ -607,6 +746,40 @@ export default function ViolationRecord() {
               <TextField label="Action Taken" value={editViolation.actionTaken} onChange={e => setEditViolation({ ...editViolation, actionTaken: e.target.value })} fullWidth sx={{ mb: 1 }} />
               <TextField label="Witnesses" value={editViolation.witnesses} onChange={e => setEditViolation({ ...editViolation, witnesses: e.target.value })} fullWidth sx={{ mb: 1 }} />
               <TextField label="Description" value={editViolation.description} onChange={e => setEditViolation({ ...editViolation, description: e.target.value })} fullWidth multiline minRows={2} sx={{ mb: 1 }} />
+              <Box sx={{ mb: 2 }}>
+                <Button variant="contained" component="label" sx={{ mt: 1 }}>
+                  Change Evidence Image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={e => {
+                      if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        if (!file.type.startsWith('image/')) {
+                          setSnackbar({ open: true, message: 'Please select a valid image file', severity: 'error' });
+                          return;
+                        }
+                        if (file.size > 200 * 1024) {
+                          setSnackbar({ open: true, message: 'Image file size must be less than 200KB', severity: 'error' });
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setEditViolation(ev => ({ ...ev, image: reader.result }));
+                          setSnackbar({ open: true, message: 'Image loaded as base64!', severity: 'success' });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </Button>
+                {editViolation.image && (
+                  <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar src={editViolation.image} sx={{ width: 80, height: 80 }} variant="rounded" />
+                  </Box>
+                )}
+              </Box>
               <DialogActions>
                 <Button onClick={() => setEditViolation(null)} color="secondary">Cancel</Button>
                 <Button type="submit" variant="contained" color="primary">Save</Button>

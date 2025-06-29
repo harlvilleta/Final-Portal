@@ -7,7 +7,7 @@ import {
 } from "@mui/material";
 import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete } from "@mui/icons-material";
 import { db, storage, logActivity } from "../firebase";
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, where, query, onSnapshot, orderBy } from "firebase/firestore";
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, where, query, onSnapshot, orderBy, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const courses = ["BSIT", "BSBA", "BSED", "BEED", "BSN"];
@@ -113,25 +113,27 @@ function AddStudent({ onClose, isModal = false }) {
     setProfile((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleImage = (e) => {
+  const handleImage = async (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      
       // Validate file type
       if (!file.type.startsWith('image/')) {
         setSnackbar({ open: true, message: "Please select a valid image file", severity: "error" });
         return;
       }
-      
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setSnackbar({ open: true, message: "Image file size must be less than 5MB", severity: "error" });
+      // Validate file size (max 200KB)
+      if (file.size > 200 * 1024) {
+        setSnackbar({ open: true, message: "Image file size must be less than 200KB", severity: "error" });
         return;
       }
-      
       setImageFile(file);
-      setProfile((prev) => ({ ...prev, image: URL.createObjectURL(file) }));
-      console.log("Image selected:", file.name, "Size:", file.size, "Type:", file.type);
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfile((prev) => ({ ...prev, image: reader.result }));
+        setSnackbar({ open: true, message: "Image loaded as base64!", severity: "success" });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -212,7 +214,7 @@ function AddStudent({ onClose, isModal = false }) {
     }
     
     console.log("Firebase connection test passed");
-    let imageUrl = "";
+    let imageUrl = profile.image || "";
     
     // Add timeout protection
     const timeoutId = setTimeout(() => {
@@ -222,39 +224,10 @@ function AddStudent({ onClose, isModal = false }) {
     }, 15000); // Reduced to 15 seconds timeout
     
     try {
-      // Upload image if provided - make it completely optional
-      if (imageFile) {
-        try {
-          console.log("Starting image upload...");
-          
-          // Add individual timeout for image upload (10 seconds)
-          const imageUploadPromise = uploadBytes(ref(storage, `students/${profile.id}_${Date.now()}_${imageFile.name}`), imageFile);
-          const imageUploadTimeout = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Image upload timed out')), 10000)
-          );
-          
-          const imageRef = await Promise.race([imageUploadPromise, imageUploadTimeout]);
-          imageUrl = await getDownloadURL(imageRef);
-          console.log("Image uploaded successfully, URL:", imageUrl);
-        } catch (imgErr) {
-          console.error("Image upload failed:", imgErr);
-          // Continue without image - don't block the form submission
-          console.log("Continuing without image upload...");
-          setSnackbar({ 
-            open: true, 
-            message: "Image upload failed, but student data will be saved without image: " + imgErr.message, 
-            severity: "warning" 
-          });
-          imageUrl = ""; // Reset image URL to empty string
-        }
-      } else {
-        console.log("No image to upload");
-      }
-
       // Prepare data for Firebase
       const dataToSave = {
         ...profile,
-        image: imageUrl || "", // Ensure image is always a string
+        image: imageUrl || "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -265,13 +238,13 @@ function AddStudent({ onClose, isModal = false }) {
       console.log("Attempting to save to Firestore:", dataToSave);
       
       // Add timeout for Firestore save operation (10 seconds)
-      const savePromise = addDoc(collection(db, "students"), dataToSave);
+      const savePromise = setDoc(doc(db, "students", dataToSave.id), dataToSave);
       const saveTimeout = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Database save timed out')), 10000)
       );
       
-      const docRef = await Promise.race([savePromise, saveTimeout]);
-      console.log("Successfully saved to Firestore with ID:", docRef.id);
+      await Promise.race([savePromise, saveTimeout]);
+      console.log("Successfully saved to Firestore with ID:", dataToSave.id);
       
       // Log activity
       await logActivity({ message: `Added student: ${profile.firstName} ${profile.lastName}`, type: 'add_student' });
@@ -580,7 +553,16 @@ function LostFound() {
     // Fetch students for dropdowns
     const fetchStudents = async () => {
       const querySnapshot = await getDocs(collection(db, "students"));
-      setStudents(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const studentsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // Sort students by creation date (newest first)
+      const sortedStudents = studentsData.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+        return dateB - dateA; // Descending order (newest first)
+      });
+      
+      setStudents(sortedStudents);
     };
     fetchStudents();
     const unsubLost = onSnapshot(query(collection(db, 'lost_items'), orderBy('createdAt', 'desc')), snap => {
@@ -600,61 +582,115 @@ function LostFound() {
   const foundCompleted = foundItems.filter(i => i.resolved).length;
   const foundPending = foundItems.filter(i => !i.resolved).length;
 
+  // --- LostFound: handleLostImage ---
   const handleLostImage = (e) => {
-    if (e.target.files && e.target.files[0]) setLostImageFile(e.target.files[0]);
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (!file.type.startsWith('image/')) {
+        setSnackbar({ open: true, message: "Please select a valid image file", severity: "error" });
+        return;
+      }
+      // Validate file size (max 200KB)
+      if (file.size > 200 * 1024) {
+        setSnackbar({ open: true, message: "Image file size must be less than 200KB", severity: "error" });
+        return;
+      }
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLostForm(f => ({ ...f, image: reader.result }));
+        setSnackbar({ open: true, message: "Image loaded as base64!", severity: "success" });
+      };
+      reader.readAsDataURL(file);
+    }
   };
+  // --- LostFound: handleFoundImage ---
   const handleFoundImage = (e) => {
-    if (e.target.files && e.target.files[0]) setFoundImageFile(e.target.files[0]);
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (!file.type.startsWith('image/')) {
+        setSnackbar({ open: true, message: "Please select a valid image file", severity: "error" });
+        return;
+      }
+      // Validate file size (max 200KB)
+      if (file.size > 200 * 1024) {
+        setSnackbar({ open: true, message: "Image file size must be less than 200KB", severity: "error" });
+        return;
+      }
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFoundForm(f => ({ ...f, image: reader.result }));
+        setSnackbar({ open: true, message: "Image loaded as base64!", severity: "success" });
+      };
+      reader.readAsDataURL(file);
+    }
   };
-
+  // --- LostFound: handleEditImage ---
+  const handleEditImage = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (!file.type.startsWith('image/')) {
+        setSnackbar({ open: true, message: "Please select a valid image file", severity: "error" });
+        return;
+      }
+      // Validate file size (max 200KB)
+      if (file.size > 200 * 1024) {
+        setSnackbar({ open: true, message: "Image file size must be less than 200KB", severity: "error" });
+        return;
+      }
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditForm(f => ({ ...f, image: reader.result, imageFile: null }));
+        setSnackbar({ open: true, message: "Image loaded as base64!", severity: "success" });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  // --- LostFound: handleLostSubmit ---
   const handleLostSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    let imageUrl = '';
     try {
-      if (lostImageFile) {
-        const storageRef = ref(storage, `lost_items/${Date.now()}_${lostImageFile.name}`);
-        await uploadBytes(storageRef, lostImageFile);
-        imageUrl = await getDownloadURL(storageRef);
-      }
-      await addDoc(collection(db, 'lost_items'), { ...lostForm, image: imageUrl, resolved: false, createdAt: new Date().toISOString() });
+      await addDoc(collection(db, 'lost_items'), { ...lostForm, resolved: false, createdAt: new Date().toISOString() });
       setSnackbar({ open: true, message: 'Lost item submitted!', severity: 'success' });
       setLostForm({ name: '', description: '', location: '', image: null, timeLost: '' });
-      setLostImageFile(null);
     } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to submit lost item or upload image.', severity: 'error' });
+      setSnackbar({ open: true, message: 'Failed to submit lost item.', severity: 'error' });
     } finally {
       setLoading(false);
     }
   };
+  // --- LostFound: handleFoundSubmit ---
   const handleFoundSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    let imageUrl = '';
     try {
-      if (foundImageFile) {
-        try {
-          const storageRef = ref(storage, `found_items/${Date.now()}_${foundImageFile.name}`);
-          await uploadBytes(storageRef, foundImageFile);
-          try {
-            imageUrl = await getDownloadURL(storageRef);
-          } catch (urlErr) {
-            imageUploadFailed = true;
-            setSnackbar({ open: true, message: 'Image uploaded but URL fetch failed. Item will be saved without image.', severity: 'warning' });
-            imageUrl = '';
-          }
-        } catch (imgErr) {
-          imageUploadFailed = true;
-          setSnackbar({ open: true, message: 'Image upload failed. Item will be saved without image.', severity: 'warning' });
-          imageUrl = '';
-        }
-      }
-      await addDoc(collection(db, 'found_items'), { ...foundForm, image: imageUrl, resolved: false, createdAt: new Date().toISOString() });
-      setSnackbar({ open: true, message: imageUploadFailed ? 'Found item submitted without image.' : 'Found item submitted!', severity: 'success' });
+      await addDoc(collection(db, 'found_items'), { ...foundForm, resolved: false, createdAt: new Date().toISOString() });
+      setSnackbar({ open: true, message: 'Found item submitted!', severity: 'success' });
       setFoundForm({ name: '', description: '', location: '', image: null });
-      setFoundImageFile(null);
     } catch (err) {
       setSnackbar({ open: true, message: 'Failed to submit found item.', severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+  // --- LostFound: handleEditSave ---
+  const handleEditSave = async () => {
+    setLoading(true);
+    try {
+      await updateDoc(doc(db, editModal.type, editModal.item.id), {
+        name: editForm.name,
+        description: editForm.description,
+        location: editForm.location,
+        image: editForm.image
+      });
+      setSnackbar({ open: true, message: 'Item updated!', severity: 'success' });
+      setEditModal({ open: false, type: '', item: null });
+      setEditForm({ name: '', description: '', location: '', image: '', imageFile: null });
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to update item.', severity: 'error' });
     } finally {
       setLoading(false);
     }
@@ -692,35 +728,6 @@ function LostFound() {
   const handleEditOpen = (type, item) => {
     setEditForm({ name: item.name, description: item.description, location: item.location, image: item.image || '', imageFile: null });
     setEditModal({ open: true, type, item });
-  };
-  const handleEditImage = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setEditForm(f => ({ ...f, imageFile: e.target.files[0] }));
-    }
-  };
-  const handleEditSave = async () => {
-    setLoading(true);
-    let imageUrl = editForm.image;
-    try {
-      if (editForm.imageFile) {
-        const storageRef = ref(storage, `${editModal.type}/${Date.now()}_${editForm.imageFile.name}`);
-        await uploadBytes(storageRef, editForm.imageFile);
-        imageUrl = await getDownloadURL(storageRef);
-      }
-      await updateDoc(doc(db, editModal.type, editModal.item.id), {
-        name: editForm.name,
-        description: editForm.description,
-        location: editForm.location,
-        image: imageUrl
-      });
-      setSnackbar({ open: true, message: 'Item updated!', severity: 'success' });
-      setEditModal({ open: false, type: '', item: null });
-      setEditForm({ name: '', description: '', location: '', image: '', imageFile: null });
-    } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to update item.', severity: 'error' });
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
@@ -927,8 +934,16 @@ function StudentList({
         console.log("Fetching students from Firebase...");
       const querySnapshot = await getDocs(collection(db, "students"));
         const studentsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log("Students fetched successfully:", studentsData.length);
-        setStudents(studentsData);
+        
+        // Sort students by creation date (newest first)
+        const sortedStudents = studentsData.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          return dateB - dateA; // Descending order (newest first)
+        });
+        
+        console.log("Students fetched successfully:", sortedStudents.length);
+        setStudents(sortedStudents);
       } catch (error) {
         console.error("Error fetching students:", error);
         
@@ -988,7 +1003,15 @@ function StudentList({
       console.log("Manually refreshing students...");
       const querySnapshot = await getDocs(collection(db, "students"));
       const studentsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setStudents(studentsData);
+      
+      // Sort students by creation date (newest first)
+      const sortedStudents = studentsData.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+        return dateB - dateA; // Descending order (newest first)
+      });
+      
+      setStudents(sortedStudents);
       setSnackbar({ open: true, message: "Student list refreshed successfully!", severity: "success" });
     } catch (error) {
       console.error("Error refreshing students:", error);
@@ -1025,7 +1048,15 @@ function StudentList({
         try {
           const querySnapshot = await getDocs(collection(db, "students"));
           const studentsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setStudents(studentsData);
+          
+          // Sort students by creation date (newest first)
+          const sortedStudents = studentsData.sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+            const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+            return dateB - dateA; // Descending order (newest first)
+          });
+          
+          setStudents(sortedStudents);
         } catch (refreshError) {
           console.error("Error refreshing student list:", refreshError);
           setSnackbar({ 
@@ -1060,25 +1091,26 @@ function StudentList({
     setOpenViolation(true);
   };
 
-  // Handle violation image upload
+  // --- StudentList: handleViolationImage ---
   const handleViolationImage = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         setSnackbar({ open: true, message: "Please select a valid image file", severity: "error" });
         return;
       }
-      
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setSnackbar({ open: true, message: "Image file size must be less than 5MB", severity: "error" });
+      // Validate file size (max 200KB)
+      if (file.size > 200 * 1024) {
+        setSnackbar({ open: true, message: "Image file size must be less than 200KB", severity: "error" });
         return;
       }
-      
-      setViolationImageFile(file);
-      console.log("Violation image selected:", file.name, "Size:", file.size, "Type:", file.type);
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setViolationImageFile(reader.result);
+        setSnackbar({ open: true, message: "Image loaded as base64!", severity: "success" });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -1133,7 +1165,7 @@ function StudentList({
     }
   };
 
-  // Handle save violation (missing function)
+  // --- StudentList: handleSaveViolation ---
   const handleSaveViolation = async () => {
     if (!currentStudent || !violation.violation || !violation.classification || !violation.date) {
       setSnackbar({ open: true, message: "Please fill in all required fields.", severity: "error" });
@@ -1141,22 +1173,102 @@ function StudentList({
     }
     setLoading(true);
     try {
-      let imageUrl = null;
-      if (violationImageFile) {
-        // Upload image to Firebase Storage
-        const storageRef = ref(storage, `violation_evidence/${currentStudent.id}_${Date.now()}_${violationImageFile.name}`);
-        await uploadBytes(storageRef, violationImageFile);
-        imageUrl = await getDownloadURL(storageRef);
-      }
-      // Save violation to Firestore
       const violationData = {
         ...violation,
         studentId: currentStudent.id,
-        image: imageUrl,
+        studentEmail: currentStudent.email, // Add student email for notifications
+        studentName: `${currentStudent.firstName} ${currentStudent.lastName}`,
+        image: violationImageFile || null,
         timestamp: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        status: "Pending"
       };
-      await addDoc(collection(db, "violations"), violationData);
-      setSnackbar({ open: true, message: "Violation saved successfully!", severity: "success" });
+      const violationRef = await addDoc(collection(db, "violations"), violationData);
+      
+      // Create detailed notification for the student
+      if (currentStudent.email) {
+        try {
+          // Create comprehensive notification message with all violation details
+          const notificationMessage = `
+🚨 NEW VIOLATION REPORTED
+
+Dear ${currentStudent.firstName} ${currentStudent.lastName},
+
+A new violation has been reported for you with the following details:
+
+📋 VIOLATION DETAILS:
+• Type: ${violation.violation}
+• Classification: ${violation.classification}
+• Severity: ${violation.severity || 'Not specified'}
+• Date: ${violation.date}
+• Time: ${violation.time || 'Not specified'}
+• Location: ${violation.location || 'Not specified'}
+
+📝 DESCRIPTION:
+${violation.description || 'No description provided'}
+
+👥 ADDITIONAL INFORMATION:
+• Witnesses: ${violation.witnesses || 'None specified'}
+• Reported By: ${violation.reportedBy || 'Not specified'}
+• Action Taken: ${violation.actionTaken || 'Pending review'}
+
+⚠️ IMPORTANT:
+Please review this violation in your student dashboard. You may need to take action or attend a meeting regarding this matter.
+
+For questions or concerns, please contact the administration office.
+
+Best regards,
+School Administration
+          `.trim();
+
+          await addDoc(collection(db, "notifications"), {
+            recipientEmail: currentStudent.email,
+            recipientName: `${currentStudent.firstName} ${currentStudent.lastName}`,
+            title: `🚨 New Violation: ${violation.violation}`,
+            message: notificationMessage,
+            type: "violation",
+            severity: violation.severity || "Medium",
+            read: false,
+            createdAt: new Date().toISOString(),
+            violationId: violationRef.id,
+            violationDetails: {
+              type: violation.violation,
+              classification: violation.classification,
+              severity: violation.severity,
+              date: violation.date,
+              time: violation.time,
+              location: violation.location,
+              description: violation.description,
+              witnesses: violation.witnesses,
+              reportedBy: violation.reportedBy,
+              actionTaken: violation.actionTaken
+            },
+            priority: violation.severity === "Critical" ? "high" : 
+                     violation.severity === "High" ? "high" : 
+                     violation.severity === "Medium" ? "medium" : "low"
+          });
+
+          console.log("Detailed violation notification created for student:", currentStudent.email);
+        } catch (notificationError) {
+          console.error("Error creating detailed notification:", notificationError);
+          // Fallback to simple notification
+          try {
+            await addDoc(collection(db, "notifications"), {
+              recipientEmail: currentStudent.email,
+              title: "New Violation Reported",
+              message: `A new violation "${violation.violation}" has been reported for you on ${violation.date}. Please review the details in your dashboard.`,
+              type: "violation",
+              read: false,
+              createdAt: new Date().toISOString(),
+              violationId: violationRef.id
+            });
+          } catch (fallbackError) {
+            console.error("Error creating fallback notification:", fallbackError);
+          }
+        }
+      }
+      
+      setSnackbar({ open: true, message: "Violation saved successfully! Student has been notified.", severity: "success" });
       setOpenViolation(false);
       setViolation({ 
         violation: "", classification: "", date: "", time: "", location: "", description: "", witnesses: "", severity: "", actionTaken: "", reportedBy: "" 
@@ -1411,7 +1523,7 @@ function StudentList({
               {violationImageFile && (
                 <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Avatar 
-                    src={URL.createObjectURL(violationImageFile)} 
+                    src={violationImageFile} 
                     sx={{ width: 80, height: 80 }} 
                     variant="rounded"
                   />
@@ -1501,24 +1613,27 @@ function EditStudentForm({ student, onClose, onSuccess }) {
     setProfile((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleImage = (e) => {
+  const handleImage = async (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      
       // Validate file type
       if (!file.type.startsWith('image/')) {
         setSnackbar({ open: true, message: "Please select a valid image file", severity: "error" });
         return;
       }
-      
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setSnackbar({ open: true, message: "Image file size must be less than 5MB", severity: "error" });
+      // Validate file size (max 200KB file)
+      if (file.size > 200 * 1024) {
+        setSnackbar({ open: true, message: "Image file size must be less than 200KB", severity: "error" });
         return;
       }
-      
       setImageFile(file);
-      setProfile((prev) => ({ ...prev, image: URL.createObjectURL(file) }));
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfile((prev) => ({ ...prev, image: reader.result }));
+        setSnackbar({ open: true, message: "Image loaded as base64!", severity: "success" });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -1537,21 +1652,6 @@ function EditStudentForm({ student, onClose, onSuccess }) {
     let imageUrl = profile.image || "";
     
     try {
-      // Upload new image if provided
-      if (imageFile) {
-        try {
-          console.log("Uploading new image...");
-          const imageRef = ref(storage, `students/${profile.id}_${Date.now()}_${imageFile.name}`);
-          await uploadBytes(imageRef, imageFile);
-          imageUrl = await getDownloadURL(imageRef);
-          console.log("New image uploaded successfully");
-        } catch (imgErr) {
-          console.error("Image upload failed:", imgErr);
-          setSnackbar({ open: true, message: "Image upload failed, but student data will be updated: " + imgErr.message, severity: "warning" });
-          imageUrl = profile.image || ""; // Keep existing image
-        }
-      }
-
       // Update data in Firebase
       const dataToUpdate = {
         ...profile,

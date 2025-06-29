@@ -3,13 +3,15 @@ import { Box, Paper, Typography, TextField, Button, Snackbar, Alert, InputAdornm
 import { Visibility, VisibilityOff, PersonAddAlt1, CloudUpload } from '@mui/icons-material';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../firebase';
-import { addDoc, collection } from 'firebase/firestore';
+import { setDoc, doc, addDoc, collection } from 'firebase/firestore';
 import { db, storage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import Link from '@mui/material/Link';
 
 const roles = ['Student', 'Admin', 'Teacher'];
+const courses = ["BSIT", "BSBA", "BSED", "BEED", "BSN"];
+const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 
 function getPasswordStrength(password) {
   let score = 0;
@@ -30,36 +32,66 @@ export default function Register() {
   const [profilePicUrl, setProfilePicUrl] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
-  const [bio, setBio] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [terms, setTerms] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [uploading, setUploading] = useState(false);
+  
+  // Student-specific fields
+  const [studentId, setStudentId] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [course, setCourse] = useState('');
+  const [year, setYear] = useState('');
+  const [section, setSection] = useState('');
+  
   const navigate = useNavigate();
 
   const handleProfilePic = async (e) => {
     if (e.target.files && e.target.files[0]) {
       setUploading(true);
       const file = e.target.files[0];
-      try {
-        const storageRef = ref(storage, `profile_pics/${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
-        setProfilePicUrl(url);
-        setProfilePic(file);
-        setSnackbar({ open: true, message: 'Profile picture uploaded!', severity: 'success' });
-      } catch (err) {
-        setSnackbar({ open: true, message: 'Failed to upload image', severity: 'error' });
+      if (!file.type.startsWith('image/')) {
+        setSnackbar({ open: true, message: 'Please select a valid image file', severity: 'error' });
+        setUploading(false);
+        return;
       }
-      setUploading(false);
+      if (file.size > 200 * 1024) {
+        setSnackbar({ open: true, message: 'Image file size must be less than 200KB', severity: 'error' });
+        setUploading(false);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePicUrl(reader.result);
+        setProfilePic(file);
+        setSnackbar({ open: true, message: 'Profile picture loaded as base64!', severity: 'success' });
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handlePasswordChange = (val) => {
     setPassword(val);
     setPasswordStrength(getPasswordStrength(val));
+  };
+
+  // Update full name when first/last name changes for students
+  const handleFirstNameChange = (value) => {
+    setFirstName(value);
+    if (role === 'Student') {
+      setFullName(`${value} ${lastName}`.trim());
+    }
+  };
+
+  const handleLastNameChange = (value) => {
+    setLastName(value);
+    if (role === 'Student') {
+      setFullName(`${firstName} ${value}`.trim());
+    }
   };
 
   const handleRegister = async (e) => {
@@ -76,30 +108,132 @@ export default function Register() {
       setSnackbar({ open: true, message: 'You must agree to the terms.', severity: 'error' });
       return;
     }
+    
+    // Validate student-specific fields
+    if (role === 'Student') {
+      if (!studentId) {
+        setSnackbar({ open: true, message: 'Student ID is required.', severity: 'error' });
+        return;
+      }
+      if (!firstName || !lastName) {
+        setSnackbar({ open: true, message: 'First name and last name are required for students.', severity: 'error' });
+        return;
+      }
+      if (!course || !year || !section) {
+        setSnackbar({ open: true, message: 'Course, year, and section are required for students.', severity: 'error' });
+        return;
+      }
+    }
+    
+    console.log('Starting registration process...');
     setLoading(true);
+    
+    // Add timeout protection
+    const timeoutId = setTimeout(() => {
+      console.error('Registration timed out - forcing reset');
+      setSnackbar({ open: true, message: 'Registration timed out. Please try again.', severity: 'error' });
+      setLoading(false);
+    }, 30000); // 30 second timeout
+    
     try {
+      console.log('Creating user account...');
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      await updateProfile(user, { displayName: fullName, photoURL: profilePicUrl });
-      await addDoc(collection(db, 'users'), {
+      console.log('User account created successfully:', user.uid);
+      
+      // Update profile with display name only (no photoURL to avoid length issues)
+      try {
+        console.log('Updating user profile...');
+        await updateProfile(user, { 
+          displayName: fullName
+          // Don't set photoURL to avoid "Photo URL too long" error
+        });
+        console.log('User profile updated successfully');
+      } catch (profileError) {
+        console.error('Error updating user profile:', profileError);
+        setSnackbar({ open: true, message: 'Profile update failed, but account was created.', severity: 'warning' });
+      }
+      
+      // Save user data to Firestore
+      console.log('Saving user data to Firestore...');
+      console.log('Role being saved:', role);
+      
+      const userData = {
         uid: user.uid,
-        fullName,
         email: user.email,
-        role,
+        fullName: fullName,
+        role: role,
+        phone: phone,
+        address: address,
         profilePic: profilePicUrl,
-        phone,
-        address,
-        bio,
         createdAt: new Date().toISOString(),
-      });
-      setSnackbar({ open: true, message: 'Registration successful! Redirecting to dashboard...', severity: 'success' });
-      setTimeout(() => navigate('/overview'), 1200);
+        updatedAt: new Date().toISOString()
+      };
+      
+      await setDoc(doc(db, 'users', user.uid), userData);
+      console.log('User data saved to Firestore successfully');
+      
+      // If user is a student, also save to students collection
+      if (role === 'Student') {
+        console.log('Saving student data to students collection...');
+        const studentData = {
+          uid: user.uid,
+          email: user.email,
+          firstName: firstName,
+          lastName: lastName,
+          studentId: studentId,
+          course: course,
+          year: year,
+          section: section,
+          phone: phone,
+          address: address,
+          image: profilePicUrl,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        await addDoc(collection(db, 'students'), studentData);
+        console.log('Student data saved to students collection successfully');
+      }
+      
+      console.log('Registration completed successfully, redirecting...');
+      
+      // Show success message
+      setSnackbar({ open: true, message: `Registration successful! Welcome ${fullName}!`, severity: 'success' });
+      
+      // Wait for the success message to show, then redirect
+      setTimeout(() => {
+        // Force redirect to root to trigger App.js routing
+        window.location.href = '/';
+      }, 2000);
+      
     } catch (error) {
+      clearTimeout(timeoutId);
+      console.error('Registration error:', error);
       let msg = error.message;
-      if (msg.includes('email-already-in-use')) msg = 'Email already in use.';
+      if (msg.includes('email-already-in-use')) {
+        msg = 'Email already in use.';
+      } else if (msg.includes('weak-password')) {
+        msg = 'Password is too weak. Please choose a stronger password.';
+      } else if (msg.includes('invalid-email')) {
+        msg = 'Invalid email address.';
+      } else if (msg.includes('operation-not-allowed')) {
+        msg = 'Email/password accounts are not enabled. Please contact support.';
+      } else if (msg.includes('network-request-failed')) {
+        msg = 'Network error. Please check your internet connection.';
+      }
       setSnackbar({ open: true, message: msg, severity: 'error' });
+    } finally {
+      clearTimeout(timeoutId);
+      console.log('Registration process ended, setting loading to false');
+      setLoading(false);
     }
+  };
+
+  // Manual reset function in case form gets stuck
+  const handleReset = () => {
     setLoading(false);
+    setSnackbar({ open: true, message: 'Form reset. You can try submitting again.', severity: 'info' });
   };
 
   return (
@@ -125,25 +259,113 @@ export default function Register() {
         <form onSubmit={handleRegister} style={{ width: '100%' }}>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-              <TextField label="Full Name" value={fullName} onChange={e => setFullName(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
-            </Grid>
-            <Grid item xs={12} sm={6}>
               <TextField label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField label="Phone Number" value={phone} onChange={e => setPhone(e.target.value)} fullWidth size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField label="Role" select value={role} onChange={e => setRole(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }}>
                 {roles.map(r => <MenuItem key={r} value={r}>{r}</MenuItem>)}
               </TextField>
             </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField label="Phone Number" value={phone} onChange={e => setPhone(e.target.value)} fullWidth size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
+            </Grid>
             <Grid item xs={12}>
               <TextField label="Address" value={address} onChange={e => setAddress(e.target.value)} fullWidth size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
             </Grid>
-            <Grid item xs={12}>
-              <TextField label="Short Bio" value={bio} onChange={e => setBio(e.target.value)} fullWidth multiline minRows={2} size="large" InputProps={{ style: { fontSize: 16 } }} />
-            </Grid>
+            
+            {/* Student-specific fields - only show when role is Student */}
+            {role === 'Student' && (
+              <>
+                <Grid item xs={12} sm={6}>
+                  <TextField 
+                    label="Student ID" 
+                    value={studentId} 
+                    onChange={e => setStudentId(e.target.value)} 
+                    fullWidth 
+                    required 
+                    size="large" 
+                    InputProps={{ style: { fontSize: 18, height: 56 } }} 
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField 
+                    label="Course" 
+                    select 
+                    value={course} 
+                    onChange={e => setCourse(e.target.value)} 
+                    fullWidth 
+                    required 
+                    size="large" 
+                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                  >
+                    {courses.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+                  </TextField>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField 
+                    label="First Name" 
+                    value={firstName} 
+                    onChange={e => handleFirstNameChange(e.target.value)} 
+                    fullWidth 
+                    required 
+                    size="large" 
+                    InputProps={{ style: { fontSize: 18, height: 56 } }} 
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField 
+                    label="Last Name" 
+                    value={lastName} 
+                    onChange={e => handleLastNameChange(e.target.value)} 
+                    fullWidth 
+                    required 
+                    size="large" 
+                    InputProps={{ style: { fontSize: 18, height: 56 } }} 
+                  />
+                </Grid>
+                <Grid item xs={12} sm={2}>
+                  <TextField 
+                    label="Year" 
+                    select 
+                    value={year} 
+                    onChange={e => setYear(e.target.value)} 
+                    fullWidth 
+                    required 
+                    size="large" 
+                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                  >
+                    {years.map(y => <MenuItem key={y} value={y}>{y}</MenuItem>)}
+                  </TextField>
+                </Grid>
+                <Grid item xs={12} sm={2}>
+                  <TextField 
+                    label="Section" 
+                    value={section} 
+                    onChange={e => setSection(e.target.value)} 
+                    fullWidth 
+                    required 
+                    size="large" 
+                    InputProps={{ style: { fontSize: 18, height: 56 } }} 
+                  />
+                </Grid>
+              </>
+            )}
+            
+            {/* Non-student fields - show when role is not Student */}
+            {role !== 'Student' && (
+              <Grid item xs={12}>
+                <TextField 
+                  label="Full Name" 
+                  value={fullName} 
+                  onChange={e => setFullName(e.target.value)} 
+                  fullWidth 
+                  required 
+                  size="large" 
+                  InputProps={{ style: { fontSize: 18, height: 56 } }} 
+                />
+              </Grid>
+            )}
+            
             <Grid item xs={12} sm={6}>
               <TextField
                 label="Password"
@@ -213,6 +435,17 @@ export default function Register() {
               <Button type="submit" variant="contained" color="success" fullWidth disabled={loading} sx={{ mb: 2, py: 1.5, fontSize: 18, borderRadius: 2, boxShadow: 2 }}>
                 {loading ? <CircularProgress size={24} color="inherit" /> : 'Register'}
               </Button>
+              {loading && (
+                <Button 
+                  variant="outlined" 
+                  color="secondary" 
+                  fullWidth 
+                  onClick={handleReset}
+                  sx={{ mb: 2, py: 1.5, fontSize: 16, borderRadius: 2 }}
+                >
+                  Reset Form (if stuck)
+                </Button>
+              )}
             </Grid>
           </Grid>
         </form>

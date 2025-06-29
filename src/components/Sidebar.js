@@ -1,15 +1,23 @@
-import React, { useState } from "react";
-import { List, ListItem, ListItemIcon, ListItemText, Drawer, Divider, Box, Typography, Avatar, Collapse, ListItemButton } from "@mui/material";
-import { Dashboard, People, Settings, Event, ExitToApp, Campaign, Report, ListAlt, History, Logout, Search, ExpandLess, ExpandMore, Assignment, MeetingRoom, Timeline, Assessment, Description } from "@mui/icons-material";
+import React, { useState, useEffect } from "react";
+import { List, ListItem, ListItemIcon, ListItemText, Drawer, Divider, Box, Typography, Avatar, Collapse, ListItemButton, Chip } from "@mui/material";
+import { Dashboard, People, Settings, Event, ExitToApp, Campaign, Report, ListAlt, History, Logout, Search, ExpandLess, ExpandMore, Assignment, MeetingRoom, Timeline, Assessment, Description, PersonAdd, School } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
-// import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
-// import { db } from "../firebase";
 
 const menu = [
   { text: "Overview", icon: <Dashboard sx={{ color: '#1976d2' }} />, path: "/overview" },
-  { text: "Students", icon: <People sx={{ color: '#43a047' }} />, path: "/students" },
+  { 
+    text: "Students", 
+    icon: <People sx={{ color: '#43a047' }} />, 
+    path: "/students",
+    hasSubmenu: true,
+    submenu: [
+      { text: "Student List", icon: <School sx={{ color: '#1976d2' }} />, path: "/students" },
+      { text: "Add Student", icon: <PersonAdd sx={{ color: '#43a047' }} />, path: "/students/add-student" },
+      { text: "Lost & Found", icon: <Search sx={{ color: '#ff9800' }} />, path: "/students/lost-found" }
+    ]
+  },
   { 
     text: "Violations", 
     icon: <Report sx={{ color: '#d32f2f' }} />, 
@@ -34,7 +42,6 @@ const menu = [
     ]
   },
   { text: "Options", icon: <Settings sx={{ color: '#8e24aa' }} />, path: "/options" },
-  { text: "Lost and Found Item", icon: <Search sx={{ color: '#00bcd4' }} />, path: "/students/lost-found" },
   { text: "Exit", icon: <Logout sx={{ color: '#757575' }} />, path: "/exit" }
 ];
 
@@ -42,28 +49,14 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [openSubmenu, setOpenSubmenu] = useState({});
-  // const [recent, setRecent] = useState([]);
-  // const [loading, setLoading] = useState(true);
-
-  // useEffect(() => {
-  //   // Fetch recent activity logs from Firebase (activity_log collection)
-  //   const fetchRecent = async () => {
-  //     setLoading(true);
-  //     try {
-  //       const q = query(collection(db, "activity_log"), orderBy("timestamp", "desc"), limit(8));
-  //       const snap = await getDocs(q);
-  //       setRecent(snap.docs.map(doc => doc.data()));
-  //     } catch (e) {
-  //       setRecent([]);
-  //     }
-  //     setLoading(false);
-  //   };
-  //   fetchRecent();
-  // }, []);
 
   const handleLogout = async () => {
-    await signOut(auth);
-    navigate('/login');
+    try {
+      await signOut(auth);
+      navigate('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const handleMenuClick = (item) => {
@@ -114,7 +107,8 @@ export default function Sidebar() {
         </Box>
         <Divider sx={{ width: '100%', mb: 2, bgcolor: '#b2bec3' }} />
       </Box>
-      <List>
+      
+      <List sx={{ flex: 1 }}>
         {menu.map((item) => (
           <Box key={item.text}>
             <ListItem
@@ -126,13 +120,28 @@ export default function Sidebar() {
                 borderRadius: 2,
                 m: 1,
                 boxShadow: 1,
-                transition: 'background 0.2s',
-                "&.Mui-selected": { bgcolor: "#636e72" },
-                "&:hover": { bgcolor: "#636e72", boxShadow: 3 }
+                transition: 'all 0.2s',
+                "&.Mui-selected": { 
+                  bgcolor: "#636e72",
+                  boxShadow: 3,
+                  transform: 'translateX(4px)'
+                },
+                "&:hover": { 
+                  bgcolor: "#636e72", 
+                  boxShadow: 3,
+                  transform: 'translateX(2px)'
+                }
               }}
             >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
+              <ListItemIcon sx={{ color: 'white' }}>{item.icon}</ListItemIcon>
+              <ListItemText 
+                primary={item.text} 
+                sx={{ 
+                  '& .MuiListItemText-primary': { 
+                    fontWeight: isItemSelected(item) ? 600 : 400 
+                  } 
+                }}
+              />
               {item.hasSubmenu && (
                 isSubmenuOpen(item.text) ? <ExpandLess /> : <ExpandMore />
               )}
@@ -150,15 +159,28 @@ export default function Sidebar() {
                         borderRadius: 2,
                         mx: 1,
                         mb: 0.5,
-                        transition: 'background 0.2s',
-                        "&.Mui-selected": { bgcolor: "#636e72" },
-                        "&:hover": { bgcolor: "#636e72" }
+                        transition: 'all 0.2s',
+                        "&.Mui-selected": { 
+                          bgcolor: "#636e72",
+                          transform: 'translateX(4px)'
+                        },
+                        "&:hover": { 
+                          bgcolor: "#636e72",
+                          transform: 'translateX(2px)'
+                        }
                       }}
                     >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
+                      <ListItemIcon sx={{ minWidth: 36, color: 'white' }}>
                         {subItem.icon}
                       </ListItemIcon>
-                      <ListItemText primary={subItem.text} />
+                      <ListItemText 
+                        primary={subItem.text} 
+                        sx={{ 
+                          '& .MuiListItemText-primary': { 
+                            fontWeight: isSubItemSelected(subItem) ? 600 : 400 
+                          } 
+                        }}
+                      />
                     </ListItemButton>
                   ))}
                 </List>

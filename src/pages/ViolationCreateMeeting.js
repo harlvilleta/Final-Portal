@@ -38,7 +38,16 @@ export default function ViolationCreateMeeting() {
     const fetchStudents = async () => {
       try {
         const snap = await getDocs(collection(db, "students"));
-        setStudents(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        const studentsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Sort students by creation date (newest first)
+        const sortedStudents = studentsData.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          return dateB - dateA; // Descending order (newest first)
+        });
+        
+        setStudents(sortedStudents);
       } catch (e) {
         setStudents([]);
       }
