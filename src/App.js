@@ -284,7 +284,7 @@ function App() {
         console.log('No role set but user exists, defaulting to Student');
         setUserRole('Student'); // Default fallback
       }
-    }, 8000); // Increased to 8 second timeout
+    }, 8000);
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log('Auth state changed:', user ? `User logged in: ${user.email}` : 'User logged out');
@@ -310,9 +310,13 @@ function App() {
             setUserProfile(userData);
             setUserRole(userData.role || 'Student');
             console.log('User profile and role loaded:', userData.role);
+            
+            // Clear loading immediately after role is determined
+            setLoading(false);
+            clearTimeout(loadingTimeout);
           } else {
-            // If no user document exists, create one with default role
-            console.log('No user document found, creating default user document');
+            console.log('User document not found, creating default...');
+            // Create default user document
             const defaultUserData = {
               email: user.email,
               fullName: user.displayName || user.email,
@@ -322,35 +326,38 @@ function App() {
               lastLogin: new Date().toISOString(),
               uid: user.uid,
               isActive: true,
-              registrationMethod: 'auth',
-              profilePic: user.photoURL || ''
+              registrationMethod: 'email'
             };
             
             try {
               await setDoc(doc(db, 'users', user.uid), defaultUserData);
+              console.log('✅ Created default user document');
               setUserProfile(defaultUserData);
               setUserRole('Student');
-              console.log('Default user document created with Student role');
+              setLoading(false);
+              clearTimeout(loadingTimeout);
             } catch (createError) {
-              console.error('Error creating user document:', createError);
-              setUserRole('Student');
+              console.error('Failed to create user document:', createError);
+              setAuthError('Failed to create user profile. Please try again.');
+              setLoading(false);
+              clearTimeout(loadingTimeout);
             }
           }
         } catch (error) {
-          console.error('Error fetching user data:', error);
-          // On error, default to Student to prevent login loops
-          setUserRole('Student');
-          setAuthError('Failed to load user profile. Using default settings.');
-          console.log('Error occurred, defaulting to Student role');
+          console.error('Error fetching user document:', error);
+          if (error.message === 'Timeout') {
+            setAuthError('Database connection timeout. Please refresh the page.');
+          } else {
+            setAuthError('Failed to load user profile. Please try again.');
+          }
+          setLoading(false);
+          clearTimeout(loadingTimeout);
         }
-        
-        clearTimeout(loadingTimeout);
-        setLoading(false);
-        console.log('Authentication process completed');
       } else if (user && forceLogin) {
         // User is authenticated but forceLogin is true, so we don't set the user state
         console.log('User authenticated but forceLogin is true, keeping login page');
         setLoading(false);
+        clearTimeout(loadingTimeout);
       } else {
         console.log('User logged out, clearing state...');
         // User logged out

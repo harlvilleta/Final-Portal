@@ -186,7 +186,7 @@ export default function TeacherReportViolation() {
         recipientEmail: selectedStudent.email,
         recipientName: selectedStudent.fullName,
         title: 'Violation Report Filed',
-        message: `You have been reported for a violation: ${violationType}. The case is under review by administration.`,
+        message: `You have been reported for a violation: ${violationType} by ${currentUser.displayName || 'Teacher'}. The case is under review by administration.`,
         type: 'violation_report',
         violationId: violationRef.id,
         senderId: currentUser.uid,

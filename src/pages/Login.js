@@ -211,16 +211,14 @@ export default function Login({ onLoginSuccess }) {
       setFailedAttempts(0);
       setFormErrors({ email: '', password: '' });
       
-      // Redirect based on role
-      setTimeout(() => {
-        if (userRole === 'Admin') {
-          navigate('/overview', { replace: true });
-        } else if (userRole === 'Teacher') {
-          navigate('/teacher-dashboard', { replace: true });
-        } else {
-          navigate('/user-dashboard', { replace: true });
-        }
-      }, 1500);
+      // Redirect based on role immediately
+      if (userRole === 'Admin') {
+        navigate('/overview', { replace: true });
+      } else if (userRole === 'Teacher') {
+        navigate('/teacher-dashboard', { replace: true });
+      } else {
+        navigate('/user-dashboard', { replace: true });
+      }
       
     } catch (error) {
       console.error('❌ Login error:', error);
@@ -339,16 +337,14 @@ export default function Login({ onLoginSuccess }) {
       setFailedAttempts(0);
       setFormErrors({ email: '', password: '' });
       
-      // Redirect based on role
-      setTimeout(() => {
-        if (userRole === 'Admin') {
-          navigate('/overview', { replace: true });
-        } else if (userRole === 'Teacher') {
-          navigate('/teacher-dashboard', { replace: true });
-        } else {
-          navigate('/user-dashboard', { replace: true });
-        }
-      }, 1500);
+      // Redirect based on role immediately
+      if (userRole === 'Admin') {
+        navigate('/overview', { replace: true });
+      } else if (userRole === 'Teacher') {
+        navigate('/teacher-dashboard', { replace: true });
+      } else {
+        navigate('/user-dashboard', { replace: true });
+      }
       
     } catch (error) {
       console.error('❌ Google login error:', error);

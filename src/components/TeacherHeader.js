@@ -1,14 +1,35 @@
-import React, { useState } from 'react';
-import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Badge } from '@mui/material';
-import { AccountCircle, Logout, Notifications, Settings } from '@mui/icons-material';
+import React, { useState, useEffect } from 'react';
+import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Badge, ListItemText, ListItemIcon, Divider } from '@mui/material';
+import { AccountCircle, Logout, Notifications, Settings, CheckCircle, Warning, Info } from '@mui/icons-material';
 import { signOut } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 
 export default function TeacherHeader({ currentUser, userProfile }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!currentUser?.email) return;
+
+    const notificationsQuery = query(
+      collection(db, 'notifications'),
+      where('recipientEmail', '==', currentUser.email),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
+      const notificationsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setNotifications(notificationsData);
+      setUnreadCount(notificationsData.filter(n => !n.read).length);
+    });
+
+    return unsubscribe;
+  }, [currentUser]);
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -24,6 +45,41 @@ export default function TeacherHeader({ currentUser, userProfile }) {
 
   const handleNotificationClose = () => {
     setNotificationAnchorEl(null);
+  };
+
+  const handleNotificationClick = (notification) => {
+    // Mark notification as read
+    // Navigate based on notification type
+    if (notification.type === 'violation_decision') {
+      navigate('/teacher-reports');
+    } else if (notification.type === 'announcement_decision') {
+      navigate('/teacher-announcements');
+    }
+    handleNotificationClose();
+  };
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'violation_decision':
+        return <CheckCircle color="success" />;
+      case 'announcement_decision':
+        return <Info color="info" />;
+      case 'violation_report':
+        return <Warning color="warning" />;
+      default:
+        return <Info color="info" />;
+    }
+  };
+
+  const formatNotificationTime = (timestamp) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now - date) / (1000 * 60 * 60);
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${Math.floor(diffInHours)}h ago`;
+    return date.toLocaleDateString();
   };
 
   const handleLogout = async () => {
@@ -82,7 +138,7 @@ export default function TeacherHeader({ currentUser, userProfile }) {
             onClick={handleNotificationMenu}
             sx={{ color: '#fff' }}
           >
-            <Badge badgeContent={3} color="error">
+            <Badge badgeContent={unreadCount} color="error">
               <Notifications />
             </Badge>
           </IconButton>
@@ -98,88 +154,144 @@ export default function TeacherHeader({ currentUser, userProfile }) {
           </IconButton>
           
           {/* User Menu */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="body2" sx={{ color: '#fff' }}>
-              {userInfo.name}
-            </Typography>
-            <IconButton
-              size="large"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleMenu}
-              sx={{ color: '#fff' }}
+          <IconButton
+            size="large"
+            aria-label="account of current user"
+            aria-controls="menu-appbar"
+            aria-haspopup="true"
+            onClick={handleMenu}
+            sx={{ color: '#fff' }}
+          >
+            <Avatar 
+              sx={{ width: 32, height: 32, bgcolor: '#1976d2' }}
+              src={userInfo.photo}
             >
-              <Avatar 
-                src={userInfo.photo} 
-                sx={{ 
-                  width: 32, 
-                  height: 32,
-                  bgcolor: userInfo.photo ? 'transparent' : '#1976d2'
-                }}
-              >
-                {!userInfo.photo && (userInfo.name?.charAt(0) || userInfo.email?.charAt(0))}
-              </Avatar>
-            </IconButton>
-          </Box>
-          
-          {/* User Menu */}
-          <Menu
-            id="menu-appbar"
-            anchorEl={anchorEl}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            keepMounted
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            open={Boolean(anchorEl)}
-            onClose={handleClose}
-          >
-            <MenuItem onClick={handleClose}>
-              <Typography variant="body2">{userInfo.email}</Typography>
-            </MenuItem>
-            <MenuItem onClick={() => { handleClose(); navigate('/teacher-profile'); }}>
-              <AccountCircle sx={{ mr: 1 }} />
-              Profile
-            </MenuItem>
-            <MenuItem onClick={handleLogout}>
-              <Logout sx={{ mr: 1 }} />
-              Logout
-            </MenuItem>
-          </Menu>
-          
-          {/* Notifications Menu */}
-          <Menu
-            id="notifications-menu"
-            anchorEl={notificationAnchorEl}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            keepMounted
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            open={Boolean(notificationAnchorEl)}
-            onClose={handleNotificationClose}
-          >
-            <MenuItem onClick={handleNotificationClose}>
-              <Typography variant="body2">New violation recorded</Typography>
-            </MenuItem>
-            <MenuItem onClick={handleNotificationClose}>
-              <Typography variant="body2">Meeting scheduled for tomorrow</Typography>
-            </MenuItem>
-            <MenuItem onClick={handleNotificationClose}>
-              <Typography variant="body2">Grade submission deadline</Typography>
-            </MenuItem>
-          </Menu>
+              {userInfo.name?.charAt(0) || 'T'}
+            </Avatar>
+          </IconButton>
         </Box>
       </Toolbar>
+
+      {/* User Menu */}
+      <Menu
+        id="menu-appbar"
+        anchorEl={anchorEl}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        keepMounted
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        open={Boolean(anchorEl)}
+        onClose={handleClose}
+      >
+        <MenuItem onClick={handleClose}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Avatar sx={{ width: 24, height: 24, bgcolor: '#1976d2' }}>
+              {userInfo.name?.charAt(0) || 'T'}
+            </Avatar>
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                {userInfo.name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {userInfo.email}
+              </Typography>
+            </Box>
+          </Box>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => { navigate('/teacher-profile'); handleClose(); }}>
+          <ListItemIcon>
+            <Settings fontSize="small" />
+          </ListItemIcon>
+          Profile Settings
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={handleLogout}>
+          <ListItemIcon>
+            <Logout fontSize="small" />
+          </ListItemIcon>
+          Logout
+        </MenuItem>
+      </Menu>
+
+      {/* Notifications Menu */}
+      <Menu
+        id="notifications-menu"
+        anchorEl={notificationAnchorEl}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        keepMounted
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        open={Boolean(notificationAnchorEl)}
+        onClose={handleNotificationClose}
+        PaperProps={{
+          sx: { width: 400, maxHeight: 500 }
+        }}
+      >
+        <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
+          <Typography variant="h6" fontWeight={600}>
+            Notifications ({notifications.length})
+          </Typography>
+        </Box>
+        
+        {notifications.length === 0 ? (
+          <MenuItem disabled>
+            <Typography variant="body2" color="text.secondary">
+              No notifications
+            </Typography>
+          </MenuItem>
+        ) : (
+          notifications.slice(0, 10).map((notification) => (
+            <MenuItem 
+              key={notification.id} 
+              onClick={() => handleNotificationClick(notification)}
+              sx={{ 
+                borderBottom: '1px solid #f0f0f0',
+                '&:hover': { bgcolor: '#f5f5f5' }
+              }}
+            >
+              <ListItemIcon>
+                {getNotificationIcon(notification.type)}
+              </ListItemIcon>
+              <ListItemText
+                primary={
+                  <Typography variant="subtitle2" fontWeight={600} sx={{ color: notification.read ? 'text.secondary' : 'text.primary' }}>
+                    {notification.title}
+                  </Typography>
+                }
+                secondary={
+                  <Box>
+                    <Typography variant="body2" sx={{ color: notification.read ? 'text.secondary' : 'text.primary', mb: 0.5 }}>
+                      {notification.message}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatNotificationTime(notification.createdAt)}
+                    </Typography>
+                  </Box>
+                }
+              />
+            </MenuItem>
+          ))
+        )}
+        
+        {notifications.length > 10 && (
+          <MenuItem onClick={() => { navigate('/teacher-notifications'); handleNotificationClose(); }}>
+            <Typography variant="body2" color="primary" sx={{ textAlign: 'center', width: '100%' }}>
+              View All Notifications
+            </Typography>
+          </MenuItem>
+        )}
+      </Menu>
     </AppBar>
   );
 } 

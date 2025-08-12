@@ -39,6 +39,7 @@ import {
 } from '@mui/icons-material';
 import { auth, db } from '../firebase';
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 
 export default function TeacherDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -48,6 +49,8 @@ export default function TeacherDashboard() {
   const [announcements, setAnnouncements] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -154,27 +157,37 @@ export default function TeacherDashboard() {
 
   return (
     <Box sx={{ p: 3, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
-      {/* Header */}
+      {/* Welcome Section */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={700} color="primary" gutterBottom>
-          Teacher Dashboard
+        <Typography variant="h4" fontWeight={700} color="#2d3436" gutterBottom>
+          Welcome back, {userInfo.name}! 👋
         </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
-          Welcome back, {userInfo.name}! Here's what's happening today.
+        <Typography variant="body1" color="text.secondary" sx={{ fontSize: 18 }}>
+          Here's what's happening in your classroom today
         </Typography>
       </Box>
 
-      {/* Stats Cards */}
+      {/* Statistics Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#e3f2fd', border: '1px solid #1976d2' }}>
+          <Card sx={{ 
+            bgcolor: '#e3f2fd', 
+            border: '1px solid #2196f3',
+            borderRadius: 3,
+            boxShadow: '0 4px 12px rgba(33, 150, 243, 0.15)',
+            transition: 'transform 0.2s, box-shadow 0.2s',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 24px rgba(33, 150, 243, 0.25)'
+            }
+          }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h4" fontWeight={700} color="primary">
+                  <Typography variant="h4" fontWeight={700} color="#1976d2">
                     {students.length}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                     Total Students
                   </Typography>
                 </Box>
@@ -187,15 +200,25 @@ export default function TeacherDashboard() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#fff3e0', border: '1px solid #ff9800' }}>
+          <Card sx={{ 
+            bgcolor: '#fff3e0', 
+            border: '1px solid #ff9800',
+            borderRadius: 3,
+            boxShadow: '0 4px 12px rgba(255, 152, 0, 0.15)',
+            transition: 'transform 0.2s, box-shadow 0.2s',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 24px rgba(255, 152, 0, 0.25)'
+            }
+          }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h4" fontWeight={700} color="#ff9800">
+                  <Typography variant="h4" fontWeight={700} color="#f57c00">
                     {violations.length}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Violations Recorded
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                    Total Violations
                   </Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: '#ff9800', width: 56, height: 56 }}>
@@ -207,14 +230,24 @@ export default function TeacherDashboard() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#e8f5e8', border: '1px solid #4caf50' }}>
+          <Card sx={{ 
+            bgcolor: '#e8f5e8', 
+            border: '1px solid #4caf50',
+            borderRadius: 3,
+            boxShadow: '0 4px 12px rgba(76, 175, 80, 0.15)',
+            transition: 'transform 0.2s, box-shadow 0.2s',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 24px rgba(76, 175, 80, 0.25)'
+            }
+          }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h4" fontWeight={700} color="#4caf50">
+                  <Typography variant="h4" fontWeight={700} color="#388e3c">
                     {announcements.length}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                     Announcements
                   </Typography>
                 </Box>
@@ -227,14 +260,24 @@ export default function TeacherDashboard() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#fce4ec', border: '1px solid #e91e63' }}>
+          <Card sx={{ 
+            bgcolor: '#fce4ec', 
+            border: '1px solid #e91e63',
+            borderRadius: 3,
+            boxShadow: '0 4px 12px rgba(233, 25, 99, 0.15)',
+            transition: 'transform 0.2s, box-shadow 0.2s',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 24px rgba(233, 25, 99, 0.25)'
+            }
+          }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
                   <Typography variant="h4" fontWeight={700} color="#e91e63">
                     {getUnreadNotificationsCount()}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                     Unread Notifications
                   </Typography>
                 </Box>
@@ -252,167 +295,147 @@ export default function TeacherDashboard() {
       {/* Main Content */}
       <Grid container spacing={3}>
         {/* Recent Violations */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%' }}>
+        <Grid item xs={12} lg={6}>
+          <Card sx={{ 
+            borderRadius: 3, 
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            height: 'fit-content'
+          }}>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Assignment sx={{ color: '#d32f2f', mr: 1 }} />
-                <Typography variant="h6" fontWeight={600}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6" fontWeight={600} color="#2d3436">
                   Recent Violations
                 </Typography>
+                <Button 
+                  size="small" 
+                  color="primary" 
+                  onClick={() => navigate('/teacher-reports')}
+                  sx={{ textTransform: 'none' }}
+                >
+                  View All
+                </Button>
               </Box>
-              <List>
-                {getRecentViolations().map((violation, index) => (
-                  <React.Fragment key={violation.id}>
-                    <ListItem>
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: '#d32f2f' }}>
-                          <Warning />
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={violation.studentName || 'Unknown Student'}
-                        secondary={
-                          <Box>
-                            <Typography variant="body2" color="text.secondary">
-                              {violation.violationType} - {violation.description}
+              
+              {getRecentViolations().length > 0 ? (
+                <List sx={{ maxHeight: 300, overflow: 'auto' }}>
+                  {getRecentViolations().map((violation, index) => (
+                    <React.Fragment key={violation.id}>
+                      <ListItem sx={{ px: 0, py: 1 }}>
+                        <ListItemAvatar>
+                          <Avatar sx={{ bgcolor: '#ff9800', width: 40, height: 40 }}>
+                            <Warning sx={{ fontSize: 20 }} />
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Typography variant="subtitle2" fontWeight={600}>
+                              {violation.studentName || violation.studentId}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {new Date(violation.timestamp).toLocaleDateString()}
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                      <Chip 
-                        label={violation.status || 'Pending'} 
-                        color={violation.status === 'Resolved' ? 'success' : 'warning'}
-                        size="small"
-                      />
-                    </ListItem>
-                    {index < getRecentViolations().length - 1 && <Divider />}
-                  </React.Fragment>
-                ))}
-                {getRecentViolations().length === 0 && (
-                  <ListItem>
-                    <ListItemText
-                      primary="No recent violations"
-                      secondary="All students are following the rules!"
-                    />
-                  </ListItem>
-                )}
-              </List>
+                          }
+                          secondary={
+                            <Box>
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                {violation.violationType || violation.violation}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(violation.date || violation.createdAt).toLocaleDateString()}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                        <Chip 
+                          label={violation.status || 'Pending'} 
+                          size="small"
+                          color={violation.status === 'Approved' ? 'success' : 
+                                 violation.status === 'Denied' ? 'error' : 'warning'}
+                          sx={{ fontWeight: 500 }}
+                        />
+                      </ListItem>
+                      {index < getRecentViolations().length - 1 && <Divider />}
+                    </React.Fragment>
+                  ))}
+                </List>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <Warning sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    No violations recorded yet
+                  </Typography>
+                </Box>
+              )}
             </CardContent>
-            <CardActions>
-              <Button size="small" color="primary">
-                View All Violations
-              </Button>
-            </CardActions>
           </Card>
         </Grid>
 
         {/* Recent Announcements */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%' }}>
+        <Grid item xs={12} lg={6}>
+          <Card sx={{ 
+            borderRadius: 3, 
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            height: 'fit-content'
+          }}>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Announcement sx={{ color: '#1976d2', mr: 1 }} />
-                <Typography variant="h6" fontWeight={600}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6" fontWeight={600} color="#2d3436">
                   Recent Announcements
                 </Typography>
+                <Button 
+                  size="small" 
+                  color="primary" 
+                  onClick={() => navigate('/teacher-announcements')}
+                  sx={{ textTransform: 'none' }}
+                >
+                  View All
+                </Button>
               </Box>
-              <List>
-                {getRecentAnnouncements().map((announcement, index) => (
-                  <React.Fragment key={announcement.id}>
-                    <ListItem>
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: '#1976d2' }}>
-                          <Info />
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={announcement.title}
-                        secondary={
-                          <Box>
-                            <Typography variant="body2" color="text.secondary">
-                              {announcement.content}
+              
+              {getRecentAnnouncements().length > 0 ? (
+                <List sx={{ maxHeight: 300, overflow: 'auto' }}>
+                  {getRecentAnnouncements().map((announcement, index) => (
+                    <React.Fragment key={announcement.id}>
+                      <ListItem sx={{ px: 0, py: 1 }}>
+                        <ListItemAvatar>
+                          <Avatar sx={{ bgcolor: '#1976d2', width: 40, height: 40 }}>
+                            <Info sx={{ fontSize: 20 }} />
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Typography variant="subtitle2" fontWeight={600}>
+                              {announcement.title}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {new Date(announcement.timestamp).toLocaleDateString()}
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    </ListItem>
-                    {index < getRecentAnnouncements().length - 1 && <Divider />}
-                  </React.Fragment>
-                ))}
-                {getRecentAnnouncements().length === 0 && (
-                  <ListItem>
-                    <ListItemText
-                      primary="No recent announcements"
-                      secondary="Check back later for updates"
-                    />
-                  </ListItem>
-                )}
-              </List>
-            </CardContent>
-            <CardActions>
-              <Button size="small" color="primary">
-                View All Announcements
-              </Button>
-            </CardActions>
-          </Card>
-        </Grid>
-
-        {/* Quick Actions */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                Quick Actions
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    startIcon={<Assignment />}
-                    sx={{ py: 2, justifyContent: 'flex-start' }}
-                  >
-                    Record Violation
-                  </Button>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    startIcon={<Announcement />}
-                    sx={{ py: 2, justifyContent: 'flex-start' }}
-                  >
-                    Create Announcement
-                  </Button>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    startIcon={<Assessment />}
-                    sx={{ py: 2, justifyContent: 'flex-start' }}
-                  >
-                    View Reports
-                  </Button>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    startIcon={<Schedule />}
-                    sx={{ py: 2, justifyContent: 'flex-start' }}
-                  >
-                    Schedule Meeting
-                  </Button>
-                </Grid>
-              </Grid>
+                          }
+                          secondary={
+                            <Box>
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                {announcement.content}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(announcement.timestamp || announcement.createdAt).toLocaleDateString()}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                        <Chip 
+                          label={announcement.status || 'Pending'} 
+                          size="small"
+                          color={announcement.status === 'Approved' ? 'success' : 
+                                 announcement.status === 'Denied' ? 'error' : 'warning'}
+                          sx={{ fontWeight: 500 }}
+                        />
+                      </ListItem>
+                      {index < getRecentAnnouncements().length - 1 && <Divider />}
+                    </React.Fragment>
+                  ))}
+                </List>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <Info sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    No announcements yet
+                  </Typography>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>
