@@ -1,10 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Paper, Typography, TextField, Button, Snackbar, Alert, InputAdornment, IconButton, Avatar, Checkbox, FormControlLabel, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { Visibility, VisibilityOff, LockOutlined, Google as GoogleIcon } from '@mui/icons-material';
+import { 
+  Box, 
+  Paper, 
+  Typography, 
+  TextField, 
+  Button, 
+  Snackbar, 
+  Alert, 
+  InputAdornment, 
+  IconButton, 
+  Avatar, 
+  Checkbox, 
+  FormControlLabel, 
+  CircularProgress, 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions,
+  Divider
+} from '@mui/material';
+import { Visibility, VisibilityOff, LockOutlined, Google as GoogleIcon, Email, Security } from '@mui/icons-material';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import Link from '@mui/material/Link';
+import { getDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { createSampleUsers } from '../utils/createUsers';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -18,28 +39,58 @@ export default function Login() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockout, setLockout] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
+  const [lockoutTime, setLockoutTime] = useState(0);
   const [formErrors, setFormErrors] = useState({ email: '', password: '' });
+  const [creatingUsers, setCreatingUsers] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Account lockout timer
+  // Account lockout timer with countdown
   useEffect(() => {
     let timer;
-    if (lockout) {
-      timer = setTimeout(() => setLockout(false), 30000);
+    if (lockout && lockoutTime > 0) {
+      timer = setTimeout(() => {
+        setLockoutTime(prev => {
+          if (prev <= 1) {
+            setLockout(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
     return () => clearTimeout(timer);
-  }, [lockout]);
+  }, [lockout, lockoutTime]);
+
+  // Auto-fill email from location state (if redirected from register)
+  useEffect(() => {
+    if (location.state?.email) {
+      setEmail(location.state.email);
+    }
+  }, [location.state]);
+
+  // Show registration success message if redirected from register
+  useEffect(() => {
+    if (location.state?.message) {
+      setSnackbar({ 
+        open: true, 
+        message: location.state.message, 
+        severity: 'success' 
+      });
+      // Clear the state to prevent showing the message again on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Form validation
   const validateForm = () => {
     const errors = {};
     
-    if (!email) {
+    if (!email.trim()) {
       errors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
+    } else if (!/\S+@\S+\.\S+/.test(email.trim())) {
       errors.email = 'Please enter a valid email address';
     }
     
@@ -61,126 +112,260 @@ export default function Login() {
     }
     
     if (lockout) {
-      setSnackbar({ open: true, message: 'Account is temporarily locked. Please wait 30 seconds.', severity: 'error' });
+      setSnackbar({ 
+        open: true, 
+        message: `Account is temporarily locked. Please wait ${lockoutTime} seconds.`, 
+        severity: 'error' 
+      });
       return;
     }
     
     setLoading(true);
     try {
+      // Set persistence based on remember me
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
-      const result = await signInWithEmailAndPassword(auth, email, password);
       
-      setSnackbar({ open: true, message: 'Login successful! Redirecting to dashboard...', severity: 'success' });
-      setUserInfo({ name: result.user.displayName, avatar: result.user.photoURL, email: result.user.email });
+      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+      const user = userCredential.user;
+      
+      console.log('✅ Login successful for:', user.email);
+      
+      // Fetch user role from Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      let userRole = 'Student'; // Default role
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        userRole = userData.role || 'Student';
+        
+        // Update last login time
+        try {
+          await updateDoc(doc(db, 'users', user.uid), {
+            lastLogin: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          });
+        } catch (updateError) {
+          console.warn('Failed to update last login time:', updateError);
+        }
+      } else {
+        // Create default user document if it doesn't exist
+        const defaultUserData = {
+          email: user.email,
+          fullName: user.displayName || user.email,
+          role: 'Student',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          lastLogin: new Date().toISOString(),
+          uid: user.uid,
+          isActive: true,
+          registrationMethod: 'email'
+        };
+        
+        try {
+          await setDoc(doc(db, 'users', user.uid), defaultUserData);
+          console.log('✅ Created default user document');
+        } catch (createError) {
+          console.warn('Failed to create user document:', createError);
+        }
+      }
+      
+      setSnackbar({ 
+        open: true, 
+        message: `Welcome back! Redirecting to ${userRole} dashboard...`, 
+        severity: 'success' 
+      });
+      
+      // Clear form and reset state
+      setEmail('');
+      setPassword('');
       setFailedAttempts(0);
       setFormErrors({ email: '', password: '' });
       
-      // Clear form after successful login
-      setEmail('');
-      setPassword('');
-      
-      // Wait for the success message to show, then redirect
+      // Redirect based on role
       setTimeout(() => {
-        // Force redirect to root to trigger App.js routing
-        window.location.href = '/';
+        if (userRole === 'Admin') {
+          navigate('/overview', { replace: true });
+        } else if (userRole === 'Teacher') {
+          navigate('/teacher-dashboard', { replace: true });
+        } else {
+          navigate('/user-dashboard', { replace: true });
+        }
       }, 1500);
       
     } catch (error) {
-      setFailedAttempts(f => f + 1);
-      if (failedAttempts + 1 >= 5) {
+      console.error('❌ Login error:', error);
+      setFailedAttempts(prev => prev + 1);
+      
+      let msg = 'Login failed. Please check your credentials.';
+      if (error.code === 'auth/user-not-found') {
+        msg = 'No account found with this email address.';
+      } else if (error.code === 'auth/wrong-password') {
+        msg = 'Incorrect password.';
+      } else if (error.code === 'auth/too-many-requests') {
+        msg = 'Too many login attempts. Please try again later.';
         setLockout(true);
-        setSnackbar({ open: true, message: 'Too many failed attempts. Please wait 30 seconds.', severity: 'error' });
-      } else {
-        let msg = error.message;
-        if (msg.includes('user-not-found')) {
-          msg = 'No account found for this email.';
-          setFormErrors(prev => ({ ...prev, email: 'No account found for this email' }));
-        } else if (msg.includes('wrong-password')) {
-          msg = 'Incorrect password.';
-          setFormErrors(prev => ({ ...prev, password: 'Incorrect password' }));
-        } else if (msg.includes('invalid-email')) {
-          msg = 'Invalid email address.';
-          setFormErrors(prev => ({ ...prev, email: 'Invalid email address' }));
-        } else if (msg.includes('too-many-requests')) {
-          msg = 'Too many login attempts. Please try again later.';
-        } else if (msg.includes('network-request-failed')) {
-          msg = 'Network error. Please check your internet connection.';
-        }
-        setSnackbar({ open: true, message: msg, severity: 'error' });
+        setLockoutTime(30);
+      } else if (error.code === 'auth/user-disabled') {
+        msg = 'This account has been disabled.';
+      } else if (error.code === 'auth/invalid-email') {
+        msg = 'Invalid email address format.';
+      } else if (error.code === 'auth/network-request-failed') {
+        msg = 'Network error. Please check your internet connection.';
       }
+      
+      setSnackbar({ open: true, message: msg, severity: 'error' });
+      
+      // Implement progressive lockout
+      if (failedAttempts >= 4) {
+        setLockout(true);
+        setLockoutTime(30);
+        setSnackbar({ 
+          open: true, 
+          message: 'Too many failed attempts. Account locked for 30 seconds.', 
+          severity: 'error' 
+        });
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleForgot = async () => {
-    if (!forgotEmail) {
+  const handleGoogleLogin = async () => {
+    if (lockout) {
+      setSnackbar({ 
+        open: true, 
+        message: `Account is temporarily locked. Please wait ${lockoutTime} seconds.`, 
+        severity: 'error' 
+      });
+      return;
+    }
+    
+    setGoogleLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      console.log('✅ Google login successful for:', user.email);
+      
+      // Check if user exists in Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      let userRole = 'Student'; // Default role
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        userRole = userData.role || 'Student';
+        
+        // Update last login time
+        try {
+          await updateDoc(doc(db, 'users', user.uid), {
+            lastLogin: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          });
+        } catch (updateError) {
+          console.warn('Failed to update last login time:', updateError);
+        }
+      } else {
+        // Create new user document with default role
+        const defaultUserData = {
+          email: user.email,
+          fullName: user.displayName || user.email,
+          role: 'Student',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          lastLogin: new Date().toISOString(),
+          uid: user.uid,
+          isActive: true,
+          registrationMethod: 'google',
+          profilePic: user.photoURL || ''
+        };
+        
+        try {
+          await setDoc(doc(db, 'users', user.uid), defaultUserData);
+          console.log('✅ Created new user document for Google login');
+        } catch (createError) {
+          console.warn('Failed to create user document:', createError);
+        }
+      }
+      
+      setSnackbar({ 
+        open: true, 
+        message: `Welcome! Redirecting to ${userRole} dashboard...`, 
+        severity: 'success' 
+      });
+      
+      // Clear form and reset state
+      setEmail('');
+      setPassword('');
+      setFailedAttempts(0);
+      setFormErrors({ email: '', password: '' });
+      
+      // Redirect based on role
+      setTimeout(() => {
+        if (userRole === 'Admin') {
+          navigate('/overview', { replace: true });
+        } else if (userRole === 'Teacher') {
+          navigate('/teacher-dashboard', { replace: true });
+        } else {
+          navigate('/user-dashboard', { replace: true });
+        }
+      }, 1500);
+      
+    } catch (error) {
+      console.error('❌ Google login error:', error);
+      let msg = 'Google login failed. Please try again.';
+      if (error.code === 'auth/popup-closed-by-user') {
+        msg = 'Login cancelled.';
+      } else if (error.code === 'auth/popup-blocked') {
+        msg = 'Popup blocked. Please allow popups for this site.';
+      } else if (error.code === 'auth/network-request-failed') {
+        msg = 'Network error. Please check your internet connection.';
+      }
+      setSnackbar({ open: true, message: msg, severity: 'error' });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!forgotEmail.trim()) {
       setSnackbar({ open: true, message: 'Please enter your email address.', severity: 'error' });
       return;
     }
     
-    if (!/\S+@\S+\.\S+/.test(forgotEmail)) {
+    if (!/\S+@\S+\.\S+/.test(forgotEmail.trim())) {
       setSnackbar({ open: true, message: 'Please enter a valid email address.', severity: 'error' });
       return;
     }
     
     setForgotLoading(true);
     try {
-      await sendPasswordResetEmail(auth, forgotEmail);
-      setSnackbar({ open: true, message: 'Password reset email sent! Check your inbox.', severity: 'success' });
+      await sendPasswordResetEmail(auth, forgotEmail.trim());
+      setSnackbar({ 
+        open: true, 
+        message: 'Password reset email sent! Check your inbox and spam folder.', 
+        severity: 'success' 
+      });
       setForgotOpen(false);
       setForgotEmail('');
     } catch (error) {
-      let msg = error.message;
-      if (msg.includes('user-not-found')) {
-        msg = 'No account found for this email address.';
-      } else if (msg.includes('invalid-email')) {
-        msg = 'Invalid email address.';
-      } else if (msg.includes('too-many-requests')) {
-        msg = 'Too many requests. Please try again later.';
+      console.error('Password reset error:', error);
+      let msg = 'Failed to send reset email. Please try again.';
+      if (error.code === 'auth/user-not-found') {
+        msg = 'No account found with this email address.';
+      } else if (error.code === 'auth/invalid-email') {
+        msg = 'Invalid email address format.';
+      } else if (error.code === 'auth/too-many-requests') {
+        msg = 'Too many reset attempts. Please try again later.';
       }
       setSnackbar({ open: true, message: msg, severity: 'error' });
+    } finally {
+      setForgotLoading(false);
     }
-    setForgotLoading(false);
-  };
-
-  const handleGoogleLogin = async () => {
-    if (lockout) {
-      setSnackbar({ open: true, message: 'Account is temporarily locked. Please wait 30 seconds.', severity: 'error' });
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      
-      setSnackbar({ open: true, message: 'Login successful! Redirecting to dashboard...', severity: 'success' });
-      setUserInfo({ name: result.user.displayName, avatar: result.user.photoURL, email: result.user.email });
-      setFailedAttempts(0);
-      setFormErrors({ email: '', password: '' });
-      
-      // Clear form after successful login
-      setEmail('');
-      setPassword('');
-      
-      // Wait for the success message to show, then redirect
-      setTimeout(() => {
-        // Force redirect to root to trigger App.js routing
-        window.location.href = '/';
-      }, 1500);
-      
-    } catch (error) {
-      let msg = error.message;
-      if (error.code === 'auth/popup-closed-by-user') {
-        msg = 'Login cancelled.';
-      } else if (error.code === 'auth/popup-blocked') {
-        msg = 'Popup blocked by browser. Please allow popups for this site.';
-      } else if (error.code === 'auth/network-request-failed') {
-        msg = 'Network error. Please check your internet connection.';
-      }
-      setSnackbar({ open: true, message: msg, severity: 'error' });
-    }
-    setLoading(false);
   };
 
   const handleEmailChange = (e) => {
@@ -195,6 +380,34 @@ export default function Login() {
     if (formErrors.password) {
       setFormErrors(prev => ({ ...prev, password: '' }));
     }
+  };
+
+  const handleCreateSampleUsers = async () => {
+    console.log('🚀 Create Sample Users button clicked!');
+    setCreatingUsers(true);
+    try {
+      await createSampleUsers();
+      setSnackbar({ 
+        open: true, 
+        message: 'Sample users created successfully! You can now test the login with the credentials below.', 
+        severity: 'success' 
+      });
+    } catch (error) {
+      console.error('Error creating sample users:', error);
+      setSnackbar({ 
+        open: true, 
+        message: 'Error creating sample users. Check console for details.', 
+        severity: 'error' 
+      });
+    } finally {
+      setCreatingUsers(false);
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -229,11 +442,22 @@ export default function Login() {
           Sign in to your account
         </Typography>
         
-        {userInfo && (
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, p: 2, bgcolor: 'success.light', borderRadius: 2, width: '100%' }}>
-            <Avatar src={userInfo.avatar} sx={{ width: 40, height: 40, mr: 1 }} />
-            <Typography variant="body1" fontWeight={600} color="success.dark">
-              {userInfo.name || userInfo.email}
+        {/* Lockout Warning */}
+        {lockout && (
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            mb: 2, 
+            p: 2, 
+            bgcolor: 'error.light', 
+            borderRadius: 2, 
+            width: '100%',
+            border: '1px solid',
+            borderColor: 'error.main'
+          }}>
+            <Security sx={{ color: 'error.main', mr: 1 }} />
+            <Typography variant="body2" color="error.dark" fontWeight={600}>
+              Account locked for {formatTime(lockoutTime)}
             </Typography>
           </Box>
         )}
@@ -248,10 +472,18 @@ export default function Login() {
             required 
             sx={{ mb: 3 }} 
             size="large" 
-            InputProps={{ style: { fontSize: 18, height: 56 } }}
+            InputProps={{ 
+              style: { fontSize: 18, height: 56 },
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Email color="action" />
+                </InputAdornment>
+              )
+            }}
             error={!!formErrors.email}
             helperText={formErrors.email}
-            disabled={loading || lockout}
+            disabled={loading || lockout || googleLoading}
+            autoComplete="email"
           />
           
           <TextField
@@ -265,12 +497,17 @@ export default function Login() {
             size="large"
             InputProps={{
               style: { fontSize: 18, height: 56 },
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LockOutlined color="action" />
+                </InputAdornment>
+              ),
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton 
                     onClick={() => setShowPassword(s => !s)} 
                     edge="end"
-                    disabled={loading || lockout}
+                    disabled={loading || lockout || googleLoading}
                   >
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -279,7 +516,8 @@ export default function Login() {
             }}
             error={!!formErrors.password}
             helperText={formErrors.password}
-            disabled={loading || lockout}
+            disabled={loading || lockout || googleLoading}
+            autoComplete="current-password"
           />
           
           <FormControlLabel
@@ -288,7 +526,7 @@ export default function Login() {
                 checked={rememberMe} 
                 onChange={e => setRememberMe(e.target.checked)} 
                 color="primary"
-                disabled={loading || lockout}
+                disabled={loading || lockout || googleLoading}
               />
             }
             label="Remember Me"
@@ -296,43 +534,47 @@ export default function Login() {
           />
           
           <Button 
-            type="submit" 
+            type="submit"
             variant="contained" 
             color="primary" 
             fullWidth 
-            disabled={loading || lockout} 
+            disabled={loading || lockout || googleLoading} 
             sx={{ mb: 2, py: 1.5, fontSize: 18, borderRadius: 2, boxShadow: 2 }}
           >
-            {loading ? <CircularProgress size={24} color="inherit" /> : 'Login'}
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
           </Button>
-          
-          <Button 
-            onClick={handleGoogleLogin} 
-            variant="outlined" 
-            color="primary" 
-            fullWidth 
-            startIcon={<GoogleIcon />} 
-            sx={{ mb: 2, py: 1.5, fontSize: 18, borderRadius: 2 }} 
-            disabled={loading || lockout}
-            type="button"
-          >
-            Sign in with Google
-          </Button>
-          
-          <Box sx={{ textAlign: 'right', mb: 2 }}>
-            <Link 
-              component="button" 
-              variant="body2" 
-              onClick={() => setForgotOpen(true)} 
-              underline="hover" 
-              color="primary.main"
-              disabled={loading || lockout}
-              sx={{ cursor: 'pointer' }}
-            >
-              Forgot password?
-            </Link>
-          </Box>
         </form>
+        
+        <Divider sx={{ width: '100%', my: 2 }}>
+          <Typography variant="body2" color="text.secondary">OR</Typography>
+        </Divider>
+        
+        <Button 
+          onClick={handleGoogleLogin} 
+          variant="outlined" 
+          color="primary" 
+          fullWidth 
+          startIcon={googleLoading ? <CircularProgress size={20} /> : <GoogleIcon />} 
+          sx={{ mb: 2, py: 1.5, fontSize: 18, borderRadius: 2 }} 
+          disabled={loading || lockout || googleLoading}
+          type="button"
+        >
+          {googleLoading ? 'Signing in...' : 'Sign in with Google'}
+        </Button>
+        
+        <Box sx={{ textAlign: 'right', mb: 2, width: '100%' }}>
+          <Link 
+            component="button" 
+            variant="body2" 
+            onClick={() => setForgotOpen(true)} 
+            underline="hover" 
+            color="primary.main"
+            disabled={loading || lockout || googleLoading}
+            sx={{ cursor: 'pointer' }}
+          >
+            Forgot password?
+          </Link>
+        </Box>
         
         <Box sx={{ textAlign: 'center', mt: 2 }}>
           <Typography variant="body2" color="text.secondary">
@@ -347,13 +589,96 @@ export default function Login() {
               Register
             </Link>
           </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Having trouble logging in?{' '}
+            <Link 
+              component={RouterLink} 
+              to="/test" 
+              underline="hover" 
+              color="secondary.main" 
+              fontWeight={600}
+            >
+              Run Diagnostics
+            </Link>
+          </Typography>
+        </Box>
+        
+        {/* Testing Mode Section */}
+        <Box sx={{ 
+          textAlign: 'center', 
+          mt: 3, 
+          p: 3, 
+          bgcolor: '#e3f2fd', 
+          borderRadius: 2, 
+          border: '2px solid #1976d2',
+          width: '100%'
+        }}>
+          <Typography variant="h6" color="primary" sx={{ mb: 2, fontWeight: 600 }}>
+            🧪 Testing Mode
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Create sample users for testing:
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            size="medium"
+            onClick={handleCreateSampleUsers}
+            disabled={creatingUsers}
+            sx={{ mb: 2, fontWeight: 600 }}
+          >
+            {creatingUsers ? 'Creating Users...' : '🚀 Create Sample Users'}
+          </Button>
+          <Box sx={{ bgcolor: '#fff', p: 2, borderRadius: 1, border: '1px solid #ccc' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 1 }}>
+              Test Credentials:
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              👑 Admin: admin@school.com / admin123<br/>
+              👨‍🏫 Teacher: teacher@school.com / teacher123<br/>
+              👨‍🎓 Student: student@school.com / student123
+            </Typography>
+          </Box>
         </Box>
       </Paper>
+      
+      {/* Forgot Password Dialog */}
+      <Dialog open={forgotOpen} onClose={() => setForgotOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Reset Password</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Enter your email address and we'll send you a link to reset your password.
+          </Typography>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Email Address"
+            type="email"
+            fullWidth
+            variant="outlined"
+            value={forgotEmail}
+            onChange={(e) => setForgotEmail(e.target.value)}
+            sx={{ mt: 1 }}
+            error={forgotEmail && !/\S+@\S+\.\S+/.test(forgotEmail)}
+            helperText={forgotEmail && !/\S+@\S+\.\S+/.test(forgotEmail) ? 'Please enter a valid email' : ''}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setForgotOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleForgotPassword} 
+            variant="contained" 
+            disabled={forgotLoading || !forgotEmail.trim()}
+          >
+            {forgotLoading ? <CircularProgress size={20} /> : 'Send Reset Email'}
+          </Button>
+        </DialogActions>
+      </Dialog>
       
       {/* Snackbar for notifications */}
       <Snackbar 
         open={snackbar.open} 
-        autoHideDuration={4000} 
+        autoHideDuration={4000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
@@ -365,37 +690,6 @@ export default function Login() {
           {snackbar.message}
         </Alert>
       </Snackbar>
-      
-      {/* Forgot Password Dialog */}
-      <Dialog open={forgotOpen} onClose={() => setForgotOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Reset Password</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Enter your email address and we'll send you a link to reset your password.
-          </Typography>
-          <TextField
-            label="Email"
-            type="email"
-            value={forgotEmail}
-            onChange={e => setForgotEmail(e.target.value)}
-            fullWidth
-            sx={{ mt: 1 }}
-            disabled={forgotLoading}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setForgotOpen(false)} disabled={forgotLoading}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleForgot} 
-            disabled={forgotLoading || !forgotEmail} 
-            variant="contained"
-          >
-            {forgotLoading ? <CircularProgress size={20} /> : 'Send Reset Email'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 } 

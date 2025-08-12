@@ -2,25 +2,27 @@ import React, { useState, useEffect } from "react";
 import { List, ListItem, ListItemIcon, ListItemText, Drawer, Divider, Box, Typography, Avatar, Badge, Chip } from "@mui/material";
 import { 
   Dashboard, Notifications, Assignment, Announcement, Search, Person, Logout, 
-  Warning, CheckCircle, Info, Settings, Receipt, History
+  Warning, CheckCircle, Info, Settings, People, Assessment, Schedule, Book, Grade
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 
-const userMenu = [
-  { text: "Dashboard", icon: <Dashboard sx={{ color: '#1976d2' }} />, path: "/" },
-  { text: "My Violations", icon: <Assignment sx={{ color: '#d32f2f' }} />, path: "/violations" },
-  { text: "Announcements", icon: <Announcement sx={{ color: '#0288d1' }} />, path: "/announcements" },
-  { text: "Lost & Found", icon: <Search sx={{ color: '#43a047' }} />, path: "/lost-found" },
-  { text: "Receipt Submission", icon: <Receipt sx={{ color: '#ff9800' }} />, path: "/receipt-submission" },
-  { text: "Receipt History", icon: <History sx={{ color: '#795548' }} />, path: "/receipt-history" },
-  { text: "Notifications", icon: <Notifications sx={{ color: '#f57c00' }} />, path: "/notifications" },
-  { text: "Account Settings", icon: <Settings sx={{ color: '#9c27b0' }} />, path: "/profile" },
+const teacherMenu = [
+  { text: "Dashboard", icon: <Dashboard sx={{ color: '#1976d2' }} />, path: "/teacher-dashboard" },
+  { text: "Students", icon: <People sx={{ color: '#43a047' }} />, path: "/teacher-students" },
+  { text: "Violations", icon: <Assignment sx={{ color: '#d32f2f' }} />, path: "/teacher-violations" },
+  { text: "Announcements", icon: <Announcement sx={{ color: '#0288d1' }} />, path: "/teacher-announcements" },
+  { text: "Assessments", icon: <Assessment sx={{ color: '#ff9800' }} />, path: "/teacher-assessments" },
+  { text: "Schedule", icon: <Schedule sx={{ color: '#9c27b0' }} />, path: "/teacher-schedule" },
+  { text: "Reports", icon: <Book sx={{ color: '#607d8b' }} />, path: "/teacher-reports" },
+  { text: "Grades", icon: <Grade sx={{ color: '#4caf50' }} />, path: "/teacher-grades" },
+  { text: "Notifications", icon: <Notifications sx={{ color: '#f57c00' }} />, path: "/teacher-notifications" },
+  { text: "Account Settings", icon: <Settings sx={{ color: '#9c27b0' }} />, path: "/teacher-profile" },
 ];
 
-export default function UserSidebar() {
+export default function TeacherSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -76,17 +78,17 @@ export default function UserSidebar() {
   const getUserDisplayInfo = () => {
     if (userProfile) {
       return {
-        name: userProfile.fullName || currentUser?.displayName || 'Student',
+        name: userProfile.fullName || currentUser?.displayName || 'Teacher',
         email: userProfile.email || currentUser?.email,
         photo: userProfile.profilePic || currentUser?.photoURL,
-        role: userProfile.role || 'Student'
+        role: userProfile.role || 'Teacher'
       };
     }
     return {
-      name: currentUser?.displayName || 'Student',
+      name: currentUser?.displayName || 'Teacher',
       email: currentUser?.email,
       photo: currentUser?.photoURL,
-      role: 'Student'
+      role: 'Teacher'
     };
   };
 
@@ -101,8 +103,9 @@ export default function UserSidebar() {
         '& .MuiDrawer-paper': {
           width: 280,
           boxSizing: 'border-box',
-          bgcolor: '#fff',
-          borderRight: '1px solid #e0e0e0',
+          bgcolor: '#2d3436',
+          color: '#fff',
+          borderRight: '1px solid #636e72',
         },
       }}
     >
@@ -111,11 +114,41 @@ export default function UserSidebar() {
         <Box sx={{ mb: 2 }}>
           <img src="gt.jpg" alt="Logo" style={{ width: 200, height: 160, borderRadius: 10, boxShadow: '0 2px 8px #0002' }} />
         </Box>
-        <Divider sx={{ width: '100%', mb: 2, bgcolor: '#e0e0e0' }} />
+        <Divider sx={{ width: '100%', mb: 2, bgcolor: '#b2bec3' }} />
+        
+        {/* Teacher Info */}
+        <Box sx={{ textAlign: 'center', mb: 2 }}>
+          <Avatar 
+            src={userInfo.photo} 
+            sx={{ 
+              width: 60, 
+              height: 60, 
+              mx: 'auto', 
+              mb: 1,
+              bgcolor: userInfo.photo ? 'transparent' : '#1976d2'
+            }}
+          >
+            {!userInfo.photo && (userInfo.name?.charAt(0) || userInfo.email?.charAt(0))}
+          </Avatar>
+          <Typography variant="subtitle1" fontWeight={600} sx={{ color: '#fff' }}>
+            {userInfo.name}
+          </Typography>
+          <Chip 
+            label={userInfo.role} 
+            size="small" 
+            sx={{ 
+              bgcolor: '#1976d2', 
+              color: 'white',
+              fontWeight: 600,
+              mt: 1
+            }} 
+          />
+        </Box>
+        <Divider sx={{ width: '100%', mb: 2, bgcolor: '#b2bec3' }} />
       </Box>
       
       <List sx={{ flex: 1 }}>
-        {userMenu.map((item, index) => (
+        {teacherMenu.map((item, index) => (
           <ListItem
             key={index}
             button
@@ -123,10 +156,14 @@ export default function UserSidebar() {
             sx={{
               mb: 1,
               borderRadius: 2,
-              bgcolor: location.pathname === item.path ? '#e3f2fd' : 'transparent',
-              color: location.pathname === item.path ? '#1976d2' : 'inherit',
+              mx: 1,
+              bgcolor: location.pathname === item.path ? '#636e72' : 'transparent',
+              color: location.pathname === item.path ? '#fff' : '#b2bec3',
+              transition: 'all 0.2s',
               '&:hover': {
-                bgcolor: location.pathname === item.path ? '#e3f2fd' : '#f5f5f5',
+                bgcolor: location.pathname === item.path ? '#636e72' : '#4a5568',
+                transform: 'translateX(4px)',
+                boxShadow: 2
               },
             }}
           >
@@ -150,26 +187,29 @@ export default function UserSidebar() {
           </ListItem>
         ))}
 
-        <Divider sx={{ my: 2 }} />
+        <Divider sx={{ my: 2, bgcolor: '#b2bec3' }} />
 
         <ListItem
           button
           onClick={handleLogout}
           sx={{
             borderRadius: 2,
+            mx: 1,
             '&:hover': {
-              bgcolor: '#ffebee',
+              bgcolor: '#d32f2f',
+              transform: 'translateX(4px)',
+              boxShadow: 2
             },
           }}
         >
           <ListItemIcon sx={{ minWidth: 40 }}>
-            <Logout sx={{ color: '#d32f2f' }} />
+            <Logout sx={{ color: '#ff6b6b' }} />
           </ListItemIcon>
           <ListItemText 
             primary="Logout" 
             sx={{ 
               '& .MuiListItemText-primary': {
-                color: '#d32f2f',
+                color: '#ff6b6b',
                 fontWeight: 500,
               }
             }}
@@ -179,14 +219,20 @@ export default function UserSidebar() {
 
       {/* Notification Summary */}
       {unreadNotifications > 0 && (
-        <Box sx={{ p: 2, mt: 'auto', borderTop: '1px solid #e0e0e0' }}>
+        <Box sx={{ p: 2, mt: 'auto', borderTop: '1px solid #636e72' }}>
           <Chip
             icon={<Warning />}
             label={`${unreadNotifications} unread notification${unreadNotifications > 1 ? 's' : ''}`}
             color="error"
             variant="outlined"
-            sx={{ width: '100%', justifyContent: 'flex-start' }}
-            onClick={() => navigate('/notifications')}
+            sx={{ 
+              width: '100%', 
+              justifyContent: 'flex-start',
+              bgcolor: 'rgba(244, 67, 54, 0.1)',
+              borderColor: '#f44336',
+              color: '#f44336'
+            }}
+            onClick={() => navigate('/teacher-notifications')}
           />
         </Box>
       )}

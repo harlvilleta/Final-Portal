@@ -4,8 +4,9 @@ import { Visibility, VisibilityOff, PersonAddAlt1, CloudUpload } from '@mui/icon
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../firebase';
 import { setDoc, doc, addDoc, collection } from 'firebase/firestore';
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../firebase';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import Link from '@mui/material/Link';
 
@@ -22,6 +23,24 @@ function getPasswordStrength(password) {
   return score;
 }
 
+// Function to convert file to base64
+const convertToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+};
+
+// Function to upload image to Firebase Storage
+const uploadImageToStorage = async (file, userId) => {
+  const storageRef = ref(storage, `profile-pictures/${userId}/${Date.now()}_${file.name}`);
+  const snapshot = await uploadBytes(storageRef, file);
+  const downloadURL = await getDownloadURL(snapshot.ref);
+  return downloadURL;
+};
+
 export default function Register() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -29,7 +48,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('Student');
   const [profilePic, setProfilePic] = useState(null);
-  const [profilePicUrl, setProfilePicUrl] = useState('');
+  const [profilePicBase64, setProfilePicBase64] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -50,52 +69,57 @@ export default function Register() {
   const navigate = useNavigate();
 
   const handleProfilePic = async (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setUploading(true);
-      const file = e.target.files[0];
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
       if (!file.type.startsWith('image/')) {
-        setSnackbar({ open: true, message: 'Please select a valid image file', severity: 'error' });
-        setUploading(false);
+        setSnackbar({ open: true, message: 'Please select an image file', severity: 'error' });
         return;
       }
-      if (file.size > 200 * 1024) {
-        setSnackbar({ open: true, message: 'Image file size must be less than 200KB', severity: 'error' });
-        setUploading(false);
+      
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setSnackbar({ open: true, message: 'Image size should be less than 10MB', severity: 'error' });
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePicUrl(reader.result);
-        setProfilePic(file);
-        setSnackbar({ open: true, message: 'Profile picture loaded as base64!', severity: 'success' });
+      
+      setProfilePic(file);
+      setUploading(true);
+      setError('');
+      
+      try {
+        // Convert to base64 for preview only
+        const base64String = await convertToBase64(file);
+        setProfilePicBase64(base64String);
+        setSnackbar({ open: true, message: 'Profile picture uploaded successfully!', severity: 'success' });
+      } catch (error) {
+        console.error('Error processing image:', error);
+        setSnackbar({ open: true, message: 'Failed to process image. Please try again.', severity: 'error' });
+        setProfilePic(null);
+      } finally {
         setUploading(false);
-      };
-      reader.readAsDataURL(file);
+      }
     }
   };
 
-  const handlePasswordChange = (val) => {
-    setPassword(val);
-    setPasswordStrength(getPasswordStrength(val));
-  };
-
-  // Update full name when first/last name changes for students
-  const handleFirstNameChange = (value) => {
+  const handleFirstNameChange = (e) => {
+    const value = e.target.value;
     setFirstName(value);
-    if (role === 'Student') {
-      setFullName(`${value} ${lastName}`.trim());
-    }
+    setFullName(`${value} ${lastName}`.trim());
   };
 
-  const handleLastNameChange = (value) => {
+  const handleLastNameChange = (e) => {
+    const value = e.target.value;
     setLastName(value);
-    if (role === 'Student') {
-      setFullName(`${firstName} ${value}`.trim());
-    }
+    setFullName(`${firstName} ${value}`.trim());
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (!role) {
+      setSnackbar({ open: true, message: 'Please select a role.', severity: 'error' });
+      return;
+    }
     if (!fullName) {
       setSnackbar({ open: true, message: 'Full name is required.', severity: 'error' });
       return;
@@ -136,125 +160,252 @@ export default function Register() {
     }, 30000); // 30 second timeout
     
     try {
-      console.log('Creating user account...');
+      console.log('Starting registration process...');
+      
+      // Create user account in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      console.log('User account created successfully:', user.uid);
       
-      // Update profile with display name only (no photoURL to avoid length issues)
-      try {
-        console.log('Updating user profile...');
-        await updateProfile(user, { 
-          displayName: fullName
-          // Don't set photoURL to avoid "Photo URL too long" error
-        });
-        console.log('User profile updated successfully');
-      } catch (profileError) {
-        console.error('Error updating user profile:', profileError);
-        setSnackbar({ open: true, message: 'Profile update failed, but account was created.', severity: 'warning' });
+      console.log('✅ Firebase Auth user created:', user.uid);
+      
+      // Update profile with display name and photo (use base64 if available)
+      await updateProfile(user, {
+        displayName: fullName
+      });
+      
+      console.log('✅ User profile updated');
+      
+      // Upload image to Firebase Storage if provided
+      let imageURL = '';
+      if (profilePic) {
+        try {
+          imageURL = await uploadImageToStorage(profilePic, user.uid);
+          console.log('✅ Image uploaded to Storage:', imageURL);
+        } catch (uploadError) {
+          console.error('❌ Image upload error:', uploadError);
+          // Continue with registration even if image upload fails
+        }
       }
       
-      // Save user data to Firestore
-      console.log('Saving user data to Firestore...');
-      console.log('Role being saved:', role);
-      
+      // Prepare comprehensive user data for Firestore
       const userData = {
-        uid: user.uid,
         email: user.email,
         fullName: fullName,
         role: role,
-        phone: phone,
-        address: address,
-        profilePic: profilePicUrl,
+        phone: phone || '',
+        address: address || '',
+        profilePic: imageURL || '', // Save Storage URL instead of base64
+        profilePicType: profilePic ? profilePic.type : '', // Save image type
+        profilePicName: profilePic ? profilePic.name : '', // Save original filename
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        uid: user.uid,
+        isActive: true,
+        lastLogin: null,
+        registrationMethod: 'email'
       };
       
-      await setDoc(doc(db, 'users', user.uid), userData);
-      console.log('User data saved to Firestore successfully');
-      
-      // If user is a student, also save to students collection
+      // Add student-specific data if role is Student
       if (role === 'Student') {
-        console.log('Saving student data to students collection...');
-        const studentData = {
-          uid: user.uid,
-          email: user.email,
+        userData.studentId = studentId;
+        userData.firstName = firstName;
+        userData.lastName = lastName;
+        userData.course = course;
+        userData.year = year;
+        userData.section = section;
+        userData.studentInfo = {
+          studentId: studentId,
           firstName: firstName,
           lastName: lastName,
-          studentId: studentId,
           course: course,
           year: year,
           section: section,
-          phone: phone,
-          address: address,
-          image: profilePicUrl,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          enrollmentDate: new Date().toISOString()
         };
-        
-        await addDoc(collection(db, 'students'), studentData);
-        console.log('Student data saved to students collection successfully');
       }
       
-      console.log('Registration completed successfully, redirecting...');
+      // Add role-specific data
+      if (role === 'Admin') {
+        userData.adminInfo = {
+          permissions: ['all'],
+          adminLevel: 'super',
+          assignedBy: 'system'
+        };
+      } else if (role === 'Teacher') {
+        userData.teacherInfo = {
+          subjects: [],
+          department: '',
+          hireDate: new Date().toISOString()
+        };
+      }
       
-      // Show success message
-      setSnackbar({ open: true, message: `Registration successful! Welcome ${fullName}!`, severity: 'success' });
+      console.log('📝 Saving user data to Firestore...');
       
-      // Wait for the success message to show, then redirect
+      // Save user data to Firestore with better error handling
+      try {
+        await setDoc(doc(db, 'users', user.uid), userData);
+        console.log('✅ User data saved to Firestore successfully');
+      } catch (firestoreError) {
+        console.error('❌ Firestore save error:', firestoreError);
+        // If Firestore fails, we should clean up the Auth user
+        await user.delete();
+        throw new Error('Failed to save user data. Please try again.');
+      }
+      
+      // Log activity with more details
+      try {
+        await addDoc(collection(db, 'activity_log'), {
+          message: `New user registered: ${fullName} (${role})`,
+          type: 'registration',
+          user: user.uid,
+          userEmail: user.email,
+          userRole: role,
+          timestamp: new Date().toISOString(),
+          details: {
+            registrationMethod: 'email',
+            hasProfilePic: !!imageURL,
+            profilePicSize: profilePic ? `${(profilePic.size / 1024).toFixed(2)} KB` : 'N/A',
+            studentInfo: role === 'Student' ? {
+              studentId,
+              course,
+              year,
+              section
+            } : null
+          }
+        });
+        console.log('✅ Activity logged successfully');
+      } catch (logError) {
+        console.warn('⚠️ Failed to log activity:', logError);
+        // Don't fail registration if logging fails
+      }
+      
+      // Create user preferences document
+      try {
+        await setDoc(doc(db, 'user_preferences', user.uid), {
+          uid: user.uid,
+          email: user.email,
+          theme: 'light',
+          language: 'en',
+          notifications: {
+            email: true,
+            push: true,
+            sms: false
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+        console.log('✅ User preferences created');
+      } catch (prefError) {
+        console.warn('⚠️ Failed to create user preferences:', prefError);
+        // Don't fail registration if preferences creation fails
+      }
+      
+      clearTimeout(timeoutId);
+      
+      // Show success message with user details
+      setSnackbar({ 
+        open: true, 
+        message: `Registration successful! Welcome ${fullName}. Redirecting to login page...`, 
+        severity: 'success' 
+      });
+      
+      console.log(`🎉 Registration completed successfully for ${role}: ${user.email}`);
+      
+      // Sign out the user after successful registration
+      try {
+        await auth.signOut();
+        console.log('✅ User signed out after registration');
+      } catch (signOutError) {
+        console.warn('⚠️ Error signing out after registration:', signOutError);
+      }
+      
+      // Redirect to login page with email pre-filled
       setTimeout(() => {
-        // Force redirect to root to trigger App.js routing
-        window.location.href = '/';
+        navigate('/login', { 
+          state: { 
+            email: email,
+            message: `Registration successful! Please login with your new account.`
+          },
+          replace: true 
+        });
       }, 2000);
       
     } catch (error) {
       clearTimeout(timeoutId);
-      console.error('Registration error:', error);
-      let msg = error.message;
-      if (msg.includes('email-already-in-use')) {
-        msg = 'Email already in use.';
-      } else if (msg.includes('weak-password')) {
-        msg = 'Password is too weak. Please choose a stronger password.';
-      } else if (msg.includes('invalid-email')) {
-        msg = 'Invalid email address.';
-      } else if (msg.includes('operation-not-allowed')) {
-        msg = 'Email/password accounts are not enabled. Please contact support.';
-      } else if (msg.includes('network-request-failed')) {
-        msg = 'Network error. Please check your internet connection.';
+      console.error('❌ Registration error:', error);
+      
+      let msg = 'Registration failed. Please try again.';
+      
+      if (error.code === 'auth/email-already-in-use') {
+        msg = 'An account with this email already exists. Please use a different email or try logging in.';
+      } else if (error.code === 'auth/weak-password') {
+        msg = 'Password is too weak. Please choose a stronger password (at least 6 characters).';
+      } else if (error.code === 'auth/invalid-email') {
+        msg = 'Please enter a valid email address.';
+      } else if (error.code === 'auth/network-request-failed') {
+        msg = 'Network error. Please check your internet connection and try again.';
+      } else if (error.message.includes('Firestore')) {
+        msg = 'Failed to save user data. Please try again.';
       }
+      
       setSnackbar({ open: true, message: msg, severity: 'error' });
     } finally {
-      clearTimeout(timeoutId);
-      console.log('Registration process ended, setting loading to false');
       setLoading(false);
     }
   };
 
-  // Manual reset function in case form gets stuck
-  const handleReset = () => {
-    setLoading(false);
-    setSnackbar({ open: true, message: 'Form reset. You can try submitting again.', severity: 'info' });
+  const handlePasswordChange = (e) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    setPasswordStrength(getPasswordStrength(newPassword));
+  };
+
+  const getPasswordStrengthColor = () => {
+    if (passwordStrength === 0) return '#e0e0e0';
+    if (passwordStrength === 1) return '#ff5722';
+    if (passwordStrength === 2) return '#ff9800';
+    if (passwordStrength === 3) return '#ffc107';
+    return '#4caf50';
+  };
+
+  const getPasswordStrengthText = () => {
+    if (passwordStrength === 0) return 'Very Weak';
+    if (passwordStrength === 1) return 'Weak';
+    if (passwordStrength === 2) return 'Fair';
+    if (passwordStrength === 3) return 'Good';
+    return 'Strong';
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(135deg, #43cea2 0%, #185a9d 100%)' }}>
+    <Box sx={{ 
+      minHeight: '100vh', 
+      width: '100vw', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+      padding: 2
+    }}>
       <Paper elevation={6} sx={{
         p: 6,
         minWidth: 400,
-        maxWidth: 540,
+        maxWidth: 800,
         width: '100%',
         borderRadius: 5,
         boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        bgcolor: 'rgba(255,255,255,0.97)'
+        bgcolor: 'rgba(255,255,255,0.95)',
+        maxHeight: '90vh',
+        overflowY: 'auto'
       }}>
-        <Avatar sx={{ bgcolor: 'success.main', width: 64, height: 64, mb: 2 }}>
+        <Avatar sx={{ bgcolor: 'primary.main', width: 64, height: 64, mb: 2 }}>
           <PersonAddAlt1 sx={{ fontSize: 36 }} />
         </Avatar>
-        <Typography variant="h4" fontWeight={700} color="success.main" gutterBottom sx={{ mb: 2 }}>Create Account</Typography>
+        <Typography variant="h4" fontWeight={700} color="primary" gutterBottom sx={{ mb: 2 }}>
+          Create Account
+        </Typography>
         <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 3 }}>Register to get started</Typography>
         <form onSubmit={handleRegister} style={{ width: '100%' }}>
           <Grid container spacing={2}>
@@ -277,92 +428,34 @@ export default function Register() {
             {role === 'Student' && (
               <>
                 <Grid item xs={12} sm={6}>
-                  <TextField 
-                    label="Student ID" 
-                    value={studentId} 
-                    onChange={e => setStudentId(e.target.value)} 
-                    fullWidth 
-                    required 
-                    size="large" 
-                    InputProps={{ style: { fontSize: 18, height: 56 } }} 
-                  />
+                  <TextField label="Student ID" value={studentId} onChange={e => setStudentId(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField 
-                    label="Course" 
-                    select 
-                    value={course} 
-                    onChange={e => setCourse(e.target.value)} 
-                    fullWidth 
-                    required 
-                    size="large" 
-                    InputProps={{ style: { fontSize: 18, height: 56 } }}
-                  >
+                  <TextField label="First Name" value={firstName} onChange={handleFirstNameChange} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField label="Last Name" value={lastName} onChange={handleLastNameChange} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField label="Course" select value={course} onChange={e => setCourse(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }}>
                     {courses.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
                   </TextField>
                 </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField 
-                    label="First Name" 
-                    value={firstName} 
-                    onChange={e => handleFirstNameChange(e.target.value)} 
-                    fullWidth 
-                    required 
-                    size="large" 
-                    InputProps={{ style: { fontSize: 18, height: 56 } }} 
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField 
-                    label="Last Name" 
-                    value={lastName} 
-                    onChange={e => handleLastNameChange(e.target.value)} 
-                    fullWidth 
-                    required 
-                    size="large" 
-                    InputProps={{ style: { fontSize: 18, height: 56 } }} 
-                  />
-                </Grid>
-                <Grid item xs={12} sm={2}>
-                  <TextField 
-                    label="Year" 
-                    select 
-                    value={year} 
-                    onChange={e => setYear(e.target.value)} 
-                    fullWidth 
-                    required 
-                    size="large" 
-                    InputProps={{ style: { fontSize: 18, height: 56 } }}
-                  >
+                <Grid item xs={12} sm={6}>
+                  <TextField label="Year Level" select value={year} onChange={e => setYear(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }}>
                     {years.map(y => <MenuItem key={y} value={y}>{y}</MenuItem>)}
                   </TextField>
                 </Grid>
-                <Grid item xs={12} sm={2}>
-                  <TextField 
-                    label="Section" 
-                    value={section} 
-                    onChange={e => setSection(e.target.value)} 
-                    fullWidth 
-                    required 
-                    size="large" 
-                    InputProps={{ style: { fontSize: 18, height: 56 } }} 
-                  />
+                <Grid item xs={12} sm={6}>
+                  <TextField label="Section" value={section} onChange={e => setSection(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
                 </Grid>
               </>
             )}
             
-            {/* Non-student fields - show when role is not Student */}
+            {/* Non-student full name field */}
             {role !== 'Student' && (
               <Grid item xs={12}>
-                <TextField 
-                  label="Full Name" 
-                  value={fullName} 
-                  onChange={e => setFullName(e.target.value)} 
-                  fullWidth 
-                  required 
-                  size="large" 
-                  InputProps={{ style: { fontSize: 18, height: 56 } }} 
-                />
+                <TextField label="Full Name" value={fullName} onChange={e => setFullName(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
               </Grid>
             )}
             
@@ -371,7 +464,7 @@ export default function Register() {
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={e => handlePasswordChange(e.target.value)}
+                onChange={handlePasswordChange}
                 fullWidth
                 required
                 size="large"
@@ -386,70 +479,106 @@ export default function Register() {
                   )
                 }}
               />
-              <Box sx={{ mt: 1 }}>
-                <LinearProgress variant="determinate" value={passwordStrength * 25} sx={{ height: 8, borderRadius: 2, bgcolor: '#eee', '& .MuiLinearProgress-bar': { bgcolor: passwordStrength >= 3 ? 'success.main' : 'warning.main' } }} />
-                <Typography variant="caption" color={passwordStrength >= 3 ? 'success.main' : 'warning.main'}>
-                  {passwordStrength === 0 ? 'Too short' : passwordStrength === 1 ? 'Weak' : passwordStrength === 2 ? 'Medium' : passwordStrength === 3 ? 'Strong' : 'Very Strong'}
-                </Typography>
-              </Box>
+              {password && (
+                <Box sx={{ mt: 1 }}>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={(passwordStrength / 4) * 100} 
+                    sx={{ 
+                      height: 4, 
+                      borderRadius: 2,
+                      bgcolor: '#e0e0e0',
+                      '& .MuiLinearProgress-bar': {
+                        bgcolor: getPasswordStrengthColor()
+                      }
+                    }} 
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    Password strength: {getPasswordStrengthText()}
+                  </Typography>
+                </Box>
+              )}
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
                 label="Confirm Password"
-                type={showPassword ? 'text' : 'password'}
+                type="password"
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 fullWidth
                 required
                 size="large"
                 InputProps={{ style: { fontSize: 18, height: 56 } }}
+                error={password !== confirmPassword && confirmPassword !== ''}
+                helperText={password !== confirmPassword && confirmPassword !== '' ? 'Passwords do not match' : ''}
               />
             </Grid>
+            
             <Grid item xs={12}>
-              <Button
-                variant="outlined"
-                component="label"
-                fullWidth
-                startIcon={<CloudUpload />}
-                sx={{ mb: 2, py: 1.5, fontSize: 16, borderRadius: 2 }}
-                disabled={uploading}
-              >
-                {uploading ? <CircularProgress size={20} /> : 'Upload Profile Picture'}
-                <input type="file" accept="image/*" hidden onChange={handleProfilePic} />
-              </Button>
-              {profilePicUrl && (
-                <Box sx={{ mb: 2, textAlign: 'center' }}>
-                  <Avatar src={profilePicUrl} sx={{ width: 64, height: 64, mx: 'auto' }} />
-                  <Typography variant="caption" color="text.secondary">Profile picture uploaded</Typography>
-                </Box>
-              )}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <input
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  id="profile-pic-upload"
+                  type="file"
+                  onChange={handleProfilePic}
+                />
+                <label htmlFor="profile-pic-upload">
+                  <Button
+                    variant="outlined"
+                    component="span"
+                    startIcon={<CloudUpload />}
+                    disabled={uploading}
+                  >
+                    {uploading ? 'Processing...' : 'Upload Profile Picture'}
+                  </Button>
+                </label>
+                {profilePicBase64 && (
+                  <Avatar src={profilePicBase64} sx={{ width: 40, height: 40 }} />
+                )}
+                {profilePic && (
+                  <Typography variant="caption" color="text.secondary">
+                    {profilePic.name} ({(profilePic.size / 1024).toFixed(2)} KB)
+                  </Typography>
+                )}
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                Supported formats: JPG, PNG, GIF. Max size: 10MB
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Images will be uploaded to secure cloud storage. Max size: 10MB
+              </Typography>
             </Grid>
+            
             <Grid item xs={12}>
               <FormControlLabel
-                control={<Checkbox checked={terms} onChange={e => setTerms(e.target.checked)} color="success" />}
-                label={<span>I agree to the <Link href="#" underline="hover">Terms & Conditions</Link></span>}
-                sx={{ mb: 2 }}
+                control={
+                  <Checkbox
+                    checked={terms}
+                    onChange={e => setTerms(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="I agree to the terms and conditions"
               />
             </Grid>
+            
             <Grid item xs={12}>
-              <Button type="submit" variant="contained" color="success" fullWidth disabled={loading} sx={{ mb: 2, py: 1.5, fontSize: 18, borderRadius: 2, boxShadow: 2 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                fullWidth
+                disabled={loading || !terms}
+                sx={{ py: 1.5, fontSize: 18, borderRadius: 2, boxShadow: 2 }}
+              >
                 {loading ? <CircularProgress size={24} color="inherit" /> : 'Register'}
               </Button>
-              {loading && (
-                <Button 
-                  variant="outlined" 
-                  color="secondary" 
-                  fullWidth 
-                  onClick={handleReset}
-                  sx={{ mb: 2, py: 1.5, fontSize: 16, borderRadius: 2 }}
-                >
-                  Reset Form (if stuck)
-                </Button>
-              )}
             </Grid>
           </Grid>
         </form>
-        <Box sx={{ textAlign: 'center', mt: 2 }}>
+        
+        <Box sx={{ textAlign: 'center', mt: 3 }}>
           <Typography variant="body2" color="text.secondary">
             Already have an account?{' '}
             <Link component={RouterLink} to="/login" underline="hover" color="success.main" fontWeight={600}>
@@ -458,8 +587,19 @@ export default function Register() {
           </Typography>
         </Box>
       </Paper>
-      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+      
+      {/* Snackbar for notifications */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity} 
+          sx={{ width: '100%' }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

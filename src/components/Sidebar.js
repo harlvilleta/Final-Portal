@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { List, ListItem, ListItemIcon, ListItemText, Drawer, Divider, Box, Typography, Avatar, Collapse, ListItemButton, Chip } from "@mui/material";
-import { Dashboard, People, Settings, Event, ExitToApp, Campaign, Report, ListAlt, History, Logout, Search, ExpandLess, ExpandMore, Assignment, MeetingRoom, Timeline, Assessment, Description, PersonAdd, School } from "@mui/icons-material";
+import { Dashboard, People, Settings, Event, ExitToApp, Campaign, Report, ListAlt, History, Logout, Search, ExpandLess, ExpandMore, Assignment, MeetingRoom, Timeline, Assessment, Description, PersonAdd, School, Receipt } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
@@ -30,6 +30,7 @@ const menu = [
       { text: "Status", icon: <Assessment sx={{ color: '#8e24aa' }} />, path: "/violation-record/status" }
     ]
   },
+  { text: "Receipt Review", icon: <Receipt sx={{ color: '#ff9800' }} />, path: "/receipt-review" },
   { text: "Activity", icon: <Event sx={{ color: '#fbc02d' }} />, path: "/activity" },
   { 
     text: "Announcements", 
@@ -53,7 +54,7 @@ export default function Sidebar() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigate('/login');
+      navigate('/');
     } catch (error) {
       console.error('Error signing out:', error);
     }

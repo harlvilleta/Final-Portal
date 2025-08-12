@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Button } from "@mui/material";
+import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Button, CircularProgress, Alert } from "@mui/material";
 import { AccountCircle, Logout } from "@mui/icons-material";
 import Sidebar from "./components/Sidebar";
 import UserSidebar from "./components/UserSidebar";
+import TeacherSidebar from "./components/TeacherSidebar";
 import Overview from "./pages/Overview";
 import Students from "./pages/Students";
 import Activity from "./pages/Activity";
@@ -19,6 +20,7 @@ import RecycleBin from "./pages/RecycleBin";
 import Login from './pages/Login';
 import Register from './pages/Register';
 import UserDashboard from './pages/UserDashboard';
+import TeacherDashboard from './pages/TeacherDashboard';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { getDoc, doc, setDoc } from 'firebase/firestore';
@@ -27,6 +29,11 @@ import UserViolations from "./pages/UserViolations";
 import UserAnnouncements from "./pages/UserAnnouncements";
 import UserLostFound from "./pages/UserLostFound";
 import UserNotifications from "./pages/UserNotifications";
+import TeacherHeader from "./components/TeacherHeader";
+import TestPage from "./pages/TestPage";
+import ReceiptSubmission from "./components/ReceiptSubmission";
+import ReceiptReview from "./components/ReceiptReview";
+import ReceiptHistory from "./components/ReceiptHistory";
 
 // Header component for admin dashboard
 function AdminHeader({ currentUser, userProfile }) {
@@ -72,7 +79,7 @@ function AdminHeader({ currentUser, userProfile }) {
       <Toolbar sx={{ justifyContent: 'space-between' }}>
         <Box sx={{ flex: 0.5 }}></Box>
         <Typography variant="h4" component="div" sx={{ fontWeight: 700, color: '#1976d2', flex: 1, textAlign: 'center', ml: -2 }}>
-          School Management System
+          Student Affairs Management System
         </Typography>
         <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -183,7 +190,7 @@ function UserHeader({ currentUser, userProfile }) {
       <Toolbar sx={{ justifyContent: 'space-between' }}>
         <Box sx={{ flex: 0.5 }}></Box>
         <Typography variant="h4" component="div" sx={{ fontWeight: 700, color: '#1976d2', flex: 1, textAlign: 'center', ml: -2 }}>
-          School Management System
+          Student Affairs Management System
         </Typography>
         <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -256,6 +263,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
     console.log('App component mounted, starting auth check...');
@@ -268,7 +276,7 @@ function App() {
         console.log('No role set but user exists, defaulting to Student');
         setUserRole('Student'); // Default fallback
       }
-    }, 5000); // Increased to 5 second timeout
+    }, 8000); // Increased to 8 second timeout
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log('Auth state changed:', user ? `User logged in: ${user.email}` : 'User logged out');
@@ -278,13 +286,14 @@ function App() {
         setUser(user);
         setCurrentUser(user);
         setLoading(true);
+        setAuthError(null);
         
         try {
           console.log('Fetching user document from Firestore...');
           // Fetch user profile and role with timeout
           const userDoc = await Promise.race([
             getDoc(doc(db, 'users', user.uid)),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
           ]);
           
           if (userDoc.exists()) {
@@ -301,7 +310,12 @@ function App() {
               fullName: user.displayName || user.email,
               role: 'Student',
               createdAt: new Date().toISOString(),
-              uid: user.uid
+              updatedAt: new Date().toISOString(),
+              lastLogin: new Date().toISOString(),
+              uid: user.uid,
+              isActive: true,
+              registrationMethod: 'auth',
+              profilePic: user.photoURL || ''
             };
             
             try {
@@ -318,6 +332,7 @@ function App() {
           console.error('Error fetching user data:', error);
           // On error, default to Student to prevent login loops
           setUserRole('Student');
+          setAuthError('Failed to load user profile. Using default settings.');
           console.log('Error occurred, defaulting to Student role');
         }
         
@@ -331,6 +346,7 @@ function App() {
         setCurrentUser(null);
         setUserProfile(null);
         setUserRole(null);
+        setAuthError(null);
         clearTimeout(loadingTimeout);
         setLoading(false);
       }
@@ -348,8 +364,13 @@ function App() {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
-        <div style={{ fontSize: '18px', marginBottom: '10px' }}>Loading...</div>
-        <div style={{ fontSize: '14px', color: '#666' }}>Please wait while we set up your dashboard</div>
+        <CircularProgress size={60} sx={{ mb: 2 }} />
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          Loading...
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Please wait while we set up your dashboard
+        </Typography>
         <Button 
           variant="outlined" 
           onClick={() => {
@@ -368,14 +389,15 @@ function App() {
     );
   }
 
-  // If user is not authenticated, show login
+  // If user is not authenticated, show login/register forms
   if (!user) {
-    console.log('No user detected, showing login page');
+    console.log('No user detected, showing login/register forms');
     return (
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/test" element={<TestPage />} />
           <Route path="/*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
@@ -389,8 +411,18 @@ function App() {
   if (!userRole) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
-        <div style={{ fontSize: '18px', marginBottom: '10px' }}>Setting up your dashboard...</div>
-        <div style={{ fontSize: '14px', color: '#666' }}>Please wait a moment</div>
+        <CircularProgress size={60} sx={{ mb: 2 }} />
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          Setting up your dashboard...
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Please wait a moment
+        </Typography>
+        {authError && (
+          <Alert severity="warning" sx={{ mb: 2, maxWidth: 400 }}>
+            {authError}
+          </Alert>
+        )}
         <Button 
           variant="contained" 
           onClick={() => {
@@ -414,31 +446,58 @@ function App() {
         {/* Admin/Teacher Routes - Only accessible to Admin/Teacher roles */}
         <Route path="/*" element={
           (userRole === 'Admin' || userRole === 'Teacher') ? (
-            <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "#f5f6fa" }}>
-              <AdminHeader currentUser={currentUser} userProfile={userProfile} />
-              <Box sx={{ display: "flex", flex: 1 }}>
-                <Sidebar />
-                <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
-                  <Routes>
-                    <Route path="/" element={<Navigate to="/overview" />} />
-                    <Route path="/overview" element={<Overview />} />
-                    <Route path="/students/*" element={<Students />} />
-                    <Route path="/activity/*" element={<Activity />} />
-                    <Route path="/history" element={<History />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/violation-record" element={<ViolationRecord />} />
-                    <Route path="/violation-record/create-meeting" element={<ViolationCreateMeeting />} />
-                    <Route path="/violation-record/history" element={<ViolationHistory />} />
-                    <Route path="/violation-record/status" element={<ViolationStatus />} />
-                    <Route path="/options" element={<Options />} />
-                    <Route path="/announcements" element={<Announcements />} />
-                    <Route path="/announcements/report" element={<AnnouncementReport />} />
-                    <Route path="/recycle-bin" element={<RecycleBin />} />
-                    <Route path="/user/*" element={<Navigate to="/overview" />} />
-                  </Routes>
+            userRole === 'Admin' ? (
+              <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "#f5f6fa" }}>
+                <AdminHeader currentUser={currentUser} userProfile={userProfile} />
+                <Box sx={{ display: "flex", flex: 1 }}>
+                  <Sidebar />
+                  <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
+                    <Routes>
+                      <Route path="/" element={<Navigate to="/overview" />} />
+                      <Route path="/overview" element={<Overview />} />
+                      <Route path="/students/*" element={<Students />} />
+                      <Route path="/activity/*" element={<Activity />} />
+                      <Route path="/history" element={<History />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/violation-record" element={<ViolationRecord />} />
+                      <Route path="/violation-record/create-meeting" element={<ViolationCreateMeeting />} />
+                      <Route path="/violation-record/history" element={<ViolationHistory />} />
+                      <Route path="/violation-record/status" element={<ViolationStatus />} />
+                      <Route path="/options" element={<Options />} />
+                      <Route path="/announcements" element={<Announcements />} />
+                      <Route path="/announcements/report" element={<AnnouncementReport />} />
+                      <Route path="/receipt-review" element={<ReceiptReview />} />
+                      <Route path="/recycle-bin" element={<RecycleBin />} />
+                      <Route path="/user/*" element={<Navigate to="/overview" />} />
+                    </Routes>
+                  </Box>
                 </Box>
               </Box>
-            </Box>
+            ) : (
+              // Teacher Dashboard
+              <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "#f5f6fa" }}>
+                <TeacherHeader currentUser={currentUser} userProfile={userProfile} />
+                <Box sx={{ display: "flex", flex: 1 }}>
+                  <TeacherSidebar />
+                  <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
+                    <Routes>
+                      <Route path="/" element={<Navigate to="/teacher-dashboard" />} />
+                      <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
+                      <Route path="/teacher-students" element={<Students />} />
+                      <Route path="/teacher-violations" element={<ViolationRecord />} />
+                      <Route path="/teacher-announcements" element={<Announcements />} />
+                      <Route path="/teacher-assessments" element={<div>Teacher Assessments</div>} />
+                      <Route path="/teacher-schedule" element={<div>Teacher Schedule</div>} />
+                      <Route path="/teacher-reports" element={<div>Teacher Reports</div>} />
+                      <Route path="/teacher-grades" element={<div>Teacher Grades</div>} />
+                      <Route path="/teacher-notifications" element={<UserNotifications currentUser={currentUser} />} />
+                      <Route path="/teacher-profile" element={<Profile />} />
+                      <Route path="/*" element={<Navigate to="/teacher-dashboard" />} />
+                    </Routes>
+                  </Box>
+                </Box>
+              </Box>
+            )
           ) : userRole === 'Student' ? (
             <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "#f5f6fa" }}>
               <UserHeader currentUser={currentUser} userProfile={userProfile} />
@@ -447,12 +506,15 @@ function App() {
                 <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
                   <Routes>
                     <Route path="/" element={<UserDashboard />} />
+                    <Route path="/user-dashboard" element={<UserDashboard />} />
                     <Route path="/violations" element={<UserViolations currentUser={currentUser} />} />
                     <Route path="/announcements" element={<UserAnnouncements />} />
                     <Route path="/lost-found" element={<UserLostFound currentUser={currentUser} />} />
                     <Route path="/notifications" element={<UserNotifications currentUser={currentUser} />} />
+                    <Route path="/receipt-submission" element={<ReceiptSubmission />} />
+                    <Route path="/receipt-history" element={<ReceiptHistory />} />
                     <Route path="/profile" element={<Profile />} />
-                    <Route path="/*" element={<Navigate to="/" />} />
+                    <Route path="/*" element={<Navigate to="/user-dashboard" />} />
                   </Routes>
                 </Box>
               </Box>

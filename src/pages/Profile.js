@@ -10,6 +10,8 @@ import {
 import { collection, addDoc, doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { updatePassword, updateProfile } from "firebase/auth";
 import { db, auth } from "../firebase";
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../firebase';
 
 const courses = ["BSIT", "BSBA", "BSED", "BEED", "BSN"];
 const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
@@ -20,6 +22,7 @@ export default function Profile() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -55,6 +58,8 @@ export default function Profile() {
     newPassword: "",
     confirmPassword: ""
   });
+
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
@@ -98,6 +103,14 @@ export default function Profile() {
     setPasswordForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Function to upload image to Firebase Storage
+  const uploadImageToStorage = async (file, userId) => {
+    const storageRef = ref(storage, `profile-pictures/${userId}/${Date.now()}_${file.name}`);
+    const snapshot = await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return downloadURL;
+  };
+
   const handleImage = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -105,8 +118,8 @@ export default function Profile() {
         setSnackbar({ open: true, message: "Please select a valid image file", severity: "error" });
         return;
       }
-      if (file.size > 500 * 1024) { // 500KB limit
-        setSnackbar({ open: true, message: "Image file size must be less than 500KB", severity: "error" });
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        setSnackbar({ open: true, message: "Image file size must be less than 10MB", severity: "error" });
         return;
       }
       const reader = new FileReader();
@@ -127,20 +140,38 @@ export default function Profile() {
       
       // Update Firebase Auth profile
       await updateProfile(currentUser, {
-        displayName: fullName,
-        photoURL: profile.image
+        displayName: fullName
       });
+
+      // Upload image to Firebase Storage if it's a new file (not a URL)
+      let imageURL = profile.image;
+      if (profile.image && profile.image.startsWith('data:')) {
+        // Convert base64 to file and upload
+        const response = await fetch(profile.image);
+        const blob = await response.blob();
+        const file = new File([blob], 'profile-picture.jpg', { type: 'image/jpeg' });
+        
+        try {
+          imageURL = await uploadImageToStorage(file, currentUser.uid);
+          console.log('✅ Image uploaded to Storage:', imageURL);
+        } catch (uploadError) {
+          console.error('❌ Image upload error:', uploadError);
+          // Keep the base64 as fallback
+        }
+      }
 
       // Update Firestore user document
       await setDoc(doc(db, 'users', currentUser.uid), {
         email: profile.email,
         fullName: fullName,
-        profilePic: profile.image,
+        profilePic: imageURL,
         role: 'Student',
         updatedAt: new Date().toISOString()
       }, { merge: true });
 
       setSnackbar({ open: true, message: "Profile updated successfully!", severity: "success" });
+      setSaveSuccess(true); // Set success state
+      setTimeout(() => setSaveSuccess(false), 3000); // Reset success state after 3 seconds
     } catch (error) {
       console.error('Error updating profile:', error);
       setSnackbar({ open: true, message: "Error updating profile: " + error.message, severity: "error" });
@@ -165,6 +196,8 @@ export default function Profile() {
       await updatePassword(currentUser, passwordForm.newPassword);
       setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
       setSnackbar({ open: true, message: "Password changed successfully!", severity: "success" });
+      setPasswordSuccess(true);
+      setTimeout(() => setPasswordSuccess(false), 3000);
     } catch (error) {
       console.error('Error changing password:', error);
       setSnackbar({ open: true, message: "Error changing password: " + error.message, severity: "error" });
@@ -410,10 +443,16 @@ export default function Profile() {
                   <Button 
                     variant="contained" 
                     onClick={handleSaveProfile}
-                    disabled={saving}
+                    disabled={saving || saveSuccess}
                     startIcon={<Save />}
+                    color={saveSuccess ? "success" : "primary"}
+                    sx={{
+                      transition: 'all 0.3s ease',
+                      transform: saveSuccess ? 'scale(1.05)' : 'scale(1)',
+                      boxShadow: saveSuccess ? '0 4px 12px rgba(76, 175, 80, 0.4)' : '0 2px 8px rgba(25, 118, 210, 0.3)'
+                    }}
                   >
-                    {saving ? 'Saving...' : 'Save Changes'}
+                    {saving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save Changes'}
                   </Button>
                 </Box>
               </CardContent>
@@ -477,10 +516,16 @@ export default function Profile() {
               <Button 
                 variant="contained" 
                 onClick={handleChangePassword}
-                disabled={saving || !passwordForm.newPassword || !passwordForm.confirmPassword}
+                disabled={saving || !passwordForm.newPassword || !passwordForm.confirmPassword || passwordSuccess}
                 startIcon={<Security />}
+                color={passwordSuccess ? "success" : "primary"}
+                sx={{
+                  transition: 'all 0.3s ease',
+                  transform: passwordSuccess ? 'scale(1.05)' : 'scale(1)',
+                  boxShadow: passwordSuccess ? '0 4px 12px rgba(76, 175, 80, 0.4)' : '0 2px 8px rgba(25, 118, 210, 0.3)'
+                }}
               >
-                {saving ? 'Changing Password...' : 'Change Password'}
+                {saving ? 'Changing Password...' : passwordSuccess ? 'Password Changed!' : 'Change Password'}
               </Button>
             </Box>
           </CardContent>

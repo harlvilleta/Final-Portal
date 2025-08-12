@@ -36,6 +36,10 @@ export default function Options() {
   const [emailChange, setEmailChange] = useState('');
   const [tab, setTab] = useState(0);
   const [emailLoading, setEmailLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [emailChangeLoading, setEmailChangeLoading] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [emailChangeSuccess, setEmailChangeSuccess] = useState(false);
 
   const handleSendEmail = async (e) => {
     e.preventDefault();
@@ -63,23 +67,35 @@ export default function Options() {
   
   const handleChangePassword = async (e) => {
     e.preventDefault();
+    setPasswordLoading(true);
+    setPasswordSuccess(false);
     try {
       await updatePassword(user, passwordForm.new);
       setSnackbar({ open: true, message: 'Password changed!', severity: 'success' });
-      setOpenAccount(false);
+      setPasswordForm({ current: '', new: '' });
+      setPasswordSuccess(true);
+      setTimeout(() => setPasswordSuccess(false), 3000);
     } catch (err) {
       setSnackbar({ open: true, message: err.message, severity: 'error' });
+    } finally {
+      setPasswordLoading(false);
     }
   };
   
   const handleChangeEmail = async (e) => {
     e.preventDefault();
+    setEmailChangeLoading(true);
+    setEmailChangeSuccess(false);
     try {
       await updateEmail(user, emailChange);
       setSnackbar({ open: true, message: 'Email updated!', severity: 'success' });
-      setOpenAccount(false);
+      setEmailChange('');
+      setEmailChangeSuccess(true);
+      setTimeout(() => setEmailChangeSuccess(false), 3000);
     } catch (err) {
       setSnackbar({ open: true, message: err.message, severity: 'error' });
+    } finally {
+      setEmailChangeLoading(false);
     }
   };
   
@@ -111,7 +127,19 @@ export default function Options() {
             <Typography variant="h6">Change Password</Typography>
             <form onSubmit={handleChangePassword}>
               <TextField label="New Password" type="password" value={passwordForm.new} onChange={e => setPasswordForm(f => ({ ...f, new: e.target.value }))} fullWidth sx={{ mb: 2, maxWidth: 400 }} />
-              <Button type="submit" variant="contained">Change Password</Button>
+              <Button 
+                type="submit" 
+                variant="contained" 
+                disabled={passwordLoading || passwordSuccess}
+                color={passwordSuccess ? "success" : "primary"}
+                sx={{
+                  transition: 'all 0.3s ease',
+                  transform: passwordSuccess ? 'scale(1.05)' : 'scale(1)',
+                  boxShadow: passwordSuccess ? '0 4px 12px rgba(76, 175, 80, 0.4)' : '0 2px 8px rgba(25, 118, 210, 0.3)'
+                }}
+              >
+                {passwordLoading ? 'Changing...' : passwordSuccess ? 'Password Changed!' : 'Change Password'}
+              </Button>
             </form>
           </Box>
           {/* Change Email Section */}
@@ -119,7 +147,19 @@ export default function Options() {
             <Typography variant="h6">Change Email</Typography>
             <form onSubmit={handleChangeEmail}>
               <TextField label="New Email" type="email" value={emailChange} onChange={e => setEmailChange(e.target.value)} fullWidth sx={{ mb: 2, maxWidth: 400 }} />
-              <Button type="submit" variant="contained">Change Email</Button>
+              <Button 
+                type="submit" 
+                variant="contained" 
+                disabled={emailChangeLoading || emailChangeSuccess}
+                color={emailChangeSuccess ? "success" : "primary"}
+                sx={{
+                  transition: 'all 0.3s ease',
+                  transform: emailChangeSuccess ? 'scale(1.05)' : 'scale(1)',
+                  boxShadow: emailChangeSuccess ? '0 4px 12px rgba(76, 175, 80, 0.4)' : '0 2px 8px rgba(25, 118, 210, 0.3)'
+                }}
+              >
+                {emailChangeLoading ? 'Updating...' : emailChangeSuccess ? 'Email Updated!' : 'Change Email'}
+              </Button>
             </form>
           </Box>
           {/* Change Profile Section */}
