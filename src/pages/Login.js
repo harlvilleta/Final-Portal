@@ -20,14 +20,13 @@ import {
   Divider
 } from '@mui/material';
 import { Visibility, VisibilityOff, LockOutlined, Google as GoogleIcon, Email, Security } from '@mui/icons-material';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import Link from '@mui/material/Link';
 import { getDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
-import { createSampleUsers } from '../utils/createUsers';
 
-export default function Login() {
+export default function Login({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -41,11 +40,37 @@ export default function Login() {
   const [lockout, setLockout] = useState(false);
   const [lockoutTime, setLockoutTime] = useState(0);
   const [formErrors, setFormErrors] = useState({ email: '', password: '' });
-  const [creatingUsers, setCreatingUsers] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+    });
+    return unsubscribe;
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setSnackbar({ 
+        open: true, 
+        message: 'Successfully logged out', 
+        severity: 'success' 
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      setSnackbar({ 
+        open: true, 
+        message: 'Error logging out', 
+        severity: 'error' 
+      });
+    }
+  };
 
   // Account lockout timer with countdown
   useEffect(() => {
@@ -175,6 +200,11 @@ export default function Login() {
         severity: 'success' 
       });
       
+      // Call the onLoginSuccess callback if provided
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      }
+      
       // Clear form and reset state
       setEmail('');
       setPassword('');
@@ -298,6 +328,11 @@ export default function Login() {
         severity: 'success' 
       });
       
+      // Call the onLoginSuccess callback if provided
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      }
+      
       // Clear form and reset state
       setEmail('');
       setPassword('');
@@ -382,28 +417,6 @@ export default function Login() {
     }
   };
 
-  const handleCreateSampleUsers = async () => {
-    console.log('🚀 Create Sample Users button clicked!');
-    setCreatingUsers(true);
-    try {
-      await createSampleUsers();
-      setSnackbar({ 
-        open: true, 
-        message: 'Sample users created successfully! You can now test the login with the credentials below.', 
-        severity: 'success' 
-      });
-    } catch (error) {
-      console.error('Error creating sample users:', error);
-      setSnackbar({ 
-        open: true, 
-        message: 'Error creating sample users. Check console for details.', 
-        severity: 'error' 
-      });
-    } finally {
-      setCreatingUsers(false);
-    }
-  };
-
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -462,6 +475,52 @@ export default function Login() {
           </Box>
         )}
         
+        {currentUser && (
+          <Box sx={{ width: '100%', mb: 2, textAlign: 'right' }}>
+            <Button 
+              variant="outlined" 
+              color="primary" 
+              onClick={handleLogout} 
+              startIcon={<LockOutlined />}
+              sx={{ py: 1, fontSize: 16 }}
+            >
+              Log Out
+            </Button>
+          </Box>
+        )}
+
+        {currentUser && (
+          <Box sx={{ 
+            width: '100%', 
+            mb: 3, 
+            p: 2, 
+            bgcolor: 'info.light', 
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'info.main'
+          }}>
+            <Typography variant="body2" color="info.dark" fontWeight={600}>
+              You are currently logged in as: {currentUser.email}
+            </Typography>
+            <Typography variant="body2" color="info.dark" sx={{ mt: 1 }}>
+              Click "Log Out" above to sign in with a different account, or continue to your dashboard.
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              onClick={() => {
+                if (onLoginSuccess) {
+                  onLoginSuccess();
+                }
+              }}
+              sx={{ mt: 2 }}
+            >
+              Continue to Dashboard
+            </Button>
+          </Box>
+        )}
+
         <form onSubmit={handleLogin} style={{ width: '100%' }}>
           <TextField 
             label="Email" 
@@ -589,56 +648,6 @@ export default function Login() {
               Register
             </Link>
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Having trouble logging in?{' '}
-            <Link 
-              component={RouterLink} 
-              to="/test" 
-              underline="hover" 
-              color="secondary.main" 
-              fontWeight={600}
-            >
-              Run Diagnostics
-            </Link>
-          </Typography>
-        </Box>
-        
-        {/* Testing Mode Section */}
-        <Box sx={{ 
-          textAlign: 'center', 
-          mt: 3, 
-          p: 3, 
-          bgcolor: '#e3f2fd', 
-          borderRadius: 2, 
-          border: '2px solid #1976d2',
-          width: '100%'
-        }}>
-          <Typography variant="h6" color="primary" sx={{ mb: 2, fontWeight: 600 }}>
-            🧪 Testing Mode
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Create sample users for testing:
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            size="medium"
-            onClick={handleCreateSampleUsers}
-            disabled={creatingUsers}
-            sx={{ mb: 2, fontWeight: 600 }}
-          >
-            {creatingUsers ? 'Creating Users...' : '🚀 Create Sample Users'}
-          </Button>
-          <Box sx={{ bgcolor: '#fff', p: 2, borderRadius: 1, border: '1px solid #ccc' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, mb: 1 }}>
-              Test Credentials:
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-              👑 Admin: admin@school.com / admin123<br/>
-              👨‍🏫 Teacher: teacher@school.com / teacher123<br/>
-              👨‍🎓 Student: student@school.com / student123
-            </Typography>
-          </Box>
         </Box>
       </Paper>
       

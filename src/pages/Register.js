@@ -85,7 +85,6 @@ export default function Register() {
       
       setProfilePic(file);
       setUploading(true);
-      setError('');
       
       try {
         // Convert to base64 for preview only

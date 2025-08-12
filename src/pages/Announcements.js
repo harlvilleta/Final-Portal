@@ -11,6 +11,7 @@ import PushPinIcon from '@mui/icons-material/PushPin';
 import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import { Tooltip } from "@mui/material";
+import { auth } from "../firebase"; // Added auth import
 
 const categories = ["General", "Event", "Urgent", "Reminder", "Other"];
 const audiences = ["All", "Students", "Faculty", "Staff"];
@@ -73,13 +74,25 @@ export default function Announcements() {
     }
     setIsSubmitting(true);
     try {
+      // Get current user information
+      const currentUser = auth.currentUser;
+      const userEmail = currentUser?.email || 'unknown@school.com';
+      const userName = currentUser?.displayName || userEmail.split('@')[0];
+      
       await addDoc(collection(db, "announcements"), {
         ...form,
         date: form.date || new Date().toISOString(),
         createdAt: new Date().toISOString(),
+        postedBy: userName,
+        postedByEmail: userEmail,
+        postedByName: userName,
+        status: 'Pending', // Default status for approval workflow
+        reviewedBy: null,
+        reviewedAt: null,
+        reviewReason: null
       });
       await logActivity({ message: `Announcement posted: ${form.title}`, type: 'add_announcement' });
-      setSnackbar({ open: true, message: "Announcement posted!", severity: "success" });
+      setSnackbar({ open: true, message: "Announcement submitted for approval!", severity: "success" });
       setForm({ title: "", message: "", date: "", category: "General", audience: "All", priority: "Normal", scheduleDate: "", expiryDate: "" });
       setFormModalOpen(false);
       fetchAnnouncements();

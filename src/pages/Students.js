@@ -3,7 +3,7 @@ import { Routes, Route, Link } from "react-router-dom";
 import { 
   Box, Grid, Card, CardActionArea, CardContent, Typography, TextField, Button, Paper, MenuItem, Avatar, Snackbar, Alert, 
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Stack, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText,
-  IconButton, Tooltip
+  IconButton, Tooltip, Chip
 } from "@mui/material";
 import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete } from "@mui/icons-material";
 import { db, storage, logActivity } from "../firebase";
@@ -550,19 +550,82 @@ function LostFound() {
   // Add students state
   const [students, setStudents] = useState([]);
   useEffect(() => {
-    // Fetch students for dropdowns
     const fetchStudents = async () => {
-      const querySnapshot = await getDocs(collection(db, "students"));
-      const studentsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
-      // Sort students by creation date (newest first)
-      const sortedStudents = studentsData.sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-        return dateB - dateA; // Descending order (newest first)
-      });
-      
-      setStudents(sortedStudents);
+      try {
+        console.log("Fetching students from Firebase...");
+        
+        // Fetch from 'students' collection (manually added students)
+        const studentsQuerySnapshot = await getDocs(collection(db, "students"));
+        const studentsData = studentsQuerySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Fetch from 'users' collection (registered students)
+        const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
+        const registeredStudentsData = usersQuerySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            firstName: data.firstName || data.fullName?.split(' ')[0] || '',
+            lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
+            email: data.email || '',
+            course: data.course || '',
+            year: data.year || '',
+            section: data.section || '',
+            studentId: data.studentId || '',
+            createdAt: data.createdAt || '',
+            updatedAt: data.updatedAt || '',
+            profilePic: data.profilePic || '',
+            isRegisteredUser: true // Flag to identify registered users
+          };
+        });
+        
+        // Combine both collections
+        const allStudents = [...studentsData, ...registeredStudentsData];
+        
+        // Sort students by creation date (newest first)
+        const sortedStudents = allStudents.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          return dateB - dateA; // Descending order (newest first)
+        });
+        
+        console.log("Students fetched successfully:", sortedStudents.length);
+        console.log("Manual students:", studentsData.length);
+        console.log("Registered students:", registeredStudentsData.length);
+        setStudents(sortedStudents);
+      } catch (error) {
+        console.error("Error fetching students:", error);
+        
+        // Try to load from localStorage as fallback
+        try {
+          const offlineStudents = JSON.parse(localStorage.getItem('offlineStudents') || '[]');
+          if (offlineStudents.length > 0) {
+            console.log("Loading students from offline storage:", offlineStudents.length);
+            setStudents(offlineStudents);
+            setSnackbar({ 
+              open: true, 
+              message: `Loaded ${offlineStudents.length} students from offline storage. Some features may be limited.`, 
+              severity: "warning" 
+            });
+          } else {
+            setStudents([]);
+            setSnackbar({ 
+              open: true, 
+              message: "Error loading students: " + error.message, 
+              severity: "error" 
+            });
+          }
+        } catch (offlineError) {
+          console.error("Error loading offline students:", offlineError);
+          setStudents([]);
+          setSnackbar({ 
+            open: true, 
+            message: "Error loading students: " + error.message, 
+            severity: "error" 
+          });
+        }
+      } finally {
+        setLoading(false);
+      }
     };
     fetchStudents();
     const unsubLost = onSnapshot(query(collection(db, 'lost_items'), orderBy('createdAt', 'desc')), snap => {
@@ -932,17 +995,44 @@ function StudentList({
     const fetchStudents = async () => {
       try {
         console.log("Fetching students from Firebase...");
-      const querySnapshot = await getDocs(collection(db, "students"));
-        const studentsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Fetch from 'students' collection (manually added students)
+        const studentsQuerySnapshot = await getDocs(collection(db, "students"));
+        const studentsData = studentsQuerySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Fetch from 'users' collection (registered students)
+        const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
+        const registeredStudentsData = usersQuerySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            firstName: data.firstName || data.fullName?.split(' ')[0] || '',
+            lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
+            email: data.email || '',
+            course: data.course || '',
+            year: data.year || '',
+            section: data.section || '',
+            studentId: data.studentId || '',
+            createdAt: data.createdAt || '',
+            updatedAt: data.updatedAt || '',
+            profilePic: data.profilePic || '',
+            isRegisteredUser: true // Flag to identify registered users
+          };
+        });
+        
+        // Combine both collections
+        const allStudents = [...studentsData, ...registeredStudentsData];
         
         // Sort students by creation date (newest first)
-        const sortedStudents = studentsData.sort((a, b) => {
+        const sortedStudents = allStudents.sort((a, b) => {
           const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
           const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
           return dateB - dateA; // Descending order (newest first)
         });
         
         console.log("Students fetched successfully:", sortedStudents.length);
+        console.log("Manual students:", studentsData.length);
+        console.log("Registered students:", registeredStudentsData.length);
         setStudents(sortedStudents);
       } catch (error) {
         console.error("Error fetching students:", error);
@@ -976,7 +1066,7 @@ function StudentList({
           });
         }
       } finally {
-      setLoading(false);
+        setLoading(false);
       }
     };
     fetchStudents();
@@ -1000,15 +1090,40 @@ function StudentList({
   const handleRefresh = async () => {
     setLoading(true);
     try {
-      console.log("Manually refreshing students...");
-      const querySnapshot = await getDocs(collection(db, "students"));
-      const studentsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      console.log("Refreshing students from Firebase...");
+      
+      // Fetch from 'students' collection (manually added students)
+      const studentsQuerySnapshot = await getDocs(collection(db, "students"));
+      const studentsData = studentsQuerySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // Fetch from 'users' collection (registered students)
+      const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
+      const registeredStudentsData = usersQuerySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          firstName: data.firstName || data.fullName?.split(' ')[0] || '',
+          lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
+          email: data.email || '',
+          course: data.course || '',
+          year: data.year || '',
+          section: data.section || '',
+          studentId: data.studentId || '',
+          createdAt: data.createdAt || '',
+          updatedAt: data.updatedAt || '',
+          profilePic: data.profilePic || '',
+          isRegisteredUser: true
+        };
+      });
+      
+      // Combine both collections
+      const allStudents = [...studentsData, ...registeredStudentsData];
       
       // Sort students by creation date (newest first)
-      const sortedStudents = studentsData.sort((a, b) => {
+      const sortedStudents = allStudents.sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
         const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-        return dateB - dateA; // Descending order (newest first)
+        return dateB - dateA;
       });
       
       setStudents(sortedStudents);
@@ -1040,20 +1155,55 @@ function StudentList({
     if (window.confirm(`Are you sure you want to delete ${student.firstName} ${student.lastName}?`)) {
       try {
         console.log("Deleting student:", student.id);
-        await deleteDoc(doc(db, "students", student.id));
-        await logActivity({ message: `Deleted student: ${student.firstName} ${student.lastName}`, type: 'delete_student' });
-        setSnackbar({ open: true, message: "Student deleted successfully!", severity: "success" });
+        
+        // Only delete from students collection if it's not a registered user
+        if (!student.isRegisteredUser) {
+          await deleteDoc(doc(db, "students", student.id));
+          await logActivity({ message: `Deleted student: ${student.firstName} ${student.lastName}`, type: 'delete_student' });
+          setSnackbar({ open: true, message: "Student deleted successfully!", severity: "success" });
+        } else {
+          setSnackbar({ 
+            open: true, 
+            message: "Cannot delete registered users. They must be removed from the users collection.", 
+            severity: "warning" 
+          });
+          return;
+        }
         
         // Refresh the student list with error handling
         try {
-          const querySnapshot = await getDocs(collection(db, "students"));
-          const studentsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          // Fetch from 'students' collection (manually added students)
+          const studentsQuerySnapshot = await getDocs(collection(db, "students"));
+          const studentsData = studentsQuerySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          
+          // Fetch from 'users' collection (registered students)
+          const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
+          const registeredStudentsData = usersQuerySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              firstName: data.firstName || data.fullName?.split(' ')[0] || '',
+              lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
+              email: data.email || '',
+              course: data.course || '',
+              year: data.year || '',
+              section: data.section || '',
+              studentId: data.studentId || '',
+              createdAt: data.createdAt || '',
+              updatedAt: data.updatedAt || '',
+              profilePic: data.profilePic || '',
+              isRegisteredUser: true
+            };
+          });
+          
+          // Combine both collections
+          const allStudents = [...studentsData, ...registeredStudentsData];
           
           // Sort students by creation date (newest first)
-          const sortedStudents = studentsData.sort((a, b) => {
+          const sortedStudents = allStudents.sort((a, b) => {
             const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
             const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-            return dateB - dateA; // Descending order (newest first)
+            return dateB - dateA;
           });
           
           setStudents(sortedStudents);
@@ -1065,7 +1215,7 @@ function StudentList({
             severity: "warning" 
           });
         }
-    } catch (error) {
+      } catch (error) {
         console.error("Error deleting student:", error);
         setSnackbar({ open: true, message: "Error deleting student: " + error.message, severity: "error" });
       }
@@ -1333,7 +1483,22 @@ School Administration
                       </Avatar>
                     )}
                   </TableCell>
-                  <TableCell>{student.firstName} {student.lastName}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography>
+                        {student.firstName} {student.lastName}
+                      </Typography>
+                      {student.isRegisteredUser && (
+                        <Chip 
+                          label="Registered" 
+                          size="small" 
+                          color="success" 
+                          variant="outlined"
+                          sx={{ fontSize: '0.7rem' }}
+                        />
+                      )}
+                    </Box>
+                  </TableCell>
                   <TableCell>{student.course}</TableCell>
                   <TableCell>{student.year}</TableCell>
                   <TableCell>{student.section}</TableCell>

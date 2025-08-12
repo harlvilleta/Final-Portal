@@ -25,6 +25,7 @@ const menu = [
     hasSubmenu: true,
     submenu: [
       { text: "Record", icon: <Assignment sx={{ color: '#1976d2' }} />, path: "/violation-record" },
+      { text: "Review Cases", icon: <Assessment sx={{ color: '#ff9800' }} />, path: "/violation-review" },
       { text: "Create Meeting", icon: <MeetingRoom sx={{ color: '#43a047' }} />, path: "/violation-record/create-meeting" },
       { text: "History", icon: <Timeline sx={{ color: '#fbc02d' }} />, path: "/violation-record/history" },
       { text: "Status", icon: <Assessment sx={{ color: '#8e24aa' }} />, path: "/violation-record/status" }

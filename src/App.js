@@ -34,6 +34,9 @@ import TestPage from "./pages/TestPage";
 import ReceiptSubmission from "./components/ReceiptSubmission";
 import ReceiptReview from "./components/ReceiptReview";
 import ReceiptHistory from "./components/ReceiptHistory";
+import TeacherReportViolation from "./pages/TeacherReportViolation";
+import ViolationReview from "./pages/ViolationReview";
+import TeacherReports from "./pages/TeacherReports";
 
 // Header component for admin dashboard
 function AdminHeader({ currentUser, userProfile }) {
@@ -264,6 +267,11 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [authError, setAuthError] = useState(null);
+  const [forceLogin, setForceLogin] = useState(() => {
+    // Check if user has logged in before (not first visit)
+    const hasLoggedInBefore = localStorage.getItem('hasLoggedInBefore');
+    return !hasLoggedInBefore; // Only force login on first visit
+  });
 
   useEffect(() => {
     console.log('App component mounted, starting auth check...');
@@ -281,7 +289,7 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log('Auth state changed:', user ? `User logged in: ${user.email}` : 'User logged out');
       
-      if (user) {
+      if (user && !forceLogin) { // Only process user if forceLogin is false
         console.log('Setting user state...');
         setUser(user);
         setCurrentUser(user);
@@ -339,6 +347,10 @@ function App() {
         clearTimeout(loadingTimeout);
         setLoading(false);
         console.log('Authentication process completed');
+      } else if (user && forceLogin) {
+        // User is authenticated but forceLogin is true, so we don't set the user state
+        console.log('User authenticated but forceLogin is true, keeping login page');
+        setLoading(false);
       } else {
         console.log('User logged out, clearing state...');
         // User logged out
@@ -356,9 +368,9 @@ function App() {
       clearTimeout(loadingTimeout);
       unsubscribe();
     };
-  }, []);
+  }, [forceLogin]); // Add forceLogin to dependency array
 
-  console.log('Current state:', { user: !!user, userRole, loading, userEmail: user?.email });
+  console.log('Current state:', { user: !!user, userRole, loading, userEmail: user?.email, forceLogin });
 
   // Show loading while checking authentication
   if (loading) {
@@ -389,13 +401,16 @@ function App() {
     );
   }
 
-  // If user is not authenticated, show login/register forms
-  if (!user) {
-    console.log('No user detected, showing login/register forms');
+  // If user is not authenticated OR forceLogin is true, show login/register forms
+  if (!user || forceLogin) {
+    console.log('No user detected or forceLogin is true, showing login/register forms');
     return (
       <Router>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<Login onLoginSuccess={() => {
+            setForceLogin(false);
+            localStorage.setItem('hasLoggedInBefore', 'true');
+          }} />} />
           <Route path="/register" element={<Register />} />
           <Route path="/test" element={<TestPage />} />
           <Route path="/*" element={<Navigate to="/login" replace />} />
@@ -463,6 +478,8 @@ function App() {
                       <Route path="/violation-record/create-meeting" element={<ViolationCreateMeeting />} />
                       <Route path="/violation-record/history" element={<ViolationHistory />} />
                       <Route path="/violation-record/status" element={<ViolationStatus />} />
+                      <Route path="/violation-review" element={<ViolationReview />} />
+                      <Route path="/violation-record/review/:id" element={<ViolationReview />} />
                       <Route path="/options" element={<Options />} />
                       <Route path="/announcements" element={<Announcements />} />
                       <Route path="/announcements/report" element={<AnnouncementReport />} />
@@ -484,12 +501,10 @@ function App() {
                       <Route path="/" element={<Navigate to="/teacher-dashboard" />} />
                       <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
                       <Route path="/teacher-students" element={<Students />} />
-                      <Route path="/teacher-violations" element={<ViolationRecord />} />
+                      <Route path="/teacher-reports" element={<TeacherReports />} />
                       <Route path="/teacher-announcements" element={<Announcements />} />
                       <Route path="/teacher-assessments" element={<div>Teacher Assessments</div>} />
                       <Route path="/teacher-schedule" element={<div>Teacher Schedule</div>} />
-                      <Route path="/teacher-reports" element={<div>Teacher Reports</div>} />
-                      <Route path="/teacher-grades" element={<div>Teacher Grades</div>} />
                       <Route path="/teacher-notifications" element={<UserNotifications currentUser={currentUser} />} />
                       <Route path="/teacher-profile" element={<Profile />} />
                       <Route path="/*" element={<Navigate to="/teacher-dashboard" />} />
