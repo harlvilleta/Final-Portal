@@ -1456,7 +1456,7 @@ School Administration
               <TableCell>Year</TableCell>
               <TableCell>Section</TableCell>
               <TableCell>Email</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell>View</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -1512,42 +1512,6 @@ School Administration
                           onClick={(e) => { e.stopPropagation(); handleViewStudent(student); }}
                         >
                           <Visibility />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Edit Student">
-                        <IconButton 
-                          size="small" 
-                          color="warning"
-                          onClick={(e) => { e.stopPropagation(); handleEditStudent(student); }}
-                        >
-                          <Edit />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Add Violation">
-                        <IconButton 
-                          size="small" 
-                          color="info"
-                          onClick={(e) => { e.stopPropagation(); handleAddViolation(student); }}
-                        >
-                          <Report />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="View Violations">
-                        <IconButton 
-                          size="small" 
-                          color="secondary"
-                          onClick={(e) => { e.stopPropagation(); handleViewViolations(student); }}
-                        >
-                          <ListAlt />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete Student">
-                        <IconButton 
-                          size="small" 
-                          color="error"
-                          onClick={(e) => { e.stopPropagation(); handleDeleteStudent(student); }}
-                        >
-                          <Delete />
                         </IconButton>
                       </Tooltip>
                     </Stack>

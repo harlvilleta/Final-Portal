@@ -156,19 +156,37 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <Box sx={{ p: 3, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
       {/* Welcome Section */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={700} color="#2d3436" gutterBottom>
+      <Box sx={{ mb: 4, pt: { xs: 1, sm: 2 }, px: { xs: 1, sm: 0 } }}>
+        <Typography 
+          variant="h4" 
+          fontWeight={700} 
+          color="#2d3436" 
+          gutterBottom 
+          sx={{ 
+            wordBreak: 'break-word',
+            fontSize: { xs: '1.75rem', sm: '2.125rem' },
+            lineHeight: 1.2
+          }}
+        >
           Welcome back, {userInfo.name}! 👋
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ fontSize: 18 }}>
+        <Typography 
+          variant="body1" 
+          color="text.secondary" 
+          sx={{ 
+            fontSize: { xs: 16, sm: 18 },
+            wordBreak: 'break-word',
+            lineHeight: 1.4
+          }}
+        >
           Here's what's happening in your classroom today
         </Typography>
       </Box>
 
       {/* Statistics Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ 
             bgcolor: '#e3f2fd', 
@@ -179,20 +197,21 @@ export default function TeacherDashboard() {
             '&:hover': {
               transform: 'translateY(-4px)',
               boxShadow: '0 8px 24px rgba(33, 150, 243, 0.25)'
-            }
+            },
+            height: '100%'
           }}>
-            <CardContent>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h4" fontWeight={700} color="#1976d2">
+                  <Typography variant="h4" fontWeight={700} color="#1976d2" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
                     {students.length}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                     Total Students
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: '#1976d2', width: 56, height: 56 }}>
-                  <People sx={{ fontSize: 28 }} />
+                <Avatar sx={{ bgcolor: '#1976d2', width: { xs: 48, sm: 56 }, height: { xs: 48, sm: 56 } }}>
+                  <People sx={{ fontSize: { xs: 24, sm: 28 } }} />
                 </Avatar>
               </Box>
             </CardContent>
@@ -209,20 +228,21 @@ export default function TeacherDashboard() {
             '&:hover': {
               transform: 'translateY(-4px)',
               boxShadow: '0 8px 24px rgba(255, 152, 0, 0.25)'
-            }
+            },
+            height: '100%'
           }}>
-            <CardContent>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h4" fontWeight={700} color="#f57c00">
+                  <Typography variant="h4" fontWeight={700} color="#f57c00" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
                     {violations.length}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                     Total Violations
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: '#ff9800', width: 56, height: 56 }}>
-                  <Warning sx={{ fontSize: 28 }} />
+                <Avatar sx={{ bgcolor: '#ff9800', width: { xs: 48, sm: 56 }, height: { xs: 48, sm: 56 } }}>
+                  <Warning sx={{ fontSize: { xs: 24, sm: 28 } }} />
                 </Avatar>
               </Box>
             </CardContent>
@@ -239,20 +259,21 @@ export default function TeacherDashboard() {
             '&:hover': {
               transform: 'translateY(-4px)',
               boxShadow: '0 8px 24px rgba(76, 175, 80, 0.25)'
-            }
+            },
+            height: '100%'
           }}>
-            <CardContent>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h4" fontWeight={700} color="#388e3c">
+                  <Typography variant="h4" fontWeight={700} color="#388e3c" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
                     {announcements.length}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                     Announcements
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: '#4caf50', width: 56, height: 56 }}>
-                  <Announcement sx={{ fontSize: 28 }} />
+                <Avatar sx={{ bgcolor: '#4caf50', width: { xs: 48, sm: 56 }, height: { xs: 48, sm: 56 } }}>
+                  <Announcement sx={{ fontSize: { xs: 24, sm: 28 } }} />
                 </Avatar>
               </Box>
             </CardContent>
@@ -269,21 +290,22 @@ export default function TeacherDashboard() {
             '&:hover': {
               transform: 'translateY(-4px)',
               boxShadow: '0 8px 24px rgba(233, 25, 99, 0.25)'
-            }
+            },
+            height: '100%'
           }}>
-            <CardContent>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h4" fontWeight={700} color="#e91e63">
+                  <Typography variant="h4" fontWeight={700} color="#e91e63" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
                     {getUnreadNotificationsCount()}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                     Unread Notifications
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: '#e91e63', width: 56, height: 56 }}>
+                <Avatar sx={{ bgcolor: '#e91e63', width: { xs: 48, sm: 56 }, height: { xs: 48, sm: 56 } }}>
                   <Badge badgeContent={getUnreadNotificationsCount()} color="error">
-                    <Notifications sx={{ fontSize: 28 }} />
+                    <Notifications sx={{ fontSize: { xs: 24, sm: 28 } }} />
                   </Badge>
                 </Avatar>
               </Box>

@@ -113,21 +113,33 @@ export default function TeacherHeader({ currentUser, userProfile }) {
   return (
     <AppBar position="static" sx={{ bgcolor: '#2d3436', color: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
       <Toolbar sx={{ justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Typography variant="h5" component="div" sx={{ fontWeight: 700, color: '#fff', mr: 3 }}>
-            Teacher Portal
+        {/* Left side - Logo and Teacher text */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Avatar 
+            sx={{ width: 40, height: 40, bgcolor: '#1976d2' }}
+            src={userInfo.photo}
+          >
+            {userInfo.name?.charAt(0) || 'T'}
+          </Avatar>
+          <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+            Teacher
           </Typography>
-          <Chip 
-            label={userInfo.role} 
-            size="small" 
-            sx={{ 
-              bgcolor: '#1976d2', 
-              color: 'white',
-              fontWeight: 600
-            }} 
-          />
         </Box>
         
+        {/* Center - Main title */}
+        <Box sx={{ 
+          position: 'absolute', 
+          left: '50%', 
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          alignItems: 'center'
+        }}>
+          <Typography variant="h5" component="div" sx={{ fontWeight: 700, color: '#fff' }}>
+            Student Affairs Management System
+          </Typography>
+        </Box>
+        
+        {/* Right side - Notifications, Settings, and User Menu */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {/* Notifications */}
           <IconButton
