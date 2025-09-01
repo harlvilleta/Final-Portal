@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { 
-  Box, Grid, Card, CardContent, Typography, Paper, Avatar, Chip
+  Box, Grid, Card, CardContent, Typography, Paper, Avatar, Chip, CardHeader, Stack
 } from "@mui/material";
 import { 
-  Announcement, Person, CalendarToday
+  Announcement, Person, CalendarToday, EventNote
 } from "@mui/icons-material";
 import { db } from "../firebase";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
@@ -41,35 +41,22 @@ export default function UserAnnouncements() {
         </Card>
       ) : (
         <Grid container spacing={2}>
-          {announcements.map((announcement) => (
-            <Grid item xs={12} key={announcement.id}>
+          {announcements.map((a) => (
+            <Grid item xs={12} key={a.id}>
               <Card>
+                <CardHeader
+                  title={
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Typography fontWeight={700}>{a.title}</Typography>
+                      <Chip label={a.category || 'General'} color="default" size="small" />
+                    </Stack>
+                  }
+                  subheader={a.createdAt ? new Date(a.createdAt).toLocaleDateString() : ''}
+                />
                 <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Typography variant="h6" gutterBottom>{announcement.title}</Typography>
-                    <Chip 
-                      label={announcement.category || 'General'} 
-                      color="primary" 
-                      size="small"
-                    />
-                  </Box>
-                  
-                  <Typography variant="body1" sx={{ mb: 2 }}>
-                    {announcement.content}
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    {(a.message || a.content) || ''}
                   </Typography>
-                  
-                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                    <Typography variant="body2" color="textSecondary">
-                      <CalendarToday sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle' }} />
-                      {new Date(announcement.createdAt).toLocaleDateString()}
-                    </Typography>
-                    {announcement.author && (
-                      <Typography variant="body2" color="textSecondary">
-                        <Person sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle' }} />
-                        {announcement.author}
-                      </Typography>
-                    )}
-                  </Box>
                 </CardContent>
               </Card>
             </Grid>

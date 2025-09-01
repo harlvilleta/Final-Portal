@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Typography, Grid, Card, CardContent, TextField, Button, MenuItem, Paper, List, ListItem, ListItemText, Divider, Stack, Snackbar, Alert, IconButton, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, DialogActions, Chip, InputAdornment, Pagination } from "@mui/material";
+import { Box, Typography, Grid, Card, CardContent, CardHeader, TextField, Button, MenuItem, Paper, List, ListItem, ListItemText, Divider, Stack, Snackbar, Alert, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Chip, InputAdornment } from "@mui/material";
 import { EventNote, History, CheckCircle, Edit, Delete, Visibility } from "@mui/icons-material";
 import { collection, addDoc, getDocs, updateDoc, doc, orderBy, query, deleteDoc } from "firebase/firestore";
 import { db, logActivity } from "../firebase";
@@ -185,38 +185,36 @@ function ScheduledActivities({ activities, onMarkCompleted, search, onSearch }) 
     <Paper sx={{ p: 3, mb: 3 }}>
       <Typography variant="h5" gutterBottom>Scheduled Activities</Typography>
       <SearchBar value={search} onChange={onSearch} placeholder="Search scheduled..." />
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>Title</TableCell>
-            <TableCell>Date</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Category</TableCell>
-            <TableCell>Action</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {filtered.length === 0 ? (
-            <TableRow><TableCell colSpan={5}>No scheduled activities.</TableCell></TableRow>
-          ) : filtered.map((a) => (
-            <TableRow key={a.id}>
-              <TableCell>{a.title}</TableCell>
-              <TableCell>{a.date ? new Date(a.date).toLocaleDateString() : ''}</TableCell>
-              <TableCell>
-                <Chip label="Scheduled" color="warning" size="small" />
-              </TableCell>
-              <TableCell>
-                <Chip label={a.category} color="info" size="small" />
-              </TableCell>
-              <TableCell>
+      {filtered.length === 0 ? (
+        <Typography align="center" color="text.secondary">No scheduled activities.</Typography>
+      ) : (
+        <>
+          {filtered.map((a) => (
+            <Card key={a.id} sx={{ mb: 2, borderLeft: '5px solid #ffb300', boxShadow: 2 }}>
+              <CardHeader
+                title={
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Typography fontWeight={700}>{a.title}</Typography>
+                    <Chip label={a.category} color="default" size="small" />
+                    <Chip label="Scheduled" color="warning" size="small" />
+                  </Stack>
+                }
+                subheader={a.date ? new Date(a.date).toLocaleDateString() : ''}
+              />
+              <CardContent>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{a.description}</Typography>
+                <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                  {a.organizer && <Chip label={`Organizer: ${a.organizer}`} size="small" variant="outlined" />}
+                  {a.location && <Chip label={`Location: ${a.location}`} size="small" variant="outlined" />}
+                </Stack>
                 <Button variant="contained" color="success" size="small" onClick={() => onMarkCompleted(a)}>
                   Mark as Completed
                 </Button>
-              </TableCell>
-            </TableRow>
+              </CardContent>
+            </Card>
           ))}
-        </TableBody>
-      </Table>
+        </>
+      )}
     </Paper>
   );
 }

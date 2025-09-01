@@ -65,6 +65,7 @@ const statusColors = {
 const priorityColors = {
   'Normal': 'default',
   'High': 'warning',
+  
   'Urgent': 'error'
 };
 
@@ -78,9 +79,12 @@ export default function AnnouncementReport() {
   const [approvalAction, setApprovalAction] = useState('');
   const [approvalReason, setApprovalReason] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [activities, setActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
 
   useEffect(() => {
     fetchAnnouncements();
+    fetchActivities();
   }, []);
 
   const fetchAnnouncements = async () => {
@@ -96,6 +100,19 @@ export default function AnnouncementReport() {
       setSnackbar({ open: true, message: 'Failed to fetch announcements.', severity: 'error' });
     }
     setLoading(false);
+  };
+
+  const fetchActivities = async () => {
+    setActivitiesLoading(true);
+    try {
+      const qSnap = await getDocs(query(collection(db, "activities"), orderBy("createdAt", "desc")));
+      const activitiesData = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setActivities(activitiesData);
+    } catch (e) {
+      console.error('Error fetching activities:', e);
+      setActivities([]);
+    }
+    setActivitiesLoading(false);
   };
 
   const handleViewDetails = (announcement) => {
@@ -356,6 +373,68 @@ export default function AnnouncementReport() {
           </Table>
         </TableContainer>
       )}
+
+      {/* Activities Section */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h5" gutterBottom fontWeight={700} color="primary.main">
+          📅 Activities
+        </Typography>
+
+        {activitiesLoading ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', py: 4 }}>
+            <CircularProgress size={32} />
+            <Typography sx={{ ml: 2 }}>Loading activities...</Typography>
+          </Box>
+        ) : (
+          <TableContainer component={Paper} elevation={1}>
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ bgcolor: 'grey.200' }}>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Title</TableCell>
+                  <TableCell>Category</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Label</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {activities.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                      <Typography variant="body2" color="text.secondary">No activities found.</Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : activities.map((activity) => (
+                  <TableRow key={activity.id} hover>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={500}>
+                        {activity.date ? new Date(activity.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={600}>{activity.title}</Typography>
+                      <Typography variant="caption" color="text.secondary">{activity.organizer}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={activity.category || 'General'} size="small" variant="outlined" />
+                    </TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={activity.completed ? 'Completed' : 'Scheduled'} 
+                        size="small" 
+                        color={activity.completed ? 'success' : 'warning'}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip label="Activity" size="small" color="info" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Box>
 
       {/* View Details Dialog */}
       <Dialog 

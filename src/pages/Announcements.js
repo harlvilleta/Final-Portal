@@ -33,6 +33,7 @@ export default function Announcements() {
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [userRole, setUserRole] = useState('Student');
+  const [activities, setActivities] = useState([]);
 
   useEffect(() => {
     // Get current user and role
@@ -52,6 +53,7 @@ export default function Announcements() {
 
     fetchAnnouncements();
     fetchRecycleBin();
+    fetchActivities();
     
     return unsubscribe;
   }, []);
@@ -77,6 +79,16 @@ export default function Announcements() {
       setRecycleBin(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (e) {
       setRecycleBin([]);
+    }
+  };
+
+  const fetchActivities = async () => {
+    try {
+      const q = query(collection(db, "activities"), orderBy("createdAt", "desc"));
+      const snap = await getDocs(q);
+      setActivities(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (e) {
+      setActivities([]);
     }
   };
 
@@ -485,6 +497,8 @@ export default function Announcements() {
           )}
         </Box>
       )}
+
+      
       {tab === 2 && (
         <Box sx={{ mb: 4 }}>
           <Typography variant="h6" sx={{ mb: 1, fontWeight: 700 }}>Completed Announcements</Typography>

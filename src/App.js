@@ -41,6 +41,8 @@ import TeacherSchedule from "./pages/TeacherSchedule";
 import AdminLostFound from "./pages/AdminLostFound";
 import ActivityHistory from "./pages/ActivityHistory";
 import TeacherNotifications from "./pages/TeacherNotifications";
+import TeacherLostFound from "./pages/TeacherLostFound";
+import ActivitiesView from "./pages/ActivitiesView";
 
 // Header component for admin dashboard
 function AdminHeader({ currentUser, userProfile }) {
@@ -519,6 +521,8 @@ function App() {
                       <Route path="/teacher-assessments" element={<div>Teacher Assessments</div>} />
                       <Route path="/teacher-schedule" element={<TeacherSchedule />} />
                                                     <Route path="/teacher-notifications" element={<TeacherNotifications />} />
+                      <Route path="/activity" element={<ActivitiesView />} />
+                      <Route path="/teacher-lost-found" element={<TeacherLostFound />} />
                       <Route path="/teacher-profile" element={<Profile />} />
                       <Route path="/*" element={<Navigate to="/teacher-dashboard" />} />
                     </Routes>
@@ -537,6 +541,7 @@ function App() {
                     <Route path="/user-dashboard" element={<UserDashboard />} />
                     <Route path="/violations" element={<UserViolations currentUser={currentUser} />} />
                     <Route path="/announcements" element={<UserAnnouncements />} />
+                    <Route path="/activity" element={<ActivitiesView />} />
                     <Route path="/lost-found" element={<UserLostFound currentUser={currentUser} />} />
                     <Route path="/notifications" element={<UserNotifications currentUser={currentUser} />} />
                     <Route path="/receipt-submission" element={<ReceiptSubmission />} />

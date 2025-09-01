@@ -46,6 +46,7 @@ export default function TeacherDashboard() {
   const [announcements, setAnnouncements] = useState([]);
   const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
+  const [meetingsCount, setMeetingsCount] = useState(0);
   
 
   
@@ -104,12 +105,52 @@ export default function TeacherDashboard() {
       console.error('Error fetching notifications:', error);
     });
 
+    // Meetings count where teacher is involved
+    const idSet = new Set();
+    let unsubMeetingsA = null;
+    let unsubMeetingsB = null;
+    try {
+      const participantsValues = [currentUser.email, currentUser.uid].filter(Boolean);
+      if (participantsValues.length > 0) {
+        const qParticipants = query(
+          collection(db, 'meetings'),
+          where('participants', 'array-contains-any', participantsValues)
+        );
+        unsubMeetingsA = onSnapshot(qParticipants, (snapshot) => {
+          const local = new Set(idSet);
+          snapshot.docs.forEach(d => local.add(d.id));
+          idSet.clear();
+          local.forEach(id => idSet.add(id));
+          setMeetingsCount(idSet.size);
+        });
+      }
+
+      const organizersValues = [currentUser.email, currentUser.uid].filter(Boolean);
+      if (organizersValues.length > 0) {
+        const qOrganizer = query(
+          collection(db, 'meetings'),
+          where('organizer', 'in', organizersValues)
+        );
+        unsubMeetingsB = onSnapshot(qOrganizer, (snapshot) => {
+          const local = new Set(idSet);
+          snapshot.docs.forEach(d => local.add(d.id));
+          idSet.clear();
+          local.forEach(id => idSet.add(id));
+          setMeetingsCount(idSet.size);
+        });
+      }
+    } catch (e) {
+      console.error('Error setting up meetings listeners:', e);
+    }
+
     setLoading(false);
 
     return () => {
       violationsUnsubscribe();
       announcementsUnsubscribe();
       notificationsUnsubscribe();
+      if (unsubMeetingsA) unsubMeetingsA();
+      if (unsubMeetingsB) unsubMeetingsB();
     };
   }, [currentUser]);
 
@@ -137,6 +178,10 @@ export default function TeacherDashboard() {
   const getUnreadNotificationsCount = () => {
     return notifications.filter(notification => !notification.read).length;
   };
+
+  const myReportsCount = violations.filter(v => (
+    v.reportedBy === currentUser?.uid || v.reportedByEmail === currentUser?.email
+  )).length;
 
   const getRecentViolations = () => {
     return violations.slice(0, 5);
@@ -203,10 +248,10 @@ export default function TeacherDashboard() {
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
                   <Typography variant="h4" fontWeight={700} color="#1976d2" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
-                    {violations.filter(v => v.status === 'Pending').length}
+                    {myReportsCount}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                    Pending Reports
+                    My Reports
                   </Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: '#1976d2', width: { xs: 48, sm: 56 }, height: { xs: 48, sm: 56 } }}>
@@ -234,7 +279,7 @@ export default function TeacherDashboard() {
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                  <Box>
                    <Typography variant="h4" fontWeight={700} color="#f57c00" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
-                     {violations.length}
+                     {meetingsCount}
                    </Typography>
                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                      Meetings

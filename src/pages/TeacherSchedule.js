@@ -47,38 +47,61 @@ export default function TeacherSchedule() {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setCurrentUser(user);
       if (user) {
-        fetchTeacherMeetings(user.email);
+        fetchTeacherMeetings(user);
       }
     });
 
     return unsubscribe;
   }, []);
 
-  const fetchTeacherMeetings = (teacherEmail) => {
-    if (!teacherEmail) return;
+  const fetchTeacherMeetings = (user) => {
+    const teacherEmail = user?.email;
+    const teacherUid = user?.uid;
+    if (!teacherEmail && !teacherUid) return;
 
     try {
-      // Query meetings where the teacher is involved (either as organizer or participant)
-      const meetingsQuery = query(
+      // Listen to meetings where the teacher is a participant (by email or uid)
+      const participantsValues = [teacherEmail, teacherUid].filter(Boolean);
+      const qParticipants = query(
         collection(db, 'meetings'),
-        where('participants', 'array-contains', teacherEmail),
-        orderBy('date', 'asc')
+        where('participants', 'array-contains-any', participantsValues)
       );
 
-      const unsubscribe = onSnapshot(meetingsQuery, (snapshot) => {
-        const meetingsData = snapshot.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data() 
-        }));
-        setMeetings(meetingsData);
+      // Listen to meetings where the teacher is the organizer (by email or uid)
+      const organizersValues = [teacherEmail, teacherUid].filter(Boolean);
+      const qOrganizer = query(
+        collection(db, 'meetings'),
+        where('organizer', 'in', organizersValues)
+      );
+
+      const allDocsMap = new Map();
+
+      const handleSnapshot = (snapshot) => {
+        snapshot.docs.forEach(d => {
+          allDocsMap.set(d.id, { id: d.id, ...d.data() });
+        });
+        const merged = Array.from(allDocsMap.values()).sort((a, b) => {
+          const da = new Date(a.date || 0).getTime();
+          const dbt = new Date(b.date || 0).getTime();
+          return da - dbt;
+        });
+        setMeetings(merged);
         setLoading(false);
-      }, (error) => {
-        console.error('Error fetching meetings:', error);
+      };
+
+      const unsubA = onSnapshot(qParticipants, handleSnapshot, (err) => {
+        console.error('Error fetching participant meetings:', err);
         setError('Failed to load meetings');
         setLoading(false);
       });
 
-      return unsubscribe;
+      const unsubB = onSnapshot(qOrganizer, handleSnapshot, (err) => {
+        console.error('Error fetching organizer meetings:', err);
+        setError('Failed to load meetings');
+        setLoading(false);
+      });
+
+      return () => { unsubA(); unsubB(); };
     } catch (error) {
       console.error('Error setting up meetings query:', error);
       setError('Failed to load meetings');

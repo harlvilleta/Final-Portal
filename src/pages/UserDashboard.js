@@ -3,7 +3,7 @@ import {
   Box, Typography, Grid, Card, CardContent, List, ListItem, ListItemAvatar, 
   ListItemText, Avatar, Chip, Button, CircularProgress
 } from "@mui/material";
-import { CheckCircle, Warning, Announcement } from "@mui/icons-material";
+import { CheckCircle, Warning, Announcement, EventNote } from "@mui/icons-material";
 import { Link } from "react-router-dom";
 import { db, auth, logActivity } from "../firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, where, query, onSnapshot, orderBy, setDoc, getDoc, limit } from "firebase/firestore";
@@ -13,6 +13,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 function UserOverview({ currentUser }) {
   const [userViolations, setUserViolations] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
+  const [activities, setActivities] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [stats, setStats] = useState({
@@ -58,6 +59,17 @@ function UserOverview({ currentUser }) {
       where("recipientEmail", "==", currentUser.email),
       orderBy("createdAt", "desc")
     );
+    // Fetch recent activities
+    const activitiesQuery = query(
+      collection(db, "activities"),
+      orderBy("createdAt", "desc"),
+      limit(5)
+    );
+    const unsubActivities = onSnapshot(activitiesQuery, (snap) => {
+      const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setActivities(items);
+    });
+
 
     const unsubViolations = onSnapshot(violationsQuery, (snap) => {
       console.log("Dashboard - Firebase query result:", snap.docs.length, "violations");
@@ -108,6 +120,7 @@ function UserOverview({ currentUser }) {
       unsubViolations();
       unsubAnnouncements();
       unsubNotifications();
+      unsubActivities();
     };
   }, [currentUser]);
 
@@ -426,33 +439,52 @@ function UserOverview({ currentUser }) {
         </Card>
       )}
 
-      {/* Recent Announcements Section */}
-      {announcements && announcements.length > 0 && (
+      {/* Combined Announcements & Activities Section */}
+      {(announcements?.length > 0 || activities?.length > 0) && (
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom color="primary.main">
-              Recent Announcements
+              Announcements & Activities
             </Typography>
             <List>
-              {announcements.map((announcement) => (
-                <ListItem key={announcement.id} sx={{ px: 0 }}>
+              {[
+                ...announcements.map(a => ({ ...a, __type: 'announcement', __date: new Date(a.createdAt || a.timestamp || 0) })),
+                ...activities.map(a => ({ ...a, __type: 'activity', __date: new Date(a.date || a.createdAt || 0) }))
+              ]
+              .sort((x, y) => (y.__date - x.__date))
+              .slice(0, 10)
+              .map((item) => (
+                <ListItem key={`${item.__type}-${item.id}`} sx={{ px: 0 }}>
                   <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: 'primary.main' }}>
-                      <Announcement />
+                    <Avatar sx={{ bgcolor: item.__type === 'announcement' ? 'primary.main' : 'secondary.main' }}>
+                      {item.__type === 'announcement' ? <Announcement /> : <EventNote />}
                     </Avatar>
                   </ListItemAvatar>
                   <ListItemText
-                    primary={announcement.title}
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="subtitle1" fontWeight={600}>
+                          {item.title}
+                        </Typography>
+                        <Chip 
+                          label={item.__type === 'announcement' ? 'Announcement' : 'Activity'} 
+                          size="small" 
+                          color={item.__type === 'announcement' ? 'primary' : 'info'}
+                          variant="outlined"
+                        />
+                      </Box>
+                    }
                     secondary={
                       <Box>
                         <Typography variant="body2" color="text.secondary">
-                          {announcement.content && announcement.content.length > 100 
-                            ? `${announcement.content.substring(0, 100)}...` 
-                            : announcement.content
-                          }
+                          {item.__type === 'announcement'
+                            ? (item.content && item.content.length > 100 ? `${item.content.substring(0, 100)}...` : item.content)
+                            : (item.description && item.description.length > 100 ? `${item.description.substring(0, 100)}...` : (item.description || ''))}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {new Date(announcement.createdAt).toLocaleString()}
+                          {item.__type === 'announcement'
+                            ? new Date(item.createdAt).toLocaleString()
+                            : (item.date ? new Date(item.date).toLocaleString() : (item.createdAt ? new Date(item.createdAt).toLocaleString() : ''))}
                         </Typography>
                       </Box>
                     }
@@ -467,7 +499,7 @@ function UserOverview({ currentUser }) {
                 component={Link} 
                 to="/announcements"
               >
-                View All Announcements
+                View All
               </Button>
             </Box>
           </CardContent>
