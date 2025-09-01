@@ -39,20 +39,10 @@ function AddStudent({ onClose, isModal = false }) {
     age: "",
     birthdate: "",
     contact: "",
-    scholarship: "",
     course: "",
     year: "",
     section: "",
-    position: "",
-    major: "",
     email: "",
-    fatherName: "",
-    fatherOccupation: "",
-    motherName: "",
-    motherOccupation: "",
-    guardian: "",
-    guardianContact: "",
-    homeAddress: "",
     image: null
   });
   const [imageFile, setImageFile] = useState(null);
@@ -116,22 +106,33 @@ function AddStudent({ onClose, isModal = false }) {
   const handleImage = async (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        setSnackbar({ open: true, message: "Please select a valid image file", severity: "error" });
+        setSnackbar({ open: true, message: "Please select a valid image file (JPEG, PNG, GIF)", severity: "error" });
         return;
       }
-      // Validate file size (max 200KB)
-      if (file.size > 200 * 1024) {
-        setSnackbar({ open: true, message: "Image file size must be less than 200KB", severity: "error" });
+      
+      // Validate file size (max 500KB for better quality)
+      if (file.size > 500 * 1024) {
+        setSnackbar({ open: true, message: "Image file size must be less than 500KB", severity: "error" });
         return;
       }
+      
+      // Show loading message
+      setSnackbar({ open: true, message: "Processing image...", severity: "info" });
+      
       setImageFile(file);
-      // Convert to base64
+      
+      // Convert to base64 with error handling
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfile((prev) => ({ ...prev, image: reader.result }));
-        setSnackbar({ open: true, message: "Image loaded as base64!", severity: "success" });
+        setSnackbar({ open: true, message: "Profile image uploaded successfully!", severity: "success" });
+      };
+      reader.onerror = () => {
+        setSnackbar({ open: true, message: "Error reading image file. Please try again.", severity: "error" });
+        setImageFile(null);
       };
       reader.readAsDataURL(file);
     }
@@ -153,6 +154,7 @@ function AddStudent({ onClose, isModal = false }) {
   const handleRemoveImage = () => {
     setImageFile(null);
     setProfile((prev) => ({ ...prev, image: null }));
+    setSnackbar({ open: true, message: "Profile image removed", severity: "info" });
     console.log("Image removed");
   };
 
@@ -267,20 +269,10 @@ function AddStudent({ onClose, isModal = false }) {
         age: "",
         birthdate: "",
         contact: "",
-        scholarship: "",
         course: "",
         year: "",
         section: "",
-        position: "",
-        major: "",
         email: "",
-        fatherName: "",
-        fatherOccupation: "",
-        motherName: "",
-        motherOccupation: "",
-        guardian: "",
-        guardianContact: "",
-        homeAddress: "",
         image: null
       });
       setImageFile(null);
@@ -336,20 +328,10 @@ function AddStudent({ onClose, isModal = false }) {
           age: "",
           birthdate: "",
           contact: "",
-          scholarship: "",
           course: "",
           year: "",
           section: "",
-          position: "",
-          major: "",
           email: "",
-          fatherName: "",
-          fatherOccupation: "",
-          motherName: "",
-          motherOccupation: "",
-          guardian: "",
-          guardianContact: "",
-          homeAddress: "",
           image: null
         });
         setImageFile(null);
@@ -379,7 +361,7 @@ function AddStudent({ onClose, isModal = false }) {
               <TextField fullWidth label="ID Number" name="id" value={profile.id} onChange={handleChange} required />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField fullWidth label="Scholarship" name="scholarship" value={profile.scholarship} onChange={handleChange} />
+              <TextField fullWidth label="Email Address" name="email" value={profile.email} onChange={handleChange} type="email" />
             </Grid>
             <Grid item xs={12} sm={4}>
               <TextField fullWidth label="Last Name" name="lastName" value={profile.lastName} onChange={handleChange} required />
@@ -418,60 +400,27 @@ function AddStudent({ onClose, isModal = false }) {
             <Grid item xs={12} sm={4}>
               <TextField fullWidth label="Section" name="section" value={profile.section} onChange={handleChange} />
             </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField fullWidth label="Position" name="position" value={profile.position} onChange={handleChange} select>
-                {positions.map((p) => <MenuItem key={p} value={p}>{p}</MenuItem>)}
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField fullWidth label="Major" name="major" value={profile.major} onChange={handleChange} />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField fullWidth label="Email Address" name="email" value={profile.email} onChange={handleChange} type="email" />
-            </Grid>
             <Grid item xs={12}>
-              <Typography variant="h6" sx={{ mt: 2 }}>Background Information</Typography>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField fullWidth label="Father's Name" name="fatherName" value={profile.fatherName} onChange={handleChange} />
-            </Grid>
-            <Grid item xs={12} sm={2}>
-              <TextField fullWidth label="Occupation" name="fatherOccupation" value={profile.fatherOccupation} onChange={handleChange} />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField fullWidth label="Mother's Name" name="motherName" value={profile.motherName} onChange={handleChange} />
-            </Grid>
-            <Grid item xs={12} sm={2}>
-              <TextField fullWidth label="Occupation" name="motherOccupation" value={profile.motherOccupation} onChange={handleChange} />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField fullWidth label="Guardian" name="guardian" value={profile.guardian} onChange={handleChange} />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField fullWidth label="Guardian Contact" name="guardianContact" value={profile.guardianContact} onChange={handleChange} />
-            </Grid>
-        <Grid item xs={12}>
-          <Typography variant="subtitle2" color="textSecondary">Home Address</Typography>
-          <Typography variant="body1">{profile.homeAddress || 'N/A'}</Typography>
+              <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>Profile Image</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Button variant="contained" component="label" sx={{ mt: 2 }}>
                 Upload Profile Image
                 <input type="file" accept="image/*" hidden onChange={handleImage} />
               </Button>
-          {profile.image && (
-            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar src={profile.image} sx={{ width: 80, height: 80 }} />
-              <Button 
-                variant="outlined" 
-                color="error" 
-                size="small"
-                onClick={handleRemoveImage}
-              >
-                Remove
-              </Button>
-            </Box>
-          )}
+              {profile.image && (
+                <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Avatar src={profile.image} sx={{ width: 80, height: 80 }} />
+                  <Button 
+                    variant="outlined" 
+                    color="error" 
+                    size="small"
+                    onClick={handleRemoveImage}
+                  >
+                    Remove
+                  </Button>
+                </Box>
+              )}
             </Grid>
             <Grid item xs={12}>
           <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
@@ -1696,7 +1645,7 @@ function StudentMenu() {
         Student Menu
       </Typography>
       <Grid container spacing={2}>
-        <MenuCard icon={<Assignment fontSize="large" />} title="Lost and Found" to="lost-found" />
+
         <MenuCard icon={<PersonAdd fontSize="large" />} title="Add Student" to="add-student" />
         <MenuCard icon={<ListAlt fontSize="large" />} title="Student List" to="student-list" />
         <MenuCard icon={<Report fontSize="large" />} title="Add Violation" to="add-violation" />
@@ -1717,20 +1666,10 @@ function EditStudentForm({ student, onClose, onSuccess }) {
     age: student.age || "",
     birthdate: student.birthdate || "",
     contact: student.contact || "",
-    scholarship: student.scholarship || "",
     course: student.course || "",
     year: student.year || "",
     section: student.section || "",
-    position: student.position || "",
-    major: student.major || "",
     email: student.email || "",
-    fatherName: student.fatherName || "",
-    fatherOccupation: student.fatherOccupation || "",
-    motherName: student.motherName || "",
-    motherOccupation: student.motherOccupation || "",
-    guardian: student.guardian || "",
-    guardianContact: student.guardianContact || "",
-    homeAddress: student.homeAddress || "",
     image: student.image || null
   });
   const [imageFile, setImageFile] = useState(null);
@@ -1745,22 +1684,33 @@ function EditStudentForm({ student, onClose, onSuccess }) {
   const handleImage = async (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        setSnackbar({ open: true, message: "Please select a valid image file", severity: "error" });
+        setSnackbar({ open: true, message: "Please select a valid image file (JPEG, PNG, GIF)", severity: "error" });
         return;
       }
-      // Validate file size (max 200KB file)
-      if (file.size > 200 * 1024) {
-        setSnackbar({ open: true, message: "Image file size must be less than 200KB", severity: "error" });
+      
+      // Validate file size (max 500KB for better quality)
+      if (file.size > 500 * 1024) {
+        setSnackbar({ open: true, message: "Image file size must be less than 500KB", severity: "error" });
         return;
       }
+      
+      // Show loading message
+      setSnackbar({ open: true, message: "Processing image...", severity: "info" });
+      
       setImageFile(file);
-      // Convert to base64
+      
+      // Convert to base64 with error handling
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfile((prev) => ({ ...prev, image: reader.result }));
-        setSnackbar({ open: true, message: "Image loaded as base64!", severity: "success" });
+        setSnackbar({ open: true, message: "Profile image updated successfully!", severity: "success" });
+      };
+      reader.onerror = () => {
+        setSnackbar({ open: true, message: "Error reading image file. Please try again.", severity: "error" });
+        setImageFile(null);
       };
       reader.readAsDataURL(file);
     }
@@ -1822,7 +1772,7 @@ function EditStudentForm({ student, onClose, onSuccess }) {
             <TextField fullWidth label="ID Number" name="id" value={profile.id} onChange={handleChange} required />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="Scholarship" name="scholarship" value={profile.scholarship} onChange={handleChange} />
+            <TextField fullWidth label="Email Address" name="email" value={profile.email} onChange={handleChange} type="email" />
           </Grid>
           <Grid item xs={12} sm={4}>
             <TextField fullWidth label="Last Name" name="lastName" value={profile.lastName} onChange={handleChange} required />
@@ -1861,41 +1811,8 @@ function EditStudentForm({ student, onClose, onSuccess }) {
           <Grid item xs={12} sm={4}>
             <TextField fullWidth label="Section" name="section" value={profile.section} onChange={handleChange} />
           </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField fullWidth label="Position" name="position" value={profile.position} onChange={handleChange} select>
-              {positions.map((p) => <MenuItem key={p} value={p}>{p}</MenuItem>)}
-            </TextField>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField fullWidth label="Major" name="major" value={profile.major} onChange={handleChange} />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField fullWidth label="Email Address" name="email" value={profile.email} onChange={handleChange} type="email" />
-          </Grid>
           <Grid item xs={12}>
-            <Typography variant="h6" sx={{ mt: 2 }}>Background Information</Typography>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField fullWidth label="Father's Name" name="fatherName" value={profile.fatherName} onChange={handleChange} />
-          </Grid>
-          <Grid item xs={12} sm={2}>
-            <TextField fullWidth label="Occupation" name="fatherOccupation" value={profile.fatherOccupation} onChange={handleChange} />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField fullWidth label="Mother's Name" name="motherName" value={profile.motherName} onChange={handleChange} />
-          </Grid>
-          <Grid item xs={12} sm={2}>
-            <TextField fullWidth label="Occupation" name="motherOccupation" value={profile.motherOccupation} onChange={handleChange} />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField fullWidth label="Guardian" name="guardian" value={profile.guardian} onChange={handleChange} />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField fullWidth label="Guardian Contact" name="guardianContact" value={profile.guardianContact} onChange={handleChange} />
-          </Grid>
-          <Grid item xs={12}>
-            <Typography variant="subtitle2" color="textSecondary">Home Address</Typography>
-            <Typography variant="body1">{profile.homeAddress || 'N/A'}</Typography>
+            <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>Profile Image</Typography>
           </Grid>
           <Grid item xs={12} sm={6}>
             <Button variant="contained" component="label" sx={{ mt: 2 }}>
@@ -1969,7 +1886,7 @@ export default function Students() {
             violationRecords={violationRecords}
           />
         } />
-        <Route path="lost-found" element={<LostFound />} />
+
         <Route path="add-student" element={<AddStudent onClose={() => {}} />} />
         <Route path="student-list" element={
           <StudentList

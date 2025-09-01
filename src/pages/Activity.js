@@ -173,63 +173,7 @@ function SearchBar({ value, onChange, placeholder }) {
   );
 }
 
-function ActivityHistory({ activities, onView, onEdit, onDelete, search, onSearch, page, onPageChange, rowsPerPage }) {
-  // Filter and paginate
-  const filtered = activities.filter(a =>
-    a.title.toLowerCase().includes(search.toLowerCase()) ||
-    a.organizer?.toLowerCase().includes(search.toLowerCase()) ||
-    a.category?.toLowerCase().includes(search.toLowerCase())
-  );
-  const paginated = filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
-  return (
-    <Paper sx={{ p: 3, mb: 3 }}>
-      <Typography variant="h5" gutterBottom>Activity History</Typography>
-      <SearchBar value={search} onChange={onSearch} placeholder="Search activities..." />
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>Title</TableCell>
-            <TableCell>Date</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Category</TableCell>
-            <TableCell>Actions</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {paginated.length === 0 ? (
-            <TableRow><TableCell colSpan={5}>No activities found.</TableCell></TableRow>
-          ) : paginated.map((a) => (
-            <TableRow key={a.id}>
-              <TableCell>{a.title}</TableCell>
-              <TableCell>{a.date ? new Date(a.date).toLocaleDateString() : ''}</TableCell>
-              <TableCell>
-                <Chip label={a.completed ? 'Completed' : 'Scheduled'} color={a.completed ? 'success' : 'warning'} size="small" />
-              </TableCell>
-              <TableCell>
-                <Chip label={a.category} color="info" size="small" />
-              </TableCell>
-              <TableCell>
-                <Stack direction="row" spacing={1}>
-                  <IconButton size="small" color="primary" onClick={() => onView(a)}><Visibility /></IconButton>
-                  <IconButton size="small" color="warning" onClick={() => onEdit(a)}><Edit /></IconButton>
-                  <IconButton size="small" color="error" onClick={() => onDelete(a)}><Delete /></IconButton>
-                </Stack>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-        <Pagination
-          count={Math.ceil(filtered.length / rowsPerPage)}
-          page={page}
-          onChange={(_, v) => onPageChange(v)}
-          color="primary"
-        />
-    </Box>
-    </Paper>
-  );
-}
+
 
 function ScheduledActivities({ activities, onMarkCompleted, search, onSearch }) {
   const filtered = activities.filter(a => !a.completed && (
@@ -286,9 +230,6 @@ export default function Activity() {
   const [editForm, setEditForm] = useState(null);
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const [searchScheduled, setSearchScheduled] = useState("");
-  const [searchHistory, setSearchHistory] = useState("");
-  const [page, setPage] = useState(1);
-  const rowsPerPage = 5;
   const [openEventModal, setOpenEventModal] = useState(false);
   const [eventForm, setEventForm] = useState({ title: '', description: '', proposedBy: '', date: '', time: '', location: '' });
   const [eventSubmitting, setEventSubmitting] = useState(false);
@@ -402,16 +343,15 @@ export default function Activity() {
             Schedule Event (for Approval)
           </Button>
         </Grid>
-        <Grid item xs={12} md={5}>
+        <Grid item xs={12}>
           <SummaryCard stats={stats} />
           <ExportButton activities={activities} />
+        </Grid>
+        <Grid item xs={12}>
           <ActivityForm onActivityAdded={handleActivityAdded} />
         </Grid>
-        <Grid item xs={12} md={7}>
-          <Box>
-            <ScheduledActivities activities={activities} onMarkCompleted={handleMarkCompleted} search={searchScheduled} onSearch={setSearchScheduled} />
-            <ActivityHistory activities={activities} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} search={searchHistory} onSearch={setSearchHistory} page={page} onPageChange={setPage} rowsPerPage={rowsPerPage} />
-          </Box>
+        <Grid item xs={12}>
+          <ScheduledActivities activities={activities} onMarkCompleted={handleMarkCompleted} search={searchScheduled} onSearch={setSearchScheduled} />
         </Grid>
       </Grid>
       {/* Schedule Event Modal */}

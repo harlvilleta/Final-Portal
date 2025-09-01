@@ -22,6 +22,8 @@ export default function TeacherSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [unreadMeetings, setUnreadMeetings] = useState(0);
+  const [unreadLostFound, setUnreadLostFound] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
 
@@ -48,17 +50,44 @@ export default function TeacherSidebar() {
   useEffect(() => {
     if (!currentUser?.email) return;
 
+    // Regular notifications
     const notificationsQuery = query(
       collection(db, "notifications"),
       where("recipientEmail", "==", currentUser.email),
       where("read", "==", false)
     );
 
-    const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
+    const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
       setUnreadNotifications(snapshot.docs.length);
     });
 
-    return unsubscribe;
+    // Meeting notifications
+    const meetingsQuery = query(
+      collection(db, "meetings"),
+      where("participants", "array-contains", currentUser.email)
+    );
+
+    const unsubscribeMeetings = onSnapshot(meetingsQuery, (snapshot) => {
+      setUnreadMeetings(snapshot.docs.length);
+    });
+
+    // Lost & Found notifications
+    const lostFoundQuery = query(collection(db, "lost_items"));
+    const foundItemsQuery = query(collection(db, "found_items"));
+
+    const unsubscribeLost = onSnapshot(lostFoundQuery, (snapshot) => {
+      const lostCount = snapshot.docs.length;
+      getDocs(foundItemsQuery).then(foundSnap => {
+        const foundCount = foundSnap.docs.length;
+        setUnreadLostFound(lostCount + foundCount);
+      });
+    });
+
+    return () => {
+      unsubscribeNotifications();
+      unsubscribeMeetings();
+      unsubscribeLost();
+    };
   }, [currentUser]);
 
   const handleLogout = async () => {
@@ -135,7 +164,7 @@ export default function TeacherSidebar() {
           >
             <ListItemIcon sx={{ minWidth: 40 }}>
               {item.text === "Notifications" ? (
-                <Badge badgeContent={unreadNotifications} color="error">
+                <Badge badgeContent={unreadNotifications + unreadMeetings + unreadLostFound} color="error">
                   {item.icon}
                 </Badge>
               ) : (
@@ -184,11 +213,11 @@ export default function TeacherSidebar() {
       </List>
 
       {/* Notification Summary */}
-      {unreadNotifications > 0 && (
+      {(unreadNotifications + unreadMeetings + unreadLostFound) > 0 && (
         <Box sx={{ p: 2, mt: 'auto', borderTop: '1px solid #636e72' }}>
           <Chip
             icon={<Warning />}
-            label={`${unreadNotifications} unread notification${unreadNotifications > 1 ? 's' : ''}`}
+            label={`${unreadNotifications + unreadMeetings + unreadLostFound} unread notification${(unreadNotifications + unreadMeetings + unreadLostFound) > 1 ? 's' : ''}`}
             color="error"
             variant="outlined"
             sx={{ 

@@ -14,8 +14,7 @@ const menu = [
     hasSubmenu: true,
     submenu: [
       { text: "Student List", icon: <School sx={{ color: '#1976d2' }} />, path: "/students" },
-      { text: "Add Student", icon: <PersonAdd sx={{ color: '#43a047' }} />, path: "/students/add-student" },
-      { text: "Lost & Found", icon: <Search sx={{ color: '#ff9800' }} />, path: "/students/lost-found" }
+      { text: "Add Student", icon: <PersonAdd sx={{ color: '#43a047' }} />, path: "/students/add-student" }
     ]
   },
   { 
@@ -32,7 +31,17 @@ const menu = [
     ]
   },
   { text: "Receipt Review", icon: <Receipt sx={{ color: '#ff9800' }} />, path: "/receipt-review" },
-  { text: "Activity", icon: <Event sx={{ color: '#fbc02d' }} />, path: "/activity" },
+  { text: "Lost & Found", icon: <Search sx={{ color: '#ff9800' }} />, path: "/lost-found" },
+  { 
+    text: "Activity", 
+    icon: <Event sx={{ color: '#fbc02d' }} />, 
+    path: "/activity",
+    hasSubmenu: true,
+    submenu: [
+      { text: "Schedule Activity", icon: <Event sx={{ color: '#fbc02d' }} />, path: "/activity" },
+      { text: "History", icon: <History sx={{ color: '#9c27b0' }} />, path: "/activity/history" }
+    ]
+  },
   { 
     text: "Announcements", 
     icon: <ListAlt sx={{ color: '#0288d1' }} />, 

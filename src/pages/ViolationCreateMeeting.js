@@ -93,14 +93,31 @@ export default function ViolationCreateMeeting() {
     e.preventDefault();
     setMeetingSubmitting(true);
     try {
-      await addDoc(collection(db, 'meetings'), {
+      // Prepare participants array
+      const participants = [];
+      const student = students.find(s => `${s.firstName} ${s.lastName}` === meetingForm.studentName);
+      if (student && student.email) {
+        participants.push(student.email);
+      }
+      
+      // Add teacher to participants if specified
+      if (meetingForm.teacherName) {
+        const teacher = teachers.find(t => t.fullName === meetingForm.teacherName);
+        if (teacher && teacher.email) {
+          participants.push(teacher.email);
+        }
+      }
+
+      const meetingData = {
         ...meetingForm,
+        participants: participants,
         createdAt: new Date().toISOString(),
         type: 'meeting'
-      });
+      };
+
+      await addDoc(collection(db, 'meetings'), meetingData);
       
-      // Find student email and send notification
-      const student = students.find(s => `${s.firstName} ${s.lastName}` === meetingForm.studentName);
+      // Send email notification to student
       if (student && student.email) {
         try {
           await emailjs.send(
@@ -115,6 +132,26 @@ export default function ViolationCreateMeeting() {
           );
         } catch (emailError) {
           console.error("Email sending failed:", emailError);
+        }
+      }
+
+      // Send notification to teacher if specified
+      if (meetingForm.teacherName) {
+        const teacher = teachers.find(t => t.fullName === meetingForm.teacherName);
+        if (teacher && teacher.email) {
+          try {
+            await addDoc(collection(db, 'notifications'), {
+              recipientEmail: teacher.email,
+              title: `New Meeting Assignment`,
+              message: `You have been assigned to a meeting with ${meetingForm.studentName} on ${meetingForm.date} at ${meetingForm.time}.`,
+              type: 'meeting',
+              read: false,
+              createdAt: new Date().toISOString(),
+              meetingId: meetingData.id
+            });
+          } catch (notificationError) {
+            console.error("Teacher notification failed:", notificationError);
+          }
         }
       }
       

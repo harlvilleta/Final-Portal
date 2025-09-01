@@ -38,6 +38,9 @@ import TeacherReportViolation from "./pages/TeacherReportViolation";
 import ViolationReview from "./pages/ViolationReview";
 import TeacherReports from "./pages/TeacherReports";
 import TeacherSchedule from "./pages/TeacherSchedule";
+import AdminLostFound from "./pages/AdminLostFound";
+import ActivityHistory from "./pages/ActivityHistory";
+import TeacherNotifications from "./pages/TeacherNotifications";
 
 // Header component for admin dashboard
 function AdminHeader({ currentUser, userProfile }) {
@@ -479,7 +482,8 @@ function App() {
                       <Route path="/" element={<Navigate to="/overview" />} />
                       <Route path="/overview" element={<Overview />} />
                       <Route path="/students/*" element={<Students />} />
-                      <Route path="/activity/*" element={<Activity />} />
+                                                    <Route path="/activity" element={<Activity />} />
+                              <Route path="/activity/history" element={<ActivityHistory />} />
                       <Route path="/history" element={<History />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="/violation-record" element={<ViolationRecord />} />
@@ -492,6 +496,7 @@ function App() {
                       <Route path="/announcements" element={<Announcements />} />
                       <Route path="/announcements/report" element={<AnnouncementReport />} />
                       <Route path="/receipt-review" element={<ReceiptReview />} />
+                      <Route path="/lost-found" element={<AdminLostFound />} />
                       <Route path="/recycle-bin" element={<RecycleBin />} />
                       <Route path="/user/*" element={<Navigate to="/overview" />} />
                     </Routes>
@@ -513,7 +518,7 @@ function App() {
                       <Route path="/teacher-announcements" element={<Announcements />} />
                       <Route path="/teacher-assessments" element={<div>Teacher Assessments</div>} />
                       <Route path="/teacher-schedule" element={<TeacherSchedule />} />
-                      <Route path="/teacher-notifications" element={<UserNotifications currentUser={currentUser} />} />
+                                                    <Route path="/teacher-notifications" element={<TeacherNotifications />} />
                       <Route path="/teacher-profile" element={<Profile />} />
                       <Route path="/*" element={<Navigate to="/teacher-dashboard" />} />
                     </Routes>

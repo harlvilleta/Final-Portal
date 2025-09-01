@@ -14,7 +14,13 @@ import {
   Divider,
   Paper,
   CircularProgress,
-  Alert
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  IconButton
 } from '@mui/material';
 import { 
   Schedule, 
@@ -22,7 +28,9 @@ import {
   LocationOn, 
   People, 
   AccessTime,
-  CalendarToday
+  CalendarToday,
+  Visibility,
+  Close
 } from '@mui/icons-material';
 import { auth, db } from '../firebase';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
@@ -32,6 +40,8 @@ export default function TeacherSchedule() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [selectedMeeting, setSelectedMeeting] = useState(null);
+  const [openMeetingDialog, setOpenMeetingDialog] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -99,6 +109,16 @@ export default function TeacherSchedule() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleViewMeeting = (meeting) => {
+    setSelectedMeeting(meeting);
+    setOpenMeetingDialog(true);
+  };
+
+  const handleCloseMeetingDialog = () => {
+    setOpenMeetingDialog(false);
+    setSelectedMeeting(null);
   };
 
   if (loading) {
@@ -282,14 +302,24 @@ export default function TeacherSchedule() {
                           </Typography>
                         </Box>
                         
-                        {meeting.organizer && (
-                          <Chip 
-                            label={`Organized by: ${meeting.organizer}`}
-                            size="small"
-                            variant="outlined"
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {meeting.organizer && (
+                            <Chip 
+                              label={`Organized by: ${meeting.organizer}`}
+                              size="small"
+                              variant="outlined"
+                              color="primary"
+                            />
+                          )}
+                          <IconButton 
+                            size="small" 
                             color="primary"
-                          />
-                        )}
+                            onClick={() => handleViewMeeting(meeting)}
+                            sx={{ ml: 1 }}
+                          >
+                            <Visibility />
+                          </IconButton>
+                        </Box>
                       </Box>
                     </CardContent>
                   </Card>
@@ -353,6 +383,129 @@ export default function TeacherSchedule() {
           </Typography>
         </Box>
       )}
+
+      {/* Meeting Details Dialog */}
+      <Dialog 
+        open={openMeetingDialog} 
+        onClose={handleCloseMeetingDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Meeting Details</Typography>
+            <IconButton onClick={handleCloseMeetingDialog}>
+              <Close />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {selectedMeeting && (
+            <Box sx={{ mt: 2 }}>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <Typography variant="h5" fontWeight={600} color="primary" gutterBottom>
+                    {selectedMeeting.title}
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={12} sm={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <AccessTime sx={{ mr: 1, color: 'text.secondary' }} />
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Date & Time
+                      </Typography>
+                      <Typography variant="body1">
+                        {formatMeetingTime(selectedMeeting.date)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <LocationOn sx={{ mr: 1, color: 'text.secondary' }} />
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Location
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedMeeting.location || 'TBD'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <People sx={{ mr: 1, color: 'text.secondary' }} />
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Participants
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedMeeting.participants?.length || 0} people
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Event sx={{ mr: 1, color: 'text.secondary' }} />
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Organizer
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedMeeting.organizer || 'Unknown'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Description
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedMeeting.description || 'No description provided'}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                {selectedMeeting.participants && selectedMeeting.participants.length > 0 && (
+                  <Grid item xs={12}>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        Participant List
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {selectedMeeting.participants.map((participant, index) => (
+                          <Chip 
+                            key={index}
+                            label={participant}
+                            size="small"
+                            variant="outlined"
+                            color="primary"
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  </Grid>
+                )}
+              </Grid>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseMeetingDialog} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
