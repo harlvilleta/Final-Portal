@@ -20,7 +20,6 @@ import {
 } from '@mui/material';
 import { 
   Dashboard, 
-  People, 
   Assignment, 
   Announcement, 
   Event, 
@@ -31,7 +30,6 @@ import {
   Grade,
   Schedule,
   TrendingUp,
-  Person,
   CalendarToday,
   CheckCircle,
   Warning,
@@ -44,12 +42,13 @@ import { useNavigate } from 'react-router-dom';
 export default function TeacherDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
-  const [students, setStudents] = useState([]);
   const [violations, setViolations] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
+  
 
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -75,18 +74,13 @@ export default function TeacherDashboard() {
   useEffect(() => {
     if (!currentUser?.email) return;
 
-    // Fetch students
-    const studentsQuery = query(collection(db, 'users'), where('role', '==', 'Student'));
-    const studentsUnsubscribe = onSnapshot(studentsQuery, (snapshot) => {
-      const studentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setStudents(studentsData);
-    });
-
     // Fetch violations
     const violationsQuery = query(collection(db, 'violations'));
     const violationsUnsubscribe = onSnapshot(violationsQuery, (snapshot) => {
       const violationsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setViolations(violationsData);
+    }, (error) => {
+      console.error('Error fetching violations:', error);
     });
 
     // Fetch announcements
@@ -94,6 +88,8 @@ export default function TeacherDashboard() {
     const announcementsUnsubscribe = onSnapshot(announcementsQuery, (snapshot) => {
       const announcementsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setAnnouncements(announcementsData);
+    }, (error) => {
+      console.error('Error fetching announcements:', error);
     });
 
     // Fetch notifications
@@ -104,17 +100,20 @@ export default function TeacherDashboard() {
     const notificationsUnsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
       const notificationsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setNotifications(notificationsData);
+    }, (error) => {
+      console.error('Error fetching notifications:', error);
     });
 
     setLoading(false);
 
     return () => {
-      studentsUnsubscribe();
       violationsUnsubscribe();
       announcementsUnsubscribe();
       notificationsUnsubscribe();
     };
   }, [currentUser]);
+
+
 
   const getUserDisplayInfo = () => {
     if (userProfile) {
@@ -204,14 +203,14 @@ export default function TeacherDashboard() {
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
                   <Typography variant="h4" fontWeight={700} color="#1976d2" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
-                    {students.length}
+                    {violations.filter(v => v.status === 'Pending').length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                    Total Students
+                    Pending Reports
                   </Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: '#1976d2', width: { xs: 48, sm: 56 }, height: { xs: 48, sm: 56 } }}>
-                  <People sx={{ fontSize: { xs: 24, sm: 28 } }} />
+                  <Assignment sx={{ fontSize: { xs: 24, sm: 28 } }} />
                 </Avatar>
               </Box>
             </CardContent>
@@ -233,14 +232,14 @@ export default function TeacherDashboard() {
           }}>
             <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h4" fontWeight={700} color="#f57c00" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
-                    {violations.length}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                    Total Violations
-                  </Typography>
-                </Box>
+                                 <Box>
+                   <Typography variant="h4" fontWeight={700} color="#f57c00" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
+                     {violations.length}
+                   </Typography>
+                   <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                     Meetings
+                   </Typography>
+                 </Box>
                 <Avatar sx={{ bgcolor: '#ff9800', width: { xs: 48, sm: 56 }, height: { xs: 48, sm: 56 } }}>
                   <Warning sx={{ fontSize: { xs: 24, sm: 28 } }} />
                 </Avatar>
@@ -313,6 +312,8 @@ export default function TeacherDashboard() {
           </Card>
         </Grid>
       </Grid>
+
+      
 
       {/* Main Content */}
       <Grid container spacing={3}>
@@ -462,6 +463,8 @@ export default function TeacherDashboard() {
           </Card>
         </Grid>
       </Grid>
+
+      
     </Box>
   );
 } 

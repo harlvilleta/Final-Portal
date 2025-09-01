@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper, TextField, Button, Stack, Snackbar, Alert, List, ListItem, ListItemText, Divider, MenuItem, Card, CardContent, CardHeader, Chip, Tabs, Tab, Badge, Dialog, DialogTitle, DialogContent, DialogActions, Select, InputAdornment } from "@mui/material";
-import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc, getDoc } from "firebase/firestore";
 import { db, logActivity } from "../firebase";
 import PrintIcon from '@mui/icons-material/Print';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -31,10 +31,29 @@ export default function Announcements() {
   const [selected, setSelected] = useState([]);
   const [bulkAction, setBulkAction] = useState(null);
   const [formModalOpen, setFormModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userRole, setUserRole] = useState('Student');
 
   useEffect(() => {
+    // Get current user and role
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      setCurrentUser(user);
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            setUserRole(userDoc.data().role || 'Student');
+          }
+        } catch (error) {
+          console.error('Error fetching user role:', error);
+        }
+      }
+    });
+
     fetchAnnouncements();
     fetchRecycleBin();
+    
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
@@ -331,16 +350,22 @@ export default function Announcements() {
     <Box sx={{ maxWidth: 900, mx: 'auto', p: { xs: 1, sm: 3 } }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h4" fontWeight={700}>Announcements</Typography>
-        <Button variant="contained" color="primary" onClick={() => setFormModalOpen(true)}>
-          + Create Announcement
-        </Button>
+        {userRole === 'Admin' && (
+          <Button variant="contained" color="primary" onClick={() => setFormModalOpen(true)}>
+            + Create Announcement
+          </Button>
+        )}
       </Stack>
       <Tabs value={tab} onChange={(_, v) => { setTab(v); setSelected([]); }} sx={{ mb: 2 }}>
         <Tab label="Active" />
-        <Tab label={<Badge color="secondary" badgeContent={recycleBin.length}>Recycle Bin</Badge>} />
-        <Tab label={<Badge color="success" badgeContent={completedAnnouncements.length}>Completed</Badge>} />
-        <Tab label={<Badge color="info" badgeContent={scheduledList.length}>Scheduled</Badge>} />
-        <Tab label={<Badge color="warning" badgeContent={expiredList.length}>Expired</Badge>} />
+        {userRole === 'Admin' && (
+          <>
+            <Tab label={<Badge color="secondary" badgeContent={recycleBin.length}>Recycle Bin</Badge>} />
+            <Tab label={<Badge color="success" badgeContent={completedAnnouncements.length}>Completed</Badge>} />
+            <Tab label={<Badge color="info" badgeContent={scheduledList.length}>Scheduled</Badge>} />
+            <Tab label={<Badge color="warning" badgeContent={expiredList.length}>Expired</Badge>} />
+          </>
+        )}
       </Tabs>
       <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, maxWidth: 500 }}>
         <TextField
@@ -381,12 +406,16 @@ export default function Announcements() {
                   subheader={a.date ? new Date(a.date).toLocaleDateString() : ''}
                   action={
                     <Stack direction="row" spacing={1}>
-                      <Tooltip title={a.pinned ? "Unpin" : "Pin"}><IconButton onClick={() => handlePin(a, !a.pinned)} disabled={isSubmitting}>{a.pinned ? <PushPinIcon color="info" /> : <PushPinOutlinedIcon />}</IconButton></Tooltip>
+                      {userRole === 'Admin' && (
+                        <>
+                          <Tooltip title={a.pinned ? "Unpin" : "Pin"}><IconButton onClick={() => handlePin(a, !a.pinned)} disabled={isSubmitting}>{a.pinned ? <PushPinIcon color="info" /> : <PushPinOutlinedIcon />}</IconButton></Tooltip>
+                          <Tooltip title="Edit"><IconButton onClick={() => setEditAnnouncement(a)}><EditIcon color="info" /></IconButton></Tooltip>
+                          <Tooltip title="Delete"><IconButton onClick={() => handleDelete(a)} disabled={isSubmitting}><DeleteIcon color="error" /></IconButton></Tooltip>
+                          {!a.completed && <Tooltip title="Mark as Completed"><IconButton onClick={() => handleMarkCompleted(a)} disabled={isSubmitting}><Chip label="Complete" color="success" size="small" /></IconButton></Tooltip>}
+                        </>
+                      )}
                       <Tooltip title="View"><IconButton onClick={() => setViewAnnouncement(a)}><VisibilityIcon color="primary" /></IconButton></Tooltip>
-                      <Tooltip title="Edit"><IconButton onClick={() => setEditAnnouncement(a)}><EditIcon color="info" /></IconButton></Tooltip>
                       <Tooltip title="Print"><IconButton onClick={() => handlePrint(a)}><PrintIcon /></IconButton></Tooltip>
-                      <Tooltip title="Delete"><IconButton onClick={() => handleDelete(a)} disabled={isSubmitting}><DeleteIcon color="error" /></IconButton></Tooltip>
-                      {!a.completed && <Tooltip title="Mark as Completed"><IconButton onClick={() => handleMarkCompleted(a)} disabled={isSubmitting}><Chip label="Complete" color="success" size="small" /></IconButton></Tooltip>}
                     </Stack>
                   }
                 />
@@ -402,7 +431,7 @@ export default function Announcements() {
       {tab === 0 && (
         <Box sx={{ mb: 4 }}>
           <Typography variant="h6" sx={{ mb: 1, fontWeight: 700 }}>All Active Announcements</Typography>
-          {selected.length > 0 && (
+          {selected.length > 0 && userRole === 'Admin' && (
             <Paper sx={{ mb: 2, p: 1, bgcolor: '#f5f5f5', display: 'flex', alignItems: 'center', gap: 2 }}>
               <Typography>{selected.length} selected</Typography>
               <Button size="small" color="error" onClick={() => setBulkAction('delete')}>Delete</Button>
@@ -417,9 +446,11 @@ export default function Announcements() {
             <React.Fragment>
               {mainList.map(a => (
                 <Card key={a.id} sx={{ mb: 2, borderLeft: a.priority === 'Urgent' ? '5px solid #d32f2f' : a.pinned ? '5px solid #0288d1' : '5px solid #eee', boxShadow: 2, position: 'relative' }}>
-                  <Box sx={{ position: 'absolute', left: 8, top: 8 }}>
-                    <input type="checkbox" checked={selected.includes(a.id)} onChange={e => setSelected(sel => e.target.checked ? [...sel, a.id] : sel.filter(id => id !== a.id))} />
-                  </Box>
+                  {userRole === 'Admin' && (
+                    <Box sx={{ position: 'absolute', left: 8, top: 8 }}>
+                      <input type="checkbox" checked={selected.includes(a.id)} onChange={e => setSelected(sel => e.target.checked ? [...sel, a.id] : sel.filter(id => id !== a.id))} />
+                    </Box>
+                  )}
                   <CardHeader
                     title={<Stack direction="row" alignItems="center" spacing={1}>
                       <Typography fontWeight={700}>{a.title}</Typography>
@@ -432,12 +463,16 @@ export default function Announcements() {
                     subheader={a.date ? new Date(a.date).toLocaleDateString() : ''}
                     action={
                       <Stack direction="row" spacing={1}>
-                        <Tooltip title={a.pinned ? "Unpin" : "Pin"}><IconButton onClick={() => handlePin(a, !a.pinned)} disabled={isSubmitting}>{a.pinned ? <PushPinIcon color="info" /> : <PushPinOutlinedIcon />}</IconButton></Tooltip>
+                        {userRole === 'Admin' && (
+                          <>
+                            <Tooltip title={a.pinned ? "Unpin" : "Pin"}><IconButton onClick={() => handlePin(a, !a.pinned)} disabled={isSubmitting}>{a.pinned ? <PushPinIcon color="info" /> : <PushPinOutlinedIcon />}</IconButton></Tooltip>
+                            <Tooltip title="Edit"><IconButton onClick={() => setEditAnnouncement(a)}><EditIcon color="info" /></IconButton></Tooltip>
+                            <Tooltip title="Delete"><IconButton onClick={() => handleDelete(a)} disabled={isSubmitting}><DeleteIcon color="error" /></IconButton></Tooltip>
+                            {!a.completed && <Tooltip title="Mark as Completed"><IconButton onClick={() => handleMarkCompleted(a)} disabled={isSubmitting}><Chip label="Complete" color="success" size="small" /></IconButton></Tooltip>}
+                          </>
+                        )}
                         <Tooltip title="View"><IconButton onClick={() => setViewAnnouncement(a)}><VisibilityIcon color="primary" /></IconButton></Tooltip>
-                        <Tooltip title="Edit"><IconButton onClick={() => setEditAnnouncement(a)}><EditIcon color="info" /></IconButton></Tooltip>
                         <Tooltip title="Print"><IconButton onClick={() => handlePrint(a)}><PrintIcon /></IconButton></Tooltip>
-                        <Tooltip title="Delete"><IconButton onClick={() => handleDelete(a)} disabled={isSubmitting}><DeleteIcon color="error" /></IconButton></Tooltip>
-                        {!a.completed && <Tooltip title="Mark as Completed"><IconButton onClick={() => handleMarkCompleted(a)} disabled={isSubmitting}><Chip label="Complete" color="success" size="small" /></IconButton></Tooltip>}
                       </Stack>
                     }
                   />

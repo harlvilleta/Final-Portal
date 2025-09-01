@@ -37,6 +37,7 @@ import ReceiptHistory from "./components/ReceiptHistory";
 import TeacherReportViolation from "./pages/TeacherReportViolation";
 import ViolationReview from "./pages/ViolationReview";
 import TeacherReports from "./pages/TeacherReports";
+import TeacherSchedule from "./pages/TeacherSchedule";
 
 // Header component for admin dashboard
 function AdminHeader({ currentUser, userProfile }) {
@@ -511,7 +512,7 @@ function App() {
                       <Route path="/teacher-reports" element={<TeacherReports />} />
                       <Route path="/teacher-announcements" element={<Announcements />} />
                       <Route path="/teacher-assessments" element={<div>Teacher Assessments</div>} />
-                      <Route path="/teacher-schedule" element={<div>Teacher Schedule</div>} />
+                      <Route path="/teacher-schedule" element={<TeacherSchedule />} />
                       <Route path="/teacher-notifications" element={<UserNotifications currentUser={currentUser} />} />
                       <Route path="/teacher-profile" element={<Profile />} />
                       <Route path="/*" element={<Navigate to="/teacher-dashboard" />} />

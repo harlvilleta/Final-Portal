@@ -20,7 +20,7 @@ import {
   Divider
 } from '@mui/material';
 import { Visibility, VisibilityOff, LockOutlined, Google as GoogleIcon, Email, Security } from '@mui/icons-material';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import Link from '@mui/material/Link';
@@ -41,36 +41,42 @@ export default function Login({ onLoginSuccess }) {
   const [lockoutTime, setLockoutTime] = useState(0);
   const [formErrors, setFormErrors] = useState({ email: '', password: '' });
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
   
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check if user is already authenticated
+  // Check if user is already authenticated and redirect automatically
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setCurrentUser(user);
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        // User is already authenticated, redirect them immediately
+        try {
+          // Fetch user role from Firestore
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          let userRole = 'Student'; // Default role
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            userRole = userData.role || 'Student';
+          }
+          
+          // Redirect based on role immediately
+          if (userRole === 'Admin') {
+            navigate('/overview', { replace: true });
+          } else if (userRole === 'Teacher') {
+            navigate('/teacher-dashboard', { replace: true });
+          } else {
+            navigate('/user-dashboard', { replace: true });
+          }
+        } catch (error) {
+          console.error('Error fetching user role:', error);
+          // Fallback to default redirect
+          navigate('/user-dashboard', { replace: true });
+        }
+      }
     });
     return unsubscribe;
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      setSnackbar({ 
-        open: true, 
-        message: 'Successfully logged out', 
-        severity: 'success' 
-      });
-    } catch (error) {
-      console.error('Logout error:', error);
-      setSnackbar({ 
-        open: true, 
-        message: 'Error logging out', 
-        severity: 'error' 
-      });
-    }
-  };
+  }, [navigate]);
 
   // Account lockout timer with countdown
   useEffect(() => {
@@ -471,51 +477,7 @@ export default function Login({ onLoginSuccess }) {
           </Box>
         )}
         
-        {currentUser && (
-          <Box sx={{ width: '100%', mb: 2, textAlign: 'right' }}>
-            <Button 
-              variant="outlined" 
-              color="primary" 
-              onClick={handleLogout} 
-              startIcon={<LockOutlined />}
-              sx={{ py: 1, fontSize: 16 }}
-            >
-              Log Out
-            </Button>
-          </Box>
-        )}
 
-        {currentUser && (
-          <Box sx={{ 
-            width: '100%', 
-            mb: 3, 
-            p: 2, 
-            bgcolor: 'info.light', 
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'info.main'
-          }}>
-            <Typography variant="body2" color="info.dark" fontWeight={600}>
-              You are currently logged in as: {currentUser.email}
-            </Typography>
-            <Typography variant="body2" color="info.dark" sx={{ mt: 1 }}>
-              Click "Log Out" above to sign in with a different account, or continue to your dashboard.
-            </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              onClick={() => {
-                if (onLoginSuccess) {
-                  onLoginSuccess();
-                }
-              }}
-              sx={{ mt: 2 }}
-            >
-              Continue to Dashboard
-            </Button>
-          </Box>
-        )}
 
         <form onSubmit={handleLogin} style={{ width: '100%' }}>
           <TextField 

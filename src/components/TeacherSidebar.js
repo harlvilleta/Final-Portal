@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { List, ListItem, ListItemIcon, ListItemText, Drawer, Divider, Box, Typography, Avatar, Badge, Chip } from "@mui/material";
 import { 
   Dashboard, Notifications, Assignment, Announcement, Search, Person, Logout, 
-  Warning, CheckCircle, Info, Settings, People, Assessment, Schedule
+  Warning, CheckCircle, Info, Settings, Assessment, Schedule
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from '../firebase';
@@ -11,10 +11,8 @@ import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/fire
 
 const teacherMenu = [
   { text: "Dashboard", icon: <Dashboard sx={{ color: '#1976d2' }} />, path: "/teacher-dashboard" },
-  { text: "Students", icon: <People sx={{ color: '#43a047' }} />, path: "/teacher-students" },
   { text: "View Reports", icon: <Assessment sx={{ color: '#ff9800' }} />, path: "/teacher-reports" },
   { text: "Announcements", icon: <Announcement sx={{ color: '#0288d1' }} />, path: "/teacher-announcements" },
-  { text: "Assessments", icon: <Assessment sx={{ color: '#ff9800' }} />, path: "/teacher-assessments" },
   { text: "Schedule", icon: <Schedule sx={{ color: '#9c27b0' }} />, path: "/teacher-schedule" },
   { text: "Notifications", icon: <Notifications sx={{ color: '#f57c00' }} />, path: "/teacher-notifications" },
   { text: "Account Settings", icon: <Settings sx={{ color: '#9c27b0' }} />, path: "/teacher-profile" },

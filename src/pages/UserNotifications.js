@@ -18,7 +18,10 @@ export default function UserNotifications({ currentUser }) {
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
 
   useEffect(() => {
-    if (!currentUser?.email) return;
+    if (!currentUser?.email) {
+      setLoading(false);
+      return;
+    }
 
     const notificationsQuery = query(
       collection(db, "notifications"),
@@ -29,6 +32,9 @@ export default function UserNotifications({ currentUser }) {
     const unsubscribe = onSnapshot(notificationsQuery, (snap) => {
       const notificationsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setNotifications(notificationsData);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching notifications:', error);
       setLoading(false);
     });
 
@@ -207,7 +213,16 @@ export default function UserNotifications({ currentUser }) {
       </Box>
       
       {loading ? (
-        <Typography>Loading notifications...</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+          <Typography>Loading notifications...</Typography>
+        </Box>
+      ) : !currentUser ? (
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="h6" color="textSecondary">Not authenticated</Typography>
+            <Typography variant="body2" color="textSecondary">Please log in to view notifications</Typography>
+          </CardContent>
+        </Card>
       ) : notifications.length === 0 ? (
         <Card>
           <CardContent sx={{ textAlign: 'center', py: 4 }}>
