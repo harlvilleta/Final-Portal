@@ -1,3 +1,13 @@
+import { 
+  collection, 
+  getDocs, 
+  orderBy, 
+  query, 
+  updateDoc, 
+  doc, 
+  addDoc 
+} from "firebase/firestore";
+import { db } from "../firebase";
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -42,8 +52,8 @@ import {
   CheckCircleOutline,
   CancelOutlined
 } from "@mui/icons-material";
-import { collection, getDocs, orderBy, query, updateDoc, doc, addDoc } from "firebase/firestore";
-import { db } from "../firebase";
+
+
 
 const statusColors = {
   'Pending': 'warning',
@@ -76,6 +86,7 @@ export default function AnnouncementReport() {
   const fetchAnnouncements = async () => {
     setLoading(true);
     try {
+
       const qSnap = await getDocs(query(collection(db, "announcements"), orderBy("createdAt", "desc")));
       const announcementsData = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setAnnouncements(announcementsData);

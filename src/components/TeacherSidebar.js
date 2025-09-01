@@ -7,7 +7,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, getDocs } from 'firebase/firestore';
 
 const teacherMenu = [
   { text: "Dashboard", icon: <Dashboard sx={{ color: '#1976d2' }} />, path: "/teacher-dashboard" },
