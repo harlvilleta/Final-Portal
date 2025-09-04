@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -31,7 +31,8 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Divider
+  Divider,
+  InputAdornment
 } from '@mui/material';
 import {
   CheckCircle,
@@ -73,14 +74,13 @@ const statusIcons = {
 
 const receiptTypeLabels = {
   membership: 'Membership Fee',
-  student_id: 'Student ID',
-  library_card: 'Library Card',
-  parking_permit: 'Parking Permit',
+  student_id: 'Sling ID',
+  handbook: 'Handbook',
   other: 'Other'
 };
 
 export default function ReceiptReview() {
-  const [submissions, setSubmissions] = useState([]);
+  const [submissions, setSubmissions] = useState([]); // full dataset
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [reviewDialog, setReviewDialog] = useState(false);
@@ -93,28 +93,25 @@ export default function ReceiptReview() {
   const [adminNotes, setAdminNotes] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
+    setError('');
     fetchSubmissions();
-  }, [statusFilter]);
+  }, []);
 
   const fetchSubmissions = async () => {
     setLoading(true);
     try {
-      let q = query(collection(db, 'receipt_submissions'), orderBy('submittedAt', 'desc'));
-      
-      if (statusFilter !== 'all') {
-        q = query(q, where('status', '==', statusFilter));
-      }
-      
+      const q = query(collection(db, 'receipt_submissions'), orderBy('submittedAt', 'desc'));
       const querySnapshot = await getDocs(q);
-      const submissionsData = querySnapshot.docs.map(doc => ({
+      const raw = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         submittedAt: doc.data().submittedAt?.toDate?.() || new Date(doc.data().submittedAt)
       }));
-      
-      setSubmissions(submissionsData);
+      setSubmissions(raw);
     } catch (error) {
       console.error('Error fetching submissions:', error);
       setError('Failed to load submissions');
@@ -130,6 +127,10 @@ export default function ReceiptReview() {
   };
 
   const handleViewImage = (imageUrl) => {
+    if (!imageUrl) {
+      setError('No receipt image available for this submission');
+      return;
+    }
     setSelectedImage(imageUrl);
     setImageDialog(true);
   };
@@ -156,7 +157,7 @@ export default function ReceiptReview() {
       // Log activity
       try {
         await addDoc(collection(db, 'activity_log'), {
-          message: `Receipt ${newStatus}: ${selectedSubmission.receiptType} - $${selectedSubmission.amount}`,
+          message: `Receipt ${newStatus}: ${selectedSubmission.receiptType} - ₱${selectedSubmission.amount}`,
           type: 'receipt_review',
           user: selectedSubmission.userId,
           userEmail: selectedSubmission.userEmail,
@@ -196,11 +197,25 @@ export default function ReceiptReview() {
   };
 
   const formatAmount = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-PH', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'PHP'
     }).format(amount);
   };
+
+  const filteredSubmissions = useMemo(() => {
+    // start from full dataset, then filter by selected status for display only
+    const byStatus = statusFilter === 'all' ? submissions : submissions.filter(s => s.status === statusFilter);
+    const byType = typeFilter === 'all' ? byStatus : byStatus.filter(s => s.receiptType === typeFilter);
+    const bySearch = !searchTerm.trim() ? byType : byType.filter(s => {
+      const term = searchTerm.toLowerCase();
+      const name = (s.userName || '').toLowerCase();
+      const sid = (s.studentInfo?.studentId || '').toLowerCase();
+      return name.includes(term) || sid.includes(term);
+    });
+    // Ensure newest first
+    return [...bySearch].sort((a, b) => (b.submittedAt?.getTime?.() || 0) - (a.submittedAt?.getTime?.() || 0));
+  }, [submissions, statusFilter, typeFilter, searchTerm]);
 
   if (loading) {
     return (
@@ -237,56 +252,86 @@ export default function ReceiptReview() {
           <Grid item xs={12} sm={3}>
             <Card sx={{ bgcolor: 'warning.light', color: 'warning.contrastText' }}>
               <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4">{getStatusCount('pending')}</Typography>
-                <Typography variant="body2">Pending Review</Typography>
+                <Button onClick={() => { setError(''); setStatusFilter('pending'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
+                  <Box>
+                    <Typography variant="h4">{getStatusCount('pending')}</Typography>
+                    <Typography variant="body2">Pending Review</Typography>
+                  </Box>
+                </Button>
               </CardContent>
             </Card>
           </Grid>
           <Grid item xs={12} sm={3}>
             <Card sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
               <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4">{getStatusCount('approved')}</Typography>
-                <Typography variant="body2">Approved</Typography>
+                <Button onClick={() => { setError(''); setStatusFilter('approved'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
+                  <Box>
+                    <Typography variant="h4">{getStatusCount('approved')}</Typography>
+                    <Typography variant="body2">Approved</Typography>
+                  </Box>
+                </Button>
               </CardContent>
             </Card>
           </Grid>
           <Grid item xs={12} sm={3}>
             <Card sx={{ bgcolor: 'error.light', color: 'error.contrastText' }}>
               <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4">{getStatusCount('rejected')}</Typography>
-                <Typography variant="body2">Rejected</Typography>
+                <Button onClick={() => { setError(''); setStatusFilter('rejected'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
+                  <Box>
+                    <Typography variant="h4">{getStatusCount('rejected')}</Typography>
+                    <Typography variant="body2">Rejected</Typography>
+                  </Box>
+                </Button>
               </CardContent>
             </Card>
           </Grid>
           <Grid item xs={12} sm={3}>
             <Card sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
               <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4">{submissions.length}</Typography>
-                <Typography variant="body2">Total Submissions</Typography>
+                <Button onClick={() => { setError(''); setStatusFilter('all'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
+                  <Box>
+                    <Typography variant="h4">{submissions.length}</Typography>
+                    <Typography variant="body2">Total Submissions</Typography>
+                  </Box>
+                </Button>
               </CardContent>
             </Card>
           </Grid>
         </Grid>
 
-        {/* Filter */}
-        <Box sx={{ mb: 3 }}>
-          <FormControl sx={{ minWidth: 200 }}>
-            <InputLabel>Filter by Status</InputLabel>
+        {/* Filters */}
+        <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <FormControl sx={{ minWidth: 220 }}>
+            <InputLabel>Filter by Receipt Type</InputLabel>
             <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              label="Filter by Status"
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              label="Filter by Receipt Type"
             >
-              <MenuItem value="all">All Submissions</MenuItem>
-              <MenuItem value="pending">Pending</MenuItem>
-              <MenuItem value="approved">Approved</MenuItem>
-              <MenuItem value="rejected">Rejected</MenuItem>
+              <MenuItem value="all">All Types</MenuItem>
+              <MenuItem value="student_id">Sling ID</MenuItem>
+              <MenuItem value="handbook">Handbook</MenuItem>
+              <MenuItem value="membership">Membership Fee</MenuItem>
+              <MenuItem value="other">Other</MenuItem>
             </Select>
           </FormControl>
+          <TextField
+            label="Search by Student ID or Name"
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }}
+            sx={{ minWidth: 260, flex: 1 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Person />
+                </InputAdornment>
+              )
+            }}
+          />
         </Box>
 
         {/* Submissions List */}
-        {submissions.length === 0 ? (
+        {filteredSubmissions.length === 0 ? (
           <Paper sx={{ p: 4, textAlign: 'center' }}>
             <Typography variant="h6" color="text.secondary">
               No receipt submissions found
@@ -307,7 +352,7 @@ export default function ReceiptReview() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {submissions
+                  {filteredSubmissions
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((submission) => (
                     <TableRow key={submission.id}>
@@ -380,7 +425,7 @@ export default function ReceiptReview() {
 
             <TablePagination
               component="div"
-              count={submissions.length}
+              count={filteredSubmissions.length}
               page={page}
               onPageChange={(e, newPage) => setPage(newPage)}
               rowsPerPage={rowsPerPage}

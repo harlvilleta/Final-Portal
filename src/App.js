@@ -40,6 +40,7 @@ import TeacherReports from "./pages/TeacherReports";
 import TeacherSchedule from "./pages/TeacherSchedule";
 import AdminLostFound from "./pages/AdminLostFound";
 import ActivityHistory from "./pages/ActivityHistory";
+import ActivityRequestsAdmin from "./pages/ActivityRequestsAdmin";
 import TeacherNotifications from "./pages/TeacherNotifications";
 import TeacherLostFound from "./pages/TeacherLostFound";
 import ActivitiesView from "./pages/ActivitiesView";
@@ -487,6 +488,7 @@ function App() {
                                                     <Route path="/activity" element={<Activity />} />
                               <Route path="/activity/history" element={<ActivityHistory />} />
                       <Route path="/history" element={<History />} />
+                      <Route path="/activity/requests" element={<ActivityRequestsAdmin />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="/violation-record" element={<ViolationRecord />} />
                       <Route path="/violation-record/create-meeting" element={<ViolationCreateMeeting />} />

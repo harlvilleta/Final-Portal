@@ -35,7 +35,7 @@ import {
   Refresh
 } from '@mui/icons-material';
 import { auth, db } from '../firebase';
-import { 
+import {
   collection, 
   query, 
   orderBy, 
@@ -57,9 +57,8 @@ const statusIcons = {
 
 const receiptTypeLabels = {
   membership: 'Membership Fee',
-  student_id: 'Student ID',
-  library_card: 'Library Card',
-  parking_permit: 'Parking Permit',
+  student_id: 'Sling ID',
+  handbook: 'Handbook',
   other: 'Other'
 };
 
@@ -86,17 +85,15 @@ export default function ReceiptHistory() {
 
       const q = query(
         collection(db, 'receipt_submissions'),
-        where('userId', '==', user.uid),
-        orderBy('submittedAt', 'desc')
+        where('userId', '==', user.uid)
       );
-      
       const querySnapshot = await getDocs(q);
       const submissionsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         submittedAt: doc.data().submittedAt?.toDate?.() || new Date(doc.data().submittedAt),
         reviewedAt: doc.data().reviewedAt?.toDate?.() || (doc.data().reviewedAt ? new Date(doc.data().reviewedAt) : null)
-      }));
+      })).sort((a, b) => (b.submittedAt?.getTime?.() || 0) - (a.submittedAt?.getTime?.() || 0));
       
       setSubmissions(submissionsData);
     } catch (error) {
@@ -112,18 +109,16 @@ export default function ReceiptHistory() {
     setImageDialog(true);
   };
 
-  const getStatusCount = (status) => {
-    return submissions.filter(sub => sub.status === status).length;
-  };
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const formatDate = (date) => {
     return new Date(date).toLocaleString();
   };
 
   const formatAmount = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-PH', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'PHP'
     }).format(amount);
   };
 
@@ -160,41 +155,13 @@ export default function ReceiptHistory() {
           </Alert>
         )}
 
-        {/* Status Summary */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={3}>
-            <Card sx={{ bgcolor: 'warning.light', color: 'warning.contrastText' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4">{getStatusCount('pending')}</Typography>
-                <Typography variant="body2">Pending Review</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={3}>
-            <Card sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4">{getStatusCount('approved')}</Typography>
-                <Typography variant="body2">Approved</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={3}>
-            <Card sx={{ bgcolor: 'error.light', color: 'error.contrastText' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4">{getStatusCount('rejected')}</Typography>
-                <Typography variant="body2">Rejected</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={3}>
-            <Card sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4">{submissions.length}</Typography>
-                <Typography variant="body2">Total Submissions</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        {/* Simple Status Filter */}
+        <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+          <Button variant={statusFilter === 'all' ? 'contained' : 'outlined'} onClick={() => { setStatusFilter('all'); setPage(0); }}>All</Button>
+          <Button variant={statusFilter === 'pending' ? 'contained' : 'outlined'} onClick={() => { setStatusFilter('pending'); setPage(0); }}>Pending</Button>
+          <Button variant={statusFilter === 'approved' ? 'contained' : 'outlined'} onClick={() => { setStatusFilter('approved'); setPage(0); }}>Approved</Button>
+          <Button variant={statusFilter === 'rejected' ? 'contained' : 'outlined'} onClick={() => { setStatusFilter('rejected'); setPage(0); }}>Rejected</Button>
+        </Box>
 
         {/* Submissions List */}
         {submissions.length === 0 ? (
@@ -224,6 +191,7 @@ export default function ReceiptHistory() {
                 </TableHead>
                 <TableBody>
                   {submissions
+                    .filter(s => statusFilter === 'all' ? true : s.status === statusFilter)
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((submission) => (
                     <TableRow key={submission.id}>
@@ -290,7 +258,7 @@ export default function ReceiptHistory() {
 
             <TablePagination
               component="div"
-              count={submissions.length}
+              count={submissions.filter(s => statusFilter === 'all' ? true : s.status === statusFilter).length}
               page={page}
               onPageChange={(e, newPage) => setPage(newPage)}
               rowsPerPage={rowsPerPage}

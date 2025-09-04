@@ -397,9 +397,7 @@ function AddStudent({ onClose, isModal = false }) {
                 {years.map((y) => <MenuItem key={y} value={y}>{y}</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField fullWidth label="Section" name="section" value={profile.section} onChange={handleChange} />
-            </Grid>
+            {/* Section removed per new registration alignment */}
             <Grid item xs={12}>
               <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>Profile Image</Typography>
             </Grid>
@@ -2106,45 +2104,13 @@ export default function Students() {
                   <Typography variant="body1">{studentToView.email || 'N/A'}</Typography>
                 </Grid>
 
-                {/* Family Information */}
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom sx={{ borderBottom: '2px solid #e0e0e0', pb: 1, mt: 2 }}>
-                    Family Information
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Father's Name</Typography>
-                  <Typography variant="body1">{studentToView.fatherName || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Father's Occupation</Typography>
-                  <Typography variant="body1">{studentToView.fatherOccupation || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Mother's Name</Typography>
-                  <Typography variant="body1">{studentToView.motherName || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Mother's Occupation</Typography>
-                  <Typography variant="body1">{studentToView.motherOccupation || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Guardian</Typography>
-                  <Typography variant="body1">{studentToView.guardian || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Guardian Contact</Typography>
-                  <Typography variant="body1">{studentToView.guardianContact || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="textSecondary">Home Address</Typography>
-                  <Typography variant="body1">{studentToView.homeAddress || 'N/A'}</Typography>
-                </Grid>
+                {/* Family Information removed per requirements */}
               </Grid>
             </Box>
           )}
         </DialogContent>
         <DialogActions>
+          <Button onClick={() => window.print()} color="info">Print</Button>
           <Button onClick={() => setOpenViewDetails(false)}>Close</Button>
         </DialogActions>
       </Dialog>

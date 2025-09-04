@@ -332,14 +332,7 @@ export default function Activity() {
     <>
       <Grid container spacing={3}>
         <Grid item xs={12}>
-          <Button
-            variant="contained"
-            color="success"
-            sx={{ mb: 2 }}
-            onClick={() => setOpenEventModal(true)}
-          >
-            Schedule Event (for Approval)
-          </Button>
+          {/* Schedule Event approval removed */}
         </Grid>
         <Grid item xs={12}>
           <SummaryCard stats={stats} />
@@ -352,26 +345,7 @@ export default function Activity() {
           <ScheduledActivities activities={activities} onMarkCompleted={handleMarkCompleted} search={searchScheduled} onSearch={setSearchScheduled} />
         </Grid>
       </Grid>
-      {/* Schedule Event Modal */}
-      <Dialog open={openEventModal} onClose={() => setOpenEventModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Schedule Event (for Approval)</DialogTitle>
-        <DialogContent dividers>
-          <form onSubmit={handleEventSubmit}>
-            <TextField label="Title" name="title" value={eventForm.title} onChange={handleEventFormChange} fullWidth required sx={{ mb: 2 }} />
-            <TextField label="Description" name="description" value={eventForm.description} onChange={handleEventFormChange} fullWidth required multiline minRows={2} sx={{ mb: 2 }} />
-            <TextField label="Proposed By (Club/Org/Student)" name="proposedBy" value={eventForm.proposedBy} onChange={handleEventFormChange} fullWidth required sx={{ mb: 2 }} />
-            <TextField label="Date" name="date" type="date" value={eventForm.date} onChange={handleEventFormChange} InputLabelProps={{ shrink: true }} fullWidth required sx={{ mb: 2 }} />
-            <TextField label="Time" name="time" type="time" value={eventForm.time} onChange={handleEventFormChange} InputLabelProps={{ shrink: true }} fullWidth required sx={{ mb: 2 }} />
-            <TextField label="Location" name="location" value={eventForm.location} onChange={handleEventFormChange} fullWidth required sx={{ mb: 2 }} />
-            <DialogActions>
-              <Button onClick={() => setOpenEventModal(false)} color="secondary">Cancel</Button>
-              <Button type="submit" variant="contained" color="primary" disabled={eventSubmitting}>
-                {eventSubmitting ? 'Submitting...' : 'Submit'}
-              </Button>
-            </DialogActions>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Schedule Event Modal removed */}
       <Snackbar open={eventSnackbar.open} autoHideDuration={4000} onClose={() => setEventSnackbar({ ...eventSnackbar, open: false })}>
         <Alert onClose={() => setEventSnackbar({ ...eventSnackbar, open: false })} severity={eventSnackbar.severity} sx={{ width: '100%' }}>
           {eventSnackbar.message}

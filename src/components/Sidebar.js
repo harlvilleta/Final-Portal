@@ -34,12 +34,13 @@ const menu = [
   { text: "Lost & Found", icon: <Search sx={{ color: '#ff9800' }} />, path: "/lost-found" },
   { 
     text: "Activity", 
-    icon: <Event sx={{ color: '#fbc02d' }} />, 
+    icon: <Event sx={{ color: '#fbc02d' }} />,
     path: "/activity",
     hasSubmenu: true,
     submenu: [
       { text: "Schedule Activity", icon: <Event sx={{ color: '#fbc02d' }} />, path: "/activity" },
-      { text: "History", icon: <History sx={{ color: '#9c27b0' }} />, path: "/activity/history" }
+      { text: "History", icon: <History sx={{ color: '#9c27b0' }} />, path: "/activity/history" },
+      { text: "Requests", icon: <History sx={{ color: '#00acc1' }} />, path: "/activity/requests" }
     ]
   },
   { 

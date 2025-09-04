@@ -27,7 +27,6 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
-  Autocomplete,
   MenuItem
 } from '@mui/material';
 import {
@@ -87,6 +86,9 @@ export default function TeacherReports() {
   // New state for quick report
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentResults, setStudentResults] = useState([]);
+  const [studentSearching, setStudentSearching] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportForm, setReportForm] = useState({
@@ -116,7 +118,7 @@ export default function TeacherReports() {
     return unsubscribe;
   }, []);
 
-  // Load students for the dropdown
+  // Load students
   useEffect(() => {
     const loadStudents = async () => {
       if (!currentUser?.uid) return;
@@ -151,6 +153,29 @@ export default function TeacherReports() {
     };
     loadStudents();
   }, [currentUser]);
+
+  // Search students by ID or name
+  useEffect(() => {
+    if (!studentSearch) {
+      setStudentResults([]);
+      return;
+    }
+    const perform = () => {
+      const term = studentSearch.toLowerCase();
+      const results = students.filter(s => {
+        const fullName = (s.fullName || `${s.firstName || ''} ${s.lastName || ''}`.trim()).toLowerCase();
+        const idNum = (s.studentId || '').toLowerCase();
+        return fullName.includes(term) || idNum.includes(term);
+      });
+      setStudentResults(results.slice(0, 20));
+    };
+    setStudentSearching(true);
+    const id = setTimeout(() => {
+      perform();
+      setStudentSearching(false);
+    }, 250);
+    return () => clearTimeout(id);
+  }, [studentSearch, students]);
 
   const fetchTeacherViolations = async (teacherId) => {
     setLoading(true);
@@ -600,44 +625,42 @@ export default function TeacherReports() {
             <option value="Approved">Approved</option>
             <option value="Denied">Denied</option>
           </TextField>
-          <Autocomplete
-            options={students}
-            getOptionLabel={(option) => option.fullName ? `${option.fullName}${option.studentId ? ` (ID: ${option.studentId})` : ''}` : option.email || ''}
-            renderInput={(params) => <TextField {...params} label="Select Student to Report" placeholder="Type to search..." sx={{ minWidth: 280 }} />}
-            value={selectedStudent}
-            onChange={(_, value) => setSelectedStudent(value)}
-            disableClearable={false}
-            sx={{ minWidth: 280, flex: 1 }}
-            filterOptions={(options, { inputValue }) => {
-              const searchTerm = inputValue.toLowerCase();
-              return options.filter(option => {
-                const fullName = option.fullName?.toLowerCase() || '';
-                const firstName = option.firstName?.toLowerCase() || '';
-                const lastName = option.lastName?.toLowerCase() || '';
-                const email = option.email?.toLowerCase() || '';
-                const studentId = option.studentId?.toLowerCase() || '';
-                
-                return fullName.includes(searchTerm) || 
-                       firstName.includes(searchTerm) || 
-                       lastName.includes(searchTerm) || 
-                       email.includes(searchTerm) || 
-                       studentId.includes(searchTerm);
-              });
-            }}
-            renderOption={(props, option) => (
-              <Box component="li" {...props}>
-                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                  <Typography variant="body1" fontWeight={500}>
-                    {option.fullName || `${option.firstName || ''} ${option.lastName || ''}`.trim()}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {option.studentId ? `ID: ${option.studentId}` : ''} {option.email ? `• ${option.email}` : ''}
-                  </Typography>
-                </Box>
-              </Box>
+          <Box sx={{ minWidth: 280, flex: 1, position: 'relative' }}>
+            <TextField
+              label="Search Student (ID or Name)"
+              placeholder="Type ID or name..."
+              value={studentSearch}
+              onChange={(e) => setStudentSearch(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+                endAdornment: studentSearching ? (
+                  <InputAdornment position="end">
+                    <CircularProgress size={18} />
+                  </InputAdornment>
+                ) : null
+              }}
+              sx={{ width: '100%' }}
+            />
+            {studentResults.length > 0 && (
+              <Paper elevation={3} sx={{ position: 'absolute', left: 0, right: 0, zIndex: 10, mt: 1, maxHeight: 240, overflow: 'auto' }}>
+                {studentResults.map(s => (
+                  <Box key={s.id} sx={{ p: 1.5, display: 'flex', alignItems: 'center', cursor: 'pointer', '&:hover': { bgcolor: '#f5f5f5' } }} onClick={() => { setSelectedStudent(s); setStudentResults([]); setStudentSearch(s.fullName || s.studentId || ''); }}>
+                    <Avatar sx={{ width: 28, height: 28, mr: 1 }}>
+                      <Person />
+                    </Avatar>
+                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                      <Typography variant="body2" fontWeight={600}>{s.fullName || `${s.firstName || ''} ${s.lastName || ''}`.trim()}</Typography>
+                      <Typography variant="caption" color="text.secondary">{s.studentId ? `ID: ${s.studentId}` : ''} {s.email ? `• ${s.email}` : ''}</Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </Paper>
             )}
-            noOptionsText="No students found"
-          />
+          </Box>
           <Button
             variant="contained"
             color="warning"

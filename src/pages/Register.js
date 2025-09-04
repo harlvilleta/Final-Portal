@@ -64,7 +64,9 @@ export default function Register() {
   const [lastName, setLastName] = useState('');
   const [course, setCourse] = useState('');
   const [year, setYear] = useState('');
-  const [section, setSection] = useState('');
+  const [gender, setGender] = useState('');
+  const [birthdate, setBirthdate] = useState('');
+  const [age, setAge] = useState('');
   
   const navigate = useNavigate();
 
@@ -142,8 +144,16 @@ export default function Register() {
         setSnackbar({ open: true, message: 'First name and last name are required for students.', severity: 'error' });
         return;
       }
-      if (!course || !year || !section) {
-        setSnackbar({ open: true, message: 'Course, year, and section are required for students.', severity: 'error' });
+      if (!course || !year) {
+        setSnackbar({ open: true, message: 'Course and year are required for students.', severity: 'error' });
+        return;
+      }
+      if (!gender) {
+        setSnackbar({ open: true, message: 'Gender is required for students.', severity: 'error' });
+        return;
+      }
+      if (!birthdate) {
+        setSnackbar({ open: true, message: 'Birthdate is required for students.', severity: 'error' });
         return;
       }
     }
@@ -211,14 +221,18 @@ export default function Register() {
         userData.lastName = lastName;
         userData.course = course;
         userData.year = year;
-        userData.section = section;
+        userData.gender = gender;
+        userData.birthdate = birthdate;
+        userData.age = age;
         userData.studentInfo = {
           studentId: studentId,
           firstName: firstName,
           lastName: lastName,
           course: course,
           year: year,
-          section: section,
+          gender: gender,
+          birthdate: birthdate,
+          age: age,
           enrollmentDate: new Date().toISOString()
         };
       }
@@ -446,7 +460,26 @@ export default function Register() {
                   </TextField>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField label="Section" value={section} onChange={e => setSection(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
+                  <TextField label="Gender" select value={gender} onChange={e => setGender(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }}>
+                    <MenuItem value="Male">Male</MenuItem>
+                    <MenuItem value="Female">Female</MenuItem>
+                    <MenuItem value="Other">Other</MenuItem>
+                  </TextField>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField label="Birthdate" type="date" value={birthdate} onChange={e => {
+                    const v = e.target.value; setBirthdate(v);
+                    if (v) {
+                      const dob = new Date(v);
+                      const diffMs = Date.now() - dob.getTime();
+                      const ageDt = new Date(diffMs);
+                      const computedAge = Math.abs(ageDt.getUTCFullYear() - 1970);
+                      setAge(String(computedAge));
+                    } else { setAge(''); }
+                  }} fullWidth required size="large" InputLabelProps={{ shrink: true }} InputProps={{ style: { fontSize: 18, height: 56 } }} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField label="Age" value={age} fullWidth size="large" InputProps={{ readOnly: true, style: { fontSize: 18, height: 56 } }} />
                 </Grid>
               </>
             )}

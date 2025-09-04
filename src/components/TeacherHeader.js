@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Badge, ListItemText, ListItemIcon, Divider } from '@mui/material';
-import { AccountCircle, Logout, Notifications, Settings, CheckCircle, Warning, Info } from '@mui/icons-material';
+import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Badge, ListItemText, ListItemIcon, Divider, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
+import { AccountCircle, Logout, Notifications, Settings, CheckCircle, Warning, Info, Mail } from '@mui/icons-material';
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, addDoc } from 'firebase/firestore';
 
 export default function TeacherHeader({ currentUser, userProfile }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [compose, setCompose] = useState({ subject: '', message: '' });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -139,20 +141,16 @@ export default function TeacherHeader({ currentUser, userProfile }) {
           </Typography>
         </Box>
         
-        {/* Right side - Notifications, Settings, and User Menu */}
+        {/* Right side - Mail (to admin), Settings, and User Menu */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Notifications */}
+          {/* Mail to Admin */}
           <IconButton
             size="large"
-            aria-label="notifications"
-            aria-controls="notifications-menu"
-            aria-haspopup="true"
-            onClick={handleNotificationMenu}
+            aria-label="mail to admin"
+            onClick={() => setComposeOpen(true)}
             sx={{ color: '#fff' }}
           >
-            <Badge badgeContent={unreadCount} color="error">
-              <Notifications />
-            </Badge>
+            <Mail />
           </IconButton>
           
           {/* Settings */}
@@ -231,79 +229,46 @@ export default function TeacherHeader({ currentUser, userProfile }) {
         </MenuItem>
       </Menu>
 
-      {/* Notifications Menu */}
-      <Menu
-        id="notifications-menu"
-        anchorEl={notificationAnchorEl}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-        keepMounted
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-        open={Boolean(notificationAnchorEl)}
-        onClose={handleNotificationClose}
-        PaperProps={{
-          sx: { width: 400, maxHeight: 500 }
-        }}
-      >
-        <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
-          <Typography variant="h6" fontWeight={600}>
-            Notifications ({notifications.length})
-          </Typography>
-        </Box>
-        
-        {notifications.length === 0 ? (
-          <MenuItem disabled>
-            <Typography variant="body2" color="text.secondary">
-              No notifications
-            </Typography>
-          </MenuItem>
-        ) : (
-          notifications.slice(0, 10).map((notification) => (
-            <MenuItem 
-              key={notification.id} 
-              onClick={() => handleNotificationClick(notification)}
-              sx={{ 
-                borderBottom: '1px solid #f0f0f0',
-                '&:hover': { bgcolor: '#f5f5f5' }
-              }}
-            >
-              <ListItemIcon>
-                {getNotificationIcon(notification.type)}
-              </ListItemIcon>
-              <ListItemText
-                primary={
-                  <Typography variant="subtitle2" fontWeight={600} sx={{ color: notification.read ? 'text.secondary' : 'text.primary' }}>
-                    {notification.title}
-                  </Typography>
-                }
-                secondary={
-                  <Box>
-                    <Typography variant="body2" sx={{ color: notification.read ? 'text.secondary' : 'text.primary', mb: 0.5 }}>
-                      {notification.message}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {formatNotificationTime(notification.createdAt)}
-                    </Typography>
-                  </Box>
-                }
-              />
-            </MenuItem>
-          ))
-        )}
-        
-        {notifications.length > 10 && (
-          <MenuItem onClick={() => { navigate('/teacher-notifications'); handleNotificationClose(); }}>
-            <Typography variant="body2" color="primary" sx={{ textAlign: 'center', width: '100%' }}>
-              View All Notifications
-            </Typography>
-          </MenuItem>
-        )}
-      </Menu>
+      {/* Compose Message Dialog */}
+      <Dialog open={composeOpen} onClose={() => setComposeOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Message Admin</DialogTitle>
+        <DialogContent>
+          <TextField label="Subject" fullWidth sx={{ mt: 1 }} value={compose.subject} onChange={e => setCompose({ ...compose, subject: e.target.value })} />
+          <TextField label="Message" fullWidth multiline minRows={3} sx={{ mt: 2 }} value={compose.message} onChange={e => setCompose({ ...compose, message: e.target.value })} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setComposeOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={!compose.subject.trim() || !compose.message.trim()}
+            onClick={async () => {
+              try {
+                await addDoc(collection(db, 'admin_messages'), {
+                  fromId: currentUser?.uid || null,
+                  fromEmail: currentUser?.email || null,
+                  subject: compose.subject.trim(),
+                  message: compose.message.trim(),
+                  createdAt: new Date().toISOString(),
+                });
+                await addDoc(collection(db, 'admin_notifications'), {
+                  title: 'New Message from Teacher',
+                  message: compose.subject.trim(),
+                  type: 'teacher_message',
+                  read: false,
+                  createdAt: new Date().toISOString(),
+                  senderEmail: currentUser?.email || null,
+                });
+                setCompose({ subject: '', message: '' });
+                setComposeOpen(false);
+              } catch (e) {
+                // optionally show error
+              }
+            }}
+          >
+            Send
+          </Button>
+        </DialogActions>
+      </Dialog>
     </AppBar>
   );
 } 

@@ -16,7 +16,6 @@ const userMenu = [
   { text: "Lost & Found", icon: <Search sx={{ color: '#43a047' }} />, path: "/lost-found" },
   { text: "Activities", icon: <History sx={{ color: '#00acc1' }} />, path: "/activity" },
   { text: "Receipt Submission", icon: <Receipt sx={{ color: '#ff9800' }} />, path: "/receipt-submission" },
-  { text: "Receipt History", icon: <History sx={{ color: '#795548' }} />, path: "/receipt-history" },
   { text: "Notifications", icon: <Notifications sx={{ color: '#f57c00' }} />, path: "/notifications" },
   { text: "Account Settings", icon: <Settings sx={{ color: '#9c27b0' }} />, path: "/profile" },
 ];

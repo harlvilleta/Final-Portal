@@ -43,20 +43,13 @@ const convertToBase64 = (file) => {
 };
 
 const receiptTypes = [
+  { value: 'student_id', label: 'Sling ID', icon: '🆔' },
+  { value: 'handbook', label: 'Handbook', icon: '📘' },
   { value: 'membership', label: 'Membership Fee', icon: '🏛️' },
-  { value: 'student_id', label: 'Student ID', icon: '🆔' },
-  { value: 'library_card', label: 'Library Card', icon: '📚' },
-  { value: 'parking_permit', label: 'Parking Permit', icon: '🚗' },
   { value: 'other', label: 'Other', icon: '📄' }
 ];
 
-// Function to upload image to Firebase Storage
-const uploadImageToStorage = async (file, userId) => {
-  const storageRef = ref(storage, `receipt-images/${userId}/${Date.now()}_${file.name}`);
-  const snapshot = await uploadBytes(storageRef, file);
-  const downloadURL = await getDownloadURL(snapshot.ref);
-  return downloadURL;
-};
+// Note: We will store the image directly as a data URL in Firestore per requirements
 
 export default function ReceiptSubmission() {
   const [loading, setLoading] = useState(false);
@@ -128,10 +121,7 @@ export default function ReceiptSubmission() {
       return;
     }
     
-    if (!description.trim()) {
-      setError('Please provide a description');
-      return;
-    }
+    // Description is optional
     
     setLoading(true);
     setError('');
@@ -149,17 +139,8 @@ export default function ReceiptSubmission() {
         userData = userDoc.data();
       }
       
-      // Upload image to Firebase Storage if provided
-      let imageURL = '';
-      if (receiptImage) {
-        try {
-          imageURL = await uploadImageToStorage(receiptImage, user.uid);
-          console.log('✅ Receipt image uploaded to Storage:', imageURL);
-        } catch (uploadError) {
-          console.error('❌ Image upload error:', uploadError);
-          // Continue with submission even if image upload fails
-        }
-      }
+      // Per requirement: store the image directly (data URL) in Firestore, not Storage
+      const imageURL = receiptBase64 || '';
       
       const submissionData = {
         userId: user.uid,
@@ -168,11 +149,8 @@ export default function ReceiptSubmission() {
         userRole: userData.role || 'Student',
         receiptType: receiptType,
         amount: parseFloat(amount),
-        description: description.trim(),
-        receiptImage: imageURL || '', // Save Storage URL instead of base64
-        receiptImageType: receiptImage.type,
-        receiptImageName: receiptImage.name,
-        receiptImageSize: receiptImage.size,
+        description: description.trim() || '',
+        receiptImage: imageURL, // Store data URL directly
         status: 'pending', // pending, approved, rejected
         submittedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -199,7 +177,7 @@ export default function ReceiptSubmission() {
       // Log activity
       try {
         await addDoc(collection(db, 'activity_log'), {
-          message: `Receipt submission: ${receiptType} - $${amount}`,
+          message: `Receipt submission: ${receiptType} - ₱${amount}`,
           type: 'receipt_submission',
           user: user.uid,
           userEmail: user.email,
@@ -258,13 +236,22 @@ export default function ReceiptSubmission() {
             Your receipt has been submitted and is pending admin review. 
             You will be notified once the admin reviews your submission.
           </Typography>
-          <Button
-            variant="contained"
-            onClick={resetForm}
-            size="large"
-          >
-            Submit Another Receipt
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+            <Button
+              variant="outlined"
+              onClick={() => window.history.back()}
+              size="large"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={resetForm}
+              size="large"
+            >
+              Submit Another Receipt
+            </Button>
+          </Box>
         </Paper>
       </Box>
     );
@@ -273,11 +260,16 @@ export default function ReceiptSubmission() {
   return (
     <Box sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
       <Paper sx={{ p: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Receipt sx={{ fontSize: 32, color: 'primary.main', mr: 2 }} />
-          <Typography variant="h4" color="primary">
-            Receipt Submission
-          </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Receipt sx={{ fontSize: 32, color: 'primary.main', mr: 2 }} />
+            <Typography variant="h4" color="primary">
+              Receipt Submission
+            </Typography>
+          </Box>
+          <Button variant="outlined" onClick={() => window.location.assign('/receipt-history')}>
+            Receipt History
+          </Button>
         </Box>
         
         <Typography variant="body1" sx={{ mb: 3 }}>
@@ -334,11 +326,10 @@ export default function ReceiptSubmission() {
 
             <Grid item xs={12}>
               <TextField
-                label="Description"
+                label="Description (optional)"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 fullWidth
-                required
                 multiline
                 rows={3}
                 placeholder="Describe what this receipt is for..."
@@ -422,7 +413,7 @@ export default function ReceiptSubmission() {
                 <Button
                   type="submit"
                   variant="contained"
-                  disabled={loading || !receiptType || !amount || !receiptBase64 || !description.trim()}
+                  disabled={loading || !receiptType || !amount || !receiptBase64}
                   startIcon={loading ? <CircularProgress size={20} /> : <School />}
                   size="large"
                 >
