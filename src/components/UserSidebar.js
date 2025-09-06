@@ -66,7 +66,12 @@ export default function UserSidebar() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      // Use both navigate and window.location to ensure redirect
       navigate('/');
+      // Fallback to force redirect
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
     } catch (error) {
       console.error('Error signing out:', error);
     }

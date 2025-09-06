@@ -433,7 +433,7 @@ export default function Register() {
             <Grid item xs={12} sm={6}>
               <TextField label="Phone Number" value={phone} onChange={e => setPhone(e.target.value)} fullWidth size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={6}>
               <TextField label="Address" value={address} onChange={e => setAddress(e.target.value)} fullWidth size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
             </Grid>
             

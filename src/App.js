@@ -171,6 +171,8 @@ function UserHeader({ currentUser, userProfile }) {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      // Force navigation to login page
+      window.location.href = '/';
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -373,6 +375,7 @@ function App() {
         setUserProfile(null);
         setUserRole(null);
         setAuthError(null);
+        setForceLogin(true); // Force login page to show
         clearTimeout(loadingTimeout);
         setLoading(false);
       }
