@@ -50,7 +50,7 @@ export default function TeacherLostFound() {
 
   return (
     <Box sx={{ p: 2 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#1976d2' }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: 'primary.main' }}>
         Lost & Found
       </Typography>
 
@@ -94,16 +94,16 @@ export default function TeacherLostFound() {
           </Paper>
 
           <Grid container spacing={2}>
-            {[{ title: 'Recent Lost Items', items: filtered(lostItems), color: '#e65100', chip: 'warning' }, { title: 'Recent Found Items', items: filtered(foundItems), color: '#2e7d32', chip: 'success' }].map(section => (
+            {[{ title: 'Recent Lost Items', items: filtered(lostItems) }, { title: 'Recent Found Items', items: filtered(foundItems) }].map(section => (
               <Grid item xs={12} key={section.title}>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: section.color }}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: 'primary.main' }}>
                   {section.title} ({section.items.length})
                 </Typography>
                 {section.items.length === 0 ? (
                   <Typography color="text.secondary">No items yet.</Typography>
                 ) : (
                   section.items.slice(0, 10).map(item => (
-                    <Card key={item.id} sx={{ mb: 2 }}>
+                    <Card key={item.id} sx={{ mb: 2, bgcolor: '#80000010', borderLeft: '4px solid #800000' }}>
                       <CardContent>
                         <Grid container spacing={2} alignItems="center">
                           <Grid item>
@@ -115,7 +115,7 @@ export default function TeacherLostFound() {
                             <Typography variant="caption" color="text.secondary">Location: {item.location}</Typography>
                           </Grid>
                           <Grid item>
-                            <Chip label={section.title.includes('Lost') ? 'Lost' : 'Found'} color={section.chip} size="small" />
+                            <Chip label={section.title.includes('Lost') ? 'Lost' : 'Found'} color="primary" size="small" />
                           </Grid>
                         </Grid>
                       </CardContent>

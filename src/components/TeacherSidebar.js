@@ -10,14 +10,14 @@ import { signOut } from 'firebase/auth';
 import { collection, query, where, onSnapshot, doc, getDoc, getDocs } from 'firebase/firestore';
 
 const teacherMenu = [
-  { text: "Dashboard", icon: <Dashboard sx={{ color: '#1976d2' }} />, path: "/teacher-dashboard" },
-  { text: "View Reports", icon: <Assessment sx={{ color: '#ff9800' }} />, path: "/teacher-reports" },
-  { text: "Announcements", icon: <Announcement sx={{ color: '#0288d1' }} />, path: "/teacher-announcements" },
-  { text: "Activities", icon: <Schedule sx={{ color: '#00acc1' }} />, path: "/activity" },
-  { text: "Schedule", icon: <Schedule sx={{ color: '#9c27b0' }} />, path: "/teacher-schedule" },
-  { text: "Notifications", icon: <Notifications sx={{ color: '#f57c00' }} />, path: "/teacher-notifications" },
-  { text: "Lost & Found", icon: <Search sx={{ color: '#26a69a' }} />, path: "/teacher-lost-found" },
-  { text: "Account Settings", icon: <Settings sx={{ color: '#9c27b0' }} />, path: "/teacher-profile" },
+  { text: "Dashboard", icon: <Dashboard sx={{ color: 'inherit' }} />, path: "/teacher-dashboard" },
+  { text: "View Reports", icon: <Assessment sx={{ color: 'inherit' }} />, path: "/teacher-reports" },
+  { text: "Announcements", icon: <Announcement sx={{ color: 'inherit' }} />, path: "/teacher-announcements" },
+  { text: "Activities", icon: <Schedule sx={{ color: 'inherit' }} />, path: "/activity" },
+  { text: "Schedule", icon: <Schedule sx={{ color: 'inherit' }} />, path: "/teacher-schedule" },
+  { text: "Notifications", icon: <Notifications sx={{ color: 'inherit' }} />, path: "/teacher-notifications" },
+  { text: "Lost & Found", icon: <Search sx={{ color: 'inherit' }} />, path: "/teacher-lost-found" },
+  { text: "Account Settings", icon: <Settings sx={{ color: 'inherit' }} />, path: "/teacher-profile" },
 ];
 
 export default function TeacherSidebar() {
@@ -133,6 +133,7 @@ export default function TeacherSidebar() {
           bgcolor: '#2d3436',
           color: '#fff',
           borderRight: '1px solid #636e72',
+          overflowX: 'hidden',
         },
       }}
     >
@@ -164,7 +165,7 @@ export default function TeacherSidebar() {
               },
             }}
           >
-            <ListItemIcon sx={{ minWidth: 40 }}>
+            <ListItemIcon sx={{ minWidth: 40, color: 'white' }}>
               {item.text === "Notifications" ? (
                 <Badge badgeContent={unreadNotifications + unreadMeetings + unreadLostFound} color="error">
                   {item.icon}

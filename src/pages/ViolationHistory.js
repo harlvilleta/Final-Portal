@@ -124,7 +124,7 @@ export default function ViolationHistory() {
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={4} md={2}>
-          <Card sx={{ bgcolor: '#e3f2fd', boxShadow: 2 }}>
+          <Card sx={{ bgcolor: '#80000010', boxShadow: 2, borderLeft: '4px solid #800000' }}>
             <CardHeader avatar={<AssignmentTurnedInIcon color="primary" />} title={<Typography variant="subtitle2">Total Violations</Typography>} />
             <CardContent>
               <Typography variant="h4" color="primary.main" fontWeight={700}>{stats.totalViolations}</Typography>

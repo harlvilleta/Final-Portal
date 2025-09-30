@@ -10,14 +10,14 @@ import { signOut } from 'firebase/auth';
 import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 
 const userMenu = [
-  { text: "Dashboard", icon: <Dashboard sx={{ color: '#1976d2' }} />, path: "/" },
-  { text: "My Violations", icon: <Assignment sx={{ color: '#d32f2f' }} />, path: "/violations" },
-  { text: "Announcements", icon: <Announcement sx={{ color: '#0288d1' }} />, path: "/announcements" },
-  { text: "Lost & Found", icon: <Search sx={{ color: '#43a047' }} />, path: "/lost-found" },
-  { text: "Activities", icon: <History sx={{ color: '#00acc1' }} />, path: "/activity" },
-  { text: "Receipt Submission", icon: <Receipt sx={{ color: '#ff9800' }} />, path: "/receipt-submission" },
-  { text: "Notifications", icon: <Notifications sx={{ color: '#f57c00' }} />, path: "/notifications" },
-  { text: "Account Settings", icon: <Settings sx={{ color: '#9c27b0' }} />, path: "/profile" },
+  { text: "Dashboard", icon: <Dashboard sx={{ color: 'inherit' }} />, path: "/" },
+  { text: "My Violations", icon: <Assignment sx={{ color: 'inherit' }} />, path: "/violations" },
+  { text: "Announcements", icon: <Announcement sx={{ color: 'inherit' }} />, path: "/announcements" },
+  { text: "Lost & Found", icon: <Search sx={{ color: 'inherit' }} />, path: "/lost-found" },
+  { text: "Activities", icon: <History sx={{ color: 'inherit' }} />, path: "/activity" },
+  { text: "Receipt Submission", icon: <Receipt sx={{ color: 'inherit' }} />, path: "/receipt-submission" },
+  { text: "Notifications", icon: <Notifications sx={{ color: 'inherit' }} />, path: "/notifications" },
+  { text: "Account Settings", icon: <Settings sx={{ color: 'inherit' }} />, path: "/profile" },
 ];
 
 export default function UserSidebar() {
@@ -106,8 +106,10 @@ export default function UserSidebar() {
         '& .MuiDrawer-paper': {
           width: 280,
           boxSizing: 'border-box',
-          bgcolor: '#fff',
-          borderRight: '1px solid #e0e0e0',
+          bgcolor: '#2d3436',
+          color: '#fff',
+          borderRight: '1px solid #636e72',
+          overflowX: 'hidden',
         },
       }}
     >
@@ -128,14 +130,16 @@ export default function UserSidebar() {
             sx={{
               mb: 1,
               borderRadius: 2,
-              bgcolor: location.pathname === item.path ? '#e3f2fd' : 'transparent',
-              color: location.pathname === item.path ? '#1976d2' : 'inherit',
+              bgcolor: location.pathname === item.path ? '#636e72' : 'transparent',
+              color: location.pathname === item.path ? '#fff' : '#b2bec3',
               '&:hover': {
-                bgcolor: location.pathname === item.path ? '#e3f2fd' : '#f5f5f5',
+                bgcolor: location.pathname === item.path ? '#636e72' : '#4a5568',
+                transform: 'translateX(4px)',
+                boxShadow: 2
               },
             }}
           >
-            <ListItemIcon sx={{ minWidth: 40 }}>
+            <ListItemIcon sx={{ minWidth: 40, color: 'white' }}>
               {item.text === "Notifications" ? (
                 <Badge badgeContent={unreadNotifications} color="error">
                   {item.icon}
@@ -155,7 +159,7 @@ export default function UserSidebar() {
           </ListItem>
         ))}
 
-        <Divider sx={{ my: 2 }} />
+        <Divider sx={{ my: 2, bgcolor: '#b2bec3' }} />
 
         <ListItem
           button
@@ -163,18 +167,20 @@ export default function UserSidebar() {
           sx={{
             borderRadius: 2,
             '&:hover': {
-              bgcolor: '#ffebee',
+              bgcolor: '#d32f2f',
+              transform: 'translateX(4px)',
+              boxShadow: 2
             },
           }}
         >
           <ListItemIcon sx={{ minWidth: 40 }}>
-            <Logout sx={{ color: '#d32f2f' }} />
+            <Logout sx={{ color: '#ff6b6b' }} />
           </ListItemIcon>
           <ListItemText 
             primary="Logout" 
             sx={{ 
               '& .MuiListItemText-primary': {
-                color: '#d32f2f',
+                color: '#ff6b6b',
                 fontWeight: 500,
               }
             }}
@@ -184,13 +190,13 @@ export default function UserSidebar() {
 
       {/* Notification Summary */}
       {unreadNotifications > 0 && (
-        <Box sx={{ p: 2, mt: 'auto', borderTop: '1px solid #e0e0e0' }}>
+        <Box sx={{ p: 2, mt: 'auto', borderTop: '1px solid #636e72' }}>
           <Chip
             icon={<Warning />}
             label={`${unreadNotifications} unread notification${unreadNotifications > 1 ? 's' : ''}`}
             color="error"
             variant="outlined"
-            sx={{ width: '100%', justifyContent: 'flex-start' }}
+            sx={{ width: '100%', justifyContent: 'flex-start', bgcolor: 'rgba(244, 67, 54, 0.1)', borderColor: '#f44336', color: '#f44336' }}
             onClick={() => navigate('/notifications')}
           />
         </Box>

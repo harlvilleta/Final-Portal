@@ -6,55 +6,55 @@ import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 
 const menu = [
-  { text: "Overview", icon: <Dashboard sx={{ color: '#1976d2' }} />, path: "/overview" },
+  { text: "Overview", icon: <Dashboard sx={{ color: 'inherit' }} />, path: "/overview" },
   { 
     text: "Students", 
-    icon: <People sx={{ color: '#43a047' }} />, 
+    icon: <People sx={{ color: 'inherit' }} />, 
     path: "/students",
     hasSubmenu: true,
     submenu: [
-      { text: "Student List", icon: <School sx={{ color: '#1976d2' }} />, path: "/students" },
-      { text: "Add Student", icon: <PersonAdd sx={{ color: '#43a047' }} />, path: "/students/add-student" }
+      { text: "Student List", icon: <School sx={{ color: 'inherit' }} />, path: "/students" },
+      { text: "Add Student", icon: <PersonAdd sx={{ color: 'inherit' }} />, path: "/students/add-student" }
     ]
   },
   { 
     text: "Violations", 
-    icon: <Report sx={{ color: '#d32f2f' }} />, 
+    icon: <Report sx={{ color: 'inherit' }} />, 
     path: "/violation-record",
     hasSubmenu: true,
     submenu: [
-      { text: "Record", icon: <Assignment sx={{ color: '#1976d2' }} />, path: "/violation-record" },
-      { text: "Review Cases", icon: <Assessment sx={{ color: '#ff9800' }} />, path: "/violation-review" },
-      { text: "Create Meeting", icon: <MeetingRoom sx={{ color: '#43a047' }} />, path: "/violation-record/create-meeting" },
-      { text: "History", icon: <Timeline sx={{ color: '#fbc02d' }} />, path: "/violation-record/history" },
-      { text: "Status", icon: <Assessment sx={{ color: '#8e24aa' }} />, path: "/violation-record/status" }
+      { text: "Record", icon: <Assignment sx={{ color: 'inherit' }} />, path: "/violation-record" },
+      { text: "Review Cases", icon: <Assessment sx={{ color: 'inherit' }} />, path: "/violation-review" },
+      { text: "Create Meeting", icon: <MeetingRoom sx={{ color: 'inherit' }} />, path: "/violation-record/create-meeting" },
+      { text: "History", icon: <Timeline sx={{ color: 'inherit' }} />, path: "/violation-record/history" },
+      { text: "Status", icon: <Assessment sx={{ color: 'inherit' }} />, path: "/violation-record/status" }
     ]
   },
-  { text: "Receipt Review", icon: <Receipt sx={{ color: '#ff9800' }} />, path: "/receipt-review" },
-  { text: "Lost & Found", icon: <Search sx={{ color: '#ff9800' }} />, path: "/lost-found" },
+{ text: "Receipt Review", icon: <Receipt sx={{ color: 'inherit' }} />, path: "/receipt-review" },
+{ text: "Lost & Found", icon: <Search sx={{ color: 'inherit' }} />, path: "/lost-found" },
   { 
     text: "Activity", 
-    icon: <Event sx={{ color: '#fbc02d' }} />,
+    icon: <Event sx={{ color: 'inherit' }} />,
     path: "/activity",
     hasSubmenu: true,
     submenu: [
-      { text: "Schedule Activity", icon: <Event sx={{ color: '#fbc02d' }} />, path: "/activity" },
-      { text: "History", icon: <History sx={{ color: '#9c27b0' }} />, path: "/activity/history" },
-      { text: "Requests", icon: <History sx={{ color: '#00acc1' }} />, path: "/activity/requests" }
+      { text: "Schedule Activity", icon: <Event sx={{ color: 'inherit' }} />, path: "/activity" },
+      { text: "History", icon: <History sx={{ color: 'inherit' }} />, path: "/activity/history" },
+      { text: "Requests", icon: <History sx={{ color: 'inherit' }} />, path: "/activity/requests" }
     ]
   },
   { 
     text: "Announcements", 
-    icon: <ListAlt sx={{ color: '#0288d1' }} />, 
+    icon: <ListAlt sx={{ color: 'inherit' }} />, 
     path: "/announcements",
     hasSubmenu: true,
     submenu: [
-      { text: "Announcements", icon: <Campaign sx={{ color: '#0288d1' }} />, path: "/announcements" },
-      { text: "Report", icon: <Description sx={{ color: '#ff9800' }} />, path: "/announcements/report" }
+      { text: "Announcements", icon: <Campaign sx={{ color: 'inherit' }} />, path: "/announcements" },
+      { text: "Report", icon: <Description sx={{ color: 'inherit' }} />, path: "/announcements/report" }
     ]
   },
-  { text: "Options", icon: <Settings sx={{ color: '#8e24aa' }} />, path: "/options" },
-  { text: "Exit", icon: <Logout sx={{ color: '#757575' }} />, path: "/exit" }
+{ text: "Options", icon: <Settings sx={{ color: 'inherit' }} />, path: "/options" },
+{ text: "Exit", icon: <Logout sx={{ color: 'inherit' }} />, path: "/exit" }
 ];
 
 export default function Sidebar() {
@@ -107,9 +107,9 @@ export default function Sidebar() {
     <Drawer
       variant="permanent"
       sx={{
-        width: 220,
+        width: 280,
         flexShrink: 0,
-        [`& .MuiDrawer-paper`]: { width: 220, boxSizing: "border-box", bgcolor: "#2d3436", color: "#fff", display: 'flex', flexDirection: 'column' }
+        [`& .MuiDrawer-paper`]: { width: 280, boxSizing: "border-box", bgcolor: "#2d3436", color: "#fff", display: 'flex', flexDirection: 'column', overflowX: 'hidden' }
       }}
     >
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

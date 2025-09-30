@@ -432,28 +432,33 @@ export default function Login({ onLoginSuccess }) {
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+      backgroundImage: `url(${process.env.PUBLIC_URL + '/2121.jpg'})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
       padding: 2
     }}>
-      <Paper elevation={6} sx={{
-        p: 6,
-        minWidth: 400,
-        maxWidth: 480,
+      <Box sx={{
+        p: 4,
         width: '100%',
-        borderRadius: 5,
-        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+        maxWidth: 520,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        bgcolor: 'rgba(255,255,255,0.95)'
+        color: '#fff',
+        textShadow: '0 2px 6px rgba(0,0,0,0.4)',
+        backgroundColor: 'transparent',
+        backdropFilter: 'blur(10px)',
+        borderRadius: 12,
+        boxShadow: '0 8px 40px rgba(0,0,0,0.35)'
       }}>
-        <Avatar sx={{ bgcolor: 'primary.main', width: 64, height: 64, mb: 2 }}>
+        <Avatar sx={{ bgcolor: '#800000', width: 64, height: 64, mb: 2, boxShadow: 3 }}>
           <LockOutlined sx={{ fontSize: 36 }} />
         </Avatar>
-        <Typography variant="h4" fontWeight={700} color="primary" gutterBottom sx={{ mb: 2 }}>
+        <Typography variant="h4" fontWeight={700} gutterBottom sx={{ mb: 2, color: '#fff' }}>
           Welcome Back
         </Typography>
-        <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 3 }}>
+        <Typography variant="subtitle1" sx={{ mb: 3, color: '#f1f1f1' }}>
           Sign in to your account
         </Typography>
         
@@ -487,13 +492,25 @@ export default function Login({ onLoginSuccess }) {
             onChange={handleEmailChange}
             fullWidth 
             required 
-            sx={{ mb: 3 }} 
+            sx={{ 
+              mb: 3,
+              '& .MuiOutlinedInput-root': {
+                bgcolor: 'rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(6px)',
+                color: '#fff',
+                '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                '&:hover fieldset': { borderColor: '#ffffff' },
+                '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+              },
+              '& .MuiInputLabel-root': { color: '#f0f0f0' },
+              '& .MuiInputAdornment-root .MuiSvgIcon-root': { color: '#eaeaea' }
+            }} 
             size="large" 
             InputProps={{ 
               style: { fontSize: 18, height: 56 },
               startAdornment: (
                 <InputAdornment position="start">
-                  <Email color="action" />
+                  <Email />
                 </InputAdornment>
               )
             }}
@@ -510,13 +527,25 @@ export default function Login({ onLoginSuccess }) {
             onChange={handlePasswordChange}
             fullWidth
             required
-            sx={{ mb: 2 }}
+            sx={{ 
+              mb: 2,
+              '& .MuiOutlinedInput-root': {
+                bgcolor: 'rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(6px)',
+                color: '#fff',
+                '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                '&:hover fieldset': { borderColor: '#ffffff' },
+                '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+              },
+              '& .MuiInputLabel-root': { color: '#f0f0f0' },
+              '& .MuiInputAdornment-root .MuiSvgIcon-root': { color: '#eaeaea' }
+            }}
             size="large"
             InputProps={{
               style: { fontSize: 18, height: 56 },
               startAdornment: (
                 <InputAdornment position="start">
-                  <LockOutlined color="action" />
+                  <LockOutlined />
                 </InputAdornment>
               ),
               endAdornment: (
@@ -553,10 +582,10 @@ export default function Login({ onLoginSuccess }) {
           <Button 
             type="submit"
             variant="contained" 
-            color="primary" 
+            color="inherit" 
             fullWidth 
             disabled={loading || lockout || googleLoading} 
-            sx={{ mb: 2, py: 1.5, fontSize: 18, borderRadius: 2, boxShadow: 2 }}
+            sx={{ mb: 2, py: 1.5, fontSize: 18, borderRadius: 2, boxShadow: 2, bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}
           >
             {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
           </Button>
@@ -569,10 +598,10 @@ export default function Login({ onLoginSuccess }) {
         <Button 
           onClick={handleGoogleLogin} 
           variant="outlined" 
-          color="primary" 
+          color="inherit" 
           fullWidth 
           startIcon={googleLoading ? <CircularProgress size={20} /> : <GoogleIcon />} 
-          sx={{ mb: 2, py: 1.5, fontSize: 18, borderRadius: 2 }} 
+          sx={{ mb: 2, py: 1.5, fontSize: 18, borderRadius: 2, color: '#fff', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.08)' } }} 
           disabled={loading || lockout || googleLoading}
           type="button"
         >
@@ -585,7 +614,7 @@ export default function Login({ onLoginSuccess }) {
             variant="body2" 
             onClick={() => setForgotOpen(true)} 
             underline="hover" 
-            color="primary.main"
+            color="#fff"
             disabled={loading || lockout || googleLoading}
             sx={{ cursor: 'pointer' }}
           >
@@ -594,20 +623,20 @@ export default function Login({ onLoginSuccess }) {
         </Box>
         
         <Box sx={{ textAlign: 'center', mt: 2 }}>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: '#eaeaea' }}>
             Don&apos;t have an account?{' '}
             <Link 
               component={RouterLink} 
               to="/register" 
               underline="hover" 
-              color="primary.main" 
+              color="#fff" 
               fontWeight={600}
             >
               Register
             </Link>
           </Typography>
         </Box>
-      </Paper>
+      </Box>
       
       {/* Forgot Password Dialog */}
       <Dialog open={forgotOpen} onClose={() => setForgotOpen(false)} maxWidth="sm" fullWidth>

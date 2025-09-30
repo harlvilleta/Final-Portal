@@ -123,13 +123,7 @@ export default function ViolationStatus() {
     setSelectedTab(newValue);
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  // Loading placeholder removed per requirement
 
   return (
     <Box>
@@ -140,7 +134,7 @@ export default function ViolationStatus() {
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#e3f2fd', boxShadow: 2 }}>
+          <Card sx={{ bgcolor: '#80000010', boxShadow: 2, borderLeft: '4px solid #800000' }}>
             <CardHeader avatar={<AssignmentTurnedInIcon color="primary" />} title={<Typography variant="subtitle2">Total Violations</Typography>} />
             <CardContent>
               <Typography variant="h4" color="primary.main" fontWeight={700}>{stats.totalViolations}</Typography>
@@ -149,44 +143,44 @@ export default function ViolationStatus() {
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#fffde7', boxShadow: 2 }}>
-            <CardHeader avatar={<PendingActionsIcon color="warning" />} title={<Typography variant="subtitle2">Pending</Typography>} />
+          <Card sx={{ bgcolor: '#80000010', boxShadow: 2, borderLeft: '4px solid #800000' }}>
+            <CardHeader avatar={<PendingActionsIcon color="primary" />} title={<Typography variant="subtitle2">Pending</Typography>} />
             <CardContent>
-              <Typography variant="h4" color="warning.main" fontWeight={700}>{stats.pendingViolations}</Typography>
+              <Typography variant="h4" color="primary.main" fontWeight={700}>{stats.pendingViolations}</Typography>
               <Typography variant="body2" color="textSecondary">
                 {pendingPercentage.toFixed(1)}% of total
               </Typography>
               <LinearProgress 
                 variant="determinate" 
                 value={pendingPercentage} 
-                color="warning" 
+                color="primary" 
                 sx={{ mt: 1 }}
               />
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#e8f5e9', boxShadow: 2 }}>
-            <CardHeader avatar={<DoneAllIcon color="success" />} title={<Typography variant="subtitle2">Solved</Typography>} />
+          <Card sx={{ bgcolor: '#80000010', boxShadow: 2, borderLeft: '4px solid #800000' }}>
+            <CardHeader avatar={<DoneAllIcon color="primary" />} title={<Typography variant="subtitle2">Solved</Typography>} />
             <CardContent>
-              <Typography variant="h4" color="success.main" fontWeight={700}>{stats.solvedViolations}</Typography>
+              <Typography variant="h4" color="primary.main" fontWeight={700}>{stats.solvedViolations}</Typography>
               <Typography variant="body2" color="textSecondary">
                 {solvedPercentage.toFixed(1)}% of total
               </Typography>
               <LinearProgress 
                 variant="determinate" 
                 value={solvedPercentage} 
-                color="success" 
+                color="primary" 
                 sx={{ mt: 1 }}
               />
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#f3e5f5', boxShadow: 2 }}>
-            <CardHeader avatar={<AssessmentIcon color="secondary" />} title={<Typography variant="subtitle2">Meetings</Typography>} />
+          <Card sx={{ bgcolor: '#80000010', boxShadow: 2, borderLeft: '4px solid #800000' }}>
+            <CardHeader avatar={<AssessmentIcon color="primary" />} title={<Typography variant="subtitle2">Meetings</Typography>} />
             <CardContent>
-              <Typography variant="h4" color="secondary.main" fontWeight={700}>{stats.totalMeetings}</Typography>
+              <Typography variant="h4" color="primary.main" fontWeight={700}>{stats.totalMeetings}</Typography>
               <Typography variant="body2" color="textSecondary">
                 {stats.pendingMeetings} pending, {stats.completedMeetings} completed
               </Typography>
@@ -204,19 +198,10 @@ export default function ViolationStatus() {
               {Object.entries(classificationStats).map(([classification, count]) => (
                 <Box key={classification} sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Chip 
-                      label={classification} 
-                      color={getClassificationColor(classification)} 
-                      size="small" 
-                    />
+                    <Chip label={classification} color="primary" size="small" />
                     <Typography variant="body2">{count} violations</Typography>
                   </Box>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={(count / stats.totalViolations) * 100} 
-                    color={getClassificationColor(classification)}
-                    sx={{ height: 8, borderRadius: 4 }}
-                  />
+                  <LinearProgress variant="determinate" value={(count / stats.totalViolations) * 100} color="primary" sx={{ height: 8, borderRadius: 4 }} />
                 </Box>
               ))}
             </CardContent>
@@ -229,19 +214,10 @@ export default function ViolationStatus() {
               {Object.entries(severityStats).map(([severity, count]) => (
                 <Box key={severity} sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Chip 
-                      label={severity} 
-                      color={getSeverityColor(severity)} 
-                      size="small" 
-                    />
+                    <Chip label={severity} color="primary" size="small" />
                     <Typography variant="body2">{count} violations</Typography>
                   </Box>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={(count / stats.totalViolations) * 100} 
-                    color={getSeverityColor(severity)}
-                    sx={{ height: 8, borderRadius: 4 }}
-                  />
+                  <LinearProgress variant="determinate" value={(count / stats.totalViolations) * 100} color="primary" sx={{ height: 8, borderRadius: 4 }} />
                 </Box>
               ))}
             </CardContent>
@@ -281,7 +257,7 @@ export default function ViolationStatus() {
       <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
         <Table stickyHeader>
           <TableHead>
-            <TableRow sx={{ bgcolor: '#e3f2fd' }}>
+            <TableRow sx={{ bgcolor: '#80000010' }}>
               <TableCell>Date</TableCell>
               <TableCell>Student ID</TableCell>
               <TableCell>Student Name</TableCell>
@@ -317,35 +293,18 @@ export default function ViolationStatus() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={violation.classification} 
-                        color={getClassificationColor(violation.classification)} 
-                        size="small" 
-                      />
+                      <Chip label={violation.classification} color="primary" size="small" />
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={violation.severity} 
-                        color={getSeverityColor(violation.severity)} 
-                        size="small" 
-                      />
+                      <Chip label={violation.severity} color="primary" size="small" />
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={violation.status} 
-                        color={getStatusColor(violation.status)} 
-                        size="small" 
-                      />
+                      <Chip label={violation.status} color="primary" size="small" />
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Box sx={{ width: '100%', mr: 1 }}>
-                          <LinearProgress 
-                            variant="determinate" 
-                            value={violation.status === 'Solved' ? 100 : 0} 
-                            color={violation.status === 'Solved' ? 'success' : 'warning'}
-                            sx={{ height: 6, borderRadius: 3 }}
-                          />
+                          <LinearProgress variant="determinate" value={violation.status === 'Solved' ? 100 : 0} color="primary" sx={{ height: 6, borderRadius: 3 }} />
                         </Box>
                         <Box sx={{ minWidth: 35 }}>
                           <Typography variant="body2" color="textSecondary">

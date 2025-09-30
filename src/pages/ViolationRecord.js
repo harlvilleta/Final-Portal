@@ -420,7 +420,7 @@ School Administration
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} sm={4}>
-          <Card sx={{ bgcolor: '#e3f2fd', boxShadow: 2 }}>
+          <Card sx={{ bgcolor: '#80000010', boxShadow: 2, borderLeft: '4px solid #800000' }}>
             <CardHeader avatar={<AssignmentTurnedInIcon color="primary" />} title={<Typography variant="subtitle2">Total Violations</Typography>} />
             <CardContent>
               <Typography variant="h4" color="primary.main" fontWeight={700}>{total}</Typography>
@@ -526,7 +526,7 @@ School Administration
             </Grid>
             <Grid item xs={12} sm={3}>
               <Tooltip title="Attach an image as evidence (optional)">
-                <Button variant="contained" component="label" fullWidth sx={{ bgcolor: '#1976d2', color: '#fff', '&:hover': { bgcolor: '#1565c0' } }}>
+                <Button variant="contained" component="label" fullWidth sx={{ bgcolor: '#800000', color: '#fff', '&:hover': { bgcolor: '#6b0000' } }}>
                   Attach Evidence Image
                   <input type="file" accept="image/*" hidden onChange={handleImage} />
                 </Button>

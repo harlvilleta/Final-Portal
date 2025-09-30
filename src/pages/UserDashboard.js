@@ -512,7 +512,7 @@ function UserOverview({ currentUser }) {
 // Main User Dashboard Component
 export default function UserDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -523,13 +523,7 @@ export default function UserDashboard() {
     return unsubscribe;
   }, []);
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  // Removed full-page loading spinner per requirements
 
   if (!currentUser) {
     return (

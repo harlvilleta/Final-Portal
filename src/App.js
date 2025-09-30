@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Button, CircularProgress, Alert } from "@mui/material";
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { AccountCircle, Logout } from "@mui/icons-material";
 import Sidebar from "./components/Sidebar";
 import UserSidebar from "./components/UserSidebar";
@@ -469,7 +470,39 @@ function App() {
     );
   }
 
+  const theme = createTheme({
+    palette: {
+      primary: { main: '#800000' },
+      secondary: { main: '#636e72' },
+      background: { default: '#ffffff' }
+    },
+    components: {
+      MuiCard: {
+        styleOverrides: {
+          root: {
+            backgroundColor: '#80000010',
+            borderLeft: '4px solid #800000',
+          }
+        }
+      },
+      MuiButton: {
+        styleOverrides: {
+          containedPrimary: {
+            backgroundColor: '#800000',
+            '&:hover': { backgroundColor: '#6b0000' }
+          },
+          outlinedPrimary: {
+            borderColor: '#800000',
+            color: '#800000',
+            '&:hover': { borderColor: '#6b0000', backgroundColor: '#8000000a' }
+          }
+        }
+      }
+    }
+  });
+
   return (
+    <ThemeProvider theme={theme}>
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -577,6 +610,7 @@ function App() {
         } />
       </Routes>
     </Router>
+    </ThemeProvider>
   );
 }
 

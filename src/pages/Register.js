@@ -396,30 +396,36 @@ export default function Register() {
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+      backgroundImage: `url(${process.env.PUBLIC_URL + '/2121.jpg'})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
       padding: 2
     }}>
-      <Paper elevation={6} sx={{
-        p: 6,
+      <Box sx={{
+        p: 4,
         minWidth: 400,
-        maxWidth: 800,
+        maxWidth: 960,
         width: '100%',
-        borderRadius: 5,
-        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+        borderRadius: 3,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        bgcolor: 'rgba(255,255,255,0.95)',
+        color: '#fff',
+        textShadow: '0 2px 6px rgba(0,0,0,0.4)',
+        backgroundColor: 'transparent',
+        backdropFilter: 'blur(10px)',
+        boxShadow: '0 8px 40px rgba(0,0,0,0.35)',
         maxHeight: '90vh',
         overflowY: 'auto'
       }}>
         <Avatar sx={{ bgcolor: 'primary.main', width: 64, height: 64, mb: 2 }}>
           <PersonAddAlt1 sx={{ fontSize: 36 }} />
         </Avatar>
-        <Typography variant="h4" fontWeight={700} color="primary" gutterBottom sx={{ mb: 2 }}>
+        <Typography variant="h4" fontWeight={700} gutterBottom sx={{ mb: 2, color: '#fff' }}>
           Create Account
         </Typography>
-        <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 3 }}>Register to get started</Typography>
+        <Typography variant="subtitle1" sx={{ mb: 3, color: '#f1f1f1' }}>Register to get started</Typography>
         <form onSubmit={handleRegister} style={{ width: '100%' }}>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
@@ -599,10 +605,10 @@ export default function Register() {
               <Button
                 type="submit"
                 variant="contained"
-                color="primary"
+                color="inherit"
                 fullWidth
                 disabled={loading || !terms}
-                sx={{ py: 1.5, fontSize: 18, borderRadius: 2, boxShadow: 2 }}
+                sx={{ py: 1.5, fontSize: 18, borderRadius: 2, boxShadow: 2, bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}
               >
                 {loading ? <CircularProgress size={24} color="inherit" /> : 'Register'}
               </Button>
@@ -611,14 +617,14 @@ export default function Register() {
         </form>
         
         <Box sx={{ textAlign: 'center', mt: 3 }}>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: '#eaeaea' }}>
             Already have an account?{' '}
-            <Link component={RouterLink} to="/login" underline="hover" color="success.main" fontWeight={600}>
+            <Link component={RouterLink} to="/login" underline="hover" color="#fff" fontWeight={600}>
               Login
             </Link>
           </Typography>
         </Box>
-      </Paper>
+      </Box>
       
       {/* Snackbar for notifications */}
       <Snackbar 

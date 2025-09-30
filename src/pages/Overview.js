@@ -27,9 +27,9 @@ export default function Overview() {
     students: [],
     violations: []
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [recentActivity, setRecentActivity] = useState([]);
-  const [activityLoading, setActivityLoading] = useState(true);
+  const [activityLoading, setActivityLoading] = useState(false);
   const [openEventModal, setOpenEventModal] = useState(false);
   const [eventForm, setEventForm] = useState({ title: '', description: '', proposedBy: '', date: '', time: '', location: '' });
   const [eventSubmitting, setEventSubmitting] = useState(false);
@@ -69,7 +69,7 @@ export default function Overview() {
 
   const fetchStudents = async () => {
     try {
-      setStudentsLoading(true);
+      setStudentsLoading(false);
       const querySnapshot = await getDocs(collection(db, "students"));
       const studentsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
@@ -114,7 +114,7 @@ export default function Overview() {
 
   const fetchOverviewData = async () => {
     try {
-      setLoading(true);
+      setLoading(false);
       
       // Fetch students count
       const studentsSnapshot = await getDocs(collection(db, "students"));
@@ -202,7 +202,7 @@ export default function Overview() {
   };
 
   const fetchRecentActivity = async () => {
-    setActivityLoading(true);
+    setActivityLoading(false);
     try {
       const q = query(collection(db, "activity_log"), orderBy("timestamp", "desc"), limit(8));
       const snap = await getDocs(q);
@@ -287,13 +287,7 @@ export default function Overview() {
 
   const userInfo = getUserDisplayInfo();
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  // Removed loading screen per requirements
 
   return (
     <Box>
@@ -314,21 +308,21 @@ export default function Overview() {
                 boxShadow: 3, 
                 borderRadius: 2,
                 borderLeft: `4px solid ${stat.color}`,
-                background: stat.label === 'Students' ? '#1976d220' :
+                background: stat.label === 'Students' ? '#80000020' :
                             stat.label === 'Violations' ? '#d32f2f20' :
-                            stat.label === 'Activities' ? '#2e7d3220' :
-                            stat.label === 'Announcements' ? '#ed6c0220' : '#fff',
+                            stat.label === 'Activities' ? '#80000020' :
+                            stat.label === 'Announcements' ? '#80000020' : '#fff',
                 cursor: 'pointer',
                 transition: 'box-shadow 0.2s, background 0.2s',
                 '&:hover': {
                   boxShadow: 6,
-                  background: stat.color + '22',
+                  background: '#80000022',
                 },
               }}
             >
               <Box sx={{ mr: 2 }}>{stat.icon}</Box>
               <CardContent sx={{ flex: 1, p: '8px !important' }}>
-                <Typography variant="h4" fontWeight={700} color={stat.color}>
+                <Typography variant="h4" fontWeight={700} color={'#800000'}>
                   {stat.value.toLocaleString()}
                 </Typography>
                 <Typography color="text.secondary" variant="body2">
@@ -358,7 +352,7 @@ export default function Overview() {
                 <Line 
                   type="monotone" 
                   dataKey="count" 
-                  stroke="#1976d2" 
+                  stroke="#800000" 
                   strokeWidth={3}
                   name="Students"
                 />
@@ -382,7 +376,7 @@ export default function Overview() {
                 <Legend />
                 <Bar 
                   dataKey="count" 
-                  fill="#d32f2f" 
+                  fill="#800000" 
                   name="Violations"
                 />
               </BarChart>
@@ -409,7 +403,7 @@ export default function Overview() {
         
         {studentsLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress />
+            {/* Loading removed per requirement; show nothing */}
           </Box>
         ) : students.length === 0 ? (
           <Box sx={{ textAlign: 'center', p: 3 }}>
@@ -530,7 +524,7 @@ export default function Overview() {
 
       {/* Recent Activity Section */}
       <Paper sx={{ mt: 4, p: 3, boxShadow: 2 }}>
-        <Typography variant="h6" sx={{ mb: 1, fontWeight: 700, color: '#1976d2' }}>Recent Activity</Typography>
+          <Typography variant="h6" sx={{ mb: 1, fontWeight: 700, color: '#800000' }}>Recent Activity</Typography>
         {activityLoading ? (
           <Typography variant="body2" color="text.secondary">Loading...</Typography>
         ) : recentActivity.length === 0 ? (
