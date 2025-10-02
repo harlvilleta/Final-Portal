@@ -279,7 +279,7 @@ export default function ReceiptHistory() {
             {submissions
               .filter(sub => sub.adminNotes)
               .map((submission) => (
-              <Card key={submission.id} sx={{ mb: 2 }}>
+              <Card key={submission.id} sx={{ mb: 2, bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                     <Box>

@@ -480,7 +480,7 @@ function App() {
       MuiCard: {
         styleOverrides: {
           root: {
-            backgroundColor: '#80000010',
+            backgroundColor: '#80000015',
             borderLeft: '4px solid #800000',
           }
         }

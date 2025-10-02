@@ -196,18 +196,18 @@ export default function ViolationCreateMeeting() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom fontWeight={700} color="primary.main">
+      <Typography variant="h4" gutterBottom fontWeight={700} sx={{ color: '#800000' }}>
         Create Meeting
       </Typography>
       
       {/* Summary Card */}
-      <Card sx={{ bgcolor: '#e3f2fd', boxShadow: 2, mb: 3 }}>
+      <Card sx={{ bgcolor: '#80000015', boxShadow: 2, mb: 3, borderLeft: '4px solid #800000' }}>
         <CardHeader 
-          avatar={<MeetingRoomIcon color="primary" />} 
+          avatar={<MeetingRoomIcon sx={{ color: '#800000' }} />} 
           title={<Typography variant="subtitle2">Meetings</Typography>} 
         />
         <CardContent>
-          <Typography variant="h4" color="primary.main" fontWeight={700}>
+          <Typography variant="h4" sx={{ color: '#800000' }} fontWeight={700}>
             {meetings.filter(m => m.type === 'meeting').length}
           </Typography>
           <Typography variant="body2" color="textSecondary">
@@ -321,10 +321,15 @@ export default function ViolationCreateMeeting() {
               <Button 
                 type="submit" 
                 variant="contained" 
-                color="primary" 
                 size="large"
                 disabled={meetingSubmitting || !meetingForm.studentName || !meetingForm.purpose || !meetingForm.date}
-                sx={{ minWidth: 200 }}
+                sx={{ 
+                  minWidth: 200,
+                  bgcolor: '#800000',
+                  color: '#ffffff',
+                  '&:hover': { bgcolor: '#6b0000' },
+                  '&:disabled': { bgcolor: '#cccccc', color: '#666666' }
+                }}
               >
                 {meetingSubmitting ? "Creating..." : "Create Meeting"}
               </Button>

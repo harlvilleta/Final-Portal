@@ -124,42 +124,42 @@ export default function ViolationHistory() {
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={4} md={2}>
-          <Card sx={{ bgcolor: '#80000010', boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardHeader avatar={<AssignmentTurnedInIcon color="primary" />} title={<Typography variant="subtitle2">Total Violations</Typography>} />
+          <Card sx={{ bgcolor: '#80000015', boxShadow: 2, borderLeft: '4px solid #800000' }}>
+            <CardHeader avatar={<AssignmentTurnedInIcon sx={{ color: '#800000' }} />} title={<Typography variant="subtitle2">Total Violations</Typography>} />
             <CardContent>
-              <Typography variant="h4" color="primary.main" fontWeight={700}>{stats.totalViolations}</Typography>
+              <Typography variant="h4" sx={{ color: '#800000' }} fontWeight={700}>{stats.totalViolations}</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={4} md={2}>
-          <Card sx={{ bgcolor: '#fffde7', boxShadow: 2 }}>
-            <CardHeader avatar={<PendingActionsIcon color="warning" />} title={<Typography variant="subtitle2">Pending</Typography>} />
+          <Card sx={{ bgcolor: '#80000015', boxShadow: 2, borderLeft: '4px solid #800000' }}>
+            <CardHeader avatar={<PendingActionsIcon sx={{ color: '#800000' }} />} title={<Typography variant="subtitle2">Pending</Typography>} />
             <CardContent>
-              <Typography variant="h4" color="warning.main" fontWeight={700}>{stats.pendingViolations}</Typography>
+              <Typography variant="h4" sx={{ color: '#800000' }} fontWeight={700}>{stats.pendingViolations}</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={4} md={2}>
-          <Card sx={{ bgcolor: '#e8f5e9', boxShadow: 2 }}>
-            <CardHeader avatar={<DoneAllIcon color="success" />} title={<Typography variant="subtitle2">Solved</Typography>} />
+          <Card sx={{ bgcolor: '#80000015', boxShadow: 2, borderLeft: '4px solid #800000' }}>
+            <CardHeader avatar={<DoneAllIcon sx={{ color: '#800000' }} />} title={<Typography variant="subtitle2">Solved</Typography>} />
             <CardContent>
-              <Typography variant="h4" color="success.main" fontWeight={700}>{stats.solvedViolations}</Typography>
+              <Typography variant="h4" sx={{ color: '#800000' }} fontWeight={700}>{stats.solvedViolations}</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={4} md={2}>
-          <Card sx={{ bgcolor: '#f3e5f5', boxShadow: 2 }}>
-            <CardHeader avatar={<TimelineIcon color="secondary" />} title={<Typography variant="subtitle2">Meetings</Typography>} />
+          <Card sx={{ bgcolor: '#80000015', boxShadow: 2, borderLeft: '4px solid #800000' }}>
+            <CardHeader avatar={<TimelineIcon sx={{ color: '#800000' }} />} title={<Typography variant="subtitle2">Meetings</Typography>} />
             <CardContent>
-              <Typography variant="h4" color="secondary.main" fontWeight={700}>{stats.totalMeetings}</Typography>
+              <Typography variant="h4" sx={{ color: '#800000' }} fontWeight={700}>{stats.totalMeetings}</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={4} md={2}>
-          <Card sx={{ bgcolor: '#e0f2f1', boxShadow: 2 }}>
-            <CardHeader avatar={<TimelineIcon color="info" />} title={<Typography variant="subtitle2">Activities</Typography>} />
+          <Card sx={{ bgcolor: '#80000015', boxShadow: 2, borderLeft: '4px solid #800000' }}>
+            <CardHeader avatar={<TimelineIcon sx={{ color: '#800000' }} />} title={<Typography variant="subtitle2">Activities</Typography>} />
             <CardContent>
-              <Typography variant="h4" color="info.main" fontWeight={700}>{stats.recentActivities}</Typography>
+              <Typography variant="h4" sx={{ color: '#800000' }} fontWeight={700}>{stats.recentActivities}</Typography>
             </CardContent>
           </Card>
         </Grid>

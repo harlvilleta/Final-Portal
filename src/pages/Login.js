@@ -427,7 +427,7 @@ export default function Login({ onLoginSuccess }) {
 
   return (
     <Box sx={{ 
-      minHeight: '100vh', 
+      height: '100vh', 
       width: '100vw', 
       display: 'flex', 
       alignItems: 'center', 
@@ -436,7 +436,11 @@ export default function Login({ onLoginSuccess }) {
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
-      padding: 2
+      padding: 2,
+      overflow: 'hidden',
+      position: 'fixed',
+      top: 0,
+      left: 0
     }}>
       <Box sx={{
         p: 4,
@@ -500,7 +504,21 @@ export default function Login({ onLoginSuccess }) {
                 color: '#fff',
                 '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
                 '&:hover fieldset': { borderColor: '#ffffff' },
-                '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                '&.Mui-focused fieldset': { borderColor: '#ffffff' },
+                '&.Mui-focused': { bgcolor: 'rgba(255,255,255,0.12)' },
+                '& input:-webkit-autofill': {
+                  WebkitBoxShadow: '0 0 0 1000px rgba(255,255,255,0.12) inset !important',
+                  WebkitTextFillColor: '#fff !important',
+                  transition: 'background-color 5000s ease-in-out 0s'
+                },
+                '& input:-webkit-autofill:hover': {
+                  WebkitBoxShadow: '0 0 0 1000px rgba(255,255,255,0.12) inset !important',
+                  WebkitTextFillColor: '#fff !important'
+                },
+                '& input:-webkit-autofill:focus': {
+                  WebkitBoxShadow: '0 0 0 1000px rgba(255,255,255,0.12) inset !important',
+                  WebkitTextFillColor: '#fff !important'
+                }
               },
               '& .MuiInputLabel-root': { color: '#f0f0f0' },
               '& .MuiInputAdornment-root .MuiSvgIcon-root': { color: '#eaeaea' }

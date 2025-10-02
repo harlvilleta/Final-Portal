@@ -391,7 +391,7 @@ export default function Register() {
 
   return (
     <Box sx={{ 
-      minHeight: '100vh', 
+      height: '100vh', 
       width: '100vw', 
       display: 'flex', 
       alignItems: 'center', 
@@ -400,12 +400,16 @@ export default function Register() {
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
-      padding: 2
+      padding: 1,
+      overflow: 'hidden',
+      position: 'fixed',
+      top: 0,
+      left: 0
     }}>
       <Box sx={{
-        p: 4,
+        p: 3,
         minWidth: 400,
-        maxWidth: 960,
+        maxWidth: 900,
         width: '100%',
         borderRadius: 3,
         display: 'flex',
@@ -416,76 +420,325 @@ export default function Register() {
         backgroundColor: 'transparent',
         backdropFilter: 'blur(10px)',
         boxShadow: '0 8px 40px rgba(0,0,0,0.35)',
-        maxHeight: '90vh',
-        overflowY: 'auto'
+        height: '98vh',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        '&::-webkit-scrollbar': {
+          width: '6px',
+        },
+        '&::-webkit-scrollbar-track': {
+          background: 'rgba(255,255,255,0.1)',
+          borderRadius: '3px',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          background: 'rgba(255,255,255,0.3)',
+          borderRadius: '3px',
+          '&:hover': {
+            background: 'rgba(255,255,255,0.5)',
+          },
+        },
       }}>
         <Avatar sx={{ bgcolor: 'primary.main', width: 64, height: 64, mb: 2 }}>
           <PersonAddAlt1 sx={{ fontSize: 36 }} />
         </Avatar>
-        <Typography variant="h4" fontWeight={700} gutterBottom sx={{ mb: 2, color: '#fff' }}>
+        <Typography variant="h4" fontWeight={700} gutterBottom sx={{ mb: 1, color: '#fff' }}>
           Create Account
         </Typography>
-        <Typography variant="subtitle1" sx={{ mb: 3, color: '#f1f1f1' }}>Register to get started</Typography>
+        <Typography variant="subtitle1" sx={{ mb: 2, color: '#f1f1f1' }}>Register to get started</Typography>
         <form onSubmit={handleRegister} style={{ width: '100%' }}>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-              <TextField label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
+              <TextField 
+                label="Email" 
+                type="email" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                fullWidth 
+                required 
+                size="large" 
+                InputProps={{ style: { fontSize: 18, height: 56 } }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'rgba(255,255,255,0.12)',
+                    backdropFilter: 'blur(6px)',
+                    color: '#fff',
+                    '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                    '&:hover fieldset': { borderColor: '#ffffff' },
+                    '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                  },
+                  '& .MuiInputLabel-root': { color: '#f0f0f0' },
+                  '& .MuiInputAdornment-root .MuiSvgIcon-root': { color: '#eaeaea' }
+                }}
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField label="Role" select value={role} onChange={e => setRole(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }}>
+              <TextField 
+                label="Role" 
+                select 
+                value={role} 
+                onChange={e => setRole(e.target.value)} 
+                fullWidth 
+                required 
+                size="large" 
+                InputProps={{ style: { fontSize: 18, height: 56 } }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'rgba(255,255,255,0.12)',
+                    backdropFilter: 'blur(6px)',
+                    color: '#fff',
+                    '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                    '&:hover fieldset': { borderColor: '#ffffff' },
+                    '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                  },
+                  '& .MuiInputLabel-root': { color: '#f0f0f0' },
+                  '& .MuiSelect-icon': { color: '#eaeaea' }
+                }}
+              >
                 {roles.map(r => <MenuItem key={r} value={r}>{r}</MenuItem>)}
               </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField label="Phone Number" value={phone} onChange={e => setPhone(e.target.value)} fullWidth size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
+              <TextField 
+                label="Phone Number" 
+                value={phone} 
+                onChange={e => setPhone(e.target.value)} 
+                fullWidth 
+                size="large" 
+                InputProps={{ style: { fontSize: 18, height: 56 } }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'rgba(255,255,255,0.12)',
+                    backdropFilter: 'blur(6px)',
+                    color: '#fff',
+                    '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                    '&:hover fieldset': { borderColor: '#ffffff' },
+                    '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                  },
+                  '& .MuiInputLabel-root': { color: '#f0f0f0' }
+                }}
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField label="Address" value={address} onChange={e => setAddress(e.target.value)} fullWidth size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
+              <TextField 
+                label="Address" 
+                value={address} 
+                onChange={e => setAddress(e.target.value)} 
+                fullWidth 
+                size="large" 
+                InputProps={{ style: { fontSize: 18, height: 56 } }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'rgba(255,255,255,0.12)',
+                    backdropFilter: 'blur(6px)',
+                    color: '#fff',
+                    '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                    '&:hover fieldset': { borderColor: '#ffffff' },
+                    '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                  },
+                  '& .MuiInputLabel-root': { color: '#f0f0f0' }
+                }}
+              />
             </Grid>
             
             {/* Student-specific fields - only show when role is Student */}
             {role === 'Student' && (
               <>
                 <Grid item xs={12} sm={6}>
-                  <TextField label="Student ID" value={studentId} onChange={e => setStudentId(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
+                  <TextField 
+                    label="Student ID" 
+                    value={studentId} 
+                    onChange={e => setStudentId(e.target.value)} 
+                    fullWidth 
+                    required 
+                    size="large" 
+                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        backdropFilter: 'blur(6px)',
+                        color: '#fff',
+                        '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                        '&:hover fieldset': { borderColor: '#ffffff' },
+                        '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                      },
+                      '& .MuiInputLabel-root': { color: '#f0f0f0' }
+                    }}
+                  />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField label="First Name" value={firstName} onChange={handleFirstNameChange} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
+                  <TextField 
+                    label="First Name" 
+                    value={firstName} 
+                    onChange={handleFirstNameChange} 
+                    fullWidth 
+                    required 
+                    size="large" 
+                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        backdropFilter: 'blur(6px)',
+                        color: '#fff',
+                        '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                        '&:hover fieldset': { borderColor: '#ffffff' },
+                        '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                      },
+                      '& .MuiInputLabel-root': { color: '#f0f0f0' }
+                    }}
+                  />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField label="Last Name" value={lastName} onChange={handleLastNameChange} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
+                  <TextField 
+                    label="Last Name" 
+                    value={lastName} 
+                    onChange={handleLastNameChange} 
+                    fullWidth 
+                    required 
+                    size="large" 
+                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        backdropFilter: 'blur(6px)',
+                        color: '#fff',
+                        '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                        '&:hover fieldset': { borderColor: '#ffffff' },
+                        '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                      },
+                      '& .MuiInputLabel-root': { color: '#f0f0f0' }
+                    }}
+                  />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField label="Course" select value={course} onChange={e => setCourse(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }}>
+                  <TextField 
+                    label="Course" 
+                    select 
+                    value={course} 
+                    onChange={e => setCourse(e.target.value)} 
+                    fullWidth 
+                    required 
+                    size="large" 
+                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        backdropFilter: 'blur(6px)',
+                        color: '#fff',
+                        '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                        '&:hover fieldset': { borderColor: '#ffffff' },
+                        '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                      },
+                      '& .MuiInputLabel-root': { color: '#f0f0f0' },
+                      '& .MuiSelect-icon': { color: '#eaeaea' }
+                    }}
+                  >
                     {courses.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
                   </TextField>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField label="Year Level" select value={year} onChange={e => setYear(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }}>
+                  <TextField 
+                    label="Year Level" 
+                    select 
+                    value={year} 
+                    onChange={e => setYear(e.target.value)} 
+                    fullWidth 
+                    required 
+                    size="large" 
+                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        backdropFilter: 'blur(6px)',
+                        color: '#fff',
+                        '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                        '&:hover fieldset': { borderColor: '#ffffff' },
+                        '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                      },
+                      '& .MuiInputLabel-root': { color: '#f0f0f0' },
+                      '& .MuiSelect-icon': { color: '#eaeaea' }
+                    }}
+                  >
                     {years.map(y => <MenuItem key={y} value={y}>{y}</MenuItem>)}
                   </TextField>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField label="Gender" select value={gender} onChange={e => setGender(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }}>
+                  <TextField 
+                    label="Gender" 
+                    select 
+                    value={gender} 
+                    onChange={e => setGender(e.target.value)} 
+                    fullWidth 
+                    required 
+                    size="large" 
+                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        backdropFilter: 'blur(6px)',
+                        color: '#fff',
+                        '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                        '&:hover fieldset': { borderColor: '#ffffff' },
+                        '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                      },
+                      '& .MuiInputLabel-root': { color: '#f0f0f0' },
+                      '& .MuiSelect-icon': { color: '#eaeaea' }
+                    }}
+                  >
                     <MenuItem value="Male">Male</MenuItem>
                     <MenuItem value="Female">Female</MenuItem>
                     <MenuItem value="Other">Other</MenuItem>
                   </TextField>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField label="Birthdate" type="date" value={birthdate} onChange={e => {
-                    const v = e.target.value; setBirthdate(v);
-                    if (v) {
-                      const dob = new Date(v);
-                      const diffMs = Date.now() - dob.getTime();
-                      const ageDt = new Date(diffMs);
-                      const computedAge = Math.abs(ageDt.getUTCFullYear() - 1970);
-                      setAge(String(computedAge));
-                    } else { setAge(''); }
-                  }} fullWidth required size="large" InputLabelProps={{ shrink: true }} InputProps={{ style: { fontSize: 18, height: 56 } }} />
+                  <TextField 
+                    label="Birthdate" 
+                    type="date" 
+                    value={birthdate} 
+                    onChange={e => {
+                      const v = e.target.value; setBirthdate(v);
+                      if (v) {
+                        const dob = new Date(v);
+                        const diffMs = Date.now() - dob.getTime();
+                        const ageDt = new Date(diffMs);
+                        const computedAge = Math.abs(ageDt.getUTCFullYear() - 1970);
+                        setAge(String(computedAge));
+                      } else { setAge(''); }
+                    }} 
+                    fullWidth 
+                    required 
+                    size="large" 
+                    InputLabelProps={{ shrink: true }} 
+                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: 'rgba(255,255,255,0.12)',
+                        backdropFilter: 'blur(6px)',
+                        color: '#fff',
+                        '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                        '&:hover fieldset': { borderColor: '#ffffff' },
+                        '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                      },
+                      '& .MuiInputLabel-root': { color: '#f0f0f0' }
+                    }}
+                  />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField label="Age" value={age} fullWidth size="large" InputProps={{ readOnly: true, style: { fontSize: 18, height: 56 } }} />
+                  <TextField 
+                    label="Age" 
+                    value={age} 
+                    fullWidth 
+                    size="large" 
+                    InputProps={{ readOnly: true, style: { fontSize: 18, height: 56 } }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: 'rgba(255,255,255,0.08)',
+                        backdropFilter: 'blur(6px)',
+                        color: '#fff',
+                        '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' }
+                      },
+                      '& .MuiInputLabel-root': { color: '#d0d0d0' }
+                    }}
+                  />
                 </Grid>
               </>
             )}
@@ -493,7 +746,26 @@ export default function Register() {
             {/* Non-student full name field */}
             {role !== 'Student' && (
               <Grid item xs={12}>
-                <TextField label="Full Name" value={fullName} onChange={e => setFullName(e.target.value)} fullWidth required size="large" InputProps={{ style: { fontSize: 18, height: 56 } }} />
+                <TextField 
+                  label="Full Name" 
+                  value={fullName} 
+                  onChange={e => setFullName(e.target.value)} 
+                  fullWidth 
+                  required 
+                  size="large" 
+                  InputProps={{ style: { fontSize: 18, height: 56 } }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: 'rgba(255,255,255,0.12)',
+                      backdropFilter: 'blur(6px)',
+                      color: '#fff',
+                      '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                      '&:hover fieldset': { borderColor: '#ffffff' },
+                      '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                    },
+                    '& .MuiInputLabel-root': { color: '#f0f0f0' }
+                  }}
+                />
               </Grid>
             )}
             
@@ -510,11 +782,23 @@ export default function Register() {
                   style: { fontSize: 18, height: 56 },
                   endAdornment: (
                     <InputAdornment position="end">
-                      <IconButton onClick={() => setShowPassword(s => !s)} edge="end">
+                      <IconButton onClick={() => setShowPassword(s => !s)} edge="end" sx={{ color: '#eaeaea' }}>
                         {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
                     </InputAdornment>
                   )
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'rgba(255,255,255,0.12)',
+                    backdropFilter: 'blur(6px)',
+                    color: '#fff',
+                    '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                    '&:hover fieldset': { borderColor: '#ffffff' },
+                    '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                  },
+                  '& .MuiInputLabel-root': { color: '#f0f0f0' },
+                  '& .MuiInputAdornment-root .MuiSvgIcon-root': { color: '#eaeaea' }
                 }}
               />
               {password && (
@@ -549,6 +833,18 @@ export default function Register() {
                 InputProps={{ style: { fontSize: 18, height: 56 } }}
                 error={password !== confirmPassword && confirmPassword !== ''}
                 helperText={password !== confirmPassword && confirmPassword !== '' ? 'Passwords do not match' : ''}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'rgba(255,255,255,0.12)',
+                    backdropFilter: 'blur(6px)',
+                    color: '#fff',
+                    '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
+                    '&:hover fieldset': { borderColor: '#ffffff' },
+                    '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                  },
+                  '& .MuiInputLabel-root': { color: '#f0f0f0' },
+                  '& .MuiFormHelperText-root': { color: '#ffcdd2' }
+                }}
               />
             </Grid>
             
@@ -595,9 +891,14 @@ export default function Register() {
                     checked={terms}
                     onChange={e => setTerms(e.target.checked)}
                     color="primary"
+                    sx={{ color: '#f0f0f0' }}
                   />
                 }
                 label="I agree to the terms and conditions"
+                sx={{ 
+                  color: '#f0f0f0',
+                  '& .MuiFormControlLabel-label': { color: '#f0f0f0' }
+                }}
               />
             </Grid>
             
@@ -608,7 +909,7 @@ export default function Register() {
                 color="inherit"
                 fullWidth
                 disabled={loading || !terms}
-                sx={{ py: 1.5, fontSize: 18, borderRadius: 2, boxShadow: 2, bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}
+                sx={{ py: 1.5, fontSize: 18, borderRadius: 2, boxShadow: 2, bgcolor: '#800000', color: '#ffffff', '&:hover': { bgcolor: '#6b0000' }, '&:disabled': { bgcolor: '#cccccc', color: '#666666' } }}
               >
                 {loading ? <CircularProgress size={24} color="inherit" /> : 'Register'}
               </Button>
@@ -616,7 +917,7 @@ export default function Register() {
           </Grid>
         </form>
         
-        <Box sx={{ textAlign: 'center', mt: 3 }}>
+        <Box sx={{ textAlign: 'center', mt: 2, mb: 1 }}>
           <Typography variant="body2" sx={{ color: '#eaeaea' }}>
             Already have an account?{' '}
             <Link component={RouterLink} to="/login" underline="hover" color="#fff" fontWeight={600}>

@@ -245,7 +245,7 @@ export default function UserLostFound({ currentUser }) {
                 )}
               </Grid>
               <Grid item xs={12}>
-                <Button variant="contained" type="submit" disabled={loading}>
+                <Button variant="contained" type="submit" disabled={loading} sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}>
                   Report Lost Item
                 </Button>
               </Grid>
@@ -319,7 +319,7 @@ export default function UserLostFound({ currentUser }) {
                 )}
               </Grid>
               <Grid item xs={12}>
-                <Button variant="contained" type="submit" disabled={loading}>
+                <Button variant="contained" type="submit" disabled={loading} sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}>
                   Report Found Item
                 </Button>
               </Grid>

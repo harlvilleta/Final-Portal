@@ -35,9 +35,6 @@ export default function Overview() {
   const [eventSubmitting, setEventSubmitting] = useState(false);
   const [eventSnackbar, setEventSnackbar] = useState({ open: false, message: '', severity: 'success' });
   
-  // New state for student list
-  const [students, setStudents] = useState([]);
-  const [studentsLoading, setStudentsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -47,7 +44,6 @@ export default function Overview() {
   useEffect(() => {
     fetchOverviewData();
     fetchRecentActivity();
-    fetchStudents();
     // Get current user and their profile
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setCurrentUser(user);
@@ -67,50 +63,6 @@ export default function Overview() {
     return unsubscribe;
   }, []);
 
-  const fetchStudents = async () => {
-    try {
-      setStudentsLoading(false);
-      const querySnapshot = await getDocs(collection(db, "students"));
-      const studentsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
-      // Sort students by creation date (newest first)
-      const sortedStudents = studentsData.sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-        return dateB - dateA; // Descending order (newest first)
-      });
-      
-      setStudents(sortedStudents);
-    } catch (error) {
-      console.error("Error fetching students:", error);
-      setSnackbar({ open: true, message: "Error loading students", severity: "error" });
-    } finally {
-      setStudentsLoading(false);
-    }
-  };
-
-  const handleDeleteStudent = async (studentId, studentName) => {
-    if (window.confirm(`Are you sure you want to delete ${studentName}?`)) {
-      try {
-        await deleteDoc(doc(db, "students", studentId));
-        setSnackbar({ open: true, message: "Student deleted successfully!", severity: "success" });
-        fetchStudents(); // Refresh the list
-      } catch (error) {
-        console.error("Error deleting student:", error);
-        setSnackbar({ open: true, message: "Error deleting student", severity: "error" });
-      }
-    }
-  };
-
-  const handleViewStudent = (student) => {
-    // Navigate to student details or open a modal
-    navigate(`/students?view=${student.id}`);
-  };
-
-  const handleEditStudent = (student) => {
-    // Navigate to edit student page
-    navigate(`/students?edit=${student.id}`);
-  };
 
   const fetchOverviewData = async () => {
     try {
@@ -385,142 +337,6 @@ export default function Overview() {
         </Grid>
       </Grid>
 
-      {/* Student List Table */}
-      <Paper sx={{ mt: 4, p: 3, boxShadow: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#1976d2' }}>
-            Registered Students ({students.length})
-          </Typography>
-          <Button 
-            variant="contained" 
-            color="primary" 
-            onClick={() => navigate('/students')}
-            startIcon={<PeopleIcon />}
-          >
-            View All Students
-          </Button>
-        </Box>
-        
-        {studentsLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            {/* Loading removed per requirement; show nothing */}
-          </Box>
-        ) : students.length === 0 ? (
-          <Box sx={{ textAlign: 'center', p: 3 }}>
-            <Typography variant="body1" color="text.secondary">No students registered yet.</Typography>
-            <Button 
-              variant="outlined" 
-              color="primary" 
-              onClick={() => navigate('/students')}
-              sx={{ mt: 2 }}
-            >
-              Add First Student
-            </Button>
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Photo</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>ID Number</TableCell>
-                  <TableCell>Course</TableCell>
-                  <TableCell>Year & Section</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {students.slice(0, 10).map((student) => (
-                  <TableRow key={student.id} hover>
-                    <TableCell>
-                      {student.image ? (
-                        <Avatar src={student.image} sx={{ width: 40, height: 40 }} />
-                      ) : (
-                        <Avatar sx={{ width: 40, height: 40, bgcolor: 'primary.main' }}>
-                          {student.firstName?.charAt(0)}{student.lastName?.charAt(0)}
-                        </Avatar>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight="medium">
-                        {student.firstName} {student.lastName}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>{student.id || 'N/A'}</TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={student.course || 'N/A'} 
-                        size="small" 
-                        color="primary" 
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {student.year || 'N/A'} • {student.section || 'N/A'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {student.email || 'N/A'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={1}>
-                        <Tooltip title="View Details">
-                          <IconButton 
-                            size="small" 
-                            color="primary"
-                            onClick={() => handleViewStudent(student)}
-                          >
-                            <VisibilityIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Edit Student">
-                          <IconButton 
-                            size="small" 
-                            color="warning"
-                            onClick={() => handleEditStudent(student)}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete Student">
-                          <IconButton 
-                            size="small" 
-                            color="error"
-                            onClick={() => handleDeleteStudent(student.id, `${student.firstName} ${student.lastName}`)}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-        
-        {students.length > 10 && (
-          <Box sx={{ textAlign: 'center', mt: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Showing first 10 students. 
-            </Typography>
-            <Button 
-              variant="text" 
-              color="primary" 
-              onClick={() => navigate('/students')}
-              sx={{ mt: 1 }}
-            >
-              View All {students.length} Students
-            </Button>
-          </Box>
-        )}
-      </Paper>
 
       {/* Recent Activity Section */}
       <Paper sx={{ mt: 4, p: 3, boxShadow: 2 }}>

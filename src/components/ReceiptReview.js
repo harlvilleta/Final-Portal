@@ -250,7 +250,7 @@ export default function ReceiptReview() {
         {/* Status Summary */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={3}>
-            <Card sx={{ bgcolor: 'warning.light', color: 'warning.contrastText' }}>
+            <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000', color: '#800000' }}>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Button onClick={() => { setError(''); setStatusFilter('pending'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>
@@ -262,7 +262,7 @@ export default function ReceiptReview() {
             </Card>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Card sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+            <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000', color: '#800000' }}>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Button onClick={() => { setError(''); setStatusFilter('approved'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>
@@ -274,7 +274,7 @@ export default function ReceiptReview() {
             </Card>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Card sx={{ bgcolor: 'error.light', color: 'error.contrastText' }}>
+            <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000', color: '#800000' }}>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Button onClick={() => { setError(''); setStatusFilter('rejected'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>
@@ -286,7 +286,7 @@ export default function ReceiptReview() {
             </Card>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Card sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+            <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000', color: '#800000' }}>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Button onClick={() => { setError(''); setStatusFilter('all'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>

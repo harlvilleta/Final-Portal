@@ -430,40 +430,40 @@ export default function AdminLostFound() {
       {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} md={6}>
-          <Card sx={{ bgcolor: '#fffde7', border: '2px solid #ffb74d' }}>
+          <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h6" fontWeight={700} color="#e65100" gutterBottom>
+              <Typography variant="h6" fontWeight={700} sx={{ color: '#800000' }} gutterBottom>
                 Lost Items Summary
               </Typography>
               <Grid container spacing={2}>
                 <Grid item>
-                  <Chip label={`Total: ${lostTotal}`} color="default" />
+                  <Chip label={`Total: ${lostTotal}`} sx={{ bgcolor: '#800000', color: '#fff' }} />
                 </Grid>
                 <Grid item>
-                  <Chip label={`Completed: ${lostCompleted}`} color="success" />
+                  <Chip label={`Completed: ${lostCompleted}`} sx={{ bgcolor: '#800000', color: '#fff' }} />
                 </Grid>
                 <Grid item>
-                  <Chip label={`Pending: ${lostPending}`} color="warning" />
+                  <Chip label={`Pending: ${lostPending}`} sx={{ bgcolor: '#800000', color: '#fff' }} />
                 </Grid>
               </Grid>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Card sx={{ bgcolor: '#e8f5e9', border: '2px solid #66bb6a' }}>
+          <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h6" fontWeight={700} color="#2e7d32" gutterBottom>
+              <Typography variant="h6" fontWeight={700} sx={{ color: '#800000' }} gutterBottom>
                 Found Items Summary
               </Typography>
               <Grid container spacing={2}>
                 <Grid item>
-                  <Chip label={`Total: ${foundTotal}`} color="default" />
+                  <Chip label={`Total: ${foundTotal}`} sx={{ bgcolor: '#800000', color: '#fff' }} />
                 </Grid>
                 <Grid item>
-                  <Chip label={`Completed: ${foundCompleted}`} color="success" />
+                  <Chip label={`Completed: ${foundCompleted}`} sx={{ bgcolor: '#800000', color: '#fff' }} />
                 </Grid>
                 <Grid item>
-                  <Chip label={`Pending: ${foundPending}`} color="warning" />
+                  <Chip label={`Pending: ${foundPending}`} sx={{ bgcolor: '#800000', color: '#fff' }} />
                 </Grid>
               </Grid>
             </CardContent>
@@ -945,7 +945,7 @@ export default function AdminLostFound() {
           <Button onClick={() => setEditModal({ open: false, type: '', item: null })}>
             Cancel
           </Button>
-          <Button onClick={handleEditSave} variant="contained" disabled={loading}>
+          <Button onClick={handleEditSave} variant="contained" disabled={loading} sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}>
             Save Changes
           </Button>
         </DialogActions>

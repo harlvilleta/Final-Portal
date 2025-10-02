@@ -745,22 +745,22 @@ function LostFound() {
       <Typography variant="h4" gutterBottom>Lost and Found</Typography>
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2, mb: 2, bgcolor: '#fffde7' }}>
-            <Typography variant="subtitle1" fontWeight={700}>Lost Items Summary</Typography>
+          <Paper sx={{ p: 2, mb: 2, bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
+            <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#800000' }}>Lost Items Summary</Typography>
             <Grid container spacing={2}>
-              <Grid item><Typography>Total: <b>{lostTotal}</b></Typography></Grid>
-              <Grid item><Typography color="success.main">Completed: <b>{lostCompleted}</b></Typography></Grid>
-              <Grid item><Typography color="warning.main">Pending: <b>{lostPending}</b></Typography></Grid>
+              <Grid item><Typography sx={{ color: '#800000' }}>Total: <b>{lostTotal}</b></Typography></Grid>
+              <Grid item><Typography sx={{ color: '#800000' }}>Completed: <b>{lostCompleted}</b></Typography></Grid>
+              <Grid item><Typography sx={{ color: '#800000' }}>Pending: <b>{lostPending}</b></Typography></Grid>
             </Grid>
           </Paper>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2, mb: 2, bgcolor: '#e8f5e9' }}>
-            <Typography variant="subtitle1" fontWeight={700}>Found Items Summary</Typography>
+          <Paper sx={{ p: 2, mb: 2, bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
+            <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#800000' }}>Found Items Summary</Typography>
             <Grid container spacing={2}>
-              <Grid item><Typography>Total: <b>{foundTotal}</b></Typography></Grid>
-              <Grid item><Typography color="success.main">Completed: <b>{foundCompleted}</b></Typography></Grid>
-              <Grid item><Typography color="warning.main">Pending: <b>{foundPending}</b></Typography></Grid>
+              <Grid item><Typography sx={{ color: '#800000' }}>Total: <b>{foundTotal}</b></Typography></Grid>
+              <Grid item><Typography sx={{ color: '#800000' }}>Completed: <b>{foundCompleted}</b></Typography></Grid>
+              <Grid item><Typography sx={{ color: '#800000' }}>Pending: <b>{foundPending}</b></Typography></Grid>
             </Grid>
           </Paper>
         </Grid>
@@ -793,7 +793,7 @@ function LostFound() {
                 <input type="file" accept="image/*" hidden onChange={handleFoundImage} />
               </Button>
               {foundImageFile && <Typography variant="caption">{foundImageFile.name}</Typography>}
-              <Button variant="contained" type="submit" disabled={loading}>Submit Found Item</Button>
+              <Button variant="contained" type="submit" disabled={loading} sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}>Submit Found Item</Button>
             </form>
           </Paper>
           <Paper sx={{ p: 3, mb: 2 }}>
@@ -849,7 +849,7 @@ function LostFound() {
                 <input type="file" accept="image/*" hidden onChange={handleLostImage} />
               </Button>
               {lostImageFile && <Typography variant="caption">{lostImageFile.name}</Typography>}
-              <Button variant="contained" color="warning" type="submit" disabled={loading}>Submit Lost Item</Button>
+              <Button variant="contained" type="submit" disabled={loading} sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}>Submit Lost Item</Button>
             </form>
           </Paper>
           <Paper sx={{ p: 3, mb: 2 }}>
@@ -894,7 +894,7 @@ function LostFound() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditModal({ open: false, type: '', item: null })}>Cancel</Button>
-          <Button onClick={handleEditSave} variant="contained" disabled={loading}>Save</Button>
+          <Button onClick={handleEditSave} variant="contained" disabled={loading} sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}>Save</Button>
         </DialogActions>
       </Dialog>
       <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
@@ -1459,6 +1459,24 @@ School Administration
                           onClick={(e) => { e.stopPropagation(); handleViewStudent(student); }}
                         >
                           <Visibility />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Edit Student">
+                        <IconButton 
+                          size="small" 
+                          color="warning"
+                          onClick={(e) => { e.stopPropagation(); handleEditStudent(student); }}
+                        >
+                          <Edit />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete Student">
+                        <IconButton 
+                          size="small" 
+                          color="error"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteStudent(student); }}
+                        >
+                          <Delete />
                         </IconButton>
                       </Tooltip>
                     </Stack>
