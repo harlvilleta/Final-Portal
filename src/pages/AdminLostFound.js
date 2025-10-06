@@ -559,14 +559,16 @@ export default function AdminLostFound() {
                    </Box>
                  </Box>
                )}
-              <Button 
-                variant="contained" 
-                type="submit" 
-                disabled={loading}
-                sx={{ bgcolor: '#2e7d32', '&:hover': { bgcolor: '#1b5e20' } }}
-              >
-                Submit Found Item
-              </Button>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                <Button 
+                  variant="contained" 
+                  type="submit" 
+                  disabled={loading}
+                  sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}
+                >
+                  Submit Found Item
+                </Button>
+              </Box>
             </form>
           </Paper>
 
@@ -767,15 +769,16 @@ export default function AdminLostFound() {
                    </Box>
                  </Box>
                )}
-              <Button 
-                variant="contained" 
-                color="warning" 
-                type="submit" 
-                disabled={loading}
-                sx={{ bgcolor: '#e65100', '&:hover': { bgcolor: '#bf360c' } }}
-              >
-                Submit Lost Item
-              </Button>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                <Button 
+                  variant="contained" 
+                  type="submit" 
+                  disabled={loading}
+                  sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}
+                >
+                  Submit Lost Item
+                </Button>
+              </Box>
             </form>
           </Paper>
 

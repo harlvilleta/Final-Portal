@@ -70,21 +70,11 @@ export default function ViolationHistory() {
   );
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'Pending': return 'warning';
-      case 'Solved': return 'success';
-      default: return 'default';
-    }
+    return 'primary';
   };
 
   const getSeverityColor = (severity) => {
-    switch (severity) {
-      case 'Low': return 'success';
-      case 'Medium': return 'warning';
-      case 'High': return 'error';
-      case 'Critical': return 'error';
-      default: return 'default';
-    }
+    return 'primary';
   };
 
   const formatDate = (dateString) => {
@@ -229,14 +219,16 @@ export default function ViolationHistory() {
                   <TableCell>
                     <Chip 
                       label={violation.severity} 
-                      color={getSeverityColor(violation.severity)} 
+                      variant="outlined"
+                      sx={{ borderColor: '#800000', color: '#800000' }} 
                       size="small" 
                     />
                   </TableCell>
                   <TableCell>
                     <Chip 
                       label={violation.status} 
-                      color={getStatusColor(violation.status)} 
+                      variant="outlined"
+                      sx={{ borderColor: '#800000', color: '#800000' }} 
                       size="small" 
                     />
                   </TableCell>

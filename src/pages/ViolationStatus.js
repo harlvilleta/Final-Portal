@@ -49,11 +49,7 @@ export default function ViolationStatus() {
   );
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'Pending': return 'warning';
-      case 'Solved': return 'success';
-      default: return 'default';
-    }
+    return 'primary';
   };
 
   const getSeverityColor = (severity) => {
@@ -62,7 +58,7 @@ export default function ViolationStatus() {
       case 'Medium': return 'warning';
       case 'High': return 'error';
       case 'Critical': return 'error';
-      default: return 'default';
+      default: return 'primary';
     }
   };
 
@@ -70,9 +66,9 @@ export default function ViolationStatus() {
     switch (classification) {
       case 'Minor': return 'success';
       case 'Major': return 'warning';
-      case 'Serious': return 'error';
+      case 'Serious': return 'info';
       case 'Grave': return 'error';
-      default: return 'default';
+      default: return 'primary';
     }
   };
 
@@ -198,10 +194,19 @@ export default function ViolationStatus() {
               {Object.entries(classificationStats).map(([classification, count]) => (
                 <Box key={classification} sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Chip label={classification} color="primary" size="small" />
+                    <Chip 
+                      label={classification} 
+                      color={getClassificationColor(classification)} 
+                      size="small" 
+                    />
                     <Typography variant="body2">{count} violations</Typography>
                   </Box>
-                  <LinearProgress variant="determinate" value={(count / stats.totalViolations) * 100} color="primary" sx={{ height: 8, borderRadius: 4 }} />
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={(count / stats.totalViolations) * 100} 
+                    color={getClassificationColor(classification)} 
+                    sx={{ height: 8, borderRadius: 4 }} 
+                  />
                 </Box>
               ))}
             </CardContent>
@@ -214,10 +219,19 @@ export default function ViolationStatus() {
               {Object.entries(severityStats).map(([severity, count]) => (
                 <Box key={severity} sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Chip label={severity} color="primary" size="small" />
+                    <Chip 
+                      label={severity} 
+                      color={getSeverityColor(severity)} 
+                      size="small" 
+                    />
                     <Typography variant="body2">{count} violations</Typography>
                   </Box>
-                  <LinearProgress variant="determinate" value={(count / stats.totalViolations) * 100} color="primary" sx={{ height: 8, borderRadius: 4 }} />
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={(count / stats.totalViolations) * 100} 
+                    color={getSeverityColor(severity)} 
+                    sx={{ height: 8, borderRadius: 4 }} 
+                  />
                 </Box>
               ))}
             </CardContent>
@@ -293,13 +307,13 @@ export default function ViolationStatus() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Chip label={violation.classification} color="primary" size="small" />
+                    <Chip label={violation.classification} variant="outlined" sx={{ borderColor: '#800000', color: '#800000' }} size="small" />
                     </TableCell>
                     <TableCell>
-                      <Chip label={violation.severity} color="primary" size="small" />
+                    <Chip label={violation.severity} variant="outlined" sx={{ borderColor: '#800000', color: '#800000' }} size="small" />
                     </TableCell>
                     <TableCell>
-                      <Chip label={violation.status} color="primary" size="small" />
+                    <Chip label={violation.status} variant="outlined" sx={{ borderColor: '#800000', color: '#800000' }} size="small" />
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>

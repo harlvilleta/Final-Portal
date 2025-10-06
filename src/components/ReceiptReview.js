@@ -61,9 +61,9 @@ import {
 } from 'firebase/firestore';
 
 const statusColors = {
-  pending: 'warning',
-  approved: 'success',
-  rejected: 'error'
+  pending: 'primary',
+  approved: 'primary',
+  rejected: 'primary'
 };
 
 const statusIcons = {
@@ -250,7 +250,7 @@ export default function ReceiptReview() {
         {/* Status Summary */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={3}>
-            <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000', color: '#800000' }}>
+            <Card sx={{ borderLeft: '4px solid #800000', color: '#800000' }}>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Button onClick={() => { setError(''); setStatusFilter('pending'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>
@@ -262,7 +262,7 @@ export default function ReceiptReview() {
             </Card>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000', color: '#800000' }}>
+            <Card sx={{ borderLeft: '4px solid #800000', color: '#800000' }}>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Button onClick={() => { setError(''); setStatusFilter('approved'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>
@@ -274,7 +274,7 @@ export default function ReceiptReview() {
             </Card>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000', color: '#800000' }}>
+            <Card sx={{ borderLeft: '4px solid #800000', color: '#800000' }}>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Button onClick={() => { setError(''); setStatusFilter('rejected'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>
@@ -286,7 +286,7 @@ export default function ReceiptReview() {
             </Card>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000', color: '#800000' }}>
+            <Card sx={{ borderLeft: '4px solid #800000', color: '#800000' }}>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Button onClick={() => { setError(''); setStatusFilter('all'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>
@@ -388,7 +388,8 @@ export default function ReceiptReview() {
                         <Chip
                           icon={statusIcons[submission.status]}
                           label={submission.status}
-                          color={statusColors[submission.status]}
+                          variant="outlined"
+                          sx={{ borderColor: '#800000', color: '#800000' }}
                           size="small"
                         />
                       </TableCell>
@@ -517,7 +518,7 @@ export default function ReceiptReview() {
           </Button>
           <Button
             onClick={() => handleStatusUpdate('rejected')}
-            color="error"
+            color="primary"
             variant="outlined"
             disabled={processing}
             startIcon={<Cancel />}
@@ -526,7 +527,7 @@ export default function ReceiptReview() {
           </Button>
           <Button
             onClick={() => handleStatusUpdate('approved')}
-            color="success"
+            color="primary"
             variant="contained"
             disabled={processing}
             startIcon={<CheckCircle />}

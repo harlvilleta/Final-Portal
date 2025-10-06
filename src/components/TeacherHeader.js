@@ -113,72 +113,46 @@ export default function TeacherHeader({ currentUser, userProfile }) {
   const userInfo = getUserDisplayInfo();
 
   return (
-    <AppBar position="static" sx={{ bgcolor: '#2d3436', color: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+    <AppBar position="static" sx={{ bgcolor: '#fff', color: '#333', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
       <Toolbar sx={{ justifyContent: 'space-between' }}>
-        {/* Left side - Logo and Teacher text */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Avatar 
-            sx={{ width: 40, height: 40, bgcolor: '#1976d2' }}
-            src={userInfo.photo}
-          >
-            {userInfo.name?.charAt(0) || 'T'}
-          </Avatar>
-          <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
-            Teacher
-          </Typography>
-        </Box>
-        
-        {/* Center - Main title */}
-        <Box sx={{ 
-          position: 'absolute', 
-          left: '50%', 
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          alignItems: 'center'
-        }}>
-          <Typography variant="h5" component="div" sx={{ fontWeight: 700, color: '#fff' }}>
-            Student Affairs Management System
-          </Typography>
-        </Box>
-        
-        {/* Right side - Mail (to admin), Settings, and User Menu */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Mail to Admin */}
-          <IconButton
-            size="large"
-            aria-label="mail to admin"
-            onClick={() => setComposeOpen(true)}
-            sx={{ color: '#fff' }}
-          >
-            <Mail />
-          </IconButton>
-          
-          {/* Settings */}
-          <IconButton
-            size="large"
-            aria-label="settings"
-            onClick={() => navigate('/teacher-profile')}
-            sx={{ color: '#fff' }}
-          >
-            <Settings />
-          </IconButton>
-          
-          {/* User Menu */}
-          <IconButton
-            size="large"
-            aria-label="account of current user"
-            aria-controls="menu-appbar"
-            aria-haspopup="true"
-            onClick={handleMenu}
-            sx={{ color: '#fff' }}
-          >
-            <Avatar 
-              sx={{ width: 32, height: 32, bgcolor: '#1976d2' }}
-              src={userInfo.photo}
+        <Box sx={{ flex: 0.5 }}></Box>
+        <Typography variant="h4" component="div" sx={{ fontWeight: 700, color: '#800000', flex: 1, textAlign: 'center', ml: -2 }}>
+          Student Affairs Management System
+        </Typography>
+        <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton
+              size="large"
+              aria-label="mail to admin"
+              onClick={() => setComposeOpen(true)}
+              color="inherit"
             >
-              {userInfo.name?.charAt(0) || 'T'}
-            </Avatar>
-          </IconButton>
+              <Mail />
+            </IconButton>
+            <IconButton
+              size="large"
+              aria-label="settings"
+              onClick={() => navigate('/teacher-profile')}
+              color="inherit"
+            >
+              <Settings />
+            </IconButton>
+            <IconButton
+              size="large"
+              aria-label="account of current user"
+              aria-controls="menu-appbar"
+              aria-haspopup="true"
+              onClick={handleMenu}
+              color="inherit"
+            >
+              <Avatar 
+                sx={{ width: 32, height: 32, bgcolor: userInfo.photo ? 'transparent' : '#1976d2' }}
+                src={userInfo.photo}
+              >
+                {userInfo.name?.charAt(0) || 'T'}
+              </Avatar>
+            </IconButton>
+          </Box>
         </Box>
       </Toolbar>
 

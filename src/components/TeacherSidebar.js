@@ -215,25 +215,7 @@ export default function TeacherSidebar() {
         </ListItem>
       </List>
 
-      {/* Notification Summary */}
-      {(unreadNotifications + unreadMeetings + unreadLostFound) > 0 && (
-        <Box sx={{ p: 2, mt: 'auto', borderTop: '1px solid #636e72' }}>
-          <Chip
-            icon={<Warning />}
-            label={`${unreadNotifications + unreadMeetings + unreadLostFound} unread notification${(unreadNotifications + unreadMeetings + unreadLostFound) > 1 ? 's' : ''}`}
-            color="error"
-            variant="outlined"
-            sx={{ 
-              width: '100%', 
-              justifyContent: 'flex-start',
-              bgcolor: 'rgba(244, 67, 54, 0.1)',
-              borderColor: '#f44336',
-              color: '#f44336'
-            }}
-            onClick={() => navigate('/teacher-notifications')}
-          />
-        </Box>
-      )}
+      {/* Notification Summary removed per requirement */}
     </Drawer>
   );
 } 

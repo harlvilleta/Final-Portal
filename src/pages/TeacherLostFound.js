@@ -75,7 +75,7 @@ export default function TeacherLostFound() {
               <TextField fullWidth label="Item Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} sx={{ mb: 2 }} />
               <TextField fullWidth label="Description" multiline minRows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} sx={{ mb: 2 }} />
               <TextField fullWidth label="Location" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} sx={{ mb: 2 }} />
-              <Button type="submit" variant="contained" disabled={submitting}>
+              <Button type="submit" variant="contained" disabled={submitting} sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}>
                 {submitting ? 'Submitting...' : 'Submit'}
               </Button>
             </form>
