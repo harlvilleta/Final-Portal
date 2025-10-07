@@ -42,8 +42,12 @@ export default function Overview() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchOverviewData();
-    fetchRecentActivity();
+    // Fetch data in parallel for better performance
+    Promise.all([
+      fetchOverviewData(),
+      fetchRecentActivity()
+    ]);
+    
     // Get current user and their profile
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setCurrentUser(user);
@@ -66,33 +70,20 @@ export default function Overview() {
 
   const fetchOverviewData = async () => {
     try {
-      setLoading(false);
+      setLoading(true);
       
-      // Fetch students count
-      const studentsSnapshot = await getDocs(collection(db, "students"));
-      const studentsCount = studentsSnapshot.size;
-      
-      // Fetch violations count
-      const violationsSnapshot = await getDocs(collection(db, "violations"));
-      const violationsCount = violationsSnapshot.size;
-      
-      // Fetch activities count (assuming activities collection exists)
-      let activitiesCount = 0;
-      try {
-        const activitiesSnapshot = await getDocs(collection(db, "activities"));
-        activitiesCount = activitiesSnapshot.size;
-      } catch (error) {
-        console.log("Activities collection not found, using default value");
-      }
-      
-      // Fetch announcements count (assuming announcements collection exists)
-      let announcementsCount = 0;
-      try {
-        const announcementsSnapshot = await getDocs(collection(db, "announcements"));
-        announcementsCount = announcementsSnapshot.size;
-      } catch (error) {
-        console.log("Announcements collection not found, using default value");
-      }
+      // Use Promise.all to fetch all data in parallel for better performance
+      const [studentsSnapshot, violationsSnapshot, activitiesSnapshot, announcementsSnapshot] = await Promise.allSettled([
+        getDocs(collection(db, "students")),
+        getDocs(collection(db, "violations")),
+        getDocs(collection(db, "activities")).catch(() => ({ size: 0 })),
+        getDocs(collection(db, "announcements")).catch(() => ({ size: 0 }))
+      ]);
+
+      const studentsCount = studentsSnapshot.status === 'fulfilled' ? studentsSnapshot.value.size : 0;
+      const violationsCount = violationsSnapshot.status === 'fulfilled' ? violationsSnapshot.value.size : 0;
+      const activitiesCount = activitiesSnapshot.status === 'fulfilled' ? activitiesSnapshot.value.size : 0;
+      const announcementsCount = announcementsSnapshot.status === 'fulfilled' ? announcementsSnapshot.value.size : 0;
 
       setStats({
         students: studentsCount,
@@ -101,9 +92,11 @@ export default function Overview() {
         announcements: announcementsCount
       });
 
-      // Generate monthly data for the last 6 months
-      const monthlyStudents = await generateMonthlyData("students", "createdAt");
-      const monthlyViolations = await generateMonthlyData("violations", "createdAt");
+      // Generate monthly data in parallel for better performance
+      const [monthlyStudents, monthlyViolations] = await Promise.all([
+        generateMonthlyData("students", "createdAt"),
+        generateMonthlyData("violations", "createdAt")
+      ]);
 
       setMonthlyData({
         students: monthlyStudents,
@@ -121,6 +114,10 @@ export default function Overview() {
     const months = [];
     const currentDate = new Date();
     
+    // Create all queries in parallel for better performance
+    const queries = [];
+    const monthNames = [];
+    
     for (let i = 5; i >= 0; i--) {
       const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
       const monthName = monthDate.toLocaleString('default', { month: 'short' });
@@ -129,40 +126,53 @@ export default function Overview() {
       const startOfMonth = new Date(year, monthDate.getMonth(), 1);
       const endOfMonth = new Date(year, monthDate.getMonth() + 1, 0);
       
-      try {
-        const q = query(
+      monthNames.push(monthName);
+      queries.push(
+        query(
           collection(db, collectionName),
           where(dateField, ">=", startOfMonth.toISOString()),
           where(dateField, "<=", endOfMonth.toISOString())
-        );
-        const snapshot = await getDocs(q);
-        
+        ).catch(() => ({ size: 0 }))
+      );
+    }
+    
+    try {
+      // Execute all queries in parallel
+      const snapshots = await Promise.allSettled(queries);
+      
+      snapshots.forEach((snapshot, index) => {
+        const count = snapshot.status === 'fulfilled' ? snapshot.value.size : 0;
         months.push({
-          month: monthName,
-          count: snapshot.size
+          month: monthNames[index],
+          count: count
         });
-      } catch (error) {
-        console.log(`Error fetching ${collectionName} for ${monthName}:`, error);
+      });
+    } catch (error) {
+      console.log(`Error fetching ${collectionName} monthly data:`, error);
+      // Fallback to empty data
+      monthNames.forEach(monthName => {
         months.push({
           month: monthName,
           count: 0
         });
-      }
+      });
     }
     
     return months;
   };
 
   const fetchRecentActivity = async () => {
-    setActivityLoading(false);
+    setActivityLoading(true);
     try {
       const q = query(collection(db, "activity_log"), orderBy("timestamp", "desc"), limit(8));
       const snap = await getDocs(q);
       setRecentActivity(snap.docs.map(doc => doc.data()));
     } catch (e) {
+      console.log("Activity log not found, using empty array");
       setRecentActivity([]);
+    } finally {
+      setActivityLoading(false);
     }
-    setActivityLoading(false);
   };
 
   const statCards = [
