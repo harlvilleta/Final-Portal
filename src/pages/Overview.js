@@ -24,8 +24,22 @@ export default function Overview() {
     announcements: 0
   });
   const [monthlyData, setMonthlyData] = useState({
-    students: [],
-    violations: []
+    students: [
+      { month: 'Jul', count: 5 },
+      { month: 'Aug', count: 8 },
+      { month: 'Sep', count: 12 },
+      { month: 'Oct', count: 15 },
+      { month: 'Nov', count: 10 },
+      { month: 'Dec', count: 7 }
+    ],
+    violations: [
+      { month: 'Jul', count: 2 },
+      { month: 'Aug', count: 4 },
+      { month: 'Sep', count: 3 },
+      { month: 'Oct', count: 6 },
+      { month: 'Nov', count: 5 },
+      { month: 'Dec', count: 3 }
+    ]
   });
   const [loading, setLoading] = useState(false);
   const [recentActivity, setRecentActivity] = useState([]);
@@ -42,8 +56,12 @@ export default function Overview() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchOverviewData();
-    fetchRecentActivity();
+    // Fetch data in parallel for better performance
+    Promise.all([
+      fetchOverviewData(),
+      fetchRecentActivity()
+    ]);
+    
     // Get current user and their profile
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setCurrentUser(user);
@@ -66,33 +84,20 @@ export default function Overview() {
 
   const fetchOverviewData = async () => {
     try {
-      setLoading(false);
+      setLoading(true);
       
-      // Fetch students count
-      const studentsSnapshot = await getDocs(collection(db, "students"));
-      const studentsCount = studentsSnapshot.size;
-      
-      // Fetch violations count
-      const violationsSnapshot = await getDocs(collection(db, "violations"));
-      const violationsCount = violationsSnapshot.size;
-      
-      // Fetch activities count (assuming activities collection exists)
-      let activitiesCount = 0;
-      try {
-        const activitiesSnapshot = await getDocs(collection(db, "activities"));
-        activitiesCount = activitiesSnapshot.size;
-      } catch (error) {
-        console.log("Activities collection not found, using default value");
-      }
-      
-      // Fetch announcements count (assuming announcements collection exists)
-      let announcementsCount = 0;
-      try {
-        const announcementsSnapshot = await getDocs(collection(db, "announcements"));
-        announcementsCount = announcementsSnapshot.size;
-      } catch (error) {
-        console.log("Announcements collection not found, using default value");
-      }
+      // Use Promise.all to fetch all data in parallel for better performance
+      const [studentsSnapshot, violationsSnapshot, activitiesSnapshot, announcementsSnapshot] = await Promise.allSettled([
+        getDocs(collection(db, "students")),
+        getDocs(collection(db, "violations")),
+        getDocs(collection(db, "activities")).catch(() => ({ size: 0 })),
+        getDocs(collection(db, "announcements")).catch(() => ({ size: 0 }))
+      ]);
+
+      const studentsCount = studentsSnapshot.status === 'fulfilled' ? studentsSnapshot.value.size : 0;
+      const violationsCount = violationsSnapshot.status === 'fulfilled' ? violationsSnapshot.value.size : 0;
+      const activitiesCount = activitiesSnapshot.status === 'fulfilled' ? activitiesSnapshot.value.size : 0;
+      const announcementsCount = announcementsSnapshot.status === 'fulfilled' ? announcementsSnapshot.value.size : 0;
 
       setStats({
         students: studentsCount,
@@ -101,11 +106,18 @@ export default function Overview() {
         announcements: announcementsCount
       });
 
-      // Generate monthly data for the last 6 months
-      const monthlyStudents = await generateMonthlyData("students", "createdAt");
-      const monthlyViolations = await generateMonthlyData("violations", "createdAt");
+      // Generate monthly data in parallel for better performance
+      const [monthlyStudents, monthlyViolations] = await Promise.all([
+        generateMonthlyData("students", "createdAt"),
+        generateMonthlyData("violations", "createdAt")
+      ]);
 
       setMonthlyData({
+        students: monthlyStudents,
+        violations: monthlyViolations
+      });
+      
+      console.log('Updated monthly data:', {
         students: monthlyStudents,
         violations: monthlyViolations
       });
@@ -121,48 +133,68 @@ export default function Overview() {
     const months = [];
     const currentDate = new Date();
     
+    // Generate default data structure first
     for (let i = 5; i >= 0; i--) {
       const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
       const monthName = monthDate.toLocaleString('default', { month: 'short' });
-      const year = monthDate.getFullYear();
       
-      const startOfMonth = new Date(year, monthDate.getMonth(), 1);
-      const endOfMonth = new Date(year, monthDate.getMonth() + 1, 0);
+      months.push({
+        month: monthName,
+        count: 0
+      });
+    }
+    
+    try {
+      // Try to fetch actual data
+      const queries = [];
       
-      try {
-        const q = query(
-          collection(db, collectionName),
-          where(dateField, ">=", startOfMonth.toISOString()),
-          where(dateField, "<=", endOfMonth.toISOString())
-        );
-        const snapshot = await getDocs(q);
+      for (let i = 5; i >= 0; i--) {
+        const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+        const year = monthDate.getFullYear();
         
-        months.push({
-          month: monthName,
-          count: snapshot.size
-        });
-      } catch (error) {
-        console.log(`Error fetching ${collectionName} for ${monthName}:`, error);
-        months.push({
-          month: monthName,
-          count: 0
-        });
+        const startOfMonth = new Date(year, monthDate.getMonth(), 1);
+        const endOfMonth = new Date(year, monthDate.getMonth() + 1, 0);
+        
+        queries.push(
+          getDocs(
+            query(
+              collection(db, collectionName),
+              where(dateField, ">=", startOfMonth.toISOString()),
+              where(dateField, "<=", endOfMonth.toISOString())
+            )
+          ).catch(() => ({ size: 0 }))
+        );
       }
+      
+      // Execute all queries in parallel
+      const snapshots = await Promise.allSettled(queries);
+      
+      snapshots.forEach((snapshot, index) => {
+        const count = snapshot.status === 'fulfilled' ? snapshot.value.size : 0;
+        months[index].count = count;
+      });
+      
+      console.log(`${collectionName} monthly data:`, months);
+    } catch (error) {
+      console.log(`Error fetching ${collectionName} monthly data:`, error);
+      // Keep default data with count: 0
     }
     
     return months;
   };
 
   const fetchRecentActivity = async () => {
-    setActivityLoading(false);
+    setActivityLoading(true);
     try {
       const q = query(collection(db, "activity_log"), orderBy("timestamp", "desc"), limit(8));
       const snap = await getDocs(q);
       setRecentActivity(snap.docs.map(doc => doc.data()));
     } catch (e) {
+      console.log("Activity log not found, using empty array");
       setRecentActivity([]);
+    } finally {
+      setActivityLoading(false);
     }
-    setActivityLoading(false);
   };
 
   const statCards = [
@@ -295,11 +327,25 @@ export default function Overview() {
               Students Registration (Last 6 Months)
             </Typography>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyData.students}>
+              <LineChart data={monthlyData.students || []}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <RechartsTooltip />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fontSize: 12 }}
+                  axisLine={{ stroke: '#800000' }}
+                />
+                <YAxis 
+                  tick={{ fontSize: 12 }}
+                  axisLine={{ stroke: '#800000' }}
+                  domain={[0, 'dataMax + 1']}
+                />
+                <RechartsTooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#fff', 
+                    border: '1px solid #800000',
+                    borderRadius: '8px'
+                  }}
+                />
                 <Legend />
                 <Line 
                   type="monotone" 
@@ -307,6 +353,9 @@ export default function Overview() {
                   stroke="#800000" 
                   strokeWidth={3}
                   name="Students"
+                  dot={{ fill: '#800000', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: '#800000', strokeWidth: 2 }}
+                  connectNulls={false}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -320,16 +369,31 @@ export default function Overview() {
               Violations Reported (Last 6 Months)
             </Typography>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData.violations}>
+              <BarChart data={monthlyData.violations || []}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <RechartsTooltip />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fontSize: 12 }}
+                  axisLine={{ stroke: '#800000' }}
+                />
+                <YAxis 
+                  tick={{ fontSize: 12 }}
+                  axisLine={{ stroke: '#800000' }}
+                  domain={[0, 'dataMax + 1']}
+                />
+                <RechartsTooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#fff', 
+                    border: '1px solid #800000',
+                    borderRadius: '8px'
+                  }}
+                />
                 <Legend />
                 <Bar 
                   dataKey="count" 
                   fill="#800000" 
                   name="Violations"
+                  radius={[4, 4, 0, 0]}
                 />
               </BarChart>
             </ResponsiveContainer>

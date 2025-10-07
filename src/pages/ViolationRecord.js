@@ -430,6 +430,16 @@ School Administration
 
   return (
     <Box>
+      <style>
+        {`
+          @media print {
+            body * { visibility: hidden; }
+            #violation-document, #violation-document * { visibility: visible; }
+            #violation-document { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+          }
+        `}
+      </style>
       <Typography variant="h4" gutterBottom fontWeight={700} color="primary.main">
         Violation Records
       </Typography>
@@ -583,7 +593,7 @@ School Administration
               )}
             </Grid>
             {/* Buttons row: only Add Violation */}
-            <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-start' }}>
               <Stack direction="row" spacing={2}>
                 <Button type="submit" variant="outlined" size="small" sx={{ 
                   minWidth: 120, 
@@ -591,8 +601,9 @@ School Administration
                   color: '#000',
                   borderColor: '#000',
                   '&:hover': {
-                    borderColor: '#000',
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                    borderColor: '#800000',
+                    backgroundColor: '#800000',
+                    color: '#fff'
                   }
                 }}
                   startIcon={isSubmitting ? <CircularProgress size={14} color="inherit" /> : null}>
@@ -611,8 +622,7 @@ School Administration
           onChange={e => setSearch(e.target.value)}
           placeholder="Search by Student ID, Violation, Classification, or Reporter..."
           size="small"
-          fullWidth
-          sx={{ mb: 2 }}
+          sx={{ mb: 2, width: { xs: '100%', sm: '50%' } }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -622,7 +632,7 @@ School Administration
           }}
         />
         <TableContainer component={Paper} sx={{ maxHeight: 500, width: '100%', overflowX: 'auto' }}>
-          <Table size="small" stickyHeader sx={{ minWidth: 800 }}>
+          <Table size="small" stickyHeader sx={{ minWidth: 880 }}>
             <TableHead>
               <TableRow sx={{ bgcolor: '#f5f5f5' }}>
                 <TableCell sx={{ minWidth: 160 }}>Student Name</TableCell>
@@ -630,20 +640,28 @@ School Administration
                 <TableCell sx={{ minWidth: 180 }}>Violation</TableCell>
                 <TableCell sx={{ minWidth: 110 }}>Date</TableCell>
                 <TableCell sx={{ minWidth: 100 }}>Time</TableCell>
+                <TableCell sx={{ minWidth: 60 }} align="right">Delete</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={5}>No violations found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6}>No violations found.</TableCell></TableRow>
               ) : filtered.map((v, idx) => (
-                <TableRow key={v.id || idx} hover sx={{ cursor: 'pointer' }} onClick={() => setViewViolation(v)}>
-                  <TableCell sx={{ fontSize: 13 }}>{v.studentName || 'N/A'}</TableCell>
-                  <TableCell sx={{ fontSize: 13 }}>{v.studentId || 'N/A'}</TableCell>
-                  <TableCell sx={{ fontSize: 13, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <TableRow key={v.id || idx} hover sx={{ cursor: 'pointer' }}>
+                  <TableCell sx={{ fontSize: 14, fontWeight: 500 }} onClick={() => setViewViolation(v)}>{v.studentName || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: 14, fontWeight: 500 }} onClick={() => setViewViolation(v)}>{v.studentId || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: 14, fontWeight: 500, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setViewViolation(v)}>
                     <Tooltip title={v.violation || ''}><span>{v.violation || 'N/A'}</span></Tooltip>
                   </TableCell>
-                  <TableCell sx={{ fontSize: 13 }}>{v.date || 'N/A'}</TableCell>
-                  <TableCell sx={{ fontSize: 13 }}>{v.time || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: 14, fontWeight: 500 }} onClick={() => setViewViolation(v)}>{v.date || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: 14, fontWeight: 500 }} onClick={() => setViewViolation(v)}>{v.time || 'N/A'}</TableCell>
+                  <TableCell align="right">
+                    <Tooltip title="Delete record">
+                      <IconButton size="small" sx={{ color: 'grey.600', '&:hover': { color: 'error.main' } }} onClick={() => setDeleteConfirm({ open: true, id: v.id })}>
+                        <DeleteIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -674,9 +692,9 @@ School Administration
           <Button onClick={() => setImagePreview(null)} variant="contained" color="primary">Close</Button>
         </DialogActions>
       </Dialog>
-      {/* View Violation Modal (Detail document-style with print) */}
+      {/* View Violation Modal (Detail document-style with print and attach/replace evidence) */}
       <Dialog open={!!viewViolation} onClose={() => setViewViolation(null)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>Student Violation Record</DialogTitle>
+        <DialogTitle className="no-print" sx={{ fontWeight: 700 }}>Student Violation Record</DialogTitle>
         <DialogContent dividers>
           {viewViolation && (
             <Box id="violation-document" sx={{ typography: 'body1' }}>
@@ -699,10 +717,43 @@ School Administration
                   <img src={viewViolation.image} alt="Evidence" style={{ maxWidth: '100%', borderRadius: 8 }} />
                 </Box>
               )}
+              <Box className="no-print" sx={{ mt: 2 }}>
+                <Button variant="outlined" component="label" size="small">
+                  {viewViolation?.image ? 'Replace Evidence Image' : 'Attach Evidence Image'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={async (e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        if (!file.type.startsWith('image/')) {
+                          setSnackbar({ open: true, message: 'Please select a valid image file', severity: 'error' });
+                          return;
+                        }
+                        if (file.size > 500 * 1024) {
+                          setSnackbar({ open: true, message: 'Image file size must be less than 500KB', severity: 'error' });
+                          return;
+                        }
+                        try {
+                          const storageRef = ref(storage, `violation_evidence/${viewViolation.id}_${Date.now()}_${file.name}`);
+                          await uploadBytes(storageRef, file);
+                          const url = await getDownloadURL(storageRef);
+                          await updateDoc(doc(db, 'violations', viewViolation.id), { image: url, updatedAt: new Date().toISOString() });
+                          setViewViolation(v => ({ ...v, image: url }));
+                          setSnackbar({ open: true, message: 'Evidence image attached successfully!', severity: 'success' });
+                        } catch (err) {
+                          setSnackbar({ open: true, message: 'Failed to upload evidence image', severity: 'error' });
+                        }
+                      }
+                    }}
+                  />
+                </Button>
+              </Box>
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions className="no-print">
           <Button onClick={() => window.print()} variant="outlined">Print</Button>
           <Button onClick={() => setViewViolation(null)} color="primary">Close</Button>
         </DialogActions>
