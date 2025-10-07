@@ -59,6 +59,7 @@ export default function ViolationRecord() {
   const [printMode, setPrintMode] = useState(false);
   const [studentInputValue, setStudentInputValue] = useState('');
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     const fetchViolations = async () => {
@@ -106,13 +107,24 @@ export default function ViolationRecord() {
     }
   }, [openMeetingsModal, meetingSnackbar]);
 
-  const filtered = records.filter(
-    v =>
-      v.studentId?.toLowerCase().includes(search.toLowerCase()) ||
-      v.violation?.toLowerCase().includes(search.toLowerCase()) ||
-      v.classification?.toLowerCase().includes(search.toLowerCase()) ||
-      v.reportedBy?.toLowerCase().includes(search.toLowerCase())
-  );
+  const baseByStatus = statusFilter === 'all' ? records : records.filter(v => (statusFilter === 'pending' ? v.status === 'Pending' : statusFilter === 'solved' ? v.status === 'Solved' : true));
+  // Sort newest first using createdAt if available
+  const sortedByDate = [...baseByStatus].sort((a, b) => {
+    const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return db - da;
+  });
+  const filtered = (() => {
+    const term = search.trim().toLowerCase();
+    if (!term) {
+      return sortedByDate.slice(0, 5);
+    }
+    return sortedByDate.filter(v => {
+      const name = (v.studentName || '').toLowerCase();
+      const id = (v.studentId || '').toLowerCase();
+      return name.startsWith(term) || id.startsWith(term);
+    });
+  })();
 
   // Summary stats
   const total = records.length;
@@ -424,26 +436,26 @@ School Administration
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} sm={4}>
-          <Card sx={{ bgcolor: '#80000010', boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardHeader avatar={<AssignmentTurnedInIcon color="primary" />} title={<Typography variant="subtitle2">Total Violations</Typography>} />
-            <CardContent>
-              <Typography variant="h4" color="primary.main" fontWeight={700}>{total}</Typography>
+          <Card onClick={() => setStatusFilter('all')} sx={{ cursor: 'pointer', bgcolor: '#f5f5f5', boxShadow: 1 }}>
+            <CardHeader avatar={<AssignmentTurnedInIcon sx={{ color: 'grey.600' }} />} title={<Typography variant="subtitle2">Total Violations</Typography>} />
+            <CardContent sx={{ pt: 1, pb: 2 }}>
+              <Typography variant="h5" color="text.primary" fontWeight={700}>{total}</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={4}>
-          <Card sx={{ bgcolor: '#fffde7', boxShadow: 2 }}>
-            <CardHeader avatar={<PendingActionsIcon color="warning" />} title={<Typography variant="subtitle2">Pending</Typography>} />
-            <CardContent>
-              <Typography variant="h4" color="warning.main" fontWeight={700}>{pending}</Typography>
+          <Card onClick={() => setStatusFilter('pending')} sx={{ cursor: 'pointer', bgcolor: '#f7f7f7', boxShadow: 1 }}>
+            <CardHeader avatar={<PendingActionsIcon sx={{ color: 'grey.600' }} />} title={<Typography variant="subtitle2">Pending</Typography>} />
+            <CardContent sx={{ pt: 1, pb: 2 }}>
+              <Typography variant="h5" color="text.primary" fontWeight={700}>{pending}</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={4}>
-          <Card sx={{ bgcolor: '#e8f5e9', boxShadow: 2 }}>
-            <CardHeader avatar={<DoneAllIcon color="success" />} title={<Typography variant="subtitle2">Solved</Typography>} />
-            <CardContent>
-              <Typography variant="h4" color="success.main" fontWeight={700}>{solved}</Typography>
+          <Card onClick={() => setStatusFilter('solved')} sx={{ cursor: 'pointer', bgcolor: '#f7f7f7', boxShadow: 1 }}>
+            <CardHeader avatar={<DoneAllIcon sx={{ color: 'grey.600' }} />} title={<Typography variant="subtitle2">Solved</Typography>} />
+            <CardContent sx={{ pt: 1, pb: 2 }}>
+              <Typography variant="h5" color="text.primary" fontWeight={700}>{solved}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -570,7 +582,7 @@ School Administration
                 </Box>
               )}
             </Grid>
-            {/* Buttons row: center both buttons as a group */}
+            {/* Buttons row: only Add Violation */}
             <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center' }}>
               <Stack direction="row" spacing={2}>
                 <Button type="submit" variant="outlined" size="small" sx={{ 
@@ -585,30 +597,6 @@ School Administration
                 }}
                   startIcon={isSubmitting ? <CircularProgress size={14} color="inherit" /> : null}>
                   {isSubmitting ? "Saving..." : "Add Violation"}
-                </Button>
-                <Button variant="outlined" onClick={() => setOpenMeetingModal(true)} size="small" sx={{ 
-                  minWidth: 120, 
-                  maxWidth: 160,
-                  color: '#000',
-                  borderColor: '#000',
-                  '&:hover': {
-                    borderColor: '#000',
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                  }
-                }}>
-                  Create Meeting
-                </Button>
-                <Button variant="outlined" onClick={() => setOpenMeetingsModal(true)} size="small" sx={{ 
-                  minWidth: 120, 
-                  maxWidth: 160,
-                  color: '#000',
-                  borderColor: '#000',
-                  '&:hover': {
-                    borderColor: '#000',
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                  }
-                }}>
-                  View Meetings
                 </Button>
               </Stack>
             </Grid>
@@ -634,91 +622,33 @@ School Administration
           }}
         />
         <TableContainer component={Paper} sx={{ maxHeight: 500, width: '100%', overflowX: 'auto' }}>
-          <Table size="small" stickyHeader sx={{ minWidth: 1100 }}>
-          <TableHead>
-              <TableRow sx={{ bgcolor: '#e3f2fd' }}>
-                <TableCell sx={{ position: 'sticky', left: 0, zIndex: 2, bgcolor: '#e3f2fd', minWidth: 80 }}>Evidence</TableCell>
-                <TableCell sx={{ minWidth: 90 }}>Date</TableCell>
-                <TableCell sx={{ minWidth: 80 }}>Time</TableCell>
-                <TableCell sx={{ minWidth: 110 }}>Student ID</TableCell>
+          <Table size="small" stickyHeader sx={{ minWidth: 800 }}>
+            <TableHead>
+              <TableRow sx={{ bgcolor: '#f5f5f5' }}>
                 <TableCell sx={{ minWidth: 160 }}>Student Name</TableCell>
-                <TableCell sx={{ minWidth: 120 }}>Violation</TableCell>
-                <TableCell sx={{ minWidth: 110 }}>Classification</TableCell>
-                <TableCell sx={{ minWidth: 110 }}>Severity</TableCell>
-                <TableCell sx={{ minWidth: 100 }}>Status</TableCell>
-                <TableCell sx={{ minWidth: 120 }}>Location</TableCell>
-                <TableCell sx={{ minWidth: 120 }}>Reported By</TableCell>
-                <TableCell sx={{ minWidth: 160, maxWidth: 160 }}>Action Taken</TableCell>
-                <TableCell sx={{ minWidth: 120 }}>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
+                <TableCell sx={{ minWidth: 110 }}>Student ID</TableCell>
+                <TableCell sx={{ minWidth: 180 }}>Violation</TableCell>
+                <TableCell sx={{ minWidth: 110 }}>Date</TableCell>
+                <TableCell sx={{ minWidth: 100 }}>Time</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={12}>No violations found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5}>No violations found.</TableCell></TableRow>
               ) : filtered.map((v, idx) => (
-                <TableRow key={v.id || idx} hover sx={{ bgcolor: idx % 2 === 0 ? '#fafafa' : '#fff' }}>
-                  <TableCell sx={{ position: 'sticky', left: 0, zIndex: 1, bgcolor: '#fff', minWidth: 80 }}>
-                    {v.image && (
-                      <Tooltip title="Click to preview evidence image">
-                        <IconButton onClick={() => setImagePreview(v.image)}>
-                          <Avatar src={v.image} sx={{ width: 40, height: 40 }} variant="rounded" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
+                <TableRow key={v.id || idx} hover sx={{ cursor: 'pointer' }} onClick={() => setViewViolation(v)}>
+                  <TableCell sx={{ fontSize: 13 }}>{v.studentName || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: 13 }}>{v.studentId || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: 13, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <Tooltip title={v.violation || ''}><span>{v.violation || 'N/A'}</span></Tooltip>
                   </TableCell>
                   <TableCell sx={{ fontSize: 13 }}>{v.date || 'N/A'}</TableCell>
                   <TableCell sx={{ fontSize: 13 }}>{v.time || 'N/A'}</TableCell>
-                  <TableCell sx={{ fontSize: 13 }}>{v.studentId || 'N/A'}</TableCell>
-                  <TableCell sx={{ fontSize: 13 }}>{v.studentName || 'N/A'}</TableCell>
-                  <TableCell sx={{ fontSize: 13, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <Tooltip title={v.violation || ''}><span>{v.violation}</span></Tooltip>
-                    {v.description && (
-                      <Typography variant="caption" color="textSecondary" display="block" sx={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <Tooltip title={v.description}><span>{v.description}</span></Tooltip>
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell sx={{ fontSize: 13 }}>
-                    <Chip label={v.classification} color={
-                      v.classification === 'Grave' ? 'error' :
-                      v.classification === 'Serious' ? 'warning' :
-                      v.classification === 'Major' ? 'info' : 'success'
-                    } size="small" />
-                  </TableCell>
-                  <TableCell sx={{ fontSize: 13 }}>
-                    <Chip label={v.severity || 'N/A'} color={
-                      v.severity === 'Critical' ? 'error' :
-                      v.severity === 'High' ? 'warning' :
-                      v.severity === 'Medium' ? 'info' : 'success'
-                    } size="small" />
-                  </TableCell>
-                  <TableCell sx={{ fontSize: 13 }}>
-                    <Chip label={v.status || 'Pending'} color={statusColors[v.status] || 'default'} size="small" />
-                  </TableCell>
-                  <TableCell sx={{ fontSize: 13, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <Tooltip title={v.location || ''}><span>{v.location || 'N/A'}</span></Tooltip>
-                  </TableCell>
-                  <TableCell sx={{ fontSize: 13, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <Tooltip title={v.reportedBy || ''}><span>{v.reportedBy || 'N/A'}</span></Tooltip>
-                  </TableCell>
-                  <TableCell sx={{ fontSize: 13, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <Tooltip title={v.actionTaken || ''}><span>{v.actionTaken || 'N/A'}</span></Tooltip>
-                    {v.witnesses && (
-                      <Typography variant="caption" color="textSecondary" display="block" sx={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <Tooltip title={v.witnesses}><span>Witnesses: {v.witnesses}</span></Tooltip>
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell sx={{ fontSize: 13, minWidth: 120 }}>
-                    <Tooltip title="View details"><IconButton onClick={() => setViewViolation(v)}><VisibilityIcon color="primary" /></IconButton></Tooltip>
-                    <Tooltip title="Edit"><IconButton onClick={() => handleEdit(v)}><EditIcon color="info" /></IconButton></Tooltip>
-                    <Tooltip title="Delete"><IconButton onClick={() => setDeleteConfirm({ open: true, id: v.id })}><DeleteIcon color="error" /></IconButton></Tooltip>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </Paper>
       {/* Image Preview Modal */}
       <Dialog open={!!imagePreview} onClose={() => setImagePreview(null)} maxWidth="md" fullWidth>
@@ -744,33 +674,36 @@ School Administration
           <Button onClick={() => setImagePreview(null)} variant="contained" color="primary">Close</Button>
         </DialogActions>
       </Dialog>
-      {/* View Violation Modal */}
+      {/* View Violation Modal (Detail document-style with print) */}
       <Dialog open={!!viewViolation} onClose={() => setViewViolation(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Violation Details</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>Student Violation Record</DialogTitle>
         <DialogContent dividers>
           {viewViolation && (
-            <Box>
-              <Typography variant="subtitle1" fontWeight={700}>{viewViolation.violation}</Typography>
-              <Divider sx={{ my: 1 }} />
-              <Typography><b>Student ID:</b> {viewViolation.studentId}</Typography>
-              <Typography><b>Date:</b> {viewViolation.date} <b>Time:</b> {viewViolation.time}</Typography>
-              <Typography><b>Status:</b> {viewViolation.status}</Typography>
-              <Typography><b>Classification:</b> {viewViolation.classification}</Typography>
-              <Typography><b>Severity:</b> {viewViolation.severity}</Typography>
-              <Typography><b>Location:</b> {viewViolation.location}</Typography>
-              <Typography><b>Reported By:</b> {viewViolation.reportedBy}</Typography>
-              <Typography><b>Action Taken:</b> {viewViolation.actionTaken}</Typography>
-              <Typography><b>Witnesses:</b> {viewViolation.witnesses}</Typography>
-              <Typography><b>Description:</b> {viewViolation.description}</Typography>
+            <Box id="violation-document" sx={{ typography: 'body1' }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>{viewViolation.studentName}</Typography>
+              <Grid container spacing={1} sx={{ mb: 1 }}>
+                <Grid item xs={6}><Typography><b>Student ID:</b> {viewViolation.studentId}</Typography></Grid>
+                <Grid item xs={6}><Typography><b>Date:</b> {viewViolation.date}</Typography></Grid>
+                <Grid item xs={6}><Typography><b>Time:</b> {viewViolation.time}</Typography></Grid>
+                <Grid item xs={12}><Typography><b>Violation:</b> {viewViolation.violation}</Typography></Grid>
+                <Grid item xs={6}><Typography><b>Classification:</b> {viewViolation.classification}</Typography></Grid>
+                <Grid item xs={6}><Typography><b>Severity:</b> {viewViolation.severity}</Typography></Grid>
+                {viewViolation.location && (<Grid item xs={12}><Typography><b>Location:</b> {viewViolation.location}</Typography></Grid>)}
+                {viewViolation.reportedBy && (<Grid item xs={12}><Typography><b>Reported By:</b> {viewViolation.reportedBy}</Typography></Grid>)}
+                {viewViolation.actionTaken && (<Grid item xs={12}><Typography><b>Action Taken:</b> {viewViolation.actionTaken}</Typography></Grid>)}
+                {viewViolation.witnesses && (<Grid item xs={12}><Typography><b>Witnesses:</b> {viewViolation.witnesses}</Typography></Grid>)}
+                {viewViolation.description && (<Grid item xs={12}><Typography><b>Description:</b> {viewViolation.description}</Typography></Grid>)}
+              </Grid>
               {viewViolation.image && (
                 <Box sx={{ mt: 2, textAlign: 'center' }}>
-                  <img src={viewViolation.image} alt="Evidence" style={{ maxWidth: 300, borderRadius: 8 }} />
+                  <img src={viewViolation.image} alt="Evidence" style={{ maxWidth: '100%', borderRadius: 8 }} />
                 </Box>
               )}
             </Box>
           )}
         </DialogContent>
         <DialogActions>
+          <Button onClick={() => window.print()} variant="outlined">Print</Button>
           <Button onClick={() => setViewViolation(null)} color="primary">Close</Button>
         </DialogActions>
       </Dialog>
