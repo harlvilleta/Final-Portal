@@ -385,13 +385,22 @@ export default function ReceiptReview() {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Chip
-                          icon={statusIcons[submission.status]}
-                          label={submission.status}
-                          variant="outlined"
-                          sx={{ borderColor: '#800000', color: '#800000' }}
-                          size="small"
-                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {statusIcons[submission.status]}
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: submission.status === 'pending' ? '#ff9800' : 
+                                    submission.status === 'approved' ? '#4caf50' : 
+                                    submission.status === 'rejected' ? '#800000' : '#000',
+                              fontWeight: 500
+                            }}
+                          >
+                            {submission.status === 'pending' ? 'Pending' :
+                             submission.status === 'approved' ? 'Approval' :
+                             submission.status === 'rejected' ? 'Rejected' : submission.status}
+                          </Typography>
+                        </Box>
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">

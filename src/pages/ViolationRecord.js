@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Typography, Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, TextField, Grid, Chip, Avatar, InputAdornment, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Card, CardContent, CardHeader, Divider, Tooltip, CircularProgress, Snackbar, Alert, Stack } from "@mui/material";
+import { Typography, Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, TextField, Grid, Chip, Avatar, InputAdornment, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Card, CardContent, CardHeader, Divider, Tooltip, CircularProgress, Snackbar, Alert, Stack, Autocomplete } from "@mui/material";
 import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import SearchIcon from '@mui/icons-material/Search';
@@ -57,6 +57,8 @@ export default function ViolationRecord() {
   const [meetings, setMeetings] = useState([]);
   const [editMeeting, setEditMeeting] = useState(null);
   const [printMode, setPrintMode] = useState(false);
+  const [studentInputValue, setStudentInputValue] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
   useEffect(() => {
     const fetchViolations = async () => {
@@ -296,6 +298,8 @@ School Administration
         image: null,
         studentName: ""
       });
+      setSelectedStudent(null);
+      setStudentInputValue('');
       setStudentName("");
       setImageFile(null);
       setSnackbar({ open: true, message: uploadTimedOut ? "Violation added (image upload failed) - Student notified!" : "Violation added successfully - Student notified!", severity: uploadTimedOut ? "warning" : "success" });
@@ -451,30 +455,58 @@ School Administration
         <form onSubmit={handleSubmit}>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={3}>
-              <TextField
-                label="Student"
-                name="studentId"
-                value={form.studentId}
-                onChange={e => {
-                  const selectedId = e.target.value;
-                  setForm(f => {
-                    const student = students.find(s => s.id === selectedId);
-                    return {
-                      ...f,
-                      studentId: selectedId,
-                      studentName: student ? `${student.firstName} ${student.lastName}` : ''
-                    };
-                  });
+              <Autocomplete
+                options={students}
+                getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
+                value={selectedStudent}
+                onChange={(event, newValue) => {
+                  setSelectedStudent(newValue);
+                  setForm(f => ({
+                    ...f,
+                    studentId: newValue ? newValue.id : '',
+                    studentName: newValue ? `${newValue.firstName} ${newValue.lastName}` : ''
+                  }));
                 }}
-                select
-                required
-                fullWidth
-                helperText={form.studentName ? `Name: ${form.studentName}` : "Select a student"}
-              >
-                {students.map(s => (
-                  <MenuItem key={s.id} value={s.id}>{s.id} - {s.firstName} {s.lastName}</MenuItem>
-                ))}
-              </TextField>
+                inputValue={studentInputValue}
+                onInputChange={(event, newInputValue) => {
+                  setStudentInputValue(newInputValue);
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Student Name"
+                    required
+                    fullWidth
+                    helperText="Type to search for a student"
+                    placeholder="Start typing student name..."
+                  />
+                )}
+                renderOption={(props, option) => (
+                  <Box component="li" {...props}>
+                    <Box>
+                      <Typography variant="body2" fontWeight={500}>
+                        {option.firstName} {option.lastName}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        ID: {option.id}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+                filterOptions={(options, { inputValue }) => {
+                  const filtered = options.filter(option => {
+                    const fullName = `${option.firstName} ${option.lastName}`.toLowerCase();
+                    const studentId = option.id.toLowerCase();
+                    const searchTerm = inputValue.toLowerCase();
+                    return fullName.includes(searchTerm) || studentId.includes(searchTerm);
+                  });
+                  return filtered;
+                }}
+                noOptionsText="No students found"
+                clearOnEscape
+                selectOnFocus
+                handleHomeEndKeys
+              />
             </Grid>
             <Grid item xs={12} sm={3}>
               <TextField label="Violation" name="violation" value={form.violation} onChange={handleFormChange} required fullWidth helperText="Type of violation" />
@@ -541,14 +573,41 @@ School Administration
             {/* Buttons row: center both buttons as a group */}
             <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center' }}>
               <Stack direction="row" spacing={2}>
-                <Button type="submit" variant="contained" color="primary" size="small" sx={{ minWidth: 120, maxWidth: 160 }}
+                <Button type="submit" variant="outlined" size="small" sx={{ 
+                  minWidth: 120, 
+                  maxWidth: 160,
+                  color: '#000',
+                  borderColor: '#000',
+                  '&:hover': {
+                    borderColor: '#000',
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                  }
+                }}
                   startIcon={isSubmitting ? <CircularProgress size={14} color="inherit" /> : null}>
                   {isSubmitting ? "Saving..." : "Add Violation"}
                 </Button>
-                <Button variant="contained" color="success" onClick={() => setOpenMeetingModal(true)} size="small" sx={{ minWidth: 120, maxWidth: 160 }}>
+                <Button variant="outlined" onClick={() => setOpenMeetingModal(true)} size="small" sx={{ 
+                  minWidth: 120, 
+                  maxWidth: 160,
+                  color: '#000',
+                  borderColor: '#000',
+                  '&:hover': {
+                    borderColor: '#000',
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                  }
+                }}>
                   Create Meeting
                 </Button>
-                <Button variant="outlined" color="info" onClick={() => setOpenMeetingsModal(true)} size="small" sx={{ minWidth: 120, maxWidth: 160 }}>
+                <Button variant="outlined" onClick={() => setOpenMeetingsModal(true)} size="small" sx={{ 
+                  minWidth: 120, 
+                  maxWidth: 160,
+                  color: '#000',
+                  borderColor: '#000',
+                  '&:hover': {
+                    borderColor: '#000',
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                  }
+                }}>
                   View Meetings
                 </Button>
               </Stack>

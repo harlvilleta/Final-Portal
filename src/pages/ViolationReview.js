@@ -305,21 +305,33 @@ export default function ViolationReview() {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={violation.severity} 
-                        size="small" 
-                        color={severityColors[violation.severity]}
-                      />
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: violation.severity === 'Minor' ? '#4caf50' : 
+                                violation.severity === 'Moderate' ? '#ff9800' : 
+                                violation.severity === 'Major' ? '#f44336' : 
+                                violation.severity === 'Critical' ? '#d32f2f' : '#000',
+                          fontWeight: 500
+                        }}
+                      >
+                        {violation.severity}
+                      </Typography>
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        {getStatusIcon(violation.status)}
-                        <Chip 
-                          label={violation.status} 
-                          size="small" 
-                          color={statusColors[violation.status]}
-                          sx={{ ml: 1 }}
-                        />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Schedule sx={{ fontSize: 16 }} />
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            color: violation.status === 'Pending' ? '#ff9800' : 
+                                  violation.status === 'Approved' ? '#4caf50' : 
+                                  violation.status === 'Denied' ? '#f44336' : '#000',
+                            fontWeight: 500
+                          }}
+                        >
+                          {violation.status}
+                        </Typography>
                       </Box>
                     </TableCell>
                     <TableCell>
