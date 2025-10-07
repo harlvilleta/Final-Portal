@@ -3,9 +3,9 @@ import { Routes, Route, Link } from "react-router-dom";
 import { 
   Box, Grid, Card, CardActionArea, CardContent, Typography, TextField, Button, Paper, MenuItem, Avatar, Snackbar, Alert, 
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Stack, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText,
-  IconButton, Tooltip, Chip
+  IconButton, Tooltip, Chip, InputAdornment
 } from "@mui/material";
-import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete } from "@mui/icons-material";
+import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete, Search } from "@mui/icons-material";
 import { db, storage, logActivity } from "../firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, where, query, onSnapshot, orderBy, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -922,6 +922,7 @@ function StudentList({
 }) {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [openViolation, setOpenViolation] = useState(false);
   const [violation, setViolation] = useState({ 
     violation: "", 
@@ -1018,6 +1019,19 @@ function StudentList({
     };
     fetchStudents();
   }, []);
+
+  // Derived filtered list: if search empty, show only 6 most recent; otherwise filter by startsWith first letter
+  const filteredStudents = (() => {
+    if (!search.trim()) {
+      return students.slice(0, 6);
+    }
+    const term = search.trim().toLowerCase();
+    // If only first letter typed, show names starting with that letter; if longer, still use startsWith for clean matching
+    return students.filter(s => {
+      const fullName = `${s.firstName || ""} ${s.lastName || ""}`.trim().toLowerCase();
+      return fullName.startsWith(term);
+    });
+  })();
 
   const handleExport = () => {
     const csvRows = [
@@ -1382,16 +1396,45 @@ School Administration
   return (
     <Box>
       <Typography variant="h4" gutterBottom>Student List</Typography>
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-        <Button variant="contained" onClick={() => setOpenAddStudent(true)}>
+      <Stack direction="row" spacing={2} sx={{ mb: 2, alignItems: 'center', justifyContent: 'space-between' }}>
+        <Stack direction="row" spacing={2}>
+          <Button 
+            variant="outlined" 
+            onClick={() => setOpenAddStudent(true)}
+            sx={{ bgcolor: '#fff', color: '#000', borderColor: '#000', '&:hover': { bgcolor: '#800000', color: '#fff', borderColor: '#800000' } }}
+          >
           Add Student
-        </Button>
-        <Button variant="outlined" onClick={handleExport} disabled={students.length === 0}>
+          </Button>
+          <Button 
+            variant="outlined" 
+            onClick={handleExport} 
+            disabled={students.length === 0}
+            sx={{ bgcolor: '#fff', color: '#000', borderColor: '#000', '&:hover': { bgcolor: '#800000', color: '#fff', borderColor: '#800000' } }}
+          >
           Export
-        </Button>
-        <Button variant="outlined" onClick={handleRefresh}>
+          </Button>
+          <Button 
+            variant="outlined" 
+            onClick={handleRefresh}
+            sx={{ bgcolor: '#fff', color: '#000', borderColor: '#000', '&:hover': { bgcolor: '#800000', color: '#fff', borderColor: '#800000' } }}
+          >
           Refresh
-        </Button>
+          </Button>
+        </Stack>
+        <TextField 
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          size="small"
+          placeholder="Search students"
+          sx={{ width: 260 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search sx={{ fontSize: 18, color: 'text.secondary' }} />
+              </InputAdornment>
+            )
+          }}
+        />
       </Stack>
       <TableContainer component={Paper}>
         <Table>
@@ -1416,7 +1459,7 @@ School Administration
                 <TableCell colSpan={7}>No students found.</TableCell>
               </TableRow>
             ) : (
-              students.map(student => (
+              filteredStudents.map(student => (
                 <TableRow
                   key={student.id}
                   hover
@@ -1431,52 +1474,47 @@ School Administration
                     )}
                   </TableCell>
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography>
-                        {student.firstName} {student.lastName}
-                      </Typography>
-                      {student.isRegisteredUser && (
-                        <Chip 
-                          label="Registered" 
-                          size="small" 
-                          color="success" 
-                          variant="outlined"
-                          sx={{ fontSize: '0.7rem' }}
-                        />
-                      )}
-                    </Box>
+                    <Typography>
+                      {student.firstName} {student.lastName}
+                    </Typography>
                   </TableCell>
                   <TableCell>{student.course}</TableCell>
                   <TableCell>{student.year}</TableCell>
                   <TableCell>{student.section}</TableCell>
-                  <TableCell>{student.email}</TableCell>
+                  <TableCell>
+                    <Tooltip title={student.email || ''} placement="top">
+                      <Typography sx={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {(student.email || '').length > 0 ? `${(student.email || '').slice(0, 9)}…` : ''}
+                      </Typography>
+                    </Tooltip>
+                  </TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={1}>
                       <Tooltip title="View Details">
                         <IconButton 
-                          size="small" 
-                          color="primary"
+                          size="small"
+                          sx={{ color: 'grey.600', '&:hover': { color: '#000' } }}
                           onClick={(e) => { e.stopPropagation(); handleViewStudent(student); }}
                         >
-                          <Visibility />
+                          <Visibility sx={{ fontSize: 18 }} />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Edit Student">
                         <IconButton 
-                          size="small" 
-                          color="warning"
+                          size="small"
+                          sx={{ color: 'grey.600', '&:hover': { color: '#000' } }}
                           onClick={(e) => { e.stopPropagation(); handleEditStudent(student); }}
                         >
-                          <Edit />
+                          <Edit sx={{ fontSize: 18 }} />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Delete Student">
                         <IconButton 
-                          size="small" 
-                          color="error"
+                          size="small"
+                          sx={{ color: 'grey.600', '&:hover': { color: '#000' } }}
                           onClick={(e) => { e.stopPropagation(); handleDeleteStudent(student); }}
                         >
-                          <Delete />
+                          <Delete sx={{ fontSize: 18 }} />
                         </IconButton>
                       </Tooltip>
                     </Stack>
