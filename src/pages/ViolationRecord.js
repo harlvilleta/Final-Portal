@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Typography, Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, TextField, Grid, Chip, Avatar, InputAdornment, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Card, CardContent, CardHeader, Divider, Tooltip, CircularProgress, Snackbar, Alert, Stack, Autocomplete } from "@mui/material";
-import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
+import { validateStudentId } from "../utils/studentValidation";
 import SearchIcon from '@mui/icons-material/Search';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../firebase";
@@ -166,6 +167,18 @@ export default function ViolationRecord() {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate that the student ID is registered in the system
+    const validationResult = await validateStudentId(form.studentId);
+    if (!validationResult.isValid) {
+      setSnackbar({ 
+        open: true, 
+        message: `Error: ${validationResult.error}. Please ensure the student is properly registered before adding violations.`, 
+        severity: "error" 
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     let imageUrl = null;
     let uploadTimedOut = false;

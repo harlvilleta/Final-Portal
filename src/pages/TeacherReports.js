@@ -42,6 +42,7 @@ import {
 } from '@mui/icons-material';
 import { collection, query, where, getDocs, orderBy, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { validateStudentId } from '../utils/studentValidation';
 
 const statusColors = {
   'Pending': 'warning',
@@ -350,6 +351,17 @@ export default function TeacherReports() {
     
     if (reportForm.violationType === 'Other' && !reportForm.customViolationType.trim()) {
       setSnackbar({ open: true, message: 'Please specify the custom violation type.', severity: 'error' });
+      return;
+    }
+
+    // Validate that the student ID is registered in the system
+    const validationResult = await validateStudentId(selectedStudent.id);
+    if (!validationResult.isValid) {
+      setSnackbar({ 
+        open: true, 
+        message: `Error: ${validationResult.error}. Please ensure the student is properly registered before adding violations.`, 
+        severity: "error" 
+      });
       return;
     }
 
