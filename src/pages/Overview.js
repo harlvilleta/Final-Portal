@@ -133,51 +133,38 @@ export default function Overview() {
     const months = [];
     const currentDate = new Date();
     
+    // Create all queries in parallel for better performance
+    const queries = [];
+    const monthNames = [];
+    
     // Generate default data structure first
     for (let i = 5; i >= 0; i--) {
       const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
       const monthName = monthDate.toLocaleString('default', { month: 'short' });
+      const year = monthDate.getFullYear();
       
-      months.push({
-        month: monthName,
-        count: 0
-      });
-    }
-    
-    try {
-      // Try to fetch actual data
-      const queries = [];
+      const startOfMonth = new Date(year, monthDate.getMonth(), 1);
+      const endOfMonth = new Date(year, monthDate.getMonth() + 1, 0);
       
-      for (let i = 5; i >= 0; i--) {
-        const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-        const year = monthDate.getFullYear();
-        
-        const startOfMonth = new Date(year, monthDate.getMonth(), 1);
-        const endOfMonth = new Date(year, monthDate.getMonth() + 1, 0);
-        
-        queries.push(
-          getDocs(
-            query(
-              collection(db, collectionName),
-              where(dateField, ">=", startOfMonth.toISOString()),
-              where(dateField, "<=", endOfMonth.toISOString())
-            )
-          ).catch(() => ({ size: 0 }))
+      try {
+        const q = query(
+          collection(db, collectionName),
+          where(dateField, ">=", startOfMonth.toISOString()),
+          where(dateField, "<=", endOfMonth.toISOString())
         );
+        const snapshot = await getDocs(q);
+        
+        months.push({
+          month: monthName,
+          count: snapshot.size
+        });
+      } catch (error) {
+        console.log(`Error fetching ${collectionName} for ${monthName}:`, error);
+        months.push({
+          month: monthName,
+          count: 0
+        });
       }
-      
-      // Execute all queries in parallel
-      const snapshots = await Promise.allSettled(queries);
-      
-      snapshots.forEach((snapshot, index) => {
-        const count = snapshot.status === 'fulfilled' ? snapshot.value.size : 0;
-        months[index].count = count;
-      });
-      
-      console.log(`${collectionName} monthly data:`, months);
-    } catch (error) {
-      console.log(`Error fetching ${collectionName} monthly data:`, error);
-      // Keep default data with count: 0
     }
     
     return months;
