@@ -3,7 +3,7 @@ import { Routes, Route, Link } from "react-router-dom";
 import { 
   Box, Grid, Card, CardActionArea, CardContent, Typography, TextField, Button, Paper, MenuItem, Avatar, Snackbar, Alert, 
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Stack, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText,
-  IconButton, Tooltip, Chip, InputAdornment, Accordion, AccordionSummary, AccordionDetails
+  IconButton, Tooltip, Chip, InputAdornment, Accordion, AccordionSummary, AccordionDetails, CircularProgress
 } from "@mui/material";
 import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete, Search, ExpandMore, Folder, ArrowBack } from "@mui/icons-material";
 import { db, storage, logActivity } from "../firebase";
@@ -49,6 +49,8 @@ function AddStudent({ onClose, isModal = false }) {
   const [imageFile, setImageFile] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [studentIdError, setStudentIdError] = useState('');
+  const [isValidatingStudentId, setIsValidatingStudentId] = useState(false);
 
   // Test Firebase connectivity on component mount
   useEffect(() => {
@@ -145,10 +147,33 @@ function AddStudent({ onClose, isModal = false }) {
     setSnackbar({ open: true, message: "Form reset. You can try submitting again.", severity: "info" });
   };
 
-  // Test form submission without Firebase
-  const handleTestSubmit = () => {
-    console.log("Testing form submission...");
-    setSnackbar({ open: true, message: "Test submission - form is working!", severity: "info" });
+  // Handle student ID validation
+  const handleStudentIdChange = async (e) => {
+    const studentId = e.target.value;
+    setProfile(prev => ({ ...prev, id: studentId }));
+    
+    // Clear error if field is empty
+    if (!studentId.trim()) {
+      setStudentIdError('');
+      return;
+    }
+    
+    setIsValidatingStudentId(true);
+    setStudentIdError('');
+    
+    try {
+      const validation = await validateStudentId(studentId.trim());
+      if (!validation.isValid) {
+        setStudentIdError(validation.error || 'Student ID is not registered in the system');
+      } else {
+        setStudentIdError('');
+      }
+    } catch (error) {
+      console.error('Error validating student ID:', error);
+      setStudentIdError('Error validating student ID. Please try again.');
+    } finally {
+      setIsValidatingStudentId(false);
+    }
   };
 
   // Remove selected image
@@ -199,6 +224,21 @@ function AddStudent({ onClose, isModal = false }) {
     if (!profile.id || !profile.firstName || !profile.lastName || !profile.sex) {
       console.log("Validation failed - missing required fields");
       setSnackbar({ open: true, message: "Please fill in all required fields (ID, First Name, Last Name, Sex)", severity: "error" });
+      return;
+    }
+
+    // Validate student ID exists in system
+    if (studentIdError) {
+      console.log("Validation failed - student ID error");
+      setSnackbar({ open: true, message: studentIdError, severity: "error" });
+      return;
+    }
+
+    // Double-check student ID validation before submission
+    const validation = await validateStudentId(profile.id.trim());
+    if (!validation.isValid) {
+      console.log("Validation failed - student ID not registered");
+      setSnackbar({ open: true, message: validation.error || 'Student ID is not registered in the system', severity: "error" });
       return;
     }
 
@@ -359,7 +399,23 @@ function AddStudent({ onClose, isModal = false }) {
         <form onSubmit={handleSubmit}>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-              <TextField fullWidth label="ID Number" name="id" value={profile.id} onChange={handleChange} required />
+              <TextField 
+                fullWidth 
+                label="Student ID" 
+                name="id" 
+                value={profile.id} 
+                onChange={handleStudentIdChange} 
+                required 
+                error={!!studentIdError}
+                helperText={studentIdError}
+                InputProps={{
+                  endAdornment: isValidatingStudentId ? (
+                    <InputAdornment position="end">
+                      <CircularProgress size={20} />
+                    </InputAdornment>
+                  ) : null
+                }}
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField fullWidth label="Email Address" name="email" value={profile.email} onChange={handleChange} type="email" />
@@ -440,14 +496,6 @@ function AddStudent({ onClose, isModal = false }) {
                 Reset Form
               </Button>
             )}
-            <Button 
-              variant="outlined" 
-              color="info" 
-              onClick={handleTestSubmit}
-              disabled={isSubmitting}
-            >
-              Test Form
-            </Button>
           </Stack>
             </Grid>
           </Grid>
@@ -2283,10 +2331,41 @@ function EditStudentForm({ student, onClose, onSuccess }) {
   const [imageFile, setImageFile] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [studentIdError, setStudentIdError] = useState('');
+  const [isValidatingStudentId, setIsValidatingStudentId] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setProfile((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Handle student ID validation
+  const handleStudentIdChange = async (e) => {
+    const studentId = e.target.value;
+    setProfile(prev => ({ ...prev, id: studentId }));
+    
+    // Clear error if field is empty
+    if (!studentId.trim()) {
+      setStudentIdError('');
+      return;
+    }
+    
+    setIsValidatingStudentId(true);
+    setStudentIdError('');
+    
+    try {
+      const validation = await validateStudentId(studentId.trim());
+      if (!validation.isValid) {
+        setStudentIdError(validation.error || 'Student ID is not registered in the system');
+      } else {
+        setStudentIdError('');
+      }
+    } catch (error) {
+      console.error('Error validating student ID:', error);
+      setStudentIdError('Error validating student ID. Please try again.');
+    } finally {
+      setIsValidatingStudentId(false);
+    }
   };
 
   const handleImage = async (e) => {
@@ -2335,6 +2414,19 @@ function EditStudentForm({ student, onClose, onSuccess }) {
       return;
     }
 
+    // Validate student ID exists in system
+    if (studentIdError) {
+      setSnackbar({ open: true, message: studentIdError, severity: "error" });
+      return;
+    }
+
+    // Double-check student ID validation before submission
+    const validation = await validateStudentId(profile.id.trim());
+    if (!validation.isValid) {
+      setSnackbar({ open: true, message: validation.error || 'Student ID is not registered in the system', severity: "error" });
+      return;
+    }
+
     setIsSubmitting(true);
     let imageUrl = profile.image || "";
     
@@ -2377,7 +2469,23 @@ function EditStudentForm({ student, onClose, onSuccess }) {
       <form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="ID Number" name="id" value={profile.id} onChange={handleChange} required />
+            <TextField 
+              fullWidth 
+              label="Student ID" 
+              name="id" 
+              value={profile.id} 
+              onChange={handleStudentIdChange} 
+              required 
+              error={!!studentIdError}
+              helperText={studentIdError}
+              InputProps={{
+                endAdornment: isValidatingStudentId ? (
+                  <InputAdornment position="end">
+                    <CircularProgress size={20} />
+                  </InputAdornment>
+                ) : null
+              }}
+            />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField fullWidth label="Email Address" name="email" value={profile.email} onChange={handleChange} type="email" />

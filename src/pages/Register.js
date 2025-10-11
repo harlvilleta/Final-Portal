@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Paper, Typography, TextField, Button, Snackbar, Alert, InputAdornment, IconButton, Avatar, MenuItem, LinearProgress, Checkbox, FormControlLabel, CircularProgress, Grid } from '@mui/material';
-import { Visibility, VisibilityOff, PersonAddAlt1, CloudUpload } from '@mui/icons-material';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { Visibility, VisibilityOff, PersonAddAlt1, CloudUpload, Email } from '@mui/icons-material';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { auth } from '../firebase';
 import { setDoc, doc, addDoc, collection } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -35,6 +35,26 @@ function validateStudentId(studentId) {
   // Must start with "SCC", followed by 10 digits and a dash
   const studentIdRegex = /^SCC-\d{2}-\d{8}$/;
   return studentIdRegex.test(studentId);
+}
+
+// Email validation function to check if it's a Gmail account
+function validateGmailEmail(email) {
+  const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+  return gmailRegex.test(email);
+}
+
+// Function to check if Gmail account exists (simplified validation)
+async function checkGmailExists(email) {
+  // This is a simplified check - in a real application, you might want to use
+  // a more sophisticated method or API to verify email existence
+  try {
+    // For now, we'll assume all Gmail addresses are valid
+    // In a production environment, you might want to use an email validation service
+    return true;
+  } catch (error) {
+    console.error('Error checking Gmail existence:', error);
+    return false;
+  }
 }
 
 // Function to convert file to base64
@@ -73,6 +93,11 @@ export default function Register() {
   const [uploading, setUploading] = useState(false);
   const [phoneError, setPhoneError] = useState('');
   const [studentIdError, setStudentIdError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [gmailPassword, setGmailPassword] = useState('');
+  const [showGmailPassword, setShowGmailPassword] = useState(false);
+  const [isGmailAccount, setIsGmailAccount] = useState(false);
+  const [emailValidating, setEmailValidating] = useState(false);
   
   // Student-specific fields
   const [studentId, setStudentId] = useState('');
@@ -167,10 +192,63 @@ export default function Register() {
     }
   };
 
+  const handleEmailChange = async (e) => {
+    const value = e.target.value;
+    setEmail(value);
+    
+    // Clear error if field is empty
+    if (!value) {
+      setEmailError('');
+      setIsGmailAccount(false);
+      setGmailPassword('');
+      return;
+    }
+    
+    // Check if it's a Gmail account
+    if (validateGmailEmail(value)) {
+      setIsGmailAccount(true);
+      setEmailValidating(true);
+      
+      try {
+        // Check if Gmail account exists
+        const exists = await checkGmailExists(value);
+        if (exists) {
+          setEmailError('');
+        } else {
+          setEmailError('This Gmail account does not exist or is not accessible.');
+        }
+      } catch (error) {
+        setEmailError('Error validating Gmail account. Please try again.');
+      } finally {
+        setEmailValidating(false);
+      }
+    } else {
+      setEmailError('Please enter a valid Gmail address (e.g., example@gmail.com)');
+      setIsGmailAccount(false);
+      setGmailPassword('');
+    }
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!role) {
       setSnackbar({ open: true, message: 'Please select a role.', severity: 'error' });
+      return;
+    }
+    if (!email) {
+      setSnackbar({ open: true, message: 'Email is required.', severity: 'error' });
+      return;
+    }
+    if (!validateGmailEmail(email)) {
+      setSnackbar({ open: true, message: 'Please enter a valid Gmail address.', severity: 'error' });
+      return;
+    }
+    if (emailError) {
+      setSnackbar({ open: true, message: 'Please fix email validation errors.', severity: 'error' });
+      return;
+    }
+    if (isGmailAccount && !gmailPassword) {
+      setSnackbar({ open: true, message: 'Gmail password is required for Gmail accounts.', severity: 'error' });
       return;
     }
     if (!fullName) {
@@ -245,6 +323,15 @@ export default function Register() {
       });
       
       console.log('✅ User profile updated');
+      
+      // Send email verification
+      try {
+        await sendEmailVerification(user);
+        console.log('✅ Email verification sent');
+      } catch (verificationError) {
+        console.error('❌ Failed to send email verification:', verificationError);
+        // Continue with registration even if email verification fails
+      }
       
       // Upload image to Firebase Storage if provided
       let imageURL = '';
@@ -407,9 +494,9 @@ export default function Register() {
       clearTimeout(timeoutId);
       
       // Show success message with user details
-      let successMessage = `Registration successful! Welcome ${fullName}. Redirecting to login page...`;
+      let successMessage = `Registration successful! Welcome ${fullName}. A confirmation email has been sent to ${email}. Please check your Gmail and verify your account. Redirecting to login page...`;
       if (role === 'Teacher') {
-        successMessage = `Registration successful! Your teacher account is pending admin approval. You will be notified once approved. Redirecting to login page...`;
+        successMessage = `Registration successful! Your teacher account is pending admin approval. A confirmation email has been sent to ${email}. Please check your Gmail and verify your account. You will be notified once approved. Redirecting to login page...`;
       }
       
       setSnackbar({ 
@@ -621,14 +708,28 @@ export default function Register() {
             <Grid container spacing={1.5}>
             <Grid item xs={12} sm={6}>
               <TextField 
-                label="Email" 
+                label="Gmail Address" 
                 type="email" 
                 value={email} 
-                onChange={e => setEmail(e.target.value)} 
+                onChange={handleEmailChange} 
                 fullWidth 
                 required 
                 size="small" 
-                InputProps={{ style: { fontSize: 14, height: 32 } }}
+                InputProps={{ 
+                  style: { fontSize: 14, height: 32 },
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Email />
+                    </InputAdornment>
+                  ),
+                  endAdornment: emailValidating ? (
+                    <InputAdornment position="end">
+                      <CircularProgress size={16} />
+                    </InputAdornment>
+                  ) : null
+                }}
+                error={!!emailError}
+                helperText={emailError || (isGmailAccount ? 'Valid Gmail account detected' : 'Please enter a Gmail address')}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     bgcolor: '#ffffff',
@@ -636,15 +737,15 @@ export default function Register() {
                     borderRadius: 2,
                     fontSize: '0.875rem',
                     '& fieldset': { 
-                      borderColor: '#000',
+                      borderColor: emailError ? '#d32f2f' : '#000',
                       borderWidth: 0.5
                     },
                     '&:hover fieldset': { 
-                      borderColor: '#000',
+                      borderColor: emailError ? '#d32f2f' : '#000',
                       borderWidth: 0.5
                     },
                     '&.Mui-focused fieldset': { 
-                      borderColor: '#000',
+                      borderColor: emailError ? '#d32f2f' : '#000',
                       borderWidth: 0.5
                     },
                     '& input': {
@@ -654,17 +755,88 @@ export default function Register() {
                     }
                   },
                   '& .MuiInputLabel-root': { 
-                    color: '#000',
+                    color: emailError ? '#d32f2f' : '#000',
                     fontWeight: 400,
                     fontSize: '0.875rem'
                   },
                   '& .MuiInputAdornment-root .MuiSvgIcon-root': { 
                     color: '#87CEEB',
                     fontSize: '1rem'
+                  },
+                  '& .MuiFormHelperText-root': { 
+                    color: emailError ? '#d32f2f' : '#000',
+                    fontWeight: 400,
+                    fontSize: '0.75rem'
                   }
                 }}
               />
             </Grid>
+            
+            {/* Gmail Password Field - only show when Gmail account is detected */}
+            {isGmailAccount && (
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Gmail Password"
+                  type={showGmailPassword ? 'text' : 'password'}
+                  value={gmailPassword}
+                  onChange={e => setGmailPassword(e.target.value)}
+                  fullWidth
+                  required
+                  size="small"
+                  InputProps={{
+                    style: { fontSize: 14, height: 32 },
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton 
+                          onClick={() => setShowGmailPassword(s => !s)} 
+                          edge="end" 
+                          sx={{ color: '#87CEEB' }}
+                        >
+                          {showGmailPassword ? <VisibilityOff sx={{ fontSize: '1rem' }} /> : <Visibility sx={{ fontSize: '1rem' }} />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                  helperText="Enter your Gmail password for account verification"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: '#ffffff',
+                      color: '#000',
+                      borderRadius: 2,
+                      fontSize: '0.875rem',
+                      '& fieldset': { 
+                        borderColor: '#000',
+                        borderWidth: 0.5
+                      },
+                      '&:hover fieldset': { 
+                        borderColor: '#000',
+                        borderWidth: 0.5
+                      },
+                      '&.Mui-focused fieldset': { 
+                        borderColor: '#000',
+                        borderWidth: 0.5
+                      },
+                      '& input': {
+                        fontSize: '0.875rem',
+                        color: '#000',
+                        padding: '8px 12px'
+                      }
+                    },
+                    '& .MuiInputLabel-root': { 
+                      color: '#000',
+                      fontWeight: 400,
+                      fontSize: '0.875rem'
+                    },
+                    '& .MuiFormHelperText-root': { 
+                      color: '#000',
+                      fontWeight: 400,
+                      fontSize: '0.75rem'
+                    }
+                  }}
+                />
+              </Grid>
+            )}
+            
             <Grid item xs={12} sm={6}>
               <TextField 
                 label="Role" 

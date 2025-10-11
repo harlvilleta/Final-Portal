@@ -804,7 +804,7 @@ export default function Login({ onLoginSuccess }) {
         
         <Box sx={{ textAlign: 'center', mt: 2 }}>
           <Typography variant="body1" sx={{ color: '#666', fontWeight: 400 }}>
-            Don&apos;t have an account?{' '}
+            Don&apos;t have an account yet?{' '}
             <Link 
               component={RouterLink} 
               to="/register" 
@@ -812,7 +812,7 @@ export default function Login({ onLoginSuccess }) {
               sx={{ 
                 color: '#800000',
                 fontWeight: 600,
-                '&:hover': { color: '#6b0000' }
+                '&:hover': { color: '#1976d2' }
               }}
             >
               Register
