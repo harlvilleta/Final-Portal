@@ -58,6 +58,16 @@ export default function Login({ onLoginSuccess }) {
           if (userDoc.exists()) {
             const userData = userDoc.data();
             userRole = userData.role || 'Student';
+            
+            // Check if teacher is approved
+            if (userRole === 'Teacher') {
+              const teacherInfo = userData.teacherInfo || {};
+              if (!teacherInfo.isApproved || teacherInfo.approvalStatus !== 'approved') {
+                // Sign out the user if not approved
+                await auth.signOut();
+                return;
+              }
+            }
           }
           
           // Redirect based on role immediately
@@ -168,6 +178,21 @@ export default function Login({ onLoginSuccess }) {
       if (userDoc.exists()) {
         const userData = userDoc.data();
         userRole = userData.role || 'Student';
+        
+        // Check if teacher is approved
+        if (userRole === 'Teacher') {
+          const teacherInfo = userData.teacherInfo || {};
+          if (!teacherInfo.isApproved || teacherInfo.approvalStatus !== 'approved') {
+            // Sign out the user and show error message
+            await auth.signOut();
+            setSnackbar({ 
+              open: true, 
+              message: 'Your teacher account is still pending admin approval. Please wait for approval before logging in.', 
+              severity: 'error' 
+            });
+            return;
+          }
+        }
         
         // Update last login time
         try {
@@ -293,6 +318,21 @@ export default function Login({ onLoginSuccess }) {
       if (userDoc.exists()) {
         const userData = userDoc.data();
         userRole = userData.role || 'Student';
+        
+        // Check if teacher is approved
+        if (userRole === 'Teacher') {
+          const teacherInfo = userData.teacherInfo || {};
+          if (!teacherInfo.isApproved || teacherInfo.approvalStatus !== 'approved') {
+            // Sign out the user and show error message
+            await auth.signOut();
+            setSnackbar({ 
+              open: true, 
+              message: 'Your teacher account is still pending admin approval. Please wait for approval before logging in.', 
+              severity: 'error' 
+            });
+            return;
+          }
+        }
         
         // Update last login time
         try {

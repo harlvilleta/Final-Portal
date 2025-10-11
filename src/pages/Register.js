@@ -23,6 +23,20 @@ function getPasswordStrength(password) {
   return score;
 }
 
+// Phone number validation function
+function validatePhoneNumber(phone) {
+  // Must be exactly 11 digits and start with 09
+  const phoneRegex = /^09\d{9}$/;
+  return phoneRegex.test(phone);
+}
+
+// Student ID validation function
+function validateStudentId(studentId) {
+  // Must start with "SCC", followed by 10 digits and a dash
+  const studentIdRegex = /^SCC-\d{2}-\d{8}$/;
+  return studentIdRegex.test(studentId);
+}
+
 // Function to convert file to base64
 const convertToBase64 = (file) => {
   return new Promise((resolve, reject) => {
@@ -57,6 +71,8 @@ export default function Register() {
   const [terms, setTerms] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
+  const [studentIdError, setStudentIdError] = useState('');
   
   // Student-specific fields
   const [studentId, setStudentId] = useState('');
@@ -115,6 +131,42 @@ export default function Register() {
     setFullName(`${firstName} ${value}`.trim());
   };
 
+  const handlePhoneChange = (e) => {
+    const value = e.target.value;
+    setPhone(value);
+    
+    // Clear error if field is empty
+    if (!value) {
+      setPhoneError('');
+      return;
+    }
+    
+    // Validate phone number
+    if (!validatePhoneNumber(value)) {
+      setPhoneError('Phone number must be 11 digits starting with 09');
+    } else {
+      setPhoneError('');
+    }
+  };
+
+  const handleStudentIdChange = (e) => {
+    const value = e.target.value;
+    setStudentId(value);
+    
+    // Clear error if field is empty
+    if (!value) {
+      setStudentIdError('');
+      return;
+    }
+    
+    // Validate student ID
+    if (!validateStudentId(value)) {
+      setStudentIdError('Student ID must be in format: SCC-XX-XXXXXXXX');
+    } else {
+      setStudentIdError('');
+    }
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!role) {
@@ -134,10 +186,20 @@ export default function Register() {
       return;
     }
     
+    // Validate phone number if provided
+    if (phone && !validatePhoneNumber(phone)) {
+      setSnackbar({ open: true, message: 'Phone number must be 11 digits starting with 09.', severity: 'error' });
+      return;
+    }
+    
     // Validate student-specific fields
     if (role === 'Student') {
       if (!studentId) {
         setSnackbar({ open: true, message: 'Student ID is required.', severity: 'error' });
+        return;
+      }
+      if (!validateStudentId(studentId)) {
+        setSnackbar({ open: true, message: 'Student ID must be in format: SCC-XX-XXXXXXXX.', severity: 'error' });
         return;
       }
       if (!firstName || !lastName) {
@@ -245,10 +307,13 @@ export default function Register() {
           assignedBy: 'system'
         };
       } else if (role === 'Teacher') {
+        // For teachers, we need admin approval first
         userData.teacherInfo = {
           subjects: [],
           department: '',
-          hireDate: new Date().toISOString()
+          hireDate: new Date().toISOString(),
+          isApproved: false, // Teacher needs admin approval
+          approvalStatus: 'pending'
         };
       }
       
@@ -263,6 +328,32 @@ export default function Register() {
         // If Firestore fails, we should clean up the Auth user
         await user.delete();
         throw new Error('Failed to save user data. Please try again.');
+      }
+      
+      // If role is Teacher, create a teacher approval request
+      if (role === 'Teacher') {
+        try {
+          const teacherRequestData = {
+            userId: user.uid,
+            email: user.email,
+            fullName: fullName,
+            phone: phone || '',
+            address: address || '',
+            profilePic: imageURL || '',
+            requestDate: new Date().toISOString(),
+            status: 'pending', // pending, approved, denied
+            reviewedBy: null,
+            reviewedAt: null,
+            reviewNotes: '',
+            requestType: 'teacher_registration'
+          };
+          
+          await addDoc(collection(db, 'teacher_approval_requests'), teacherRequestData);
+          console.log('✅ Teacher approval request created');
+        } catch (requestError) {
+          console.error('❌ Failed to create teacher approval request:', requestError);
+          // Don't fail registration if request creation fails
+        }
       }
       
       // Log activity with more details
@@ -316,9 +407,14 @@ export default function Register() {
       clearTimeout(timeoutId);
       
       // Show success message with user details
+      let successMessage = `Registration successful! Welcome ${fullName}. Redirecting to login page...`;
+      if (role === 'Teacher') {
+        successMessage = `Registration successful! Your teacher account is pending admin approval. You will be notified once approved. Redirecting to login page...`;
+      }
+      
       setSnackbar({ 
         open: true, 
-        message: `Registration successful! Welcome ${fullName}. Redirecting to login page...`, 
+        message: successMessage, 
         severity: 'success' 
       });
       
@@ -501,10 +597,12 @@ export default function Register() {
               <TextField 
                 label="Phone Number" 
                 value={phone} 
-                onChange={e => setPhone(e.target.value)} 
+                onChange={handlePhoneChange}
                 fullWidth 
                 size="large" 
                 InputProps={{ style: { fontSize: 18, height: 56 } }}
+                error={!!phoneError}
+                helperText={phoneError}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     bgcolor: 'rgba(255,255,255,0.12)',
@@ -514,7 +612,8 @@ export default function Register() {
                     '&:hover fieldset': { borderColor: '#ffffff' },
                     '&.Mui-focused fieldset': { borderColor: '#ffffff' }
                   },
-                  '& .MuiInputLabel-root': { color: '#f0f0f0' }
+                  '& .MuiInputLabel-root': { color: '#f0f0f0' },
+                  '& .MuiFormHelperText-root': { color: '#ffcdd2' }
                 }}
               />
             </Grid>
@@ -547,11 +646,13 @@ export default function Register() {
                   <TextField 
                     label="Student ID" 
                     value={studentId} 
-                    onChange={e => setStudentId(e.target.value)} 
+                    onChange={handleStudentIdChange}
                     fullWidth 
                     required 
                     size="large" 
                     InputProps={{ style: { fontSize: 18, height: 56 } }}
+                    error={!!studentIdError}
+                    helperText={studentIdError}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         bgcolor: 'rgba(255,255,255,0.12)',
@@ -561,7 +662,8 @@ export default function Register() {
                         '&:hover fieldset': { borderColor: '#ffffff' },
                         '&.Mui-focused fieldset': { borderColor: '#ffffff' }
                       },
-                      '& .MuiInputLabel-root': { color: '#f0f0f0' }
+                      '& .MuiInputLabel-root': { color: '#f0f0f0' },
+                      '& .MuiFormHelperText-root': { color: '#ffcdd2' }
                     }}
                   />
                 </Grid>

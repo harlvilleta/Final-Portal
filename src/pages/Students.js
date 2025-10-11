@@ -1065,19 +1065,17 @@ function CourseDashboard({
     <Box>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <Button
-          startIcon={<ArrowBack />}
+        <IconButton
           onClick={onBack}
-          variant="outlined"
           sx={{ 
             bgcolor: '#fff', 
             color: '#000', 
-            borderColor: '#000', 
+            border: '1px solid #000',
             '&:hover': { bgcolor: '#800000', color: '#fff', borderColor: '#800000' } 
           }}
         >
-          Back to All Students
-        </Button>
+          <ArrowBack />
+        </IconButton>
         <Box>
           <Typography variant="h4" sx={{ color: '#800000', fontWeight: 'bold' }}>
             {courseName} Students
