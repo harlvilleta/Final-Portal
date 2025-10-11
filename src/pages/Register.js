@@ -489,60 +489,136 @@ export default function Register() {
     <Box sx={{ 
       height: '100vh', 
       width: '100vw', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      backgroundImage: `url(${process.env.PUBLIC_URL + '/2121.jpg'})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
-      padding: 1,
+      display: 'flex',
       overflow: 'hidden',
       position: 'fixed',
       top: 0,
-      left: 0
+      left: 0,
+      background: '#800000'
     }}>
+      {/* Left Side - Image Area */}
       <Box sx={{
-        p: 3,
-        minWidth: 400,
-        maxWidth: 900,
-        width: '100%',
-        borderRadius: 3,
+        width: '50%',
+        height: '100vh',
+        backgroundImage: `url(${process.env.PUBLIC_URL + '/2121.jpg'})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        color: '#fff',
-        textShadow: '0 2px 6px rgba(0,0,0,0.4)',
-        backgroundColor: 'transparent',
-        backdropFilter: 'blur(10px)',
-        boxShadow: '0 8px 40px rgba(0,0,0,0.35)',
-        height: '98vh',
+        justifyContent: 'center',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(128, 0, 0, 0.3)',
+          zIndex: 1
+        }
+      }}>
+        <Box sx={{
+          position: 'relative',
+          zIndex: 2,
+          textAlign: 'center',
+          color: '#fff',
+          padding: 4
+        }}>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="h1" fontWeight={900} sx={{
+              fontSize: '3.5rem',
+              textShadow: '0 8px 16px rgba(0,0,0,0.7), 0 4px 8px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3)',
+              letterSpacing: '-0.02em',
+              transform: 'translateY(-5px)',
+              filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.6))',
+              textStroke: '1px rgba(255,255,255,0.1)',
+              WebkitTextStroke: '1px rgba(255,255,255,0.1)',
+              lineHeight: 1.1,
+              mb: 0.5
+            }}>
+              Welcome to
+            </Typography>
+            <Typography variant="h1" fontWeight={900} sx={{
+              fontSize: '3.5rem',
+              textShadow: '0 8px 16px rgba(0,0,0,0.7), 0 4px 8px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3)',
+              letterSpacing: '-0.02em',
+              transform: 'translateY(-5px)',
+              filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.6))',
+              textStroke: '1px rgba(255,255,255,0.1)',
+              WebkitTextStroke: '1px rgba(255,255,255,0.1)',
+              lineHeight: 1.1
+            }}>
+              CeciServe
+            </Typography>
+          </Box>
+          <Typography variant="h4" sx={{
+            fontSize: '1.75rem',
+            textShadow: '0 4px 8px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.4)',
+            fontWeight: 500,
+            opacity: 0.95,
+            transform: 'translateY(-3px)',
+            filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.5))'
+          }}>
+            Your gateway to St. Cecilia's College
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Right Side - Form Area */}
+      <Box sx={{
+        width: '50%',
+        height: '100vh',
+        backgroundColor: '#ffffff',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 3,
+        position: 'relative',
+        boxShadow: '-4px 0 20px rgba(0,0,0,0.1)',
         overflowY: 'auto',
-        overflowX: 'hidden',
         '&::-webkit-scrollbar': {
-          width: '6px',
+          width: '8px',
         },
         '&::-webkit-scrollbar-track': {
-          background: 'rgba(255,255,255,0.1)',
-          borderRadius: '3px',
+          background: '#f1f1f1',
+          borderRadius: '4px',
         },
         '&::-webkit-scrollbar-thumb': {
-          background: 'rgba(255,255,255,0.3)',
-          borderRadius: '3px',
+          background: '#800000',
+          borderRadius: '4px',
           '&:hover': {
-            background: 'rgba(255,255,255,0.5)',
+            background: '#6b0000',
           },
         },
       }}>
-        <Avatar sx={{ bgcolor: 'primary.main', width: 64, height: 64, mb: 2 }}>
-          <PersonAddAlt1 sx={{ fontSize: 36 }} />
-        </Avatar>
-        <Typography variant="h4" fontWeight={700} gutterBottom sx={{ mb: 1, color: '#fff' }}>
-          Create Account
-        </Typography>
-        <Typography variant="subtitle1" sx={{ mb: 2, color: '#f1f1f1' }}>Register to get started</Typography>
-        <form onSubmit={handleRegister} style={{ width: '100%' }}>
-          <Grid container spacing={2}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          mb: 2,
+          gap: 1,
+          mt: 1
+        }}>
+          <PersonAddAlt1 sx={{ fontSize: 24, color: '#87CEEB' }} />
+          <Typography variant="h4" fontWeight={600} sx={{ 
+            color: '#000',
+            fontSize: '1.75rem',
+            letterSpacing: '0.01em'
+          }}>
+            Create Account
+          </Typography>
+        </Box>
+        <Box sx={{ 
+          width: '100%', 
+          maxWidth: '600px',
+          mx: 'auto'
+        }}>
+          <form onSubmit={handleRegister} style={{ width: '100%' }}>
+            <Grid container spacing={1.5}>
             <Grid item xs={12} sm={6}>
               <TextField 
                 label="Email" 
@@ -551,19 +627,41 @@ export default function Register() {
                 onChange={e => setEmail(e.target.value)} 
                 fullWidth 
                 required 
-                size="large" 
-                InputProps={{ style: { fontSize: 18, height: 56 } }}
+                size="small" 
+                InputProps={{ style: { fontSize: 14, height: 32 } }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(255,255,255,0.12)',
-                    backdropFilter: 'blur(6px)',
-                    color: '#fff',
-                    '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                    '&:hover fieldset': { borderColor: '#ffffff' },
-                    '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                    bgcolor: '#ffffff',
+                    color: '#000',
+                    borderRadius: 2,
+                    fontSize: '0.875rem',
+                    '& fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '&:hover fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '&.Mui-focused fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '& input': {
+                      fontSize: '0.875rem',
+                      color: '#000',
+                      padding: '8px 12px'
+                    }
                   },
-                  '& .MuiInputLabel-root': { color: '#f0f0f0' },
-                  '& .MuiInputAdornment-root .MuiSvgIcon-root': { color: '#eaeaea' }
+                  '& .MuiInputLabel-root': { 
+                    color: '#000',
+                    fontWeight: 400,
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputAdornment-root .MuiSvgIcon-root': { 
+                    color: '#87CEEB',
+                    fontSize: '1rem'
+                  }
                 }}
               />
             </Grid>
@@ -575,18 +673,37 @@ export default function Register() {
                 onChange={e => setRole(e.target.value)} 
                 fullWidth 
                 required 
-                size="large" 
-                InputProps={{ style: { fontSize: 18, height: 56 } }}
+                size="small" 
+                InputProps={{ style: { fontSize: 14, height: 32 } }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(255,255,255,0.12)',
-                    backdropFilter: 'blur(6px)',
-                    color: '#fff',
-                    '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                    '&:hover fieldset': { borderColor: '#ffffff' },
-                    '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                    bgcolor: '#ffffff',
+                    color: '#000',
+                    borderRadius: 2,
+                    fontSize: '0.875rem',
+                    '& fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '&:hover fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '&.Mui-focused fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '& input': {
+                      fontSize: '0.875rem',
+                      color: '#000',
+                      padding: '8px 12px'
+                    }
                   },
-                  '& .MuiInputLabel-root': { color: '#f0f0f0' },
+                  '& .MuiInputLabel-root': { 
+                    color: '#000',
+                    fontWeight: 400,
+                    fontSize: '0.875rem'
+                  },
                   '& .MuiSelect-icon': { color: '#eaeaea' }
                 }}
               >
@@ -599,21 +716,44 @@ export default function Register() {
                 value={phone} 
                 onChange={handlePhoneChange}
                 fullWidth 
-                size="large" 
-                InputProps={{ style: { fontSize: 18, height: 56 } }}
+                size="small" 
+                InputProps={{ style: { fontSize: 14, height: 32 } }}
                 error={!!phoneError}
                 helperText={phoneError}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(255,255,255,0.12)',
-                    backdropFilter: 'blur(6px)',
-                    color: '#fff',
-                    '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                    '&:hover fieldset': { borderColor: '#ffffff' },
-                    '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                    bgcolor: '#ffffff',
+                    color: '#000',
+                    borderRadius: 2,
+                    fontSize: '0.875rem',
+                    '& fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '&:hover fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '&.Mui-focused fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '& input': {
+                      fontSize: '0.875rem',
+                      color: '#000',
+                      padding: '8px 12px'
+                    }
                   },
-                  '& .MuiInputLabel-root': { color: '#f0f0f0' },
-                  '& .MuiFormHelperText-root': { color: '#ffcdd2' }
+                  '& .MuiInputLabel-root': { 
+                    color: '#000',
+                    fontWeight: 400,
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiFormHelperText-root': { 
+                    color: '#000',
+                    fontWeight: 400,
+                    fontSize: '0.75rem'
+                  }
                 }}
               />
             </Grid>
@@ -623,18 +763,37 @@ export default function Register() {
                 value={address} 
                 onChange={e => setAddress(e.target.value)} 
                 fullWidth 
-                size="large" 
-                InputProps={{ style: { fontSize: 18, height: 56 } }}
+                size="small" 
+                InputProps={{ style: { fontSize: 14, height: 32 } }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(255,255,255,0.12)',
-                    backdropFilter: 'blur(6px)',
-                    color: '#fff',
-                    '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                    '&:hover fieldset': { borderColor: '#ffffff' },
-                    '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                    bgcolor: '#ffffff',
+                    color: '#000',
+                    borderRadius: 2,
+                    fontSize: '0.875rem',
+                    '& fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '&:hover fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '&.Mui-focused fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '& input': {
+                      fontSize: '0.875rem',
+                      color: '#000',
+                      padding: '8px 12px'
+                    }
                   },
-                  '& .MuiInputLabel-root': { color: '#f0f0f0' }
+                  '& .MuiInputLabel-root': { 
+                    color: '#000',
+                    fontWeight: 400,
+                    fontSize: '0.875rem'
+                  }
                 }}
               />
             </Grid>
@@ -649,21 +808,44 @@ export default function Register() {
                     onChange={handleStudentIdChange}
                     fullWidth 
                     required 
-                    size="large" 
-                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                    size="small" 
+                    InputProps={{ style: { fontSize: 14, height: 32 } }}
                     error={!!studentIdError}
                     helperText={studentIdError}
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        backdropFilter: 'blur(6px)',
-                        color: '#fff',
-                        '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                        '&:hover fieldset': { borderColor: '#ffffff' },
-                        '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                        bgcolor: '#ffffff',
+                        color: '#000',
+                        borderRadius: 2,
+                        fontSize: '0.875rem',
+                        '& fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&:hover fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&.Mui-focused fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '& input': {
+                          fontSize: '0.875rem',
+                          color: '#000',
+                          padding: '8px 12px'
+                        }
                       },
-                      '& .MuiInputLabel-root': { color: '#f0f0f0' },
-                      '& .MuiFormHelperText-root': { color: '#ffcdd2' }
+                      '& .MuiInputLabel-root': { 
+                        color: '#000',
+                        fontWeight: 400,
+                        fontSize: '0.875rem'
+                      },
+                      '& .MuiFormHelperText-root': { 
+                        color: '#000',
+                        fontWeight: 400,
+                        fontSize: '0.75rem'
+                      }
                     }}
                   />
                 </Grid>
@@ -674,18 +856,37 @@ export default function Register() {
                     onChange={handleFirstNameChange} 
                     fullWidth 
                     required 
-                    size="large" 
-                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                    size="small" 
+                    InputProps={{ style: { fontSize: 14, height: 32 } }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        backdropFilter: 'blur(6px)',
-                        color: '#fff',
-                        '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                        '&:hover fieldset': { borderColor: '#ffffff' },
-                        '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                        bgcolor: '#ffffff',
+                        color: '#000',
+                        borderRadius: 2,
+                        fontSize: '0.875rem',
+                        '& fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&:hover fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&.Mui-focused fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '& input': {
+                          fontSize: '0.875rem',
+                          color: '#000',
+                          padding: '8px 12px'
+                        }
                       },
-                      '& .MuiInputLabel-root': { color: '#f0f0f0' }
+                      '& .MuiInputLabel-root': { 
+                        color: '#000',
+                        fontWeight: 400,
+                        fontSize: '0.875rem'
+                      }
                     }}
                   />
                 </Grid>
@@ -696,18 +897,37 @@ export default function Register() {
                     onChange={handleLastNameChange} 
                     fullWidth 
                     required 
-                    size="large" 
-                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                    size="small" 
+                    InputProps={{ style: { fontSize: 14, height: 32 } }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        backdropFilter: 'blur(6px)',
-                        color: '#fff',
-                        '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                        '&:hover fieldset': { borderColor: '#ffffff' },
-                        '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                        bgcolor: '#ffffff',
+                        color: '#000',
+                        borderRadius: 2,
+                        fontSize: '0.875rem',
+                        '& fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&:hover fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&.Mui-focused fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '& input': {
+                          fontSize: '0.875rem',
+                          color: '#000',
+                          padding: '8px 12px'
+                        }
                       },
-                      '& .MuiInputLabel-root': { color: '#f0f0f0' }
+                      '& .MuiInputLabel-root': { 
+                        color: '#000',
+                        fontWeight: 400,
+                        fontSize: '0.875rem'
+                      }
                     }}
                   />
                 </Grid>
@@ -719,19 +939,38 @@ export default function Register() {
                     onChange={e => setCourse(e.target.value)} 
                     fullWidth 
                     required 
-                    size="large" 
-                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                    size="small" 
+                    InputProps={{ style: { fontSize: 14, height: 32 } }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        backdropFilter: 'blur(6px)',
-                        color: '#fff',
-                        '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                        '&:hover fieldset': { borderColor: '#ffffff' },
-                        '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                        bgcolor: '#ffffff',
+                        color: '#000',
+                        borderRadius: 2,
+                        fontSize: '0.875rem',
+                        '& fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&:hover fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&.Mui-focused fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '& input': {
+                          fontSize: '0.875rem',
+                          color: '#000',
+                          padding: '8px 12px'
+                        }
                       },
-                      '& .MuiInputLabel-root': { color: '#f0f0f0' },
-                      '& .MuiSelect-icon': { color: '#eaeaea' }
+                      '& .MuiInputLabel-root': { 
+                        color: '#000',
+                        fontWeight: 400,
+                        fontSize: '0.875rem'
+                      },
+                      '& .MuiSelect-icon': { color: '#000' }
                     }}
                   >
                     {courses.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
@@ -745,19 +984,38 @@ export default function Register() {
                     onChange={e => setYear(e.target.value)} 
                     fullWidth 
                     required 
-                    size="large" 
-                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                    size="small" 
+                    InputProps={{ style: { fontSize: 14, height: 32 } }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        backdropFilter: 'blur(6px)',
-                        color: '#fff',
-                        '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                        '&:hover fieldset': { borderColor: '#ffffff' },
-                        '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                        bgcolor: '#ffffff',
+                        color: '#000',
+                        borderRadius: 2,
+                        fontSize: '0.875rem',
+                        '& fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&:hover fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&.Mui-focused fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '& input': {
+                          fontSize: '0.875rem',
+                          color: '#000',
+                          padding: '8px 12px'
+                        }
                       },
-                      '& .MuiInputLabel-root': { color: '#f0f0f0' },
-                      '& .MuiSelect-icon': { color: '#eaeaea' }
+                      '& .MuiInputLabel-root': { 
+                        color: '#000',
+                        fontWeight: 400,
+                        fontSize: '0.875rem'
+                      },
+                      '& .MuiSelect-icon': { color: '#000' }
                     }}
                   >
                     {years.map(y => <MenuItem key={y} value={y}>{y}</MenuItem>)}
@@ -771,19 +1029,38 @@ export default function Register() {
                     onChange={e => setGender(e.target.value)} 
                     fullWidth 
                     required 
-                    size="large" 
-                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                    size="small" 
+                    InputProps={{ style: { fontSize: 14, height: 32 } }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        backdropFilter: 'blur(6px)',
-                        color: '#fff',
-                        '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                        '&:hover fieldset': { borderColor: '#ffffff' },
-                        '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                        bgcolor: '#ffffff',
+                        color: '#000',
+                        borderRadius: 2,
+                        fontSize: '0.875rem',
+                        '& fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&:hover fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&.Mui-focused fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '& input': {
+                          fontSize: '0.875rem',
+                          color: '#000',
+                          padding: '8px 12px'
+                        }
                       },
-                      '& .MuiInputLabel-root': { color: '#f0f0f0' },
-                      '& .MuiSelect-icon': { color: '#eaeaea' }
+                      '& .MuiInputLabel-root': { 
+                        color: '#000',
+                        fontWeight: 400,
+                        fontSize: '0.875rem'
+                      },
+                      '& .MuiSelect-icon': { color: '#000' }
                     }}
                   >
                     <MenuItem value="Male">Male</MenuItem>
@@ -808,19 +1085,38 @@ export default function Register() {
                     }} 
                     fullWidth 
                     required 
-                    size="large" 
+                    size="small" 
                     InputLabelProps={{ shrink: true }} 
-                    InputProps={{ style: { fontSize: 18, height: 56 } }}
+                    InputProps={{ style: { fontSize: 14, height: 32 } }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        bgcolor: 'rgba(255,255,255,0.12)',
-                        backdropFilter: 'blur(6px)',
-                        color: '#fff',
-                        '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                        '&:hover fieldset': { borderColor: '#ffffff' },
-                        '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                        bgcolor: '#ffffff',
+                        color: '#000',
+                        borderRadius: 2,
+                        fontSize: '0.875rem',
+                        '& fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&:hover fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&.Mui-focused fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '& input': {
+                          fontSize: '0.875rem',
+                          color: '#000',
+                          padding: '8px 12px'
+                        }
                       },
-                      '& .MuiInputLabel-root': { color: '#f0f0f0' }
+                      '& .MuiInputLabel-root': { 
+                        color: '#000',
+                        fontWeight: 400,
+                        fontSize: '0.875rem'
+                      }
                     }}
                   />
                 </Grid>
@@ -829,16 +1125,37 @@ export default function Register() {
                     label="Age" 
                     value={age} 
                     fullWidth 
-                    size="large" 
-                    InputProps={{ readOnly: true, style: { fontSize: 18, height: 56 } }}
+                    size="small" 
+                    InputProps={{ readOnly: true, style: { fontSize: 14, height: 32 } }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        bgcolor: 'rgba(255,255,255,0.08)',
-                        backdropFilter: 'blur(6px)',
-                        color: '#fff',
-                        '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' }
+                        bgcolor: '#ffffff',
+                        color: '#000',
+                        borderRadius: 2,
+                        fontSize: '0.875rem',
+                        '& fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&:hover fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '&.Mui-focused fieldset': { 
+                          borderColor: '#000',
+                          borderWidth: 0.5
+                        },
+                        '& input': {
+                          fontSize: '0.875rem',
+                          color: '#000',
+                          padding: '8px 12px'
+                        }
                       },
-                      '& .MuiInputLabel-root': { color: '#d0d0d0' }
+                      '& .MuiInputLabel-root': { 
+                        color: '#000',
+                        fontWeight: 400,
+                        fontSize: '0.875rem'
+                      }
                     }}
                   />
                 </Grid>
@@ -854,18 +1171,37 @@ export default function Register() {
                   onChange={e => setFullName(e.target.value)} 
                   fullWidth 
                   required 
-                  size="large" 
-                  InputProps={{ style: { fontSize: 18, height: 56 } }}
+                  size="small" 
+                  InputProps={{ style: { fontSize: 14, height: 32 } }}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      bgcolor: 'rgba(255,255,255,0.12)',
-                      backdropFilter: 'blur(6px)',
-                      color: '#fff',
-                      '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                      '&:hover fieldset': { borderColor: '#ffffff' },
-                      '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                      bgcolor: '#ffffff',
+                      color: '#000',
+                      borderRadius: 2,
+                      fontSize: '0.875rem',
+                      '& fieldset': { 
+                        borderColor: '#000',
+                        borderWidth: 0.5
+                      },
+                      '&:hover fieldset': { 
+                        borderColor: '#000',
+                        borderWidth: 0.5
+                      },
+                      '&.Mui-focused fieldset': { 
+                        borderColor: '#000',
+                        borderWidth: 0.5
+                      },
+                      '& input': {
+                        fontSize: '0.875rem',
+                        color: '#000',
+                        padding: '8px 12px'
+                      }
                     },
-                    '& .MuiInputLabel-root': { color: '#f0f0f0' }
+                    '& .MuiInputLabel-root': { 
+                      color: '#000',
+                      fontWeight: 400,
+                      fontSize: '0.875rem'
+                    }
                   }}
                 />
               </Grid>
@@ -879,28 +1215,50 @@ export default function Register() {
                 onChange={handlePasswordChange}
                 fullWidth
                 required
-                size="large"
+                size="small"
                 InputProps={{
-                  style: { fontSize: 18, height: 56 },
+                  style: { fontSize: 14, height: 32 },
                   endAdornment: (
                     <InputAdornment position="end">
-                      <IconButton onClick={() => setShowPassword(s => !s)} edge="end" sx={{ color: '#eaeaea' }}>
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      <IconButton onClick={() => setShowPassword(s => !s)} edge="end" sx={{ color: '#87CEEB' }}>
+                        {showPassword ? <VisibilityOff sx={{ fontSize: '1rem' }} /> : <Visibility sx={{ fontSize: '1rem' }} />}
                       </IconButton>
                     </InputAdornment>
                   )
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(255,255,255,0.12)',
-                    backdropFilter: 'blur(6px)',
-                    color: '#fff',
-                    '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                    '&:hover fieldset': { borderColor: '#ffffff' },
-                    '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                    bgcolor: '#ffffff',
+                    color: '#000',
+                    borderRadius: 2,
+                    fontSize: '0.875rem',
+                    '& fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '&:hover fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '&.Mui-focused fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '& input': {
+                      fontSize: '0.875rem',
+                      color: '#000',
+                      padding: '8px 12px'
+                    }
                   },
-                  '& .MuiInputLabel-root': { color: '#f0f0f0' },
-                  '& .MuiInputAdornment-root .MuiSvgIcon-root': { color: '#eaeaea' }
+                  '& .MuiInputLabel-root': { 
+                    color: '#000',
+                    fontWeight: 400,
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputAdornment-root .MuiSvgIcon-root': { 
+                    color: '#87CEEB',
+                    fontSize: '1rem'
+                  }
                 }}
               />
               {password && (
@@ -917,7 +1275,7 @@ export default function Register() {
                       }
                     }} 
                   />
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{ color: '#000', fontSize: '0.75rem' }}>
                     Password strength: {getPasswordStrengthText()}
                   </Typography>
                 </Box>
@@ -931,21 +1289,44 @@ export default function Register() {
                 onChange={e => setConfirmPassword(e.target.value)}
                 fullWidth
                 required
-                size="large"
-                InputProps={{ style: { fontSize: 18, height: 56 } }}
+                size="small"
+                InputProps={{ style: { fontSize: 14, height: 32 } }}
                 error={password !== confirmPassword && confirmPassword !== ''}
                 helperText={password !== confirmPassword && confirmPassword !== '' ? 'Passwords do not match' : ''}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(255,255,255,0.12)',
-                    backdropFilter: 'blur(6px)',
-                    color: '#fff',
-                    '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                    '&:hover fieldset': { borderColor: '#ffffff' },
-                    '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                    bgcolor: '#ffffff',
+                    color: '#000',
+                    borderRadius: 2,
+                    fontSize: '0.875rem',
+                    '& fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '&:hover fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '&.Mui-focused fieldset': { 
+                      borderColor: '#000',
+                      borderWidth: 0.5
+                    },
+                    '& input': {
+                      fontSize: '0.875rem',
+                      color: '#000',
+                      padding: '8px 12px'
+                    }
                   },
-                  '& .MuiInputLabel-root': { color: '#f0f0f0' },
-                  '& .MuiFormHelperText-root': { color: '#ffcdd2' }
+                  '& .MuiInputLabel-root': { 
+                    color: '#000',
+                    fontWeight: 400,
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiFormHelperText-root': { 
+                    color: '#000',
+                    fontWeight: 400,
+                    fontSize: '0.75rem'
+                  }
                 }}
               />
             </Grid>
@@ -965,6 +1346,20 @@ export default function Register() {
                     component="span"
                     startIcon={<CloudUpload />}
                     disabled={uploading}
+                    sx={{
+                      color: '#000',
+                      borderColor: '#000',
+                      '&:hover': {
+                        color: '#1976d2',
+                        borderColor: '#1976d2',
+                        '& .MuiSvgIcon-root': {
+                          color: '#1976d2'
+                        }
+                      },
+                      '& .MuiSvgIcon-root': {
+                        color: '#000'
+                      }
+                    }}
                   >
                     {uploading ? 'Processing...' : 'Upload Profile Picture'}
                   </Button>
@@ -973,15 +1368,15 @@ export default function Register() {
                   <Avatar src={profilePicBase64} sx={{ width: 40, height: 40 }} />
                 )}
                 {profilePic && (
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{ color: '#000', fontSize: '0.75rem' }}>
                     {profilePic.name} ({(profilePic.size / 1024).toFixed(2)} KB)
                   </Typography>
                 )}
               </Box>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: '#000', fontSize: '0.875rem' }}>
                 Supported formats: JPG, PNG, GIF. Max size: 10MB
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: '#000', fontSize: '0.75rem' }}>
                 Images will be uploaded to secure cloud storage. Max size: 10MB
               </Typography>
             </Grid>
@@ -992,15 +1387,18 @@ export default function Register() {
                   <Checkbox
                     checked={terms}
                     onChange={e => setTerms(e.target.checked)}
-                    color="primary"
-                    sx={{ color: '#f0f0f0' }}
+                    sx={{ 
+                      color: '#000',
+                      '&.Mui-checked': { color: '#800000' },
+                      '& .MuiSvgIcon-root': { fontSize: '1rem' }
+                    }}
                   />
                 }
-                label="I agree to the terms and conditions"
-                sx={{ 
-                  color: '#f0f0f0',
-                  '& .MuiFormControlLabel-label': { color: '#f0f0f0' }
-                }}
+                label={
+                  <Typography sx={{ color: '#000', fontSize: '0.875rem' }}>
+                    I agree to the terms and conditions
+                  </Typography>
+                }
               />
             </Grid>
             
@@ -1011,18 +1409,48 @@ export default function Register() {
                 color="inherit"
                 fullWidth
                 disabled={loading || !terms}
-                sx={{ py: 1.5, fontSize: 18, borderRadius: 2, boxShadow: 2, bgcolor: '#800000', color: '#ffffff', '&:hover': { bgcolor: '#6b0000' }, '&:disabled': { bgcolor: '#cccccc', color: '#666666' } }}
+                sx={{ 
+                  py: 0.75, 
+                  fontSize: 13, 
+                  fontWeight: 500,
+                  borderRadius: 2, 
+                  backgroundColor: '#800000',
+                  color: '#fff',
+                  border: '0.5px solid #000',
+                  maxWidth: '300px',
+                  margin: '0 auto',
+                  display: 'block',
+                  '&:hover': { 
+                    backgroundColor: '#1976d2',
+                    borderColor: '#1976d2'
+                  },
+                  '&:disabled': {
+                    backgroundColor: '#ccc',
+                    color: '#666'
+                  }
+                }}
               >
-                {loading ? <CircularProgress size={24} color="inherit" /> : 'Register'}
+                {loading ? <CircularProgress size={20} color="inherit" /> : 'Register'}
               </Button>
             </Grid>
           </Grid>
-        </form>
+          </form>
+        </Box>
         
         <Box sx={{ textAlign: 'center', mt: 2, mb: 1 }}>
-          <Typography variant="body2" sx={{ color: '#eaeaea' }}>
+          <Typography variant="body2" sx={{ color: '#000', fontWeight: 400, fontSize: '0.875rem' }}>
             Already have an account?{' '}
-            <Link component={RouterLink} to="/login" underline="hover" color="#fff" fontWeight={600}>
+            <Link 
+              component={RouterLink} 
+              to="/login" 
+              underline="hover" 
+              sx={{ 
+                color: '#000',
+                fontWeight: 500,
+                fontSize: '0.875rem',
+                '&:hover': { color: '#666' }
+              }}
+            >
               Login
             </Link>
           </Typography>

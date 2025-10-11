@@ -469,40 +469,98 @@ export default function Login({ onLoginSuccess }) {
     <Box sx={{ 
       height: '100vh', 
       width: '100vw', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      backgroundImage: `url(${process.env.PUBLIC_URL + '/2121.jpg'})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
-      padding: 2,
+      display: 'flex',
       overflow: 'hidden',
       position: 'fixed',
       top: 0,
-      left: 0
+      left: 0,
+      background: '#800000'
     }}>
+      {/* Left Side - Image Area */}
       <Box sx={{
-        p: 4,
-        width: '100%',
-        maxWidth: 520,
+        width: '50%',
+        height: '100vh',
+        backgroundImage: `url(${process.env.PUBLIC_URL + '/2121.jpg'})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        color: '#fff',
-        textShadow: '0 2px 6px rgba(0,0,0,0.4)',
-        backgroundColor: 'transparent',
-        backdropFilter: 'blur(10px)',
-        borderRadius: 12,
-        boxShadow: '0 8px 40px rgba(0,0,0,0.35)'
+        justifyContent: 'center',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(128, 0, 0, 0.3)',
+          zIndex: 1
+        }
       }}>
-        <Avatar sx={{ bgcolor: '#800000', width: 64, height: 64, mb: 2, boxShadow: 3 }}>
-          <LockOutlined sx={{ fontSize: 36 }} />
+        <Box sx={{
+          position: 'relative',
+          zIndex: 2,
+          textAlign: 'center',
+          color: '#fff',
+          padding: 4
+        }}>
+          <Typography variant="h2" fontWeight={800} sx={{
+            mb: 2,
+            textShadow: '0 4px 8px rgba(0,0,0,0.5)',
+            letterSpacing: '-0.02em'
+          }}>
+            Welcome Back to CeciServe
+          </Typography>
+          <Typography variant="h5" sx={{
+            textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+            fontWeight: 400,
+            opacity: 0.9
+          }}>
+            Your gateway to St. Cecilia's College
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Right Side - Form Area */}
+      <Box sx={{
+        width: '50%',
+        height: '100vh',
+        backgroundColor: '#ffffff',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 4,
+        position: 'relative',
+        boxShadow: '-4px 0 20px rgba(0,0,0,0.1)'
+      }}>
+        <Avatar sx={{ 
+          bgcolor: '#800000', 
+          width: 80, 
+          height: 80, 
+          mb: 3, 
+          boxShadow: '0 8px 32px rgba(128,0,0,0.3)'
+        }}>
+          <LockOutlined sx={{ fontSize: 40, color: '#fff' }} />
         </Avatar>
-        <Typography variant="h4" fontWeight={700} gutterBottom sx={{ mb: 2, color: '#fff' }}>
+        <Typography variant="h3" fontWeight={700} gutterBottom sx={{ 
+          mb: 1, 
+          color: '#333',
+          textAlign: 'center',
+          letterSpacing: '-0.02em'
+        }}>
           Welcome Back
         </Typography>
-        <Typography variant="subtitle1" sx={{ mb: 3, color: '#f1f1f1' }}>
+        <Typography variant="h6" sx={{ 
+          mb: 4, 
+          color: '#666',
+          textAlign: 'center',
+          fontWeight: 400,
+          letterSpacing: '0.01em'
+        }}>
           Sign in to your account
         </Typography>
         
@@ -539,29 +597,33 @@ export default function Login({ onLoginSuccess }) {
             sx={{ 
               mb: 3,
               '& .MuiOutlinedInput-root': {
-                bgcolor: 'rgba(255,255,255,0.12)',
-                backdropFilter: 'blur(6px)',
-                color: '#fff',
-                '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                '&:hover fieldset': { borderColor: '#ffffff' },
-                '&.Mui-focused fieldset': { borderColor: '#ffffff' },
-                '&.Mui-focused': { bgcolor: 'rgba(255,255,255,0.12)' },
-                '& input:-webkit-autofill': {
-                  WebkitBoxShadow: '0 0 0 1000px rgba(255,255,255,0.12) inset !important',
-                  WebkitTextFillColor: '#fff !important',
-                  transition: 'background-color 5000s ease-in-out 0s'
+                bgcolor: '#fafafa',
+                color: '#333',
+                borderRadius: 12,
+                '& fieldset': { 
+                  borderColor: '#e0e0e0',
+                  borderWidth: 1
                 },
-                '& input:-webkit-autofill:hover': {
-                  WebkitBoxShadow: '0 0 0 1000px rgba(255,255,255,0.12) inset !important',
-                  WebkitTextFillColor: '#fff !important'
+                '&:hover fieldset': { 
+                  borderColor: '#800000',
+                  borderWidth: 1
                 },
-                '& input:-webkit-autofill:focus': {
-                  WebkitBoxShadow: '0 0 0 1000px rgba(255,255,255,0.12) inset !important',
-                  WebkitTextFillColor: '#fff !important'
+                '&.Mui-focused fieldset': { 
+                  borderColor: '#800000',
+                  borderWidth: 2
+                },
+                '&.Mui-focused': { 
+                  boxShadow: '0 0 0 3px rgba(128,0,0,0.1)'
                 }
               },
-              '& .MuiInputLabel-root': { color: '#f0f0f0' },
-              '& .MuiInputAdornment-root .MuiSvgIcon-root': { color: '#eaeaea' }
+              '& .MuiInputLabel-root': { 
+                color: '#666',
+                fontWeight: 500,
+                fontSize: '1rem'
+              },
+              '& .MuiInputAdornment-root .MuiSvgIcon-root': { 
+                color: '#800000' 
+              }
             }} 
             size="large" 
             InputProps={{ 
@@ -588,15 +650,33 @@ export default function Login({ onLoginSuccess }) {
             sx={{ 
               mb: 2,
               '& .MuiOutlinedInput-root': {
-                bgcolor: 'rgba(255,255,255,0.12)',
-                backdropFilter: 'blur(6px)',
-                color: '#fff',
-                '& fieldset': { borderColor: 'rgba(255,255,255,0.45)' },
-                '&:hover fieldset': { borderColor: '#ffffff' },
-                '&.Mui-focused fieldset': { borderColor: '#ffffff' }
+                bgcolor: '#fafafa',
+                color: '#333',
+                borderRadius: 12,
+                '& fieldset': { 
+                  borderColor: '#e0e0e0',
+                  borderWidth: 1
+                },
+                '&:hover fieldset': { 
+                  borderColor: '#800000',
+                  borderWidth: 1
+                },
+                '&.Mui-focused fieldset': { 
+                  borderColor: '#800000',
+                  borderWidth: 2
+                },
+                '&.Mui-focused': { 
+                  boxShadow: '0 0 0 3px rgba(128,0,0,0.1)'
+                }
               },
-              '& .MuiInputLabel-root': { color: '#f0f0f0' },
-              '& .MuiInputAdornment-root .MuiSvgIcon-root': { color: '#eaeaea' }
+              '& .MuiInputLabel-root': { 
+                color: '#666',
+                fontWeight: 500,
+                fontSize: '1rem'
+              },
+              '& .MuiInputAdornment-root .MuiSvgIcon-root': { 
+                color: '#800000' 
+              }
             }}
             size="large"
             InputProps={{
@@ -640,55 +720,100 @@ export default function Login({ onLoginSuccess }) {
           <Button 
             type="submit"
             variant="contained" 
-            color="inherit" 
             fullWidth 
             disabled={loading || lockout || googleLoading} 
-            sx={{ mb: 2, py: 1.5, fontSize: 18, borderRadius: 2, boxShadow: 2, bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}
+            sx={{ 
+              mb: 2, 
+              py: 2, 
+              fontSize: 18, 
+              fontWeight: 600,
+              borderRadius: 12, 
+              boxShadow: '0 4px 16px rgba(128,0,0,0.3)',
+              backgroundColor: '#800000',
+              color: '#fff',
+              '&:hover': { 
+                backgroundColor: '#6b0000',
+                boxShadow: '0 6px 20px rgba(128,0,0,0.4)',
+                transform: 'translateY(-2px)'
+              },
+              '&:disabled': {
+                backgroundColor: '#ccc',
+                color: '#666'
+              },
+              transition: 'all 0.3s ease'
+            }}
           >
             {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
           </Button>
         </form>
         
-        <Divider sx={{ width: '100%', my: 2 }}>
-          <Typography variant="body2" color="text.secondary">OR</Typography>
+        <Divider sx={{ width: '100%', my: 3 }}>
+          <Typography variant="body2" sx={{ color: '#999', fontWeight: 500 }}>OR</Typography>
         </Divider>
         
         <Button 
           onClick={handleGoogleLogin} 
           variant="outlined" 
-          color="inherit" 
           fullWidth 
           startIcon={googleLoading ? <CircularProgress size={20} /> : <GoogleIcon />} 
-          sx={{ mb: 2, py: 1.5, fontSize: 18, borderRadius: 2, color: '#fff', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.08)' } }} 
+          sx={{ 
+            mb: 2, 
+            py: 2, 
+            fontSize: 18, 
+            fontWeight: 600,
+            borderRadius: 12, 
+            color: '#800000', 
+            borderColor: '#800000',
+            borderWidth: 2,
+            bgcolor: 'transparent',
+            '&:hover': { 
+              borderColor: '#6b0000', 
+              bgcolor: 'rgba(128,0,0,0.05)',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 4px 16px rgba(128,0,0,0.2)'
+            },
+            '&:disabled': {
+              borderColor: '#ccc',
+              color: '#999'
+            },
+            transition: 'all 0.3s ease'
+          }} 
           disabled={loading || lockout || googleLoading}
           type="button"
         >
           {googleLoading ? 'Signing in...' : 'Sign in with Google'}
         </Button>
         
-        <Box sx={{ textAlign: 'right', mb: 2, width: '100%' }}>
+        <Box sx={{ textAlign: 'right', mb: 3, width: '100%' }}>
           <Link 
             component="button" 
             variant="body2" 
             onClick={() => setForgotOpen(true)} 
             underline="hover" 
-            color="#fff"
-            disabled={loading || lockout || googleLoading}
-            sx={{ cursor: 'pointer' }}
+            sx={{ 
+              color: '#800000',
+              fontWeight: 500,
+              cursor: 'pointer',
+              '&:hover': { color: '#6b0000' },
+              disabled: loading || lockout || googleLoading
+            }}
           >
             Forgot password?
           </Link>
         </Box>
         
         <Box sx={{ textAlign: 'center', mt: 2 }}>
-          <Typography variant="body2" sx={{ color: '#eaeaea' }}>
+          <Typography variant="body1" sx={{ color: '#666', fontWeight: 400 }}>
             Don&apos;t have an account?{' '}
             <Link 
               component={RouterLink} 
               to="/register" 
               underline="hover" 
-              color="#fff" 
-              fontWeight={600}
+              sx={{ 
+                color: '#800000',
+                fontWeight: 600,
+                '&:hover': { color: '#6b0000' }
+              }}
             >
               Register
             </Link>
