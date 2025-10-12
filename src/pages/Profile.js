@@ -8,7 +8,7 @@ import {
   Email, Phone, Home, Work
 } from "@mui/icons-material";
 import { collection, addDoc, doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
-import { updatePassword, updateProfile } from "firebase/auth";
+import { updatePassword, updateProfile, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { db, auth } from "../firebase";
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
@@ -172,6 +172,12 @@ export default function Profile() {
   };
 
   const handleChangePassword = async () => {
+    // Validate current password is provided
+    if (!passwordForm.currentPassword) {
+      setSnackbar({ open: true, message: "Please enter your current password", severity: "error" });
+      return;
+    }
+
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setSnackbar({ open: true, message: "New passwords don't match", severity: "error" });
       return;
@@ -184,6 +190,11 @@ export default function Profile() {
 
     setSaving(true);
     try {
+      // Re-authenticate user with current password
+      const credential = EmailAuthProvider.credential(currentUser.email, passwordForm.currentPassword);
+      await reauthenticateWithCredential(currentUser, credential);
+      
+      // If re-authentication successful, update password
       await updatePassword(currentUser, passwordForm.newPassword);
       setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
       setSnackbar({ open: true, message: "Password changed successfully!", severity: "success" });
@@ -191,7 +202,11 @@ export default function Profile() {
       setTimeout(() => setPasswordSuccess(false), 3000);
     } catch (error) {
       console.error('Error changing password:', error);
-      setSnackbar({ open: true, message: "Error changing password: " + error.message, severity: "error" });
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        setSnackbar({ open: true, message: "Current password is incorrect", severity: "error" });
+      } else {
+        setSnackbar({ open: true, message: "Error changing password: " + error.message, severity: "error" });
+      }
     } finally {
       setSaving(false);
     }
@@ -401,6 +416,26 @@ export default function Profile() {
               <Security /> Change Password
             </Typography>
             <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Current Password"
+                  name="currentPassword"
+                  type={showPassword ? "text" : "password"}
+                  value={passwordForm.currentPassword}
+                  onChange={handlePasswordChange}
+                  InputProps={{
+                    endAdornment: (
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    ),
+                  }}
+                />
+              </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
@@ -449,7 +484,7 @@ export default function Profile() {
               <Button 
                 variant="contained" 
                 onClick={handleChangePassword}
-                disabled={saving || !passwordForm.newPassword || !passwordForm.confirmPassword || passwordSuccess}
+                disabled={saving || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword || passwordSuccess}
                 startIcon={<Security />}
                 color={passwordSuccess ? "success" : "primary"}
                 sx={{
