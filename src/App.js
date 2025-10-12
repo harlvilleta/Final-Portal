@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Button, CircularProgress, Alert, Tooltip } from "@mui/material";
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { AccountCircle, Logout, Notifications, Settings } from "@mui/icons-material";
@@ -49,6 +49,7 @@ import ActivitiesView from "./pages/ActivitiesView";
 // Header component for admin dashboard
 function AdminHeader({ currentUser, userProfile }) {
   const [anchorEl, setAnchorEl] = useState(null);
+  const navigate = useNavigate();
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -56,6 +57,11 @@ function AdminHeader({ currentUser, userProfile }) {
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleSettingsClick = () => {
+    setAnchorEl(null);
+    navigate('/profile');
   };
 
   const handleLogout = async () => {
@@ -144,7 +150,7 @@ function AdminHeader({ currentUser, userProfile }) {
                   {userInfo.name}
                 </Typography>
               </MenuItem>
-              <MenuItem onClick={handleClose}>
+              <MenuItem onClick={handleSettingsClick}>
                 <Settings sx={{ mr: 1 }} />
                 Settings & Privacy
               </MenuItem>

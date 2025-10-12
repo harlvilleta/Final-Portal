@@ -5,7 +5,7 @@ import {
 } from "@mui/material";
 import { 
   Person, Security, PhotoCamera, Save, Edit, Visibility, VisibilityOff,
-  Email, Phone, School, Home, Work
+  Email, Phone, Home, Work
 } from "@mui/icons-material";
 import { collection, addDoc, doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { updatePassword, updateProfile } from "firebase/auth";
@@ -13,9 +13,6 @@ import { db, auth } from "../firebase";
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
 
-const courses = ["BSIT", "BSBA", "BSED", "BEED", "BSN"];
-const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
-const positions = ["Student", "President", "Vice President", "Secretary", "Treasurer"];
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState(0);
@@ -36,12 +33,6 @@ export default function Profile() {
     age: "",
     birthdate: "",
     contact: "",
-    scholarship: "",
-    course: "",
-    year: "",
-    section: "",
-    position: "",
-    major: "",
     email: "",
     fatherName: "",
     fatherOccupation: "",
@@ -268,7 +259,7 @@ export default function Profile() {
                   {profile.email}
                 </Typography>
                 <Chip 
-                  label="Student" 
+                  label="Admin" 
                   color="primary" 
                   variant="outlined" 
                   sx={{ mt: 1 }}
@@ -363,64 +354,6 @@ export default function Profile() {
 
                 <Divider sx={{ my: 3 }} />
 
-                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <School /> Academic Information
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={4}>
-                    <TextField 
-                      fullWidth 
-                      label="Course" 
-                      name="course" 
-                      value={profile.course} 
-                      onChange={handleChange}
-                      select
-                    >
-                      {courses.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
-                    </TextField>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField 
-                      fullWidth 
-                      label="Year" 
-                      name="year" 
-                      value={profile.year} 
-                      onChange={handleChange}
-                      select
-                    >
-                      {years.map((y) => <MenuItem key={y} value={y}>{y}</MenuItem>)}
-                    </TextField>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField 
-                      fullWidth 
-                      label="Section" 
-                      name="section" 
-                      value={profile.section} 
-                      onChange={handleChange}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField 
-                      fullWidth 
-                      label="Major" 
-                      name="major" 
-                      value={profile.major} 
-                      onChange={handleChange}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField 
-                      fullWidth 
-                      label="Scholarship" 
-                      name="scholarship" 
-                      value={profile.scholarship} 
-                      onChange={handleChange}
-                    />
-                  </Grid>
-                </Grid>
-
-                <Divider sx={{ my: 3 }} />
 
                 <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Home /> Address Information
