@@ -410,94 +410,87 @@ export default function Profile() {
       )}
 
       {activeTab === 1 && (
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Security /> Change Password
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Current Password"
-                  name="currentPassword"
-                  type={showPassword ? "text" : "password"}
-                  value={passwordForm.currentPassword}
-                  onChange={handlePasswordChange}
-                  InputProps={{
-                    endAdornment: (
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    ),
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="New Password"
-                  name="newPassword"
-                  type={showNewPassword ? "text" : "password"}
-                  value={passwordForm.newPassword}
-                  onChange={handlePasswordChange}
-                  InputProps={{
-                    endAdornment: (
-                      <IconButton
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        edge="end"
-                      >
-                        {showNewPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    ),
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Confirm New Password"
-                  name="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={passwordForm.confirmPassword}
-                  onChange={handlePasswordChange}
-                  InputProps={{
-                    endAdornment: (
-                      <IconButton
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        edge="end"
-                      >
-                        {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    ),
-                  }}
-                />
-              </Grid>
-            </Grid>
-            <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-              Password must be at least 6 characters long.
-            </Typography>
-            <Box sx={{ mt: 3, textAlign: 'right' }}>
-              <Button 
-                variant="contained" 
-                onClick={handleChangePassword}
-                disabled={saving || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword || passwordSuccess}
-                startIcon={<Security />}
-                color={passwordSuccess ? "success" : "primary"}
-                sx={{
-                  transition: 'all 0.3s ease',
-                  transform: passwordSuccess ? 'scale(1.05)' : 'scale(1)',
-                  boxShadow: passwordSuccess ? '0 4px 12px rgba(76, 175, 80, 0.4)' : '0 2px 8px rgba(25, 118, 210, 0.3)'
-                }}
-              >
-                {saving ? 'Changing Password...' : passwordSuccess ? 'Password Changed!' : 'Change Password'}
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
+        <Box sx={{ maxWidth: 400 }}>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+            <Security /> Change Password
+          </Typography>
+          <Stack spacing={2}>
+            <TextField
+              label="Current Password"
+              name="currentPassword"
+              type={showPassword ? "text" : "password"}
+              value={passwordForm.currentPassword}
+              onChange={handlePasswordChange}
+              InputProps={{
+                endAdornment: (
+                  <IconButton
+                    size="small"
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                ),
+              }}
+            />
+            <TextField
+              label="New Password"
+              name="newPassword"
+              type={showNewPassword ? "text" : "password"}
+              value={passwordForm.newPassword}
+              onChange={handlePasswordChange}
+              InputProps={{
+                endAdornment: (
+                  <IconButton
+                    size="small"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    edge="end"
+                  >
+                    {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                ),
+              }}
+            />
+            <TextField
+              label="Confirm New Password"
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              value={passwordForm.confirmPassword}
+              onChange={handlePasswordChange}
+              InputProps={{
+                endAdornment: (
+                  <IconButton
+                    size="small"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    edge="end"
+                  >
+                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                ),
+              }}
+            />
+          </Stack>
+          <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+            Password must be at least 6 characters long.
+          </Typography>
+          <Box sx={{ mt: 2 }}>
+            <Button 
+              variant="contained" 
+              size="small"
+              onClick={handleChangePassword}
+              disabled={saving || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword || passwordSuccess}
+              startIcon={<Security />}
+              color={passwordSuccess ? "success" : "primary"}
+              sx={{
+                transition: 'all 0.3s ease',
+                transform: passwordSuccess ? 'scale(1.05)' : 'scale(1)',
+                boxShadow: passwordSuccess ? '0 4px 12px rgba(76, 175, 80, 0.4)' : '0 2px 8px rgba(25, 118, 210, 0.3)'
+              }}
+            >
+              {saving ? 'Changing Password...' : passwordSuccess ? 'Password Changed!' : 'Change Password'}
+            </Button>
+          </Box>
+        </Box>
       )}
 
       <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
