@@ -1,0 +1,236 @@
+import React, { useState, useEffect } from 'react';
+import { Badge, IconButton, Tooltip, Menu, MenuItem, Typography, Box, Divider, List, ListItem, ListItemText, ListItemIcon, Avatar, Chip } from '@mui/material';
+import { Notifications, CheckCircle, Cancel, PersonAddAlt1, Warning, Search, Event, Assignment } from '@mui/icons-material';
+import { collection, query, where, orderBy, getDocs, onSnapshot, limit } from 'firebase/firestore';
+import { db } from '../firebase';
+
+export default function NotificationBadge() {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchAllNotifications = async () => {
+      try {
+        // Fetch all notifications from the notifications collection
+        const notificationsQuery = query(
+          collection(db, "notifications"),
+          orderBy("createdAt", "desc"),
+          limit(20)
+        );
+
+        const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
+          const notificationData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            type: doc.data().type || 'general',
+            timestamp: doc.data().createdAt
+          }));
+          
+          setNotifications(notificationData);
+          setUnreadCount(notificationData.filter(n => !n.read).length);
+        }, (error) => {
+          console.error('Error listening to notifications:', error);
+        });
+
+        return unsubscribeNotifications;
+      } catch (error) {
+        console.error('Error setting up notification listeners:', error);
+        return () => {};
+      }
+    };
+
+    const unsubscribe = fetchAllNotifications();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'teacher_request':
+        return <PersonAddAlt1 />;
+      case 'violation':
+        return <Warning />;
+      case 'lost_found':
+        return <Search />;
+      case 'activity_request':
+        return <Event />;
+      case 'activity':
+        return <Event />;
+      case 'event':
+        return <Event />;
+      case 'meeting':
+        return <Assignment />;
+      case 'announcement':
+        return <Notifications />;
+      default:
+        return <Notifications />;
+    }
+  };
+
+  const getNotificationColor = (type) => {
+    switch (type) {
+      case 'teacher_request':
+        return 'warning';
+      case 'violation':
+        return 'error';
+      case 'lost_found':
+        return 'info';
+      case 'activity_request':
+        return 'success';
+      case 'activity':
+        return 'success';
+      case 'event':
+        return 'success';
+      case 'meeting':
+        return 'primary';
+      case 'announcement':
+        return 'secondary';
+      default:
+        return 'primary';
+    }
+  };
+
+  const formatTimeAgo = (timestamp) => {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffInSeconds = Math.floor((now - time) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  };
+
+  return (
+    <>
+      <Tooltip title="Notifications">
+        <IconButton
+          color="inherit"
+          onClick={handleClick}
+          sx={{ position: 'relative' }}
+        >
+          <Badge badgeContent={unreadCount} color="error">
+            <Notifications />
+          </Badge>
+        </IconButton>
+      </Tooltip>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleClose}
+        PaperProps={{
+          sx: { width: 350, maxHeight: 400 }
+        }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      >
+        <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            All Notifications
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+          </Typography>
+        </Box>
+
+        {notifications.length === 0 ? (
+          <Box sx={{ p: 3, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              No notifications
+            </Typography>
+          </Box>
+        ) : (
+          <List sx={{ maxHeight: 300, overflow: 'auto' }}>
+            {notifications.map((notification, index) => (
+              <React.Fragment key={notification.id}>
+                <ListItem sx={{ py: 1.5 }}>
+                  <ListItemIcon>
+                    <Avatar sx={{ bgcolor: `${getNotificationColor(notification.type)}.light`, width: 32, height: 32 }}>
+                      {getNotificationIcon(notification.type)}
+                    </Avatar>
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          {notification.title || 'Notification'}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ 
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}>
+                          {notification.message || 'No message'}
+                        </Typography>
+                      </Box>
+                    }
+                    secondary={
+                      <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatTimeAgo(notification.timestamp)}
+                        </Typography>
+                        <Chip
+                          label={notification.type?.replace('_', ' ').toUpperCase() || 'GENERAL'}
+                          size="small"
+                          color={getNotificationColor(notification.type)}
+                          sx={{ height: 20, fontSize: '0.7rem' }}
+                        />
+                        {!notification.read && (
+                          <Chip
+                            label="NEW"
+                            size="small"
+                            color="error"
+                            sx={{ height: 20, fontSize: '0.7rem' }}
+                          />
+                        )}
+                      </Box>
+                    }
+                  />
+                </ListItem>
+                {index < notifications.length - 1 && <Divider />}
+              </React.Fragment>
+            ))}
+          </List>
+        )}
+
+        <Box sx={{ p: 2, borderTop: '1px solid #e0e0e0', textAlign: 'center' }}>
+          <Typography 
+            variant="body2" 
+            color="primary" 
+            sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+            onClick={() => {
+              handleClose();
+              // Navigate to appropriate notifications page based on user role
+              const currentPath = window.location.pathname;
+              if (currentPath.includes('/teacher-')) {
+                window.location.href = '/teacher-notifications';
+              } else if (currentPath.includes('/user-') || currentPath === '/') {
+                window.location.href = '/notifications';
+              } else {
+                window.location.href = '/notifications';
+              }
+            }}
+          >
+            View All Notifications
+          </Typography>
+        </Box>
+      </Menu>
+    </>
+  );
+}
+
+

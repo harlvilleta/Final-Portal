@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { 
   Typography, Box, Grid, Card, CardContent, Paper, CircularProgress, List, ListItem, ListItemText, 
   Divider, Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert,
-  TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Avatar, Chip, IconButton, Tooltip,
-  Badge
+  TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Avatar, Chip, IconButton, Tooltip
 } from "@mui/material";
 import PeopleIcon from '@mui/icons-material/People';
 import ReportIcon from '@mui/icons-material/Report';
@@ -12,9 +11,6 @@ import CampaignIcon from '@mui/icons-material/Campaign';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import SchoolIcon from '@mui/icons-material/School';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
 import { collection, getDocs, query, where, orderBy, limit, addDoc, deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
@@ -57,11 +53,6 @@ export default function Overview() {
   const [userProfile, setUserProfile] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   
-  // Teacher approval states
-  const [teacherRequests, setTeacherRequests] = useState([]);
-  const [teacherRequestsLoading, setTeacherRequestsLoading] = useState(false);
-  const [approvalDialog, setApprovalDialog] = useState({ open: false, request: null, action: '' });
-  const [reviewNotes, setReviewNotes] = useState('');
   
   const navigate = useNavigate();
 
@@ -69,8 +60,7 @@ export default function Overview() {
     // Fetch data in parallel for better performance
     Promise.all([
       fetchOverviewData(),
-      fetchRecentActivity(),
-      fetchTeacherRequests()
+      fetchRecentActivity()
     ]);
     
     // Get current user and their profile
@@ -195,95 +185,7 @@ export default function Overview() {
     }
   };
 
-  const fetchTeacherRequests = async () => {
-    setTeacherRequestsLoading(true);
-    try {
-      const q = query(collection(db, "teacher_approval_requests"), where("status", "==", "pending"), orderBy("requestDate", "desc"));
-      const snap = await getDocs(q);
-      setTeacherRequests(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    } catch (e) {
-      console.log("Teacher requests not found, using empty array");
-      setTeacherRequests([]);
-    } finally {
-      setTeacherRequestsLoading(false);
-    }
-  };
 
-  const handleTeacherApproval = async (requestId, action) => {
-    try {
-      const request = teacherRequests.find(r => r.id === requestId);
-      if (!request) return;
-
-      // Update the teacher approval request
-      await updateDoc(doc(db, "teacher_approval_requests", requestId), {
-        status: action,
-        reviewedBy: currentUser?.uid,
-        reviewedAt: new Date().toISOString(),
-        reviewNotes: reviewNotes
-      });
-
-      if (action === 'approved') {
-        // Update the user's teacher info to mark as approved
-        await updateDoc(doc(db, "users", request.userId), {
-          'teacherInfo.isApproved': true,
-          'teacherInfo.approvalStatus': 'approved',
-          'teacherInfo.approvedBy': currentUser?.uid,
-          'teacherInfo.approvedAt': new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        });
-
-        // Log activity
-        await addDoc(collection(db, 'activity_log'), {
-          message: `Teacher ${request.fullName} (${request.email}) was approved by admin`,
-          type: 'teacher_approval',
-          user: currentUser?.uid,
-          userEmail: currentUser?.email,
-          timestamp: new Date().toISOString(),
-          details: {
-            approvedTeacher: request.email,
-            reviewNotes: reviewNotes
-          }
-        });
-
-        setSnackbar({ 
-          open: true, 
-          message: `Teacher ${request.fullName} has been approved successfully!`, 
-          severity: 'success' 
-        });
-      } else {
-        // Log activity for denial
-        await addDoc(collection(db, 'activity_log'), {
-          message: `Teacher ${request.fullName} (${request.email}) was denied by admin`,
-          type: 'teacher_denial',
-          user: currentUser?.uid,
-          userEmail: currentUser?.email,
-          timestamp: new Date().toISOString(),
-          details: {
-            deniedTeacher: request.email,
-            reviewNotes: reviewNotes
-          }
-        });
-
-        setSnackbar({ 
-          open: true, 
-          message: `Teacher ${request.fullName} has been denied.`, 
-          severity: 'info' 
-        });
-      }
-
-      // Refresh the teacher requests list
-      await fetchTeacherRequests();
-      setApprovalDialog({ open: false, request: null, action: '' });
-      setReviewNotes('');
-    } catch (error) {
-      console.error('Error handling teacher approval:', error);
-      setSnackbar({ 
-        open: true, 
-        message: 'Failed to process teacher approval. Please try again.', 
-        severity: 'error' 
-      });
-    }
-  };
 
   const statCards = [
     { 
@@ -313,13 +215,6 @@ export default function Overview() {
       icon: <CampaignIcon fontSize="large" color="warning" />,
       color: '#ed6c02',
       to: '/announcements'
-    },
-    { 
-      label: 'Teacher Requests', 
-      value: teacherRequests.length, 
-      icon: <Badge badgeContent={teacherRequests.length} color="error"><SchoolIcon fontSize="large" color="info" /></Badge>,
-      color: '#1976d2',
-      to: null // This will be handled in the click handler
     },
   ];
 
@@ -526,201 +421,8 @@ export default function Overview() {
           </Paper>
         </Grid>
 
-        {/* Teacher Requests Section */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, boxShadow: 2, height: '100%' }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, color: '#800000' }}>
-              Teacher Requests ({teacherRequests.length})
-            </Typography>
-            {teacherRequestsLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                <CircularProgress />
-              </Box>
-            ) : teacherRequests.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                No pending teacher requests.
-              </Typography>
-            ) : (
-              <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
-                {teacherRequests.map((request) => (
-                  <Card key={request.id} sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Avatar 
-                        src={request.profilePic} 
-                        sx={{ width: 50, height: 50, mr: 2 }}
-                      >
-                        {request.fullName?.charAt(0)}
-                      </Avatar>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="subtitle1" fontWeight={600}>
-                          {request.fullName}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {request.email}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Requested: {new Date(request.requestDate).toLocaleDateString()}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" sx={{ mb: 1 }}>
-                        <strong>Phone:</strong> {request.phone || 'Not provided'}
-                      </Typography>
-                      <Typography variant="body2">
-                        <strong>Address:</strong> {request.address || 'Not provided'}
-                      </Typography>
-                    </Box>
-                    
-                    <Stack direction="row" spacing={1} justifyContent="flex-end">
-                      <Tooltip title="Review and Approve">
-                        <Button
-                          variant="contained"
-                          color="success"
-                          size="small"
-                          startIcon={<CheckCircleIcon />}
-                          onClick={() => setApprovalDialog({ open: true, request, action: 'approved' })}
-                        >
-                          Approve
-                        </Button>
-                      </Tooltip>
-                      <Tooltip title="Review and Deny">
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          size="small"
-                          startIcon={<CancelIcon />}
-                          onClick={() => setApprovalDialog({ open: true, request, action: 'denied' })}
-                        >
-                          Deny
-                        </Button>
-                      </Tooltip>
-                    </Stack>
-                  </Card>
-                ))}
-              </Box>
-            )}
-          </Paper>
-        </Grid>
       </Grid>
       
-      {/* Teacher Approval Dialog */}
-      <Dialog 
-        open={approvalDialog.open} 
-        onClose={() => setApprovalDialog({ open: false, request: null, action: '' })}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar 
-              src={approvalDialog.request?.profilePic} 
-              sx={{ width: 50, height: 50 }}
-            >
-              {approvalDialog.request?.fullName?.charAt(0)}
-            </Avatar>
-            <Box>
-              <Typography variant="h6">
-                {approvalDialog.action === 'approved' ? 'Approve Teacher Request' : 'Deny Teacher Request'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Review teacher information before making a decision
-              </Typography>
-            </Box>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          {approvalDialog.request && (
-            <Box>
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Full Name
-                  </Typography>
-                  <Typography variant="body1" sx={{ mb: 2 }}>
-                    {approvalDialog.request.fullName}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Email Address
-                  </Typography>
-                  <Typography variant="body1" sx={{ mb: 2 }}>
-                    {approvalDialog.request.email}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Phone Number
-                  </Typography>
-                  <Typography variant="body1" sx={{ mb: 2 }}>
-                    {approvalDialog.request.phone || 'Not provided'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Request Date
-                  </Typography>
-                  <Typography variant="body1" sx={{ mb: 2 }}>
-                    {new Date(approvalDialog.request.requestDate).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Address
-                  </Typography>
-                  <Typography variant="body1" sx={{ mb: 2 }}>
-                    {approvalDialog.request.address || 'Not provided'}
-                  </Typography>
-                </Grid>
-              </Grid>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Review Notes (Optional)
-              </Typography>
-              <TextField
-                multiline
-                rows={3}
-                fullWidth
-                value={reviewNotes}
-                onChange={(e) => setReviewNotes(e.target.value)}
-                placeholder={approvalDialog.action === 'approved' 
-                  ? "Add any notes about this teacher approval (e.g., qualifications, department assignment, etc.)..." 
-                  : "Add any notes about why this request was denied (e.g., missing information, qualifications, etc.)..."}
-                sx={{ mb: 2 }}
-              />
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 1 }}>
-          <Button 
-            onClick={() => {
-              setApprovalDialog({ open: false, request: null, action: '' });
-              setReviewNotes('');
-            }}
-            variant="outlined"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={() => handleTeacherApproval(approvalDialog.request.id, approvalDialog.action)}
-            variant="contained"
-            color={approvalDialog.action === 'approved' ? 'success' : 'error'}
-            size="large"
-          >
-            {approvalDialog.action === 'approved' ? 'Approve Teacher' : 'Deny Request'}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Snackbar for notifications */}
       <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>

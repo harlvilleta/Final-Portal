@@ -94,62 +94,48 @@ function AdminHeader({ currentUser, userProfile }) {
         </Typography>
         <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Chip 
-              label={userInfo.role} 
-              size="small" 
-              sx={{ 
-                bgcolor: '#1976d2', 
-                color: 'white',
-                fontWeight: 600
-              }} 
-            />
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="body2" sx={{ color: '#666' }}>
-                {userInfo.name}
-              </Typography>
-              <IconButton
-                size="large"
-                aria-label="account of current user"
-                aria-controls="menu-appbar"
-                aria-haspopup="true"
-                onClick={handleMenu}
-                color="inherit"
-              >
-                <Avatar 
-                  src={userInfo.photo} 
-                  sx={{ 
-                    width: 32, 
-                    height: 32,
-                    bgcolor: userInfo.photo ? 'transparent' : '#1976d2'
-                  }}
-                >
-                  {!userInfo.photo && (userInfo.name?.charAt(0) || userInfo.email?.charAt(0))}
-                </Avatar>
-              </IconButton>
-              <Menu
-                id="menu-appbar"
-                anchorEl={anchorEl}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
+            <IconButton
+              size="large"
+              aria-label="account of current user"
+              aria-controls="menu-appbar"
+              aria-haspopup="true"
+              onClick={handleMenu}
+              color="inherit"
+            >
+              <Avatar 
+                src={userInfo.photo} 
+                sx={{ 
+                  width: 32, 
+                  height: 32,
+                  bgcolor: userInfo.photo ? 'transparent' : '#1976d2'
                 }}
-                keepMounted
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                open={Boolean(anchorEl)}
-                onClose={handleClose}
               >
-                <MenuItem onClick={handleClose}>
-                  <Typography variant="body2">{userInfo.email}</Typography>
-                </MenuItem>
-                <MenuItem onClick={handleLogout}>
-                  <Logout sx={{ mr: 1 }} />
-                  Logout
-                </MenuItem>
-              </Menu>
-            </Box>
+                {!userInfo.photo && (userInfo.name?.charAt(0) || userInfo.email?.charAt(0))}
+              </Avatar>
+            </IconButton>
+            <Menu
+              id="menu-appbar"
+              anchorEl={anchorEl}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              open={Boolean(anchorEl)}
+              onClose={handleClose}
+            >
+              <MenuItem onClick={handleClose}>
+                <Typography variant="body2">{userInfo.email}</Typography>
+              </MenuItem>
+              <MenuItem onClick={handleLogout}>
+                <Logout sx={{ mr: 1 }} />
+                Logout
+              </MenuItem>
+            </Menu>
           </Box>
         </Box>
       </Toolbar>

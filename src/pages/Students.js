@@ -5,7 +5,7 @@ import {
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Stack, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText,
   IconButton, Tooltip, Chip, InputAdornment, Accordion, AccordionSummary, AccordionDetails, CircularProgress
 } from "@mui/material";
-import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete, Search, ExpandMore, Folder, ArrowBack } from "@mui/icons-material";
+import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete, Search, ExpandMore, Folder, ArrowBack, CloudUpload } from "@mui/icons-material";
 import { db, storage, logActivity } from "../firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, where, query, onSnapshot, orderBy, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -459,7 +459,22 @@ function AddStudent({ onClose, isModal = false }) {
               <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>Profile Image</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Button variant="contained" component="label" sx={{ mt: 2 }}>
+              <Button 
+                variant="contained" 
+                component="label" 
+                startIcon={<CloudUpload />}
+                sx={{ 
+                  mt: 2,
+                  backgroundColor: 'white',
+                  color: 'black',
+                  border: '1px solid #ccc',
+                  '&:hover': {
+                    backgroundColor: '#1976d2',
+                    color: 'white',
+                    border: '1px solid #1976d2'
+                  }
+                }}
+              >
                 Upload Profile Image
                 <input type="file" accept="image/*" hidden onChange={handleImage} />
               </Button>
@@ -2531,7 +2546,22 @@ function EditStudentForm({ student, onClose, onSuccess }) {
             <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>Profile Image</Typography>
           </Grid>
           <Grid item xs={12} sm={6}>
-            <Button variant="contained" component="label" sx={{ mt: 2 }}>
+            <Button 
+              variant="contained" 
+              component="label" 
+              startIcon={<CloudUpload />}
+              sx={{ 
+                mt: 2,
+                backgroundColor: 'white',
+                color: 'black',
+                border: '1px solid #ccc',
+                '&:hover': {
+                  backgroundColor: '#1976d2',
+                  color: 'white',
+                  border: '1px solid #1976d2'
+                }
+              }}
+            >
               Update Profile Image
               <input type="file" accept="image/*" hidden onChange={handleImage} />
             </Button>
