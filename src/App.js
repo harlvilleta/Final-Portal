@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Button, CircularProgress, Alert, Tooltip } from "@mui/material";
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { AccountCircle, Logout, Notifications } from "@mui/icons-material";
+import { AccountCircle, Logout, Notifications, Settings } from "@mui/icons-material";
 import Sidebar from "./components/Sidebar";
 import UserSidebar from "./components/UserSidebar";
 import TeacherSidebar from "./components/TeacherSidebar";
@@ -139,8 +139,14 @@ function AdminHeader({ currentUser, userProfile }) {
               open={Boolean(anchorEl)}
               onClose={handleClose}
             >
+              <MenuItem disabled sx={{ opacity: 1, cursor: 'default' }}>
+                <Typography variant="subtitle1" fontWeight={600} sx={{ color: '#333' }}>
+                  {userInfo.name}
+                </Typography>
+              </MenuItem>
               <MenuItem onClick={handleClose}>
-                <Typography variant="body2">{userInfo.email}</Typography>
+                <Settings sx={{ mr: 1 }} />
+                Settings & Privacy
               </MenuItem>
               <MenuItem onClick={handleLogout}>
                 <Logout sx={{ mr: 1 }} />
