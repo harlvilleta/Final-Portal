@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Button, CircularProgress, Alert } from "@mui/material";
+import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Button, CircularProgress, Alert, Tooltip } from "@mui/material";
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { AccountCircle, Logout } from "@mui/icons-material";
+import { AccountCircle, Logout, Notifications } from "@mui/icons-material";
 import Sidebar from "./components/Sidebar";
 import UserSidebar from "./components/UserSidebar";
 import TeacherSidebar from "./components/TeacherSidebar";
@@ -94,25 +94,36 @@ function AdminHeader({ currentUser, userProfile }) {
         </Typography>
         <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton
-              size="large"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleMenu}
-              color="inherit"
-            >
-              <Avatar 
-                src={userInfo.photo} 
-                sx={{ 
-                  width: 32, 
-                  height: 32,
-                  bgcolor: userInfo.photo ? 'transparent' : '#1976d2'
-                }}
+            <Tooltip title="Notifications">
+              <IconButton
+                size="large"
+                aria-label="notifications"
+                color="inherit"
               >
-                {!userInfo.photo && (userInfo.name?.charAt(0) || userInfo.email?.charAt(0))}
-              </Avatar>
-            </IconButton>
+                <Notifications />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Account">
+              <IconButton
+                size="large"
+                aria-label="account of current user"
+                aria-controls="menu-appbar"
+                aria-haspopup="true"
+                onClick={handleMenu}
+                color="inherit"
+              >
+                <Avatar 
+                  src={userInfo.photo} 
+                  sx={{ 
+                    width: 32, 
+                    height: 32,
+                    bgcolor: userInfo.photo ? 'transparent' : '#1976d2'
+                  }}
+                >
+                  {!userInfo.photo && (userInfo.name?.charAt(0) || userInfo.email?.charAt(0))}
+                </Avatar>
+              </IconButton>
+            </Tooltip>
             <Menu
               id="menu-appbar"
               anchorEl={anchorEl}
