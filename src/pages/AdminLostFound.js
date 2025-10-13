@@ -423,7 +423,7 @@ export default function AdminLostFound() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#1976d2', mb: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#800000', mb: 3 }}>
         Lost & Found Management
       </Typography>
 
@@ -522,7 +522,15 @@ export default function AdminLostFound() {
                              <Button 
                  variant="outlined" 
                  component="label" 
-                 sx={{ mb: 2 }}
+                 sx={{ 
+                   mb: 2,
+                   color: foundForm.image ? '#1976d2' : '#000000',
+                   borderColor: foundForm.image ? '#1976d2' : '#000000',
+                   '&:hover': {
+                     borderColor: foundForm.image ? '#1976d2' : '#000000',
+                     backgroundColor: foundForm.image ? '#1976d210' : '#00000010'
+                   }
+                 }}
                  startIcon={<Upload />}
                >
                  Upload Image
@@ -732,7 +740,15 @@ export default function AdminLostFound() {
                              <Button 
                  variant="outlined" 
                  component="label" 
-                 sx={{ mb: 2 }}
+                 sx={{ 
+                   mb: 2,
+                   color: lostForm.image ? '#1976d2' : '#000000',
+                   borderColor: lostForm.image ? '#1976d2' : '#000000',
+                   '&:hover': {
+                     borderColor: lostForm.image ? '#1976d2' : '#000000',
+                     backgroundColor: lostForm.image ? '#1976d210' : '#00000010'
+                   }
+                 }}
                  startIcon={<Upload />}
                >
                  Upload Image
@@ -924,7 +940,15 @@ export default function AdminLostFound() {
                      <Button 
              variant="outlined" 
              component="label" 
-             sx={{ mb: 2 }}
+             sx={{ 
+               mb: 2,
+               color: editForm.image ? '#1976d2' : '#000000',
+               borderColor: editForm.image ? '#1976d2' : '#000000',
+               '&:hover': {
+                 borderColor: editForm.image ? '#1976d2' : '#000000',
+                 backgroundColor: editForm.image ? '#1976d210' : '#00000010'
+               }
+             }}
              startIcon={<Upload />}
            >
              Update Image
