@@ -430,13 +430,33 @@ export default function Register() {
             requestDate: new Date().toISOString(),
             status: 'pending', // pending, approved, denied
             reviewedBy: null,
-            reviewedAt: null,
-            reviewNotes: '',
-            requestType: 'teacher_registration'
+            reviewDate: null,
+            reviewReason: null,
+            requestType: 'teacher_registration',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
           };
           
-          await addDoc(collection(db, 'teacher_approval_requests'), teacherRequestData);
+          await addDoc(collection(db, 'teacher_requests'), teacherRequestData);
           console.log('✅ Teacher approval request created');
+
+          // Create notification for admin
+          await addDoc(collection(db, 'notifications'), {
+            recipientId: 'admin',
+            recipientEmail: 'admin@school.com',
+            recipientName: 'Administrator',
+            title: 'New Teacher Registration Request',
+            message: `${fullName} has requested to register as a teacher. Please review and approve their account.`,
+            type: 'teacher_request',
+            requestId: user.uid,
+            senderId: user.uid,
+            senderEmail: user.email,
+            senderName: fullName,
+            read: false,
+            createdAt: new Date().toISOString(),
+            priority: 'high'
+          });
+          console.log('✅ Admin notification created for teacher request');
         } catch (requestError) {
           console.error('❌ Failed to create teacher approval request:', requestError);
           // Don't fail registration if request creation fails

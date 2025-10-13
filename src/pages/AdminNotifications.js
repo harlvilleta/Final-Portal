@@ -14,6 +14,7 @@ import {
 import { db } from "../firebase";
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, getDocs } from "firebase/firestore";
 import { auth } from "../firebase";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminNotifications() {
   const [notifications, setNotifications] = useState([]);
@@ -25,6 +26,7 @@ export default function AdminNotifications() {
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
   const [currentTab, setCurrentTab] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -157,6 +159,15 @@ export default function AdminNotifications() {
   };
 
   const handleViewDetails = (notification) => {
+    // If it's a teacher request notification, navigate to teacher request page
+    if (notification.type === 'teacher_request') {
+      if (!notification.read) {
+        markAsRead(notification.id);
+      }
+      navigate('/teacher-request');
+      return;
+    }
+    
     setSelectedNotification(notification);
     setOpenDetailDialog(true);
     if (!notification.read) {

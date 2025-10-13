@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { List, ListItem, ListItemIcon, ListItemText, Drawer, Divider, Box, Typography, Avatar, Collapse, ListItemButton, Chip } from "@mui/material";
-import { Dashboard, Settings, Event, ExitToApp, Campaign, Report, ListAlt, History, Logout, Search, ExpandLess, ExpandMore, Assignment, MeetingRoom, Timeline, Assessment, Description, School, Receipt } from "@mui/icons-material";
+import { Dashboard, Settings, Event, ExitToApp, Campaign, Report, ListAlt, History, Logout, Search, ExpandLess, ExpandMore, Assignment, MeetingRoom, Timeline, Assessment, Description, School, Receipt, PersonAdd } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
@@ -8,6 +8,7 @@ import { signOut } from 'firebase/auth';
 const menu = [
   { text: "Overview", icon: <Dashboard sx={{ color: 'inherit' }} />, path: "/overview" },
   { text: "Student List", icon: <School sx={{ color: 'inherit' }} />, path: "/students" },
+  { text: "Teacher Request", icon: <PersonAdd sx={{ color: 'inherit' }} />, path: "/teacher-request" },
   { 
     text: "Violations", 
     icon: <Report sx={{ color: 'inherit' }} />, 

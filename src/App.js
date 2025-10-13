@@ -48,6 +48,7 @@ import ActivitiesView from "./pages/ActivitiesView";
 import AdminNotifications from "./pages/AdminNotifications";
 import StudentsChartDashboard from "./pages/StudentsChartDashboard";
 import ViolationsChartDashboard from "./pages/ViolationsChartDashboard";
+import TeacherRequest from "./pages/TeacherRequest";
 
 // Header component for admin dashboard
 function AdminHeader({ currentUser, userProfile }) {
@@ -862,6 +863,7 @@ function App() {
                       <Route path="/admin-notifications" element={<AdminNotifications />} />
                       <Route path="/students-chart" element={<StudentsChartDashboard />} />
                       <Route path="/violations-chart" element={<ViolationsChartDashboard />} />
+                      <Route path="/teacher-request" element={<TeacherRequest />} />
                       <Route path="/user/*" element={<Navigate to="/overview" />} />
                     </Routes>
                   </Box>
