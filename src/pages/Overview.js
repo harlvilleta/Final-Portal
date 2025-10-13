@@ -11,7 +11,7 @@ import CampaignIcon from '@mui/icons-material/Campaign';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { collection, getDocs, query, where, orderBy, limit, addDoc, deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy, limit, addDoc, deleteDoc, doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useNavigate, Link } from "react-router-dom";
@@ -52,7 +52,6 @@ export default function Overview() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  
   
   const navigate = useNavigate();
 
@@ -184,6 +183,7 @@ export default function Overview() {
       setActivityLoading(false);
     }
   };
+
 
 
 

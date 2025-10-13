@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Button, CircularProgress, Alert, Tooltip } from "@mui/material";
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Button, CircularProgress, Alert, Tooltip, Badge } from "@mui/material";
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { AccountCircle, Logout, Notifications, Settings } from "@mui/icons-material";
 import Sidebar from "./components/Sidebar";
@@ -24,7 +24,7 @@ import UserDashboard from './pages/UserDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { getDoc, doc, setDoc } from 'firebase/firestore';
+import { getDoc, doc, setDoc, collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import AnnouncementReport from "./pages/AnnouncementReport";
 import UserViolations from "./pages/UserViolations";
 import UserAnnouncements from "./pages/UserAnnouncements";
@@ -45,11 +45,18 @@ import ActivityRequestsAdmin from "./pages/ActivityRequestsAdmin";
 import TeacherNotifications from "./pages/TeacherNotifications";
 import TeacherLostFound from "./pages/TeacherLostFound";
 import ActivitiesView from "./pages/ActivitiesView";
+import AdminNotifications from "./pages/AdminNotifications";
 
 // Header component for admin dashboard
 function AdminHeader({ currentUser, userProfile }) {
   const [anchorEl, setAnchorEl] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [previousPage, setPreviousPage] = useState('/overview');
+  const [isOnNotificationsPage, setIsOnNotificationsPage] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -71,6 +78,75 @@ function AdminHeader({ currentUser, userProfile }) {
       console.error('Error signing out:', error);
     }
   };
+
+  // Notification handling functions
+  const handleNotificationClick = (event) => {
+    // If we're currently on the notifications page, go back to previous page
+    if (isOnNotificationsPage) {
+      navigate(previousPage);
+      setIsOnNotificationsPage(false);
+    } else {
+      // If we're not on notifications page, save current page and go to notifications
+      setPreviousPage(location.pathname);
+      navigate('/admin-notifications');
+      setIsOnNotificationsPage(true);
+    }
+  };
+
+
+
+  // Track location changes to update notification page state
+  useEffect(() => {
+    const currentPath = location.pathname;
+    if (currentPath === '/admin-notifications') {
+      setIsOnNotificationsPage(true);
+    } else {
+      setIsOnNotificationsPage(false);
+    }
+  }, [location.pathname]);
+
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setNotificationLoading(true);
+        
+        // Fetch all notifications (admin sees all notifications)
+        const notificationsQuery = query(
+          collection(db, "notifications"),
+          orderBy("createdAt", "desc"),
+          limit(20)
+        );
+
+        const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
+          const notificationData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            type: doc.data().type || 'general',
+            timestamp: doc.data().createdAt
+          }));
+          
+          setNotifications(notificationData);
+          setUnreadCount(notificationData.filter(n => !n.read).length);
+          setNotificationLoading(false);
+        }, (error) => {
+          console.error('Error listening to notifications:', error);
+          setNotificationLoading(false);
+        });
+
+        return unsubscribeNotifications;
+      } catch (error) {
+        console.error('Error setting up notification listeners:', error);
+        setNotificationLoading(false);
+        return () => {};
+      }
+    };
+
+    const unsubscribe = fetchNotifications();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
 
   const getUserDisplayInfo = () => {
     if (userProfile) {
@@ -100,13 +176,20 @@ function AdminHeader({ currentUser, userProfile }) {
         </Typography>
         <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Tooltip title="Notifications">
+            <Tooltip title={isOnNotificationsPage ? "Back to Dashboard" : "View Notifications"}>
               <IconButton
                 size="large"
                 aria-label="notifications"
                 color="inherit"
+                onClick={handleNotificationClick}
+                sx={{ 
+                  bgcolor: unreadCount > 0 ? '#ffebee' : 'transparent',
+                  '&:hover': { bgcolor: unreadCount > 0 ? '#ffcdd2' : '#f5f5f5' }
+                }}
               >
-                <Notifications />
+                <Badge badgeContent={unreadCount} color="error">
+                  <Notifications />
+                </Badge>
               </IconButton>
             </Tooltip>
             <Tooltip title="Account">
@@ -547,6 +630,7 @@ function App() {
                       <Route path="/receipt-review" element={<ReceiptReview />} />
                       <Route path="/lost-found" element={<AdminLostFound />} />
                       <Route path="/recycle-bin" element={<RecycleBin />} />
+                      <Route path="/admin-notifications" element={<AdminNotifications />} />
                       <Route path="/user/*" element={<Navigate to="/overview" />} />
                     </Routes>
                   </Box>
