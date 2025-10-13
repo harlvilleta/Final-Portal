@@ -87,14 +87,16 @@ export default function Overview() {
       setLoading(true);
       
       // Use Promise.all to fetch all data in parallel for better performance
-      const [studentsSnapshot, violationsSnapshot, activitiesSnapshot, announcementsSnapshot] = await Promise.allSettled([
+      const [studentsSnapshot, usersSnapshot, violationsSnapshot, activitiesSnapshot, announcementsSnapshot] = await Promise.allSettled([
         getDocs(collection(db, "students")),
+        getDocs(query(collection(db, "users"), where("role", "==", "Student"))),
         getDocs(collection(db, "violations")),
         getDocs(collection(db, "activities")).catch(() => ({ size: 0 })),
         getDocs(collection(db, "announcements")).catch(() => ({ size: 0 }))
       ]);
 
-      const studentsCount = studentsSnapshot.status === 'fulfilled' ? studentsSnapshot.value.size : 0;
+      const studentsCount = (studentsSnapshot.status === 'fulfilled' ? studentsSnapshot.value.size : 0) + 
+                           (usersSnapshot.status === 'fulfilled' ? usersSnapshot.value.size : 0);
       const violationsCount = violationsSnapshot.status === 'fulfilled' ? violationsSnapshot.value.size : 0;
       const activitiesCount = activitiesSnapshot.status === 'fulfilled' ? activitiesSnapshot.value.size : 0;
       const announcementsCount = announcementsSnapshot.status === 'fulfilled' ? announcementsSnapshot.value.size : 0;
@@ -133,41 +135,99 @@ export default function Overview() {
     const months = [];
     const currentDate = new Date();
     
-    // Create all queries in parallel for better performance
-    const queries = [];
-    const monthNames = [];
-    
     // Generate default data structure first
     for (let i = 5; i >= 0; i--) {
       const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
       const monthName = monthDate.toLocaleString('default', { month: 'short' });
       const year = monthDate.getFullYear();
+      const monthNumber = monthDate.getMonth();
       
-      const startOfMonth = new Date(year, monthDate.getMonth(), 1);
-      const endOfMonth = new Date(year, monthDate.getMonth() + 1, 0);
-      
-      try {
-        const q = query(
-          collection(db, collectionName),
-          where(dateField, ">=", startOfMonth.toISOString()),
-          where(dateField, "<=", endOfMonth.toISOString())
-        );
-        const snapshot = await getDocs(q);
-        
-        months.push({
-          month: monthName,
-          count: snapshot.size
-        });
-      } catch (error) {
-        console.log(`Error fetching ${collectionName} for ${monthName}:`, error);
-        months.push({
-          month: monthName,
-          count: 0
-        });
-      }
+      months.push({
+        month: monthName,
+        count: 0,
+        year: year,
+        monthNumber: monthNumber
+      });
     }
     
-    return months;
+    try {
+      if (collectionName === "students") {
+        // For students, fetch ALL students from both collections and distribute by month
+        const [studentsSnapshot, usersSnapshot] = await Promise.allSettled([
+          getDocs(collection(db, "students")),
+          getDocs(query(collection(db, "users"), where("role", "==", "Student")))
+        ]);
+        
+        // Process students from "students" collection
+        if (studentsSnapshot.status === 'fulfilled') {
+          studentsSnapshot.value.docs.forEach(doc => {
+            const data = doc.data();
+            const createdAt = data[dateField];
+            if (createdAt) {
+              const createdDate = new Date(createdAt);
+              const createdMonth = createdDate.getMonth();
+              const createdYear = createdDate.getFullYear();
+              
+              // Find matching month in our array
+              const monthIndex = months.findIndex(m => 
+                m.monthNumber === createdMonth && m.year === createdYear
+              );
+              
+              if (monthIndex !== -1) {
+                months[monthIndex].count++;
+              }
+            }
+          });
+        }
+        
+        // Process students from "users" collection
+        if (usersSnapshot.status === 'fulfilled') {
+          usersSnapshot.value.docs.forEach(doc => {
+            const data = doc.data();
+            const createdAt = data[dateField];
+            if (createdAt) {
+              const createdDate = new Date(createdAt);
+              const createdMonth = createdDate.getMonth();
+              const createdYear = createdDate.getFullYear();
+              
+              // Find matching month in our array
+              const monthIndex = months.findIndex(m => 
+                m.monthNumber === createdMonth && m.year === createdYear
+              );
+              
+              if (monthIndex !== -1) {
+                months[monthIndex].count++;
+              }
+            }
+          });
+        }
+      } else {
+        // For other collections (violations, etc.), use the original logic
+        for (let i = 0; i < months.length; i++) {
+          const monthDate = new Date(months[i].year, months[i].monthNumber, 1);
+          const startOfMonth = new Date(months[i].year, months[i].monthNumber, 1);
+          const endOfMonth = new Date(months[i].year, months[i].monthNumber + 1, 0, 23, 59, 59);
+          
+          try {
+            const q = query(
+              collection(db, collectionName),
+              where(dateField, ">=", startOfMonth.toISOString()),
+              where(dateField, "<=", endOfMonth.toISOString())
+            );
+            const snapshot = await getDocs(q);
+            months[i].count = snapshot.size;
+          } catch (error) {
+            console.log(`Error fetching ${collectionName} for ${months[i].month}:`, error);
+            months[i].count = 0;
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`Error generating monthly data for ${collectionName}:`, error);
+    }
+    
+    // Remove the extra properties we added for processing
+    return months.map(({ month, count }) => ({ month, count }));
   };
 
   const fetchRecentActivity = async () => {
@@ -312,7 +372,19 @@ export default function Overview() {
       <Grid container spacing={3}>
         {/* Students Monthly Chart */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, height: 400 }}>
+          <Paper 
+            sx={{ 
+              p: 3, 
+              height: 400, 
+              cursor: 'pointer',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                boxShadow: 6,
+                transform: 'translateY(-2px)'
+              }
+            }}
+            onClick={() => navigate('/students-chart')}
+          >
             <Typography variant="h6" gutterBottom>
               Students Registration (Last 6 Months)
             </Typography>
@@ -354,7 +426,19 @@ export default function Overview() {
 
         {/* Violations Monthly Chart */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, height: 400 }}>
+          <Paper 
+            sx={{ 
+              p: 3, 
+              height: 400, 
+              cursor: 'pointer',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                boxShadow: 6,
+                transform: 'translateY(-2px)'
+              }
+            }}
+            onClick={() => navigate('/violations-chart')}
+          >
             <Typography variant="h6" gutterBottom>
               Violations Reported (Last 6 Months)
             </Typography>

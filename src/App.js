@@ -46,6 +46,8 @@ import TeacherNotifications from "./pages/TeacherNotifications";
 import TeacherLostFound from "./pages/TeacherLostFound";
 import ActivitiesView from "./pages/ActivitiesView";
 import AdminNotifications from "./pages/AdminNotifications";
+import StudentsChartDashboard from "./pages/StudentsChartDashboard";
+import ViolationsChartDashboard from "./pages/ViolationsChartDashboard";
 
 // Header component for admin dashboard
 function AdminHeader({ currentUser, userProfile }) {
@@ -73,9 +75,16 @@ function AdminHeader({ currentUser, userProfile }) {
 
   const handleLogout = async () => {
     try {
+      setAnchorEl(null); // Close the menu first
+      console.log('Starting logout process...');
       await signOut(auth);
+      console.log('Successfully signed out');
+      // Force navigation to login page
+      window.location.href = '/';
     } catch (error) {
       console.error('Error signing out:', error);
+      // Even if there's an error, try to navigate to login page
+      window.location.href = '/';
     }
   };
 
@@ -144,7 +153,9 @@ function AdminHeader({ currentUser, userProfile }) {
 
     const unsubscribe = fetchNotifications();
     return () => {
-      if (unsubscribe) unsubscribe();
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
     };
   }, []);
 
@@ -631,6 +642,8 @@ function App() {
                       <Route path="/lost-found" element={<AdminLostFound />} />
                       <Route path="/recycle-bin" element={<RecycleBin />} />
                       <Route path="/admin-notifications" element={<AdminNotifications />} />
+                      <Route path="/students-chart" element={<StudentsChartDashboard />} />
+                      <Route path="/violations-chart" element={<ViolationsChartDashboard />} />
                       <Route path="/user/*" element={<Navigate to="/overview" />} />
                     </Routes>
                   </Box>

@@ -757,7 +757,7 @@ export default function Login({ onLoginSuccess }) {
           fullWidth 
           startIcon={googleLoading ? <CircularProgress size={20} /> : <GoogleIcon />} 
           sx={{ 
-            mb: 2, 
+            mb: 3, 
             py: 2, 
             fontSize: 18, 
             fontWeight: 600,
@@ -784,6 +784,24 @@ export default function Login({ onLoginSuccess }) {
           {googleLoading ? 'Signing in...' : 'Sign in with Google'}
         </Button>
         
+        <Box sx={{ textAlign: 'center', mb: 3 }}>
+          <Typography variant="body1" sx={{ color: '#666', fontWeight: 400 }}>
+            Don&apos;t have an account?{' '}
+            <Link 
+              component={RouterLink} 
+              to="/register" 
+              underline="hover" 
+              sx={{ 
+                color: '#800000',
+                fontWeight: 600,
+                '&:hover': { color: '#6b0000' }
+              }}
+            >
+              Register.
+            </Link>
+          </Typography>
+        </Box>
+        
         <Box sx={{ textAlign: 'right', mb: 3, width: '100%' }}>
           <Link 
             component="button" 
@@ -800,24 +818,6 @@ export default function Login({ onLoginSuccess }) {
           >
             Forgot password?
           </Link>
-        </Box>
-        
-        <Box sx={{ textAlign: 'center', mt: 2 }}>
-          <Typography variant="body1" sx={{ color: '#666', fontWeight: 400 }}>
-            Don&apos;t have an account yet?{' '}
-            <Link 
-              component={RouterLink} 
-              to="/register" 
-              underline="hover" 
-              sx={{ 
-                color: '#800000',
-                fontWeight: 600,
-                '&:hover': { color: '#1976d2' }
-              }}
-            >
-              Register
-            </Link>
-          </Typography>
         </Box>
       </Box>
       
