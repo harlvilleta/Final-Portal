@@ -210,7 +210,7 @@ export default function ViolationReview() {
   return (
     <Box sx={{ p: 3 }}>
       <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
-        <Typography variant="h4" gutterBottom color="primary" sx={{ fontWeight: 700, mb: 3 }}>
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, color: '#800000' }}>
           🚨 Violation Review & Approval
         </Typography>
         
@@ -335,14 +335,17 @@ export default function ViolationReview() {
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
                         <Tooltip title="View Details">
                           <IconButton 
                             size="small" 
                             onClick={() => handleViewDetails(violation)}
-                            color="primary"
+                            sx={{ 
+                              color: '#666',
+                              '&:hover': { color: '#1976d2' }
+                            }}
                           >
-                            <Visibility />
+                            <Visibility sx={{ fontSize: 18 }} />
                           </IconButton>
                         </Tooltip>
                         
@@ -352,18 +355,24 @@ export default function ViolationReview() {
                               <IconButton 
                                 size="small" 
                                 onClick={() => handleApprovalAction(violation, 'approve')}
-                                color="success"
+                                sx={{ 
+                                  color: '#666',
+                                  '&:hover': { color: '#4caf50' }
+                                }}
                               >
-                                <CheckCircle />
+                                <CheckCircle sx={{ fontSize: 18 }} />
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Deny">
                               <IconButton 
                                 size="small" 
                                 onClick={() => handleApprovalAction(violation, 'deny')}
-                                color="error"
+                                sx={{ 
+                                  color: '#666',
+                                  '&:hover': { color: '#f44336' }
+                                }}
                               >
-                                <Cancel />
+                                <Cancel sx={{ fontSize: 18 }} />
                               </IconButton>
                             </Tooltip>
                           </>
