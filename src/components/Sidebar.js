@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { List, ListItem, ListItemIcon, ListItemText, Drawer, Divider, Box, Typography, Avatar, Collapse, ListItemButton, Chip } from "@mui/material";
-import { Dashboard, People, Settings, Event, ExitToApp, Campaign, Report, ListAlt, History, Logout, Search, ExpandLess, ExpandMore, Assignment, MeetingRoom, Timeline, Assessment, Description, PersonAdd, School, Receipt } from "@mui/icons-material";
+import { Dashboard, People, Settings, Event, ExitToApp, Campaign, Report, ListAlt, History, Logout, Search, ExpandLess, ExpandMore, Assignment, MeetingRoom, Timeline, Assessment, Description, School, Receipt } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
@@ -13,8 +13,7 @@ const menu = [
     path: "/students",
     hasSubmenu: true,
     submenu: [
-      { text: "Student List", icon: <School sx={{ color: 'inherit' }} />, path: "/students" },
-      { text: "Add Student", icon: <PersonAdd sx={{ color: 'inherit' }} />, path: "/students/add-student" }
+      { text: "Student List", icon: <School sx={{ color: 'inherit' }} />, path: "/students" }
     ]
   },
   { 
@@ -120,7 +119,15 @@ export default function Sidebar() {
         <Divider sx={{ width: '100%', mb: 2, bgcolor: '#b2bec3' }} />
       </Box>
       
-      <List sx={{ flex: 1 }}>
+      <List sx={{ 
+        flex: 1,
+        overflowY: 'auto',
+        '&::-webkit-scrollbar': {
+          display: 'none'
+        },
+        scrollbarWidth: 'none', // Firefox
+        msOverflowStyle: 'none' // IE and Edge
+      }}>
         {menu.map((item) => (
           <Box key={item.text}>
             <ListItem

@@ -2633,7 +2633,6 @@ export default function Students() {
           />
         } />
 
-        <Route path="add-student" element={<AddStudent onClose={() => {}} />} />
         <Route path="student-list" element={
           <StudentList
             setOpenAddStudent={setOpenAddStudent}
