@@ -59,16 +59,53 @@ function ActivityHistoryTable({ activities, onView, onEdit, onDelete, search, on
               <TableCell>{a.title}</TableCell>
               <TableCell>{a.date ? new Date(a.date).toLocaleDateString() : ''}</TableCell>
               <TableCell>
-                <Chip label={a.completed ? 'Completed' : 'Scheduled'} color={a.completed ? 'success' : 'warning'} size="small" />
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: a.completed ? '#4caf50' : '#800000',
+                    fontWeight: 500
+                  }}
+                >
+                  {a.completed ? 'Completed' : 'Scheduled'}
+                </Typography>
               </TableCell>
               <TableCell>
-                <Chip label={a.category} color="info" size="small" />
+                <Typography variant="body2">
+                  {a.category}
+                </Typography>
               </TableCell>
               <TableCell>
                 <Stack direction="row" spacing={1}>
-                  <IconButton size="small" color="primary" onClick={() => onView(a)}><Visibility /></IconButton>
-                  <IconButton size="small" color="warning" onClick={() => onEdit(a)}><Edit /></IconButton>
-                  <IconButton size="small" color="error" onClick={() => onDelete(a)}><Delete /></IconButton>
+                  <IconButton 
+                    size="small" 
+                    onClick={() => onView(a)}
+                    sx={{ 
+                      color: '#666',
+                      '&:hover': { color: '#1976d2' }
+                    }}
+                  >
+                    <Visibility />
+                  </IconButton>
+                  <IconButton 
+                    size="small" 
+                    onClick={() => onEdit(a)}
+                    sx={{ 
+                      color: '#666',
+                      '&:hover': { color: '#4caf50' }
+                    }}
+                  >
+                    <Edit />
+                  </IconButton>
+                  <IconButton 
+                    size="small" 
+                    onClick={() => onDelete(a)}
+                    sx={{ 
+                      color: '#666',
+                      '&:hover': { color: '#f44336' }
+                    }}
+                  >
+                    <Delete />
+                  </IconButton>
                 </Stack>
               </TableCell>
             </TableRow>
@@ -154,7 +191,7 @@ export default function ActivityHistory() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#1976d2', mb: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#800000', mb: 3 }}>
         Activity History
       </Typography>
       

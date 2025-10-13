@@ -504,21 +504,14 @@ export default function AdminLostFound() {
                 onChange={e => setFoundForm(f => ({ ...f, location: e.target.value }))} 
                 sx={{ mb: 2 }} 
               />
-              <TextField
-                select
-                fullWidth
-                label="Student Who Found"
-                value={foundForm.foundBy || ""}
-                onChange={e => setFoundForm(f => ({ ...f, foundBy: e.target.value }))}
-                sx={{ mb: 2 }}
-              >
-                <MenuItem value="">Select a student</MenuItem>
-                {students.map(student => (
-                  <MenuItem key={student.id} value={student.id}>
-                    {student.id} - {student.firstName} {student.lastName}
-                  </MenuItem>
-                ))}
-              </TextField>
+              <TextField 
+                fullWidth 
+                label="Person Who Found" 
+                value={foundForm.foundBy || ""} 
+                onChange={e => setFoundForm(f => ({ ...f, foundBy: e.target.value }))} 
+                sx={{ mb: 2 }} 
+                placeholder="Enter the name of the person who found the item"
+              />
                              <Button 
                  variant="outlined" 
                  component="label" 
@@ -724,21 +717,14 @@ export default function AdminLostFound() {
                 onChange={e => setLostForm(f => ({ ...f, location: e.target.value }))} 
                 sx={{ mb: 2 }} 
               />
-              <TextField
-                select
-                fullWidth
-                label="Student Who Lost"
-                value={lostForm.lostBy || ""}
-                onChange={e => setLostForm(f => ({ ...f, lostBy: e.target.value }))}
-                sx={{ mb: 2 }}
-              >
-                <MenuItem value="">Select a student</MenuItem>
-                {students.map(student => (
-                  <MenuItem key={student.id} value={student.id}>
-                    {student.id} - {student.firstName} {student.lastName}
-                  </MenuItem>
-                ))}
-              </TextField>
+              <TextField 
+                fullWidth 
+                label="Person Who Lost" 
+                value={lostForm.lostBy || ""} 
+                onChange={e => setLostForm(f => ({ ...f, lostBy: e.target.value }))} 
+                sx={{ mb: 2 }} 
+                placeholder="Enter the name of the person who lost the item"
+              />
                              <Button 
                  variant="outlined" 
                  component="label" 
