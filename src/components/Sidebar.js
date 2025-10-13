@@ -44,8 +44,7 @@ const menu = [
       { text: "Report", icon: <Description sx={{ color: 'inherit' }} />, path: "/announcements/report" }
     ]
   },
-{ text: "Options", icon: <Settings sx={{ color: 'inherit' }} />, path: "/options" },
-{ text: "Exit", icon: <Logout sx={{ color: 'inherit' }} />, path: "/exit" }
+{ text: "Options", icon: <Settings sx={{ color: 'inherit' }} />, path: "/options" }
 ];
 
 export default function Sidebar() {
@@ -63,9 +62,7 @@ export default function Sidebar() {
   };
 
   const handleMenuClick = (item) => {
-    if (item.text === "Exit") {
-      handleLogout();
-    } else if (item.hasSubmenu) {
+    if (item.hasSubmenu) {
       setOpenSubmenu(prev => ({
         ...prev,
         [item.text]: !prev[item.text]
@@ -127,24 +124,18 @@ export default function Sidebar() {
               selected={isItemSelected(item)}
               onClick={() => handleMenuClick(item)}
               sx={{
-                cursor: 'pointer',
+                mb: 1,
                 borderRadius: 2,
-                m: 1,
-                boxShadow: 1,
-                transition: 'all 0.2s',
-                "&.Mui-selected": { 
-                  bgcolor: "#636e72",
-                  boxShadow: 3,
-                  transform: 'translateX(4px)'
+                bgcolor: isItemSelected(item) ? '#636e72' : 'transparent',
+                color: isItemSelected(item) ? '#fff' : '#b2bec3',
+                '&:hover': {
+                  bgcolor: isItemSelected(item) ? '#636e72' : '#4a5568',
+                  transform: 'translateX(4px)',
+                  boxShadow: 2
                 },
-                "&:hover": { 
-                  bgcolor: "#636e72", 
-                  boxShadow: 3,
-                  transform: 'translateX(2px)'
-                }
               }}
             >
-              <ListItemIcon sx={{ color: 'white' }}>{item.icon}</ListItemIcon>
+              <ListItemIcon sx={{ minWidth: 40, color: 'white' }}>{item.icon}</ListItemIcon>
               <ListItemText 
                 primary={item.text} 
                 sx={{ 
@@ -168,20 +159,17 @@ export default function Sidebar() {
                       sx={{
                         pl: 4,
                         borderRadius: 2,
-                        mx: 1,
                         mb: 0.5,
-                        transition: 'all 0.2s',
-                        "&.Mui-selected": { 
-                          bgcolor: "#636e72",
-                          transform: 'translateX(4px)'
-                        },
-                        "&:hover": { 
-                          bgcolor: "#636e72",
-                          transform: 'translateX(2px)'
+                        bgcolor: isSubItemSelected(subItem) ? '#636e72' : 'transparent',
+                        color: isSubItemSelected(subItem) ? '#fff' : '#b2bec3',
+                        '&:hover': {
+                          bgcolor: isSubItemSelected(subItem) ? '#636e72' : '#4a5568',
+                          transform: 'translateX(4px)',
+                          boxShadow: 2
                         }
                       }}
                     >
-                      <ListItemIcon sx={{ minWidth: 36, color: 'white' }}>
+                      <ListItemIcon sx={{ minWidth: 40, color: 'white' }}>
                         {subItem.icon}
                       </ListItemIcon>
                       <ListItemText 
@@ -199,6 +187,34 @@ export default function Sidebar() {
             )}
           </Box>
         ))}
+
+        <Divider sx={{ my: 2, bgcolor: '#b2bec3' }} />
+
+        <ListItem
+          button
+          onClick={handleLogout}
+          sx={{
+            borderRadius: 2,
+            '&:hover': {
+              bgcolor: '#d32f2f',
+              transform: 'translateX(4px)',
+              boxShadow: 2
+            },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 40 }}>
+            <Logout sx={{ color: '#ff6b6b' }} />
+          </ListItemIcon>
+          <ListItemText 
+            primary="Logout" 
+            sx={{ 
+              '& .MuiListItemText-primary': {
+                color: '#ff6b6b',
+                fontWeight: 500,
+              }
+            }}
+          />
+        </ListItem>
       </List>
     </Drawer>
   );

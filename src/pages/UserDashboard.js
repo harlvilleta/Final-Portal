@@ -3,7 +3,7 @@ import {
   Box, Typography, Grid, Card, CardContent, List, ListItem, ListItemAvatar, 
   ListItemText, Avatar, Chip, Button, CircularProgress
 } from "@mui/material";
-import { CheckCircle, Warning, Announcement, EventNote } from "@mui/icons-material";
+import { CheckCircle, Warning, Announcement, EventNote, Report, Event, Campaign, People } from "@mui/icons-material";
 import { Link } from "react-router-dom";
 import { db, auth, logActivity } from "../firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, where, query, onSnapshot, orderBy, setDoc, getDoc, limit } from "firebase/firestore";
@@ -105,11 +105,35 @@ function UserOverview({ currentUser }) {
     });
 
     const unsubNotifications = onSnapshot(notificationsQuery, (snap) => {
-      const notifications = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setNotifications(notifications);
+      const allNotifications = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
-      // Calculate unread notifications
-      const unreadCount = notifications.filter(n => !n.read).length;
+      // Filter out enrollment/joining related notifications for students
+      const filteredNotifications = allNotifications.filter(notification => {
+        // Exclude notifications related to student enrollment, joining, or registration
+        const title = notification.title?.toLowerCase() || '';
+        const message = notification.message?.toLowerCase() || '';
+        const type = notification.type?.toLowerCase() || '';
+        
+        // Keywords to exclude
+        const excludeKeywords = [
+          'enrollment', 'enroll', 'joining', 'joined', 'registration', 'register',
+          'student added', 'new student', 'student created', 'account created',
+          'welcome new student', 'student registration', 'enrolled student'
+        ];
+        
+        // Check if notification contains any exclusion keywords
+        const shouldExclude = excludeKeywords.some(keyword => 
+          title.includes(keyword) || message.includes(keyword) || type.includes(keyword)
+        );
+        
+        // Only show lost and found, announcements, and other non-enrollment notifications
+        return !shouldExclude;
+      });
+      
+      setNotifications(filteredNotifications);
+      
+      // Calculate unread notifications from filtered list
+      const unreadCount = filteredNotifications.filter(n => !n.read).length;
       setStats(prev => ({
         ...prev,
         unreadNotifications: unreadCount
@@ -150,7 +174,13 @@ function UserOverview({ currentUser }) {
   return (
     <Box>
       {/* User Profile Section */}
-      <Card sx={{ mb: 4, bgcolor: '#f8f9fa', border: '2px solid #1976d2' }}>
+      <Card sx={{ 
+        mb: 4, 
+        bgcolor: 'white', 
+        border: 'none',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+        borderRadius: 2
+      }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 3 }}>
             <Avatar 
@@ -166,7 +196,7 @@ function UserOverview({ currentUser }) {
               {!userInfo.photo && (userInfo.name?.charAt(0) || userInfo.email?.charAt(0))}
             </Avatar>
             <Box sx={{ flex: 1, minWidth: 200 }}>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2', mb: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: '#000000', mb: 1 }}>
                 {userInfo.name}
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
@@ -175,15 +205,19 @@ function UserOverview({ currentUser }) {
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 <Chip 
                   label={userInfo.role} 
-                  color="primary" 
-                  variant="outlined"
-                  sx={{ fontWeight: 600 }}
+                  sx={{ 
+                    fontWeight: 600,
+                    bgcolor: '#1976d2',
+                    color: 'white'
+                  }}
                 />
                 <Chip 
                   label="Active" 
-                  color="success" 
-                  variant="outlined"
-                  sx={{ fontWeight: 600 }}
+                  sx={{ 
+                    fontWeight: 600,
+                    bgcolor: '#2e7d32',
+                    color: 'white'
+                  }}
                 />
               </Box>
             </Box>
@@ -191,7 +225,7 @@ function UserOverview({ currentUser }) {
               <Typography variant="h6" color="text.secondary" gutterBottom>
                 Quick Stats
               </Typography>
-              <Typography variant="h4" color="primary.main" fontWeight={700}>
+              <Typography variant="h4" color="#1976d2" fontWeight={700}>
                 {stats.totalViolations}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -206,71 +240,88 @@ function UserOverview({ currentUser }) {
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ 
-            bgcolor: '#e3f2fd', 
-            border: '1px solid #1976d2',
-            boxShadow: 2,
-            '&:hover': { boxShadow: 4, transform: 'translateY(-2px)' },
-            transition: 'all 0.3s ease'
+            display: 'flex', 
+            alignItems: 'center', 
+            p: 2, 
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+            borderRadius: 2,
+            background: 'white',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'box-shadow 0.2s, transform 0.2s',
+            '&:hover': {
+              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
+              transform: 'translateY(-2px)',
+            },
           }}>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom fontWeight={600}>Total Violations</Typography>
-              <Typography variant="h4" color="primary.main" fontWeight={700}>{stats.totalViolations}</Typography>
+            <Box sx={{ mr: 2 }}>
+              <Report fontSize="large" sx={{ color: '#d32f2f' }} />
+            </Box>
+            <CardContent sx={{ flex: 1, p: '8px !important' }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
+                {stats.totalViolations.toLocaleString()}
+              </Typography>
+              <Typography color="text.secondary" variant="body2">
+                Total Violations
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ 
-            bgcolor: '#fff3e0', 
-            border: '1px solid #ff9800',
-            boxShadow: 2,
-            '&:hover': { boxShadow: 4, transform: 'translateY(-2px)' },
-            transition: 'all 0.3s ease'
+            display: 'flex', 
+            alignItems: 'center', 
+            p: 2, 
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+            borderRadius: 2,
+            background: 'white',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'box-shadow 0.2s, transform 0.2s',
+            '&:hover': {
+              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
+              transform: 'translateY(-2px)',
+            },
           }}>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom fontWeight={600}>Pending</Typography>
-              <Typography variant="h4" color="warning.main" fontWeight={700}>{stats.pendingViolations}</Typography>
+            <Box sx={{ mr: 2 }}>
+              <Warning fontSize="large" sx={{ color: '#ed6c02' }} />
+            </Box>
+            <CardContent sx={{ flex: 1, p: '8px !important' }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
+                {stats.pendingViolations.toLocaleString()}
+              </Typography>
+              <Typography color="text.secondary" variant="body2">
+                Pending
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ 
-            bgcolor: '#e8f5e8', 
-            border: '1px solid #4caf50',
-            boxShadow: 2,
-            '&:hover': { boxShadow: 4, transform: 'translateY(-2px)' },
-            transition: 'all 0.3s ease'
+            display: 'flex', 
+            alignItems: 'center', 
+            p: 2, 
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+            borderRadius: 2,
+            background: 'white',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'box-shadow 0.2s, transform 0.2s',
+            '&:hover': {
+              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
+              transform: 'translateY(-2px)',
+            },
           }}>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom fontWeight={600}>Resolved</Typography>
-              <Typography variant="h4" color="success.main" fontWeight={700}>{stats.resolvedViolations}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            bgcolor: '#fce4ec', 
-            border: '1px solid #e91e63',
-            boxShadow: stats.unreadNotifications > 0 ? 4 : 2,
-            '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' },
-            transition: 'all 0.3s ease',
-            animation: stats.unreadNotifications > 0 ? 'pulse 2s infinite' : 'none',
-            '@keyframes pulse': {
-              '0%': { boxShadow: '0 0 0 0 rgba(233, 30, 99, 0.7)' },
-              '70%': { boxShadow: '0 0 0 10px rgba(233, 30, 99, 0)' },
-              '100%': { boxShadow: '0 0 0 0 rgba(233, 30, 99, 0)' }
-            }
-          }}>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom fontWeight={600}>Notifications</Typography>
-              <Typography variant="h4" color="error.main" fontWeight={700}>{stats.unreadNotifications}</Typography>
-              {stats.unreadNotifications > 0 && (
-                <Chip 
-                  label="NEW" 
-                  size="small" 
-                  color="error" 
-                  sx={{ mt: 1, fontWeight: 600 }}
-                />
-              )}
+            <Box sx={{ mr: 2 }}>
+              <CheckCircle fontSize="large" sx={{ color: '#2e7d32' }} />
+            </Box>
+            <CardContent sx={{ flex: 1, p: '8px !important' }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
+                {stats.resolvedViolations.toLocaleString()}
+              </Typography>
+              <Typography color="text.secondary" variant="body2">
+                Resolved
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -280,26 +331,26 @@ function UserOverview({ currentUser }) {
       {recentNotifications.length > 0 && (
         <Card sx={{ 
           mb: 4, 
-          border: stats.unreadNotifications > 0 ? '1px solid #ff9800' : '1px solid #ff9800',
-          boxShadow: stats.unreadNotifications > 0 ? 4 : 2,
-          bgcolor: stats.unreadNotifications > 0 ? '#fff8e1' : '#fff',
-          animation: stats.unreadNotifications > 0 ? 'glow 2s ease-in-out infinite alternate' : 'none',
-          '@keyframes glow': {
-            '0%': { boxShadow: '0 0 5px rgba(255, 152, 0, 0.5)' },
-            '100%': { boxShadow: '0 0 20px rgba(255, 152, 0, 0.8)' }
-          }
+          border: '1px solid #800000',
+          borderLeft: '4px solid #800000',
+          boxShadow: 3,
+          bgcolor: '#80000015',
+          borderRadius: 2
         }}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Warning color="warning" sx={{ mr: 1, fontSize: 28 }} />
-              <Typography variant="h6" color="warning.main" fontWeight={700}>
+              <Campaign sx={{ mr: 1, fontSize: 28, color: '#800000' }} />
+              <Typography variant="h6" color="#800000" fontWeight={700}>
                 Recent Notifications 
                 {stats.unreadNotifications > 0 && (
                   <Chip 
                     label={`${stats.unreadNotifications} UNREAD`} 
-                    color="error" 
-                    size="small" 
-                    sx={{ ml: 2, fontWeight: 600 }}
+                    sx={{ 
+                      ml: 2, 
+                      fontWeight: 600,
+                      bgcolor: '#d32f2f',
+                      color: 'white'
+                    }}
                   />
                 )}
               </Typography>

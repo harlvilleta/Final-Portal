@@ -647,27 +647,27 @@ School Administration
         <TableContainer component={Paper} sx={{ maxHeight: 500, width: '100%', overflowX: 'auto' }}>
           <Table size="small" stickyHeader sx={{ minWidth: 880 }}>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-                <TableCell sx={{ minWidth: 160 }}>Student Name</TableCell>
-                <TableCell sx={{ minWidth: 110 }}>Student ID</TableCell>
-                <TableCell sx={{ minWidth: 180 }}>Violation</TableCell>
-                <TableCell sx={{ minWidth: 110 }}>Date</TableCell>
-                <TableCell sx={{ minWidth: 100 }}>Time</TableCell>
-                <TableCell sx={{ minWidth: 60 }} align="right">Delete</TableCell>
-              </TableRow>
+                <TableRow sx={{ bgcolor: '#800000' }}>
+                  <TableCell sx={{ minWidth: 160, fontSize: 16, fontWeight: 700, color: 'black' }}>Student Name</TableCell>
+                  <TableCell sx={{ minWidth: 110, fontSize: 16, fontWeight: 700, color: 'black' }}>Student ID</TableCell>
+                  <TableCell sx={{ minWidth: 180, fontSize: 16, fontWeight: 700, color: 'black' }}>Violation</TableCell>
+                  <TableCell sx={{ minWidth: 110, fontSize: 16, fontWeight: 700, color: 'black' }}>Date</TableCell>
+                  <TableCell sx={{ minWidth: 100, fontSize: 16, fontWeight: 700, color: 'black' }}>Time</TableCell>
+                  <TableCell sx={{ minWidth: 60, fontSize: 16, fontWeight: 700, color: 'black' }} align="right">Delete</TableCell>
+                </TableRow>
             </TableHead>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={6}>No violations found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} sx={{ fontSize: 14, fontWeight: 400, textAlign: 'center' }}>No violations found.</TableCell></TableRow>
               ) : filtered.map((v, idx) => (
                 <TableRow key={v.id || idx} hover sx={{ cursor: 'pointer' }}>
-                  <TableCell sx={{ fontSize: 14, fontWeight: 500 }} onClick={() => setViewViolation(v)}>{v.studentName || 'N/A'}</TableCell>
-                  <TableCell sx={{ fontSize: 14, fontWeight: 500 }} onClick={() => setViewViolation(v)}>{v.studentId || 'N/A'}</TableCell>
-                  <TableCell sx={{ fontSize: 14, fontWeight: 500, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setViewViolation(v)}>
+                  <TableCell sx={{ fontSize: 14, fontWeight: 400 }} onClick={() => setViewViolation(v)}>{v.studentName || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: 14, fontWeight: 400 }} onClick={() => setViewViolation(v)}>{v.studentId || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: 14, fontWeight: 400, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setViewViolation(v)}>
                     <Tooltip title={v.violation || ''}><span>{v.violation || 'N/A'}</span></Tooltip>
                   </TableCell>
-                  <TableCell sx={{ fontSize: 14, fontWeight: 500 }} onClick={() => setViewViolation(v)}>{v.date || 'N/A'}</TableCell>
-                  <TableCell sx={{ fontSize: 14, fontWeight: 500 }} onClick={() => setViewViolation(v)}>{v.time || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: 14, fontWeight: 400 }} onClick={() => setViewViolation(v)}>{v.date || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: 14, fontWeight: 400 }} onClick={() => setViewViolation(v)}>{v.time || 'N/A'}</TableCell>
                   <TableCell align="right">
                     <Tooltip title="Delete record">
                       <IconButton size="small" sx={{ color: 'grey.600', '&:hover': { color: 'error.main' } }} onClick={() => setDeleteConfirm({ open: true, id: v.id })}>

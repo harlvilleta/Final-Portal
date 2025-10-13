@@ -121,7 +121,15 @@ export default function UserSidebar() {
         <Divider sx={{ width: '100%', mb: 2, bgcolor: '#e0e0e0' }} />
       </Box>
       
-      <List sx={{ flex: 1 }}>
+      <List sx={{ 
+        flex: 1,
+        overflowY: 'auto',
+        '&::-webkit-scrollbar': {
+          display: 'none'
+        },
+        scrollbarWidth: 'none', // Firefox
+        msOverflowStyle: 'none' // IE and Edge
+      }}>
         {userMenu.map((item, index) => (
           <ListItem
             key={index}

@@ -30,8 +30,32 @@ export default function UserNotifications({ currentUser }) {
     );
     
     const unsubscribe = onSnapshot(notificationsQuery, (snap) => {
-      const notificationsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setNotifications(notificationsData);
+      const allNotifications = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // Filter out enrollment/joining related notifications for students
+      const filteredNotifications = allNotifications.filter(notification => {
+        // Exclude notifications related to student enrollment, joining, or registration
+        const title = notification.title?.toLowerCase() || '';
+        const message = notification.message?.toLowerCase() || '';
+        const type = notification.type?.toLowerCase() || '';
+        
+        // Keywords to exclude
+        const excludeKeywords = [
+          'enrollment', 'enroll', 'joining', 'joined', 'registration', 'register',
+          'student added', 'new student', 'student created', 'account created',
+          'welcome new student', 'student registration', 'enrolled student'
+        ];
+        
+        // Check if notification contains any exclusion keywords
+        const shouldExclude = excludeKeywords.some(keyword => 
+          title.includes(keyword) || message.includes(keyword) || type.includes(keyword)
+        );
+        
+        // Only show lost and found, announcements, and other non-enrollment notifications
+        return !shouldExclude;
+      });
+      
+      setNotifications(filteredNotifications);
       setLoading(false);
     }, (error) => {
       console.error('Error fetching notifications:', error);

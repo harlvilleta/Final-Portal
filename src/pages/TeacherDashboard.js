@@ -33,7 +33,10 @@ import {
   CalendarToday,
   CheckCircle,
   Warning,
-  Info
+  Info,
+  Report,
+  Campaign,
+  People
 } from '@mui/icons-material';
 import { auth, db } from '../firebase';
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
@@ -206,7 +209,7 @@ export default function TeacherDashboard() {
         <Typography 
           variant="h4" 
           fontWeight={700} 
-          color="#2d3436" 
+          color="#800000" 
           gutterBottom 
           sx={{ 
             wordBreak: 'break-word',
@@ -214,7 +217,7 @@ export default function TeacherDashboard() {
             lineHeight: 1.2
           }}
         >
-          Welcome back, {userInfo.name}! 👋
+          Teacher Dashboard
         </Typography>
         <Typography 
           variant="body1" 
@@ -225,7 +228,7 @@ export default function TeacherDashboard() {
             lineHeight: 1.4
           }}
         >
-          Here's what's happening in your classroom today
+          Welcome back, {userInfo.name}! Here's what's happening in your classroom today
         </Typography>
       </Box>
 
@@ -233,126 +236,120 @@ export default function TeacherDashboard() {
       <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ 
-            bgcolor: '#e3f2fd', 
-            border: '1px solid #2196f3',
-            borderRadius: 3,
-            boxShadow: '0 4px 12px rgba(33, 150, 243, 0.15)',
-            transition: 'transform 0.2s, box-shadow 0.2s',
+            display: 'flex', 
+            alignItems: 'center', 
+            p: 2, 
+            boxShadow: 3, 
+            borderRadius: 2,
+            borderLeft: '4px solid #d32f2f',
+            background: '#d32f2f20',
+            cursor: 'pointer',
+            transition: 'box-shadow 0.2s, background 0.2s',
             '&:hover': {
-              transform: 'translateY(-4px)',
-              boxShadow: '0 8px 24px rgba(33, 150, 243, 0.25)'
+              boxShadow: 6,
+              background: '#d32f2f22',
             },
-            height: '100%'
           }}>
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h4" fontWeight={700} color="#1976d2" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
-                    {myReportsCount}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                    My Reports
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: '#1976d2', width: { xs: 48, sm: 56 }, height: { xs: 48, sm: 56 } }}>
-                  <Assignment sx={{ fontSize: { xs: 24, sm: 28 } }} />
-                </Avatar>
-              </Box>
+            <Box sx={{ mr: 2 }}>
+              <Report fontSize="large" sx={{ color: '#d32f2f' }} />
+            </Box>
+            <CardContent sx={{ flex: 1, p: '8px !important' }}>
+              <Typography variant="h4" fontWeight={700} color="#d32f2f">
+                {myReportsCount.toLocaleString()}
+              </Typography>
+              <Typography color="text.secondary" variant="body2">
+                My Reports
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ 
-            bgcolor: '#fff3e0', 
-            border: '1px solid #ff9800',
-            borderRadius: 3,
-            boxShadow: '0 4px 12px rgba(255, 152, 0, 0.15)',
-            transition: 'transform 0.2s, box-shadow 0.2s',
+            display: 'flex', 
+            alignItems: 'center', 
+            p: 2, 
+            boxShadow: 3, 
+            borderRadius: 2,
+            borderLeft: '4px solid #ed6c02',
+            background: '#ed6c0220',
+            cursor: 'pointer',
+            transition: 'box-shadow 0.2s, background 0.2s',
             '&:hover': {
-              transform: 'translateY(-4px)',
-              boxShadow: '0 8px 24px rgba(255, 152, 0, 0.25)'
+              boxShadow: 6,
+              background: '#ed6c0222',
             },
-            height: '100%'
           }}>
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                 <Box>
-                   <Typography variant="h4" fontWeight={700} color="#f57c00" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
-                     {meetingsCount}
-                   </Typography>
-                   <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                     Meetings
-                   </Typography>
-                 </Box>
-                <Avatar sx={{ bgcolor: '#ff9800', width: { xs: 48, sm: 56 }, height: { xs: 48, sm: 56 } }}>
-                  <Warning sx={{ fontSize: { xs: 24, sm: 28 } }} />
-                </Avatar>
-              </Box>
+            <Box sx={{ mr: 2 }}>
+              <Warning fontSize="large" sx={{ color: '#ed6c02' }} />
+            </Box>
+            <CardContent sx={{ flex: 1, p: '8px !important' }}>
+              <Typography variant="h4" fontWeight={700} color="#ed6c02">
+                {meetingsCount.toLocaleString()}
+              </Typography>
+              <Typography color="text.secondary" variant="body2">
+                Meetings
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ 
-            bgcolor: '#e8f5e8', 
-            border: '1px solid #4caf50',
-            borderRadius: 3,
-            boxShadow: '0 4px 12px rgba(76, 175, 80, 0.15)',
-            transition: 'transform 0.2s, box-shadow 0.2s',
+            display: 'flex', 
+            alignItems: 'center', 
+            p: 2, 
+            boxShadow: 3, 
+            borderRadius: 2,
+            borderLeft: '4px solid #2e7d32',
+            background: '#2e7d3220',
+            cursor: 'pointer',
+            transition: 'box-shadow 0.2s, background 0.2s',
             '&:hover': {
-              transform: 'translateY(-4px)',
-              boxShadow: '0 8px 24px rgba(76, 175, 80, 0.25)'
+              boxShadow: 6,
+              background: '#2e7d3222',
             },
-            height: '100%'
           }}>
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h4" fontWeight={700} color="#388e3c" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
-                    {announcements.length}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                    Announcements
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: '#4caf50', width: { xs: 48, sm: 56 }, height: { xs: 48, sm: 56 } }}>
-                  <Announcement sx={{ fontSize: { xs: 24, sm: 28 } }} />
-                </Avatar>
-              </Box>
+            <Box sx={{ mr: 2 }}>
+              <Campaign fontSize="large" sx={{ color: '#2e7d32' }} />
+            </Box>
+            <CardContent sx={{ flex: 1, p: '8px !important' }}>
+              <Typography variant="h4" fontWeight={700} color="#2e7d32">
+                {announcements.length.toLocaleString()}
+              </Typography>
+              <Typography color="text.secondary" variant="body2">
+                Announcements
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ 
-            bgcolor: '#fce4ec', 
-            border: '1px solid #e91e63',
-            borderRadius: 3,
-            boxShadow: '0 4px 12px rgba(233, 25, 99, 0.15)',
-            transition: 'transform 0.2s, box-shadow 0.2s',
+            display: 'flex', 
+            alignItems: 'center', 
+            p: 2, 
+            boxShadow: 3, 
+            borderRadius: 2,
+            borderLeft: '4px solid #800000',
+            background: '#80000020',
+            cursor: 'pointer',
+            transition: 'box-shadow 0.2s, background 0.2s',
             '&:hover': {
-              transform: 'translateY(-4px)',
-              boxShadow: '0 8px 24px rgba(233, 25, 99, 0.25)'
+              boxShadow: 6,
+              background: '#80000022',
             },
-            height: '100%'
           }}>
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h4" fontWeight={700} color="#e91e63" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
-                    {getUnreadNotificationsCount()}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                    Unread Notifications
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: '#e91e63', width: { xs: 48, sm: 56 }, height: { xs: 48, sm: 56 } }}>
-                  <Badge badgeContent={getUnreadNotificationsCount()} color="error">
-                    <Notifications sx={{ fontSize: { xs: 24, sm: 28 } }} />
-                  </Badge>
-                </Avatar>
-              </Box>
+            <Box sx={{ mr: 2 }}>
+              <Notifications fontSize="large" sx={{ color: '#800000' }} />
+            </Box>
+            <CardContent sx={{ flex: 1, p: '8px !important' }}>
+              <Typography variant="h4" fontWeight={700} color="#800000">
+                {getUnreadNotificationsCount().toLocaleString()}
+              </Typography>
+              <Typography color="text.secondary" variant="body2">
+                Unread Notifications
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -365,20 +362,31 @@ export default function TeacherDashboard() {
         {/* Recent Violations */}
         <Grid item xs={12} lg={6}>
           <Card sx={{ 
-            borderRadius: 3, 
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            border: '1px solid #800000',
+            borderLeft: '4px solid #800000',
+            boxShadow: 3,
+            bgcolor: '#80000015',
+            borderRadius: 2,
             height: 'fit-content'
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600} color="#2d3436">
+                <Typography variant="h6" fontWeight={700} color="#800000">
                   Recent Violations
                 </Typography>
                 <Button 
                   size="small" 
-                  color="primary" 
+                  sx={{ 
+                    textTransform: 'none',
+                    color: '#800000',
+                    borderColor: '#800000',
+                    '&:hover': {
+                      borderColor: '#6b0000',
+                      backgroundColor: '#80000010'
+                    }
+                  }}
+                  variant="outlined"
                   onClick={() => navigate('/teacher-reports')}
-                  sx={{ textTransform: 'none' }}
                 >
                   View All
                 </Button>

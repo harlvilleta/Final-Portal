@@ -129,9 +129,9 @@ export default function ViolationsChartDashboard() {
       {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#d32f2f15', borderLeft: '4px solid #d32f2f' }}>
+          <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} color="#d32f2f">
+              <Typography variant="h4" fontWeight={700} color="#800000">
                 {totalViolations}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -141,9 +141,9 @@ export default function ViolationsChartDashboard() {
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#d32f2f15', borderLeft: '4px solid #d32f2f' }}>
+          <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} color="#d32f2f">
+              <Typography variant="h4" fontWeight={700} color="#800000">
                 {Math.round(averagePerMonth)}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -153,9 +153,9 @@ export default function ViolationsChartDashboard() {
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#d32f2f15', borderLeft: '4px solid #d32f2f' }}>
+          <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} color="#d32f2f">
+              <Typography variant="h4" fontWeight={700} color="#800000">
                 {peakMonth.count}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -165,9 +165,9 @@ export default function ViolationsChartDashboard() {
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#d32f2f15', borderLeft: '4px solid #d32f2f' }}>
+          <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} color="#d32f2f">
+              <Typography variant="h4" fontWeight={700} color="#800000">
                 {monthsWithViolations}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -180,7 +180,7 @@ export default function ViolationsChartDashboard() {
 
       {/* Monthly Chart */}
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#d32f2f' }}>
+        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#800000' }}>
           Violations Reported - {new Date().getFullYear()}
         </Typography>
         <ResponsiveContainer width="100%" height={500}>
@@ -189,24 +189,24 @@ export default function ViolationsChartDashboard() {
             <XAxis 
               dataKey="month" 
               tick={{ fontSize: 12 }}
-              axisLine={{ stroke: '#d32f2f' }}
+              axisLine={{ stroke: '#800000' }}
             />
             <YAxis 
               tick={{ fontSize: 12 }}
-              axisLine={{ stroke: '#d32f2f' }}
+              axisLine={{ stroke: '#800000' }}
               domain={[0, 'dataMax + 1']}
             />
             <RechartsTooltip 
               contentStyle={{ 
                 backgroundColor: '#fff', 
-                border: '1px solid #d32f2f',
+                border: '1px solid #800000',
                 borderRadius: '8px'
               }}
             />
             <Legend />
             <Bar 
               dataKey="count" 
-              fill="#d32f2f" 
+              fill="#800000" 
               name="Violations Reported"
               radius={[4, 4, 0, 0]}
             />
@@ -216,7 +216,7 @@ export default function ViolationsChartDashboard() {
 
       {/* Monthly Breakdown */}
       <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#d32f2f' }}>
+        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#800000' }}>
           Monthly Breakdown
         </Typography>
         <Grid container spacing={2}>
@@ -224,11 +224,11 @@ export default function ViolationsChartDashboard() {
             <Grid item xs={6} sm={4} md={2} key={month.month}>
               <Card sx={{ 
                 textAlign: 'center', 
-                bgcolor: month.count > averagePerMonth ? '#d32f2f15' : '#f5f5f5',
-                border: month.count > averagePerMonth ? '1px solid #d32f2f' : '1px solid #e0e0e0'
+                bgcolor: month.count > averagePerMonth ? '#80000015' : '#f5f5f5',
+                border: month.count > averagePerMonth ? '1px solid #800000' : '1px solid #e0e0e0'
               }}>
                 <CardContent sx={{ p: 2 }}>
-                  <Typography variant="h6" fontWeight={700} color={month.count > averagePerMonth ? '#d32f2f' : 'text.primary'}>
+                  <Typography variant="h6" fontWeight={700} color={month.count > averagePerMonth ? '#800000' : 'text.primary'}>
                     {month.count}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -240,7 +240,7 @@ export default function ViolationsChartDashboard() {
                       size="small" 
                       sx={{ 
                         mt: 1, 
-                        bgcolor: '#d32f2f', 
+                        bgcolor: '#800000', 
                         color: 'white',
                         fontSize: '0.7rem'
                       }} 

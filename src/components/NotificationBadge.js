@@ -21,15 +21,38 @@ export default function NotificationBadge() {
         );
 
         const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
-          const notificationData = snapshot.docs.map(doc => ({
+          const allNotifications = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
             type: doc.data().type || 'general',
             timestamp: doc.data().createdAt
           }));
           
-          setNotifications(notificationData);
-          setUnreadCount(notificationData.filter(n => !n.read).length);
+          // Filter out enrollment/joining related notifications for students
+          const filteredNotifications = allNotifications.filter(notification => {
+            // Exclude notifications related to student enrollment, joining, or registration
+            const title = notification.title?.toLowerCase() || '';
+            const message = notification.message?.toLowerCase() || '';
+            const type = notification.type?.toLowerCase() || '';
+            
+            // Keywords to exclude
+            const excludeKeywords = [
+              'enrollment', 'enroll', 'joining', 'joined', 'registration', 'register',
+              'student added', 'new student', 'student created', 'account created',
+              'welcome new student', 'student registration', 'enrolled student'
+            ];
+            
+            // Check if notification contains any exclusion keywords
+            const shouldExclude = excludeKeywords.some(keyword => 
+              title.includes(keyword) || message.includes(keyword) || type.includes(keyword)
+            );
+            
+            // Only show lost and found, announcements, and other non-enrollment notifications
+            return !shouldExclude;
+          });
+          
+          setNotifications(filteredNotifications);
+          setUnreadCount(filteredNotifications.filter(n => !n.read).length);
         }, (error) => {
           console.error('Error listening to notifications:', error);
         });
@@ -232,6 +255,7 @@ export default function NotificationBadge() {
     </>
   );
 }
+
 
 
 

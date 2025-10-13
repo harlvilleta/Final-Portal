@@ -145,7 +145,15 @@ export default function TeacherSidebar() {
         <Divider sx={{ width: '100%', mb: 2, bgcolor: '#b2bec3' }} />
       </Box>
       
-      <List sx={{ flex: 1 }}>
+      <List sx={{ 
+        flex: 1,
+        overflowY: 'auto',
+        '&::-webkit-scrollbar': {
+          display: 'none'
+        },
+        scrollbarWidth: 'none', // Firefox
+        msOverflowStyle: 'none' // IE and Edge
+      }}>
         {teacherMenu.map((item, index) => (
           <ListItem
             key={index}
