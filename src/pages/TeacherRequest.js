@@ -36,9 +36,10 @@ import {
   Visibility,
   School,
   AccessTime,
-  Badge
+  Badge,
+  Delete
 } from '@mui/icons-material';
-import { collection, getDocs, updateDoc, doc, addDoc, query, orderBy, where } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, doc, addDoc, query, orderBy, where, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export default function TeacherRequest() {
@@ -51,6 +52,8 @@ export default function TeacherRequest() {
   const [approvalReason, setApprovalReason] = useState('');
   const [processing, setProcessing] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
 
   useEffect(() => {
     fetchTeacherRequests();
@@ -81,6 +84,12 @@ export default function TeacherRequest() {
     setApprovalAction(action);
     setApprovalReason('');
     setApprovalDialog(true);
+  };
+
+  const handleDeleteRequest = (request) => {
+    setSelectedRequest(request);
+    setDeleteReason('');
+    setDeleteDialog(true);
   };
 
   const handleSubmitApproval = async () => {
@@ -141,6 +150,60 @@ export default function TeacherRequest() {
       setSnackbar({ 
         open: true, 
         message: 'Error processing request. Please try again.', 
+        severity: 'error' 
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleSubmitDelete = async () => {
+    if (!selectedRequest) return;
+
+    setProcessing(true);
+    try {
+      // Delete the teacher request
+      await deleteDoc(doc(db, 'teacher_requests', selectedRequest.id));
+
+      // Delete the user document
+      await deleteDoc(doc(db, 'users', selectedRequest.userId));
+
+      // Create notification for the teacher (optional - since account is deleted)
+      try {
+        await addDoc(collection(db, 'notifications'), {
+          recipientId: selectedRequest.userId,
+          recipientEmail: selectedRequest.email,
+          recipientName: selectedRequest.fullName,
+          title: 'Teacher Account Deleted',
+          message: `Your teacher account has been deleted by the administrator.${deleteReason ? ` Reason: ${deleteReason}` : ''}`,
+          type: 'account_deleted',
+          requestId: selectedRequest.id,
+          senderId: 'admin',
+          senderEmail: 'admin@school.com',
+          senderName: 'Administration',
+          read: false,
+          createdAt: new Date().toISOString(),
+          priority: 'high'
+        });
+      } catch (notificationError) {
+        console.warn('Failed to send deletion notification:', notificationError);
+      }
+
+      setSnackbar({ 
+        open: true, 
+        message: 'Teacher account deleted successfully!', 
+        severity: 'success' 
+      });
+
+      setDeleteDialog(false);
+      setSelectedRequest(null);
+      fetchTeacherRequests(); // Refresh the list
+
+    } catch (error) {
+      console.error('Error deleting teacher account:', error);
+      setSnackbar({ 
+        open: true, 
+        message: 'Error deleting teacher account. Please try again.', 
         severity: 'error' 
       });
     } finally {
@@ -359,6 +422,18 @@ export default function TeacherRequest() {
                             </Tooltip>
                           </>
                         )}
+                        <Tooltip title="Delete Account">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleDeleteRequest(request)}
+                            sx={{ 
+                              color: '#666',
+                              '&:hover': { color: '#d32f2f' }
+                            }}
+                          >
+                            <Delete />
+                          </IconButton>
+                        </Tooltip>
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -544,6 +619,84 @@ export default function TeacherRequest() {
             startIcon={processing ? <CircularProgress size={20} /> : null}
           >
             {processing ? 'Processing...' : `${approvalAction === 'approve' ? 'Approve' : 'Deny'} & Notify`}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog 
+        open={deleteDialog} 
+        onClose={() => setDeleteDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Delete sx={{ mr: 1, color: 'error.main' }} />
+            <Typography variant="h6">
+              Delete Teacher Account
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {selectedRequest && (
+            <Box sx={{ mt: 2 }}>
+              <Alert severity="warning" sx={{ mb: 3 }}>
+                <Typography variant="body2" fontWeight={600}>
+                  Warning: This action cannot be undone!
+                </Typography>
+                <Typography variant="body2">
+                  This will permanently delete the teacher's account and all associated data.
+                </Typography>
+              </Alert>
+              
+              <Typography variant="body1" gutterBottom>
+                You are about to delete the teacher account for:
+              </Typography>
+              
+              <Card variant="outlined" sx={{ p: 2, mb: 3, bgcolor: '#f5f5f5' }}>
+                <Typography variant="h6" gutterBottom>
+                  {selectedRequest.fullName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Email: {selectedRequest.email}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Request Date: {formatDate(selectedRequest.requestDate)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Status: {selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1)}
+                </Typography>
+              </Card>
+              
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label="Reason for Deletion (Optional)"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                placeholder="Enter reason for account deletion..."
+                helperText="This reason will be included in the notification to the teacher"
+              />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setDeleteDialog(false)}
+            disabled={processing}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleSubmitDelete}
+            disabled={processing}
+            startIcon={processing ? <CircularProgress size={20} /> : <Delete />}
+          >
+            {processing ? 'Deleting...' : 'Delete Account'}
           </Button>
         </DialogActions>
       </Dialog>

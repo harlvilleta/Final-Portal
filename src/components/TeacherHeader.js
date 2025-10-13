@@ -131,6 +131,16 @@ export default function TeacherHeader({ currentUser, userProfile }) {
             </IconButton>
             <IconButton
               size="large"
+              aria-label="notifications"
+              onClick={handleNotificationMenu}
+              color="inherit"
+            >
+              <Badge badgeContent={unreadCount} color="error">
+                <Notifications />
+              </Badge>
+            </IconButton>
+            <IconButton
+              size="large"
               aria-label="settings"
               onClick={() => navigate('/teacher-profile')}
               color="inherit"
@@ -201,6 +211,108 @@ export default function TeacherHeader({ currentUser, userProfile }) {
           </ListItemIcon>
           Logout
         </MenuItem>
+      </Menu>
+
+      {/* Notifications Menu */}
+      <Menu
+        anchorEl={notificationAnchorEl}
+        open={Boolean(notificationAnchorEl)}
+        onClose={handleNotificationClose}
+        PaperProps={{
+          style: {
+            maxHeight: 400,
+            width: 350,
+          },
+        }}
+      >
+        <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Notifications
+          </Typography>
+        </Box>
+        {notifications.length === 0 ? (
+          <Box sx={{ p: 3, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              No notifications
+            </Typography>
+          </Box>
+        ) : (
+          notifications.slice(0, 10).map((notification) => (
+            <MenuItem
+              key={notification.id}
+              onClick={() => {
+                // Mark as read if not already read
+                if (!notification.read) {
+                  // You can add a function to mark as read here
+                }
+                handleNotificationClose();
+              }}
+              sx={{
+                borderBottom: '1px solid #f0f0f0',
+                backgroundColor: notification.read ? 'transparent' : '#f8f9fa',
+                '&:hover': {
+                  backgroundColor: notification.read ? '#f5f5f5' : '#e3f2fd',
+                },
+              }}
+            >
+              <Box sx={{ width: '100%' }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                  <Box sx={{ mt: 0.5 }}>
+                    {notification.type === 'booking_approval' ? (
+                      notification.status === 'approved' ? (
+                        <CheckCircle sx={{ color: '#4caf50', fontSize: 20 }} />
+                      ) : (
+                        <Warning sx={{ color: '#f44336', fontSize: 20 }} />
+                      )
+                    ) : (
+                      <Info sx={{ color: '#2196f3', fontSize: 20 }} />
+                    )}
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        fontWeight: notification.read ? 400 : 600,
+                        color: notification.read ? 'text.secondary' : 'text.primary',
+                        mb: 0.5,
+                      }}
+                    >
+                      {notification.title}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'text.secondary',
+                        fontSize: '0.875rem',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {notification.message}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: 'text.secondary',
+                        fontSize: '0.75rem',
+                        mt: 0.5,
+                        display: 'block',
+                      }}
+                    >
+                      {new Date(notification.createdAt).toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            </MenuItem>
+          ))
+        )}
+        {notifications.length > 10 && (
+          <Box sx={{ p: 2, textAlign: 'center', borderTop: '1px solid #e0e0e0' }}>
+            <Typography variant="caption" color="text.secondary">
+              Showing latest 10 notifications
+            </Typography>
+          </Box>
+        )}
       </Menu>
 
       {/* Compose Message Dialog */}

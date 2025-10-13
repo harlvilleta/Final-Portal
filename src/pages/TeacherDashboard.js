@@ -217,7 +217,7 @@ export default function TeacherDashboard() {
             lineHeight: 1.2
           }}
         >
-          Teacher Dashboard
+          Hi Teacher {userInfo.name}
         </Typography>
         <Typography 
           variant="body1" 

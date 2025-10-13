@@ -291,10 +291,7 @@ export default function ViolationReview() {
                         </Avatar>
                         <Box>
                           <Typography variant="body2" fontWeight={500}>
-                            {violation.reportedByName}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {violation.reportedByEmail}
+                            {violation.reportedByName || violation.reportedBy || 'Unknown Teacher'}
                           </Typography>
                         </Box>
                       </Box>
@@ -449,13 +446,7 @@ export default function ViolationReview() {
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                         <Person sx={{ mr: 1, color: 'secondary.main' }} />
                         <Typography variant="body1" fontWeight={500}>
-                          {selectedViolation.reportedByName}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Email sx={{ mr: 1, color: 'secondary.main' }} />
-                        <Typography variant="body2" color="text.secondary">
-                          {selectedViolation.reportedByEmail}
+                          {selectedViolation.reportedByName || selectedViolation.reportedBy || 'Unknown Teacher'}
                         </Typography>
                       </Box>
                     </CardContent>
@@ -578,7 +569,7 @@ export default function ViolationReview() {
                   Student: {selectedViolation.studentName}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Reported by: {selectedViolation.reportedByName}
+                  Reported by: {selectedViolation.reportedByName || selectedViolation.reportedBy || 'Unknown Teacher'}
                 </Typography>
               </Card>
               

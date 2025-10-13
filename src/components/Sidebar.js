@@ -31,6 +31,7 @@ const menu = [
     hasSubmenu: true,
     submenu: [
       { text: "Schedule Activity", icon: <Event sx={{ color: 'inherit' }} />, path: "/activity" },
+      { text: "Activity Scheduler", icon: <Event sx={{ color: 'inherit' }} />, path: "/admin-activity-scheduler" },
       { text: "History", icon: <History sx={{ color: 'inherit' }} />, path: "/activity/history" },
       { text: "Requests", icon: <History sx={{ color: 'inherit' }} />, path: "/activity/requests" }
     ]
