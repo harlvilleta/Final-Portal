@@ -37,10 +37,11 @@ import {
   Warning,
   FilterList,
   Add,
-  Visibility
+  Visibility,
+  Delete
 } from '@mui/icons-material';
 import { auth, db } from '../firebase';
-import { collection, addDoc, getDocs, query, where, orderBy, onSnapshot, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, orderBy, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 
 export default function TeacherActivityScheduler() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -62,6 +63,9 @@ export default function TeacherActivityScheduler() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [filterResource, setFilterResource] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Available resources and departments
   const resources = [
@@ -86,11 +90,12 @@ export default function TeacherActivityScheduler() {
         try {
           const userDoc = await getDocs(query(collection(db, 'users'), where('uid', '==', user.uid)));
           if (!userDoc.empty) {
-            setUserProfile(userDoc.docs[0].data());
+            const userData = userDoc.docs[0].data();
+            setUserProfile(userData);
             setBookingForm(prev => ({
               ...prev,
-              teacherName: userDoc.docs[0].data().name || '',
-              department: userDoc.docs[0].data().department || ''
+              teacherName: userData.fullName || userData.name || user.displayName || '',
+              department: userData.department || ''
             }));
           }
         } catch (error) {
@@ -116,6 +121,9 @@ export default function TeacherActivityScheduler() {
         ...doc.data()
       }));
       setBookings(bookingsData);
+      console.log('📅 Bookings updated:', bookingsData.length, 'total bookings');
+    }, (error) => {
+      console.error('❌ Error listening to bookings:', error);
     });
 
     return unsubscribe;
@@ -146,16 +154,49 @@ export default function TeacherActivityScheduler() {
 
   const getBookingsForDate = (date) => {
     if (!date) return [];
-    const dateStr = date.toISOString().split('T')[0];
-    return bookings.filter(booking => booking.date === dateStr);
+    
+    // Fix timezone issue: use local date formatting instead of toISOString()
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    
+    // Only include bookings that are not rejected (pending or approved)
+    return bookings.filter(booking => 
+      booking.date === dateStr && 
+      booking.status !== 'rejected'
+    );
   };
 
   const isPastDate = (date) => {
     if (!date) return false;
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Reset time to start of day
-    const checkDate = new Date(date);
+    
+    let checkDate;
+    if (typeof date === 'string') {
+      // Handle date string like "2024-01-15" - use local timezone
+      checkDate = new Date(date + 'T00:00:00');
+    } else {
+      // Handle Date object - create a new date with local timezone
+      checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
     checkDate.setHours(0, 0, 0, 0); // Reset time to start of day
+    
+    // Debug logging for October dates
+    if (date && ((typeof date === 'object' && date.getMonth() === 9) || (typeof date === 'string' && date.includes('2024-10')))) {
+      console.log('October date comparison:', {
+        inputDate: date,
+        checkDate: checkDate.toISOString(),
+        today: today.toISOString(),
+        isPast: checkDate < today,
+        checkDateLocal: checkDate.toLocaleDateString(),
+        todayLocal: today.toLocaleDateString()
+      });
+    }
+    
+    // Allow booking for today and future dates only
     return checkDate < today;
   };
 
@@ -163,6 +204,17 @@ export default function TeacherActivityScheduler() {
     if (!date) return 'empty';
     if (isPastDate(date)) return 'past';
     const dateBookings = getBookingsForDate(date);
+    
+    // Debug logging for October 15
+    if (date && date.getDate() === 15 && date.getMonth() === 9) { // October is month 9 (0-indexed)
+      console.log('October 15 status check:', {
+        date: date.toISOString(),
+        dateBookings: dateBookings,
+        allBookingsForDate: bookings.filter(booking => booking.date === date.toISOString().split('T')[0]),
+        status: dateBookings.length === 0 ? 'available' : 'booked'
+      });
+    }
+    
     if (dateBookings.length === 0) return 'available';
     return 'booked';
   };
@@ -190,35 +242,51 @@ export default function TeacherActivityScheduler() {
   const handleDateClick = (date) => {
     if (!date) return;
     
-    // Check if the date is in the past
+    // Only prevent selection of past dates (not including today)
     if (isPastDate(date)) {
       setSnackbar({
         open: true,
-        message: 'Cannot book past dates. Please select a current or future date.',
+        message: 'Cannot book past dates. Please select today or a future date.',
         severity: 'error'
       });
       return;
     }
     
+    // Allow selection of today and future dates
     setSelectedDate(date);
+    
+    // Fix timezone issue: use local date formatting instead of toISOString()
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    
+    console.log('Date click:', {
+      originalDate: date,
+      formattedDate: dateString,
+      toISOString: date.toISOString().split('T')[0]
+    });
+    
     setBookingForm(prev => ({
       ...prev,
-      date: date.toISOString().split('T')[0]
+      date: dateString
     }));
+    setConflictCheck(null); // Clear any existing conflict check when selecting a new date
     setBookingDialogOpen(true);
   };
 
   const checkConflict = (formData) => {
     const { resource, date, time } = formData;
     
-    // Check if date is in the past
-    if (date && isPastDate(new Date(date))) {
+    // Check if date is in the past (not including today)
+    if (date && isPastDate(date)) {
       return {
         hasConflict: true,
-        message: 'Cannot book past dates. Please select a current or future date.'
+        message: 'Cannot book past dates. Please select today or a future date.'
       };
     }
     
+    // Check for conflicting bookings (exclude rejected bookings)
     const conflictingBooking = bookings.find(booking => 
       booking.resource === resource && 
       booking.date === date && 
@@ -227,15 +295,29 @@ export default function TeacherActivityScheduler() {
     );
 
     if (conflictingBooking) {
+      const statusText = conflictingBooking.status === 'pending' ? 'pending approval' : 'approved';
       return {
         hasConflict: true,
-        message: `Conflict detected: ${resource} already booked by ${conflictingBooking.department} on ${new Date(date).toLocaleDateString()}. Please choose another date.`
+        message: `Conflict detected: ${resource} is already ${statusText} by ${conflictingBooking.department} on ${new Date(date).toLocaleDateString()} at ${time}. Please choose another time slot.`
       };
+    }
+
+    // Check if there are any rejected bookings for this slot (for informational purposes)
+    const rejectedBooking = bookings.find(booking => 
+      booking.resource === resource && 
+      booking.date === date && 
+      booking.time === time &&
+      booking.status === 'rejected'
+    );
+
+    let message = 'This time slot is available. Submit your booking request for admin approval.';
+    if (rejectedBooking) {
+      message += ' (Note: This slot was previously rejected and is now available again.)';
     }
 
     return {
       hasConflict: false,
-      message: 'This date is available. Submit your booking request for admin approval.'
+      message: message
     };
   };
 
@@ -243,24 +325,86 @@ export default function TeacherActivityScheduler() {
     const updatedForm = { ...bookingForm, [field]: value };
     setBookingForm(updatedForm);
     
-    if (field === 'resource' || field === 'date' || field === 'time') {
-      const conflict = checkConflict(updatedForm);
-      setConflictCheck(conflict);
-    }
+    // Clear any existing conflict check when form changes
+    setConflictCheck(null);
   };
 
   const handleSubmitBooking = async () => {
     try {
+      console.log('Starting booking submission...', { bookingForm, currentUser });
+      
+      // Basic validation - only check if date is in the past (not including today)
+      if (isPastDate(bookingForm.date)) {
+        setSnackbar({
+          open: true,
+          message: 'Cannot book past dates. Please select today or a future date.',
+          severity: 'error'
+        });
+        return;
+      }
+
+      // Validate required fields
+      if (!bookingForm.teacherName || !bookingForm.department || !bookingForm.activity || 
+          !bookingForm.resource || !bookingForm.date || !bookingForm.time) {
+        setSnackbar({
+          open: true,
+          message: 'Please fill in all required fields.',
+          severity: 'error'
+        });
+        return;
+      }
+
+      // Validate user authentication
+      if (!currentUser || !currentUser.uid) {
+        setSnackbar({
+          open: true,
+          message: 'User not authenticated. Please log in again.',
+          severity: 'error'
+        });
+        return;
+      }
+
       const bookingData = {
-        ...bookingForm,
+        teacherName: bookingForm.teacherName,
+        department: bookingForm.department,
+        activity: bookingForm.activity,
+        resource: bookingForm.resource,
+        date: bookingForm.date,
+        time: bookingForm.time,
+        notes: bookingForm.notes || '',
         teacherId: currentUser.uid,
         teacherEmail: currentUser.email,
         status: 'pending',
         createdAt: new Date().toISOString(),
-        createdBy: currentUser.uid
+        createdBy: currentUser.uid,
+        updatedAt: new Date().toISOString()
       };
 
-      await addDoc(collection(db, 'activity_bookings'), bookingData);
+      console.log('Submitting booking data:', bookingData);
+      const bookingRef = await addDoc(collection(db, 'activity_bookings'), bookingData);
+      console.log('Booking submitted successfully!', bookingRef.id);
+
+      // Create notification for admin
+      try {
+        await addDoc(collection(db, 'notifications'), {
+          title: 'New Activity Booking Request',
+          message: `${bookingForm.teacherName} from ${bookingForm.department} has requested to book ${bookingForm.resource} for ${bookingForm.activity} on ${new Date(bookingForm.date).toLocaleDateString()} at ${bookingForm.time}.`,
+          type: 'activity_booking',
+          senderId: currentUser.uid,
+          senderName: bookingForm.teacherName,
+          senderRole: 'Teacher',
+          recipientRole: 'Admin',
+          bookingId: bookingRef.id,
+          status: 'pending',
+          read: false,
+          createdAt: new Date().toISOString(),
+          priority: 'medium'
+        });
+        console.log('Notification created for admin');
+      } catch (notificationError) {
+        console.error('Error creating notification:', notificationError);
+        // Don't fail the booking if notification fails
+      }
       
       setSnackbar({
         open: true,
@@ -270,7 +414,7 @@ export default function TeacherActivityScheduler() {
       
       setBookingDialogOpen(false);
       setBookingForm({
-        teacherName: userProfile?.name || '',
+        teacherName: userProfile?.fullName || userProfile?.name || '',
         department: userProfile?.department || '',
         activity: '',
         resource: '',
@@ -286,6 +430,71 @@ export default function TeacherActivityScheduler() {
         message: 'Error submitting booking request',
         severity: 'error'
       });
+    }
+  };
+
+  const handleDeleteBooking = (booking) => {
+    setBookingToDelete(booking);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteBooking = async () => {
+    try {
+      await deleteDoc(doc(db, 'activity_bookings', bookingToDelete.id));
+      
+      setSnackbar({
+        open: true,
+        message: 'Booking request deleted successfully!',
+        severity: 'success'
+      });
+      
+      setDeleteDialogOpen(false);
+      setBookingToDelete(null);
+    } catch (error) {
+      console.error('Error deleting booking:', error);
+      setSnackbar({
+        open: true,
+        message: 'Error deleting booking request',
+        severity: 'error'
+      });
+    }
+  };
+
+  const cancelDeleteBooking = () => {
+    setDeleteDialogOpen(false);
+    setBookingToDelete(null);
+  };
+
+  const handleRefreshBookings = async () => {
+    setRefreshing(true);
+    try {
+      // Force a refresh by re-querying the bookings
+      const bookingsQuery = query(
+        collection(db, 'activity_bookings'),
+        orderBy('date', 'asc')
+      );
+      
+      const snapshot = await getDocs(bookingsQuery);
+      const bookingsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      setBookings(bookingsData);
+      setSnackbar({
+        open: true,
+        message: 'Bookings refreshed successfully!',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Error refreshing bookings:', error);
+      setSnackbar({
+        open: true,
+        message: 'Error refreshing bookings',
+        severity: 'error'
+      });
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -328,19 +537,44 @@ export default function TeacherActivityScheduler() {
       return 'Past date - Cannot book';
     }
     
-    const dateBookings = getBookingsForDate(date);
-    if (dateBookings.length === 0) return 'Available';
+    const dateStatus = getDateStatus(date);
+    if (dateStatus === 'available') {
+      return 'Available - Click to book';
+    }
     
-    return dateBookings.map(booking => 
-      `${booking.activity} - ${booking.department} (${booking.time})`
-    ).join('\n');
+    if (dateStatus === 'booked') {
+      const dateBookings = getBookingsForDate(date);
+      return `Booked - ${dateBookings.map(booking => 
+        `${booking.activity} - ${booking.department} (${booking.time})`
+      ).join(', ')} - Click to book anyway`;
+    }
+    
+    return 'Click to book';
   };
 
   return (
     <Box sx={{ p: 3, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#800000', mb: 3 }}>
-        Activity Scheduler
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, color: '#800000' }}>
+          Activity Scheduler
+        </Typography>
+        <Button
+          variant="outlined"
+          startIcon={<FilterList />}
+          onClick={handleRefreshBookings}
+          disabled={refreshing}
+          sx={{
+            borderColor: '#800000',
+            color: '#800000',
+            '&:hover': {
+              borderColor: '#6b0000',
+              backgroundColor: 'rgba(128, 0, 0, 0.04)'
+            }
+          }}
+        >
+          {refreshing ? 'Refreshing...' : 'Refresh Bookings'}
+        </Button>
+      </Box>
 
       <Grid container spacing={3}>
         {/* Calendar Section */}
@@ -433,7 +667,7 @@ export default function TeacherActivityScheduler() {
                               justifyContent: 'flex-start',
                               padding: '8px',
                               cursor: date && !isPastDate(date) ? 'pointer' : 'default',
-                              backgroundColor: date ? 'white' : 'transparent',
+                              backgroundColor: date ? (getDateStatus(date) === 'available' ? '#f8fff8' : getDateStatus(date) === 'booked' ? '#ffeaea' : 'white') : 'transparent',
                               '&:hover': {
                                 backgroundColor: date && !isPastDate(date) ? '#f5f5f5' : 'transparent'
                               }
@@ -590,12 +824,13 @@ export default function TeacherActivityScheduler() {
                   <TableCell>Time</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell>Notes</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {myBookings.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">
+                    <TableCell colSpan={7} align="center">
                       No booking requests found
                     </TableCell>
                   </TableRow>
@@ -615,6 +850,19 @@ export default function TeacherActivityScheduler() {
                         />
                       </TableCell>
                       <TableCell>{booking.notes || '-'}</TableCell>
+                      <TableCell>
+                        {booking.status === 'pending' && (
+                          <Tooltip title="Delete booking request">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleDeleteBooking(booking)}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -705,14 +953,6 @@ export default function TeacherActivityScheduler() {
             </Grid>
           </Grid>
 
-          {conflictCheck && (
-            <Alert 
-              severity={conflictCheck.hasConflict ? 'error' : 'success'} 
-              sx={{ mt: 2 }}
-            >
-              {conflictCheck.message}
-            </Alert>
-          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setBookingDialogOpen(false)}>Cancel</Button>
@@ -721,10 +961,54 @@ export default function TeacherActivityScheduler() {
             variant="contained"
             disabled={!bookingForm.teacherName || !bookingForm.department || 
                      !bookingForm.activity || !bookingForm.resource || 
-                     !bookingForm.date || !bookingForm.time || 
-                     (conflictCheck && conflictCheck.hasConflict)}
+                     !bookingForm.date || !bookingForm.time}
           >
             Submit Request
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={cancelDeleteBooking} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Warning sx={{ mr: 1, verticalAlign: 'middle', color: 'error.main' }} />
+          Delete Booking Request
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mt: 1 }}>
+            Are you sure you want to delete this booking request?
+          </Typography>
+          {bookingToDelete && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Booking Details:
+              </Typography>
+              <Typography variant="body2">
+                <strong>Activity:</strong> {bookingToDelete.activity}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Resource:</strong> {bookingToDelete.resource}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Date:</strong> {new Date(bookingToDelete.date).toLocaleDateString()}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Time:</strong> {bookingToDelete.time}
+              </Typography>
+            </Box>
+          )}
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            This action cannot be undone. The booking request will be permanently deleted.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDeleteBooking}>Cancel</Button>
+          <Button
+            onClick={confirmDeleteBooking}
+            variant="contained"
+            color="error"
+          >
+            Delete Booking
           </Button>
         </DialogActions>
       </Dialog>

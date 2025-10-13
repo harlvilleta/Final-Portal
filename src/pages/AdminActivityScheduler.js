@@ -115,16 +115,36 @@ export default function AdminActivityScheduler() {
 
   const getBookingsForDate = (date) => {
     if (!date) return [];
-    const dateStr = date.toISOString().split('T')[0];
-    return bookings.filter(booking => booking.date === dateStr);
+    
+    // Fix timezone issue: use local date formatting instead of toISOString()
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    
+    // Only include bookings that are not rejected (pending or approved)
+    return bookings.filter(booking => 
+      booking.date === dateStr && 
+      booking.status !== 'rejected'
+    );
   };
 
   const isPastDate = (date) => {
     if (!date) return false;
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Reset time to start of day
-    const checkDate = new Date(date);
+    
+    let checkDate;
+    if (typeof date === 'string') {
+      // Handle date string like "2024-01-15" - use local timezone
+      checkDate = new Date(date + 'T00:00:00');
+    } else {
+      // Handle Date object - create a new date with local timezone
+      checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
     checkDate.setHours(0, 0, 0, 0); // Reset time to start of day
+    
     return checkDate < today;
   };
 
@@ -163,19 +183,24 @@ export default function AdminActivityScheduler() {
 
   const handleApproveBooking = async (bookingId, status) => {
     try {
+      console.log(`Admin ${status} booking:`, { bookingId, status, adminNotes });
+      
       // Update the booking status
       await updateDoc(doc(db, 'activity_bookings', bookingId), {
         status: status,
         adminNotes: adminNotes,
         reviewedBy: currentUser.uid,
-        reviewDate: new Date().toISOString()
+        reviewDate: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
+
+      console.log(`✅ Booking ${status} successfully`);
 
       // Create notification for the teacher
       if (selectedBooking) {
         const notificationData = {
           title: `Booking Request ${status === 'approved' ? 'Approved' : 'Rejected'}`,
-          message: `Your booking request for "${selectedBooking.activity}" on ${new Date(selectedBooking.date).toLocaleDateString()} at ${selectedBooking.time} has been ${status}.`,
+          message: `Your booking request for "${selectedBooking.activity}" on ${new Date(selectedBooking.date).toLocaleDateString()} at ${selectedBooking.time} has been ${status}.${adminNotes ? ` Admin notes: ${adminNotes}` : ''}`,
           type: 'booking_approval',
           recipientId: selectedBooking.teacherId,
           recipientEmail: selectedBooking.teacherEmail,
@@ -187,11 +212,39 @@ export default function AdminActivityScheduler() {
         };
 
         await addDoc(collection(db, 'notifications'), notificationData);
+        console.log(`✅ Notification sent to teacher: ${selectedBooking.teacherEmail}`);
+      }
+
+      // Log the admin action
+      try {
+        await addDoc(collection(db, 'activity_log'), {
+          message: `Admin ${status} booking request: ${selectedBooking?.activity} on ${selectedBooking?.date} at ${selectedBooking?.time}`,
+          type: 'booking_approval',
+          user: currentUser.uid,
+          userEmail: currentUser.email,
+          userRole: 'Admin',
+          timestamp: new Date().toISOString(),
+          details: {
+            bookingId: bookingId,
+            status: status,
+            teacherEmail: selectedBooking?.teacherEmail,
+            resource: selectedBooking?.resource,
+            adminNotes: adminNotes || null
+          }
+        });
+        console.log('✅ Activity logged');
+      } catch (logError) {
+        console.warn('⚠️ Failed to log activity:', logError);
+      }
+
+      let successMessage = `Booking ${status} successfully! Teacher has been notified.`;
+      if (status === 'rejected') {
+        successMessage += ' The time slot is now available for other teachers to book.';
       }
 
       setSnackbar({
         open: true,
-        message: `Booking ${status} successfully! Teacher has been notified.`,
+        message: successMessage,
         severity: 'success'
       });
 
@@ -199,7 +252,7 @@ export default function AdminActivityScheduler() {
       setSelectedBooking(null);
       setAdminNotes('');
     } catch (error) {
-      console.error('Error updating booking:', error);
+      console.error('❌ Error updating booking:', error);
       setSnackbar({
         open: true,
         message: 'Error updating booking',

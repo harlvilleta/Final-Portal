@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Paper, Typography, TextField, Button, Snackbar, Alert, InputAdornment, IconButton, Avatar, MenuItem, LinearProgress, Checkbox, FormControlLabel, CircularProgress, Grid } from '@mui/material';
 import { Visibility, VisibilityOff, PersonAddAlt1, CloudUpload, Email } from '@mui/icons-material';
-import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification, signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { setDoc, doc, addDoc, collection } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -37,24 +37,10 @@ function validateStudentId(studentId) {
   return studentIdRegex.test(studentId);
 }
 
-// Email validation function to check if it's a Gmail account
-function validateGmailEmail(email) {
-  const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
-  return gmailRegex.test(email);
-}
-
-// Function to check if Gmail account exists (simplified validation)
-async function checkGmailExists(email) {
-  // This is a simplified check - in a real application, you might want to use
-  // a more sophisticated method or API to verify email existence
-  try {
-    // For now, we'll assume all Gmail addresses are valid
-    // In a production environment, you might want to use an email validation service
-    return true;
-  } catch (error) {
-    console.error('Error checking Gmail existence:', error);
-    return false;
-  }
+// Email validation function
+function validateEmail(email) {
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return emailRegex.test(email);
 }
 
 // Function to convert file to base64
@@ -94,9 +80,6 @@ export default function Register() {
   const [phoneError, setPhoneError] = useState('');
   const [studentIdError, setStudentIdError] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [gmailPassword, setGmailPassword] = useState('');
-  const [showGmailPassword, setShowGmailPassword] = useState(false);
-  const [isGmailAccount, setIsGmailAccount] = useState(false);
   const [emailValidating, setEmailValidating] = useState(false);
   
   // Student-specific fields
@@ -110,6 +93,23 @@ export default function Register() {
   const [age, setAge] = useState('');
   
   const navigate = useNavigate();
+
+  // Ensure clean auth state when component mounts
+  useEffect(() => {
+    const ensureCleanAuthState = async () => {
+      try {
+        if (auth.currentUser) {
+          console.log('Registration page: User already signed in, signing out...');
+          await signOut(auth);
+          console.log('✅ Registration page: User signed out successfully');
+        }
+      } catch (error) {
+        console.warn('Registration page: Could not sign out user:', error);
+      }
+    };
+    
+    ensureCleanAuthState();
+  }, []);
 
   const handleProfilePic = async (e) => {
     const file = e.target.files[0];
@@ -192,40 +192,21 @@ export default function Register() {
     }
   };
 
-  const handleEmailChange = async (e) => {
+  const handleEmailChange = (e) => {
     const value = e.target.value;
     setEmail(value);
     
     // Clear error if field is empty
     if (!value) {
       setEmailError('');
-      setIsGmailAccount(false);
-      setGmailPassword('');
       return;
     }
     
-    // Check if it's a Gmail account
-    if (validateGmailEmail(value)) {
-      setIsGmailAccount(true);
-      setEmailValidating(true);
-      
-      try {
-        // Check if Gmail account exists
-        const exists = await checkGmailExists(value);
-        if (exists) {
-          setEmailError('');
-        } else {
-          setEmailError('This Gmail account does not exist or is not accessible.');
-        }
-      } catch (error) {
-        setEmailError('Error validating Gmail account. Please try again.');
-      } finally {
-        setEmailValidating(false);
-      }
+    // Validate email format
+    if (!validateEmail(value)) {
+      setEmailError('Please enter a valid email address');
     } else {
-      setEmailError('Please enter a valid Gmail address (e.g., example@gmail.com)');
-      setIsGmailAccount(false);
-      setGmailPassword('');
+      setEmailError('');
     }
   };
 
@@ -239,16 +220,12 @@ export default function Register() {
       setSnackbar({ open: true, message: 'Email is required.', severity: 'error' });
       return;
     }
-    if (!validateGmailEmail(email)) {
-      setSnackbar({ open: true, message: 'Please enter a valid Gmail address.', severity: 'error' });
+    if (!validateEmail(email)) {
+      setSnackbar({ open: true, message: 'Please enter a valid email address.', severity: 'error' });
       return;
     }
     if (emailError) {
       setSnackbar({ open: true, message: 'Please fix email validation errors.', severity: 'error' });
-      return;
-    }
-    if (isGmailAccount && !gmailPassword) {
-      setSnackbar({ open: true, message: 'Gmail password is required for Gmail accounts.', severity: 'error' });
       return;
     }
     if (!fullName) {
@@ -262,6 +239,18 @@ export default function Register() {
     if (!terms) {
       setSnackbar({ open: true, message: 'You must agree to the terms.', severity: 'error' });
       return;
+    }
+    
+    // Ensure no user is currently signed in before registration
+    try {
+      if (auth.currentUser) {
+        console.log('User already signed in, signing out before registration...');
+        await signOut(auth);
+        console.log('✅ User signed out successfully');
+      }
+    } catch (signOutError) {
+      console.warn('Warning: Could not sign out existing user:', signOutError);
+      // Continue with registration even if sign out fails
     }
     
     // Validate phone number if provided
@@ -310,8 +299,10 @@ export default function Register() {
     
     try {
       console.log('Starting registration process...');
+      console.log('Registration details:', { email, role, fullName });
       
       // Create user account in Firebase Auth
+      console.log('Creating Firebase Auth user...');
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
@@ -514,9 +505,9 @@ export default function Register() {
       clearTimeout(timeoutId);
       
       // Show success message with user details
-      let successMessage = `Registration successful! Welcome ${fullName}. A confirmation email has been sent to ${email}. Please check your Gmail and verify your account. Redirecting to login page...`;
+      let successMessage = `Registration successful! Welcome ${fullName}. A confirmation email has been sent to ${email}. Please check your email and verify your account. Redirecting to login page...`;
       if (role === 'Teacher') {
-        successMessage = `Registration successful! Your teacher account is pending admin approval. A confirmation email has been sent to ${email}. Please check your Gmail and verify your account. You will be notified once approved. Redirecting to login page...`;
+        successMessage = `Registration successful! Your teacher account is pending admin approval. A confirmation email has been sent to ${email}. Please check your email and verify your account. You will be notified once approved. Redirecting to login page...`;
       }
       
       setSnackbar({ 
@@ -549,19 +540,31 @@ export default function Register() {
     } catch (error) {
       clearTimeout(timeoutId);
       console.error('❌ Registration error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      console.error('Full error object:', error);
       
       let msg = 'Registration failed. Please try again.';
       
       if (error.code === 'auth/email-already-in-use') {
         msg = 'An account with this email already exists. Please use a different email or try logging in.';
+        console.log('🔍 Email already exists error - this might be a false positive. Check Firebase console for existing users.');
       } else if (error.code === 'auth/weak-password') {
         msg = 'Password is too weak. Please choose a stronger password (at least 6 characters).';
       } else if (error.code === 'auth/invalid-email') {
         msg = 'Please enter a valid email address.';
       } else if (error.code === 'auth/network-request-failed') {
         msg = 'Network error. Please check your internet connection and try again.';
+      } else if (error.code === 'auth/operation-not-allowed') {
+        msg = 'Email/password accounts are not enabled. Please contact support.';
+      } else if (error.code === 'auth/too-many-requests') {
+        msg = 'Too many failed attempts. Please try again later.';
       } else if (error.message.includes('Firestore')) {
         msg = 'Failed to save user data. Please try again.';
+      } else {
+        // Log unknown errors for debugging
+        console.error('Unknown registration error:', error);
+        msg = `Registration failed: ${error.message || 'Unknown error'}. Please try again.`;
       }
       
       setSnackbar({ open: true, message: msg, severity: 'error' });
@@ -728,7 +731,7 @@ export default function Register() {
             <Grid container spacing={1.5}>
             <Grid item xs={12} sm={6}>
               <TextField 
-                label="Gmail Address" 
+                label="Email" 
                 type="email" 
                 value={email} 
                 onChange={handleEmailChange} 
@@ -749,7 +752,7 @@ export default function Register() {
                   ) : null
                 }}
                 error={!!emailError}
-                helperText={emailError || (isGmailAccount ? 'Valid Gmail account detected' : 'Please enter a Gmail address')}
+                helperText={emailError || 'Please enter a valid email address'}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     bgcolor: '#ffffff',
@@ -792,70 +795,6 @@ export default function Register() {
               />
             </Grid>
             
-            {/* Gmail Password Field - only show when Gmail account is detected */}
-            {isGmailAccount && (
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Gmail Password"
-                  type={showGmailPassword ? 'text' : 'password'}
-                  value={gmailPassword}
-                  onChange={e => setGmailPassword(e.target.value)}
-                  fullWidth
-                  required
-                  size="small"
-                  InputProps={{
-                    style: { fontSize: 14, height: 32 },
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton 
-                          onClick={() => setShowGmailPassword(s => !s)} 
-                          edge="end" 
-                          sx={{ color: '#87CEEB' }}
-                        >
-                          {showGmailPassword ? <VisibilityOff sx={{ fontSize: '1rem' }} /> : <Visibility sx={{ fontSize: '1rem' }} />}
-                        </IconButton>
-                      </InputAdornment>
-                    )
-                  }}
-                  helperText="Enter your Gmail password for account verification"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      bgcolor: '#ffffff',
-                      color: '#000',
-                      borderRadius: 2,
-                      fontSize: '0.875rem',
-                      '& fieldset': { 
-                        borderColor: '#000',
-                        borderWidth: 0.5
-                      },
-                      '&:hover fieldset': { 
-                        borderColor: '#000',
-                        borderWidth: 0.5
-                      },
-                      '&.Mui-focused fieldset': { 
-                        borderColor: '#000',
-                        borderWidth: 0.5
-                      },
-                      '& input': {
-                        fontSize: '0.875rem',
-                        color: '#000',
-                        padding: '8px 12px'
-                      }
-                    },
-                    '& .MuiInputLabel-root': { 
-                      color: '#000',
-                      fontWeight: 400,
-                      fontSize: '0.875rem'
-                    },
-                    '& .MuiFormHelperText-root': { 
-                      color: '#000',
-                      fontWeight: 400,
-                      fontSize: '0.75rem'
-                    }
-                  }}
-                />
-              </Grid>
-            )}
             
             <Grid item xs={12} sm={6}>
               <TextField 
