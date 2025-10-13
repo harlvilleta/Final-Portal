@@ -600,9 +600,13 @@ export default function AdminLostFound() {
               filteredFound.map(item => (
                 <Card key={item.id} sx={{ 
                   mb: 2, 
-                  bgcolor: item.resolved ? '#c8e6c9' : '#e8f5e9', 
-                  border: item.resolved ? '1px solid #66bb6a' : '1px solid #4caf50',
-                  position: 'relative'
+                  bgcolor: '#ffffff', 
+                  border: '1px solid #2e7d32',
+                  position: 'relative',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  '&:hover': {
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                  }
                 }}>
                   <CardContent>
                     <Grid container spacing={2} alignItems="center">
@@ -632,21 +636,13 @@ export default function AdminLostFound() {
                       </Grid>
                       <Grid item>
                         <Box sx={{ display: 'flex', gap: 1 }}>
-                          {item.image && (
-                            <Tooltip title="View Image">
-                              <IconButton 
-                                size="small" 
-                                color="info" 
-                                onClick={() => handleImagePreview(item.image, item.name)}
-                              >
-                                <Visibility />
-                              </IconButton>
-                            </Tooltip>
-                          )}
                           <Tooltip title="Edit">
                             <IconButton 
                               size="small" 
-                              color="info" 
+                              sx={{ 
+                                color: '#666666',
+                                '&:hover': { color: '#1976d2' }
+                              }}
                               onClick={() => handleEditOpen('found_items', item)}
                             >
                               <Edit />
@@ -656,7 +652,10 @@ export default function AdminLostFound() {
                             <Tooltip title="Mark as Resolved">
                               <IconButton 
                                 size="small" 
-                                color="success" 
+                                sx={{ 
+                                  color: '#666666',
+                                  '&:hover': { color: '#2e7d32' }
+                                }}
                                 onClick={() => handleResolve('found_items', item.id)}
                               >
                                 <CheckCircle />
@@ -666,7 +665,10 @@ export default function AdminLostFound() {
                           <Tooltip title="Delete">
                             <IconButton 
                               size="small" 
-                              color="error" 
+                              sx={{ 
+                                color: '#666666',
+                                '&:hover': { color: '#d32f2f' }
+                              }}
                               onClick={() => handleDelete('found_items', item.id)}
                             >
                               <Delete />
@@ -809,7 +811,7 @@ export default function AdminLostFound() {
                 startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />
               }}
             />
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#e65100' }}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#800000' }}>
               Lost Items ({filteredLost.length})
             </Typography>
             {filteredLost.length === 0 ? (
@@ -818,9 +820,13 @@ export default function AdminLostFound() {
               filteredLost.map(item => (
                 <Card key={item.id} sx={{ 
                   mb: 2, 
-                  bgcolor: item.resolved ? '#ffe0b2' : '#fffde7', 
-                  border: item.resolved ? '1px solid #ffb74d' : '1px solid #ff9800',
-                  position: 'relative'
+                  bgcolor: '#ffffff', 
+                  border: '1px solid #800000',
+                  position: 'relative',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  '&:hover': {
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                  }
                 }}>
                   <CardContent>
                     <Grid container spacing={2} alignItems="center">
@@ -850,21 +856,13 @@ export default function AdminLostFound() {
                       </Grid>
                       <Grid item>
                         <Box sx={{ display: 'flex', gap: 1 }}>
-                          {item.image && (
-                            <Tooltip title="View Image">
-                              <IconButton 
-                                size="small" 
-                                color="info" 
-                                onClick={() => handleImagePreview(item.image, item.name)}
-                              >
-                                <Visibility />
-                              </IconButton>
-                            </Tooltip>
-                          )}
                           <Tooltip title="Edit">
                             <IconButton 
                               size="small" 
-                              color="info" 
+                              sx={{ 
+                                color: '#666666',
+                                '&:hover': { color: '#1976d2' }
+                              }}
                               onClick={() => handleEditOpen('lost_items', item)}
                             >
                               <Edit />
@@ -874,7 +872,10 @@ export default function AdminLostFound() {
                             <Tooltip title="Mark as Resolved">
                               <IconButton 
                                 size="small" 
-                                color="success" 
+                                sx={{ 
+                                  color: '#666666',
+                                  '&:hover': { color: '#2e7d32' }
+                                }}
                                 onClick={() => handleResolve('lost_items', item.id)}
                               >
                                 <CheckCircle />
@@ -884,7 +885,10 @@ export default function AdminLostFound() {
                           <Tooltip title="Delete">
                             <IconButton 
                               size="small" 
-                              color="error" 
+                              sx={{ 
+                                color: '#666666',
+                                '&:hover': { color: '#d32f2f' }
+                              }}
                               onClick={() => handleDelete('lost_items', item.id)}
                             >
                               <Delete />

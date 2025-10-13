@@ -2119,20 +2119,6 @@ School Administration
                         </Box>
                       </Box>
                       <Box sx={{ textAlign: 'right' }}>
-                        <Chip 
-                          label={`${courseStudents.length} student${courseStudents.length !== 1 ? 's' : ''}`}
-                          size="medium"
-                          sx={{ 
-                            bgcolor: '#800000', 
-                            color: 'white',
-                            fontWeight: 'bold',
-                            fontSize: '0.9rem',
-                            height: 32
-                          }}
-                        />
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                          Click to open
-                        </Typography>
                       </Box>
                     </Box>
                   </CardContent>
