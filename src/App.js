@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
-import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Button, CircularProgress, Alert, Tooltip, Badge, List, ListItem, ListItemText, ListItemAvatar, Divider } from "@mui/material";
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Button, CircularProgress, Alert, Tooltip, Badge, List, ListItem, ListItemText, ListItemAvatar, Divider, useTheme } from "@mui/material";
 import { AccountCircle, Logout, Notifications, Settings, Search, Announcement } from "@mui/icons-material";
+import ThemeToggle from "./components/ThemeToggle";
+import ThemeWrapper from "./components/ThemeWrapper";
+import { ThemeProvider as CustomThemeProvider } from "./contexts/ThemeContext";
 import Sidebar from "./components/Sidebar";
 import UserSidebar from "./components/UserSidebar";
 import TeacherSidebar from "./components/TeacherSidebar";
@@ -191,6 +193,7 @@ function AdminHeader({ currentUser, userProfile }) {
         </Typography>
         <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <ThemeToggle />
             <Tooltip title={isOnNotificationsPage ? "Back to Dashboard" : "View Notifications"}>
               <IconButton
                 size="large"
@@ -266,6 +269,7 @@ function AdminHeader({ currentUser, userProfile }) {
 
 // Header component for user dashboard
 function UserHeader({ currentUser, userProfile }) {
+  const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
   const [studentNotifications, setStudentNotifications] = useState([]);
@@ -410,14 +414,21 @@ function UserHeader({ currentUser, userProfile }) {
 
   return (
     <>
-      <AppBar position="static" sx={{ bgcolor: '#fff', color: '#333', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+      <AppBar position="static" sx={{ bgcolor: 'background.paper', color: 'text.primary', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
         <Toolbar sx={{ justifyContent: 'space-between' }}>
           <Box sx={{ flex: 0.5 }}></Box>
-          <Typography variant="h4" component="div" sx={{ fontWeight: 700, color: '#800000', flex: 1, textAlign: 'center', ml: -2 }}>
+          <Typography variant="h4" component="div" sx={{ 
+            fontWeight: 700, 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+            flex: 1, 
+            textAlign: 'center', 
+            ml: -2 
+          }}>
             Student Affairs Management System
           </Typography>
           <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <ThemeToggle />
               <Tooltip title="Notifications" arrow>
                 <IconButton
                   size="large"
@@ -795,153 +806,126 @@ function App() {
     );
   }
 
-  const theme = createTheme({
-    palette: {
-      primary: { main: '#800000' },
-      secondary: { main: '#636e72' },
-      background: { default: '#ffffff' }
-    },
-    components: {
-      MuiCard: {
-        styleOverrides: {
-          root: {
-            backgroundColor: '#80000015',
-            borderLeft: '4px solid #800000',
-          }
-        }
-      },
-      MuiButton: {
-        styleOverrides: {
-          containedPrimary: {
-            backgroundColor: '#800000',
-            '&:hover': { backgroundColor: '#6b0000' }
-          },
-          outlinedPrimary: {
-            borderColor: '#800000',
-            color: '#800000',
-            '&:hover': { borderColor: '#6b0000', backgroundColor: '#8000000a' }
-          }
-        }
-      }
-    }
-  });
+  // This will be handled by the CustomThemeProvider
 
   return (
-    <ThemeProvider theme={theme}>
-    <Router>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        
-        {/* Admin/Teacher Routes - Only accessible to Admin/Teacher roles */}
-        <Route path="/*" element={
-          (userRole === 'Admin' || userRole === 'Teacher') ? (
-            userRole === 'Admin' ? (
-              <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "#f5f6fa" }}>
-                <AdminHeader currentUser={currentUser} userProfile={userProfile} />
-                <Box sx={{ display: "flex", flex: 1 }}>
-                  <Sidebar />
-                  <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
-                    <Routes>
-                      <Route path="/" element={<Navigate to="/overview" />} />
-                      <Route path="/overview" element={<Overview />} />
-                      <Route path="/students/*" element={<Students />} />
+    <CustomThemeProvider>
+      <ThemeWrapper>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            
+            {/* Admin/Teacher Routes - Only accessible to Admin/Teacher roles */}
+            <Route path="/*" element={
+              (userRole === 'Admin' || userRole === 'Teacher') ? (
+                userRole === 'Admin' ? (
+                  <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "background.default" }}>
+                    <AdminHeader currentUser={currentUser} userProfile={userProfile} />
+                    <Box sx={{ display: "flex", flex: 1 }}>
+                      <Sidebar />
+                      <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
+                        <Routes>
+                          <Route path="/" element={<Navigate to="/overview" />} />
+                          <Route path="/overview" element={<Overview />} />
+                          <Route path="/students/*" element={<Students />} />
                                                     <Route path="/activity" element={<Activity />} />
                               <Route path="/activity/history" element={<ActivityHistory />} />
-                      <Route path="/history" element={<History />} />
-                      <Route path="/activity/requests" element={<ActivityRequestsAdmin />} />
-                      <Route path="/profile" element={<Profile />} />
-                      <Route path="/violation-record" element={<ViolationRecord />} />
-                      <Route path="/violation-record/create-meeting" element={<ViolationCreateMeeting />} />
-                      <Route path="/violation-record/history" element={<ViolationHistory />} />
-                      <Route path="/violation-record/status" element={<ViolationStatus />} />
-                      <Route path="/violation-review" element={<ViolationReview />} />
-                      <Route path="/violation-record/review/:id" element={<ViolationReview />} />
-                      <Route path="/options" element={<Options />} />
-                      <Route path="/announcements" element={<Announcements />} />
-                      <Route path="/announcements/report" element={<AnnouncementReport />} />
-                      <Route path="/receipt-review" element={<ReceiptReview />} />
-                      <Route path="/lost-found" element={<AdminLostFound />} />
-                      <Route path="/recycle-bin" element={<RecycleBin />} />
-                      <Route path="/admin-notifications" element={<AdminNotifications />} />
-                      <Route path="/admin-activity-scheduler" element={<AdminActivityScheduler />} />
-                      <Route path="/students-chart" element={<StudentsChartDashboard />} />
-                      <Route path="/violations-chart" element={<ViolationsChartDashboard />} />
-                      <Route path="/teacher-request" element={<TeacherRequest />} />
-                      <Route path="/user/*" element={<Navigate to="/overview" />} />
-                    </Routes>
+                          <Route path="/history" element={<History />} />
+                          <Route path="/activity/requests" element={<ActivityRequestsAdmin />} />
+                          <Route path="/profile" element={<Profile />} />
+                          <Route path="/violation-record" element={<ViolationRecord />} />
+                          <Route path="/violation-record/create-meeting" element={<ViolationCreateMeeting />} />
+                          <Route path="/violation-record/history" element={<ViolationHistory />} />
+                          <Route path="/violation-record/status" element={<ViolationStatus />} />
+                          <Route path="/violation-review" element={<ViolationReview />} />
+                          <Route path="/violation-record/review/:id" element={<ViolationReview />} />
+                          <Route path="/options" element={<Options />} />
+                          <Route path="/announcements" element={<Announcements />} />
+                          <Route path="/announcements/report" element={<AnnouncementReport />} />
+                          <Route path="/receipt-review" element={<ReceiptReview />} />
+                          <Route path="/lost-found" element={<AdminLostFound />} />
+                          <Route path="/recycle-bin" element={<RecycleBin />} />
+                          <Route path="/admin-notifications" element={<AdminNotifications />} />
+                          <Route path="/admin-activity-scheduler" element={<AdminActivityScheduler />} />
+                          <Route path="/students-chart" element={<StudentsChartDashboard />} />
+                          <Route path="/violations-chart" element={<ViolationsChartDashboard />} />
+                          <Route path="/teacher-request" element={<TeacherRequest />} />
+                          <Route path="/user/*" element={<Navigate to="/overview" />} />
+                        </Routes>
+                      </Box>
+                    </Box>
                   </Box>
-                </Box>
-              </Box>
-            ) : (
-              // Teacher Dashboard
-              <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "#f5f6fa" }}>
-                <TeacherHeader currentUser={currentUser} userProfile={userProfile} />
-                <Box sx={{ display: "flex", flex: 1 }}>
-                  <TeacherSidebar />
-                  <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
-                    <Routes>
-                      <Route path="/" element={<Navigate to="/teacher-dashboard" />} />
-                      <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
-                      <Route path="/teacher-students" element={<Students />} />
-                      <Route path="/teacher-announcements" element={<Announcements />} />
-                      <Route path="/teacher-assessments" element={<div>Teacher Assessments</div>} />
-                      <Route path="/teacher-schedule" element={<TeacherSchedule />} />
+                ) : (
+                  // Teacher Dashboard
+                  <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "background.default" }}>
+                    <TeacherHeader currentUser={currentUser} userProfile={userProfile} />
+                    <Box sx={{ display: "flex", flex: 1 }}>
+                      <TeacherSidebar />
+                      <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
+                        <Routes>
+                          <Route path="/" element={<Navigate to="/teacher-dashboard" />} />
+                          <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
+                          <Route path="/teacher-students" element={<Students />} />
+                          <Route path="/teacher-announcements" element={<Announcements />} />
+                          <Route path="/teacher-assessments" element={<div>Teacher Assessments</div>} />
+                          <Route path="/teacher-schedule" element={<TeacherSchedule />} />
                                                     <Route path="/teacher-notifications" element={<TeacherNotifications />} />
-                      <Route path="/activity" element={<ActivitiesView />} />
-                      <Route path="/teacher-lost-found" element={<TeacherLostFound />} />
-                      <Route path="/teacher-violation-records" element={<TeacherViolationRecords />} />
-                      <Route path="/teacher-activity-scheduler" element={<TeacherActivityScheduler />} />
-                      <Route path="/teacher-profile" element={<Profile />} />
-                      <Route path="/*" element={<Navigate to="/teacher-dashboard" />} />
-                    </Routes>
+                          <Route path="/activity" element={<ActivitiesView />} />
+                          <Route path="/teacher-lost-found" element={<TeacherLostFound />} />
+                          <Route path="/teacher-violation-records" element={<TeacherViolationRecords />} />
+                          <Route path="/teacher-activity-scheduler" element={<TeacherActivityScheduler />} />
+                          <Route path="/teacher-profile" element={<Profile />} />
+                          <Route path="/*" element={<Navigate to="/teacher-dashboard" />} />
+                        </Routes>
+                      </Box>
+                    </Box>
+                  </Box>
+                )
+              ) : userRole === 'Student' ? (
+                <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "background.default" }}>
+                  <UserHeader currentUser={currentUser} userProfile={userProfile} />
+                  <Box sx={{ display: "flex", flex: 1 }}>
+                    <UserSidebar />
+                    <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
+                      <Routes>
+                        <Route path="/" element={<UserDashboard />} />
+                        <Route path="/user-dashboard" element={<UserDashboard />} />
+                        <Route path="/violations" element={<UserViolations currentUser={currentUser} />} />
+                        <Route path="/announcements" element={<UserAnnouncements />} />
+                        <Route path="/activity" element={<ActivitiesView />} />
+                        <Route path="/lost-found" element={<UserLostFound currentUser={currentUser} />} />
+                        <Route path="/notifications" element={<UserNotifications currentUser={currentUser} />} />
+                        <Route path="/receipt-submission" element={<ReceiptSubmission />} />
+                        <Route path="/receipt-history" element={<ReceiptHistory />} />
+                        <Route path="/profile" element={<Profile />} />
+                        <Route path="/*" element={<Navigate to="/user-dashboard" />} />
+                      </Routes>
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
-            )
-          ) : userRole === 'Student' ? (
-            <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "#f5f6fa" }}>
-              <UserHeader currentUser={currentUser} userProfile={userProfile} />
-              <Box sx={{ display: "flex", flex: 1 }}>
-                <UserSidebar />
-                <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
-                  <Routes>
-                    <Route path="/" element={<UserDashboard />} />
-                    <Route path="/user-dashboard" element={<UserDashboard />} />
-                    <Route path="/violations" element={<UserViolations currentUser={currentUser} />} />
-                    <Route path="/announcements" element={<UserAnnouncements />} />
-                    <Route path="/activity" element={<ActivitiesView />} />
-                    <Route path="/lost-found" element={<UserLostFound currentUser={currentUser} />} />
-                    <Route path="/notifications" element={<UserNotifications currentUser={currentUser} />} />
-                    <Route path="/receipt-submission" element={<ReceiptSubmission />} />
-                    <Route path="/receipt-history" element={<ReceiptHistory />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/*" element={<Navigate to="/user-dashboard" />} />
-                  </Routes>
+              ) : (
+                // This should not happen since we check for userRole above, but just in case
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
+                  <div style={{ fontSize: '18px', marginBottom: '10px' }}>Setting up your account...</div>
+                  <div style={{ fontSize: '14px', color: '#666' }}>Please wait a moment</div>
+                  <Button 
+                    variant="contained" 
+                    onClick={() => {
+                      console.log('Force setting role to Student');
+                      setUserRole('Student');
+                    }}
+                    sx={{ mt: 2 }}
+                  >
+                    Continue as Student
+                  </Button>
                 </Box>
-              </Box>
-            </Box>
-          ) : (
-            // This should not happen since we check for userRole above, but just in case
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
-              <div style={{ fontSize: '18px', marginBottom: '10px' }}>Setting up your account...</div>
-              <div style={{ fontSize: '14px', color: '#666' }}>Please wait a moment</div>
-              <Button 
-                variant="contained" 
-                onClick={() => {
-                  console.log('Force setting role to Student');
-                  setUserRole('Student');
-                }}
-                sx={{ mt: 2 }}
-              >
-                Continue as Student
-              </Button>
-            </Box>
-          )
-        } />
-      </Routes>
-    </Router>
-    </ThemeProvider>
+              )
+            } />
+          </Routes>
+        </Router>
+      </ThemeWrapper>
+    </CustomThemeProvider>
   );
 }
 

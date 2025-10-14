@@ -27,7 +27,8 @@ import {
   Snackbar,
   Tooltip,
   IconButton,
-  Autocomplete
+  Autocomplete,
+  useTheme
 } from '@mui/material';
 import {
   CalendarToday,
@@ -44,6 +45,7 @@ import { auth, db } from '../firebase';
 import { collection, addDoc, getDocs, query, where, orderBy, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 
 export default function TeacherActivityScheduler() {
+  const theme = useTheme();
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -579,13 +581,27 @@ export default function TeacherActivityScheduler() {
       <Grid container spacing={3}>
         {/* Calendar Section */}
         <Grid item xs={12} lg={8}>
-          <Card sx={{ mb: 3 }}>
+          <Card sx={{ 
+            mb: 3,
+            bgcolor: '#D1D3D4',
+            '&:hover': {
+              bgcolor: '#D1D3D4'
+            }
+          }}>
             <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                mb: 2,
+                bgcolor: '#660B05',
+                p: 2,
+                borderRadius: 1
+              }}>
                 <Typography 
                   variant="h5" 
                   sx={{ 
-                    color: '#333',
+                    color: '#ffffff',
                     fontWeight: 700,
                     textTransform: 'uppercase',
                     letterSpacing: '1px',
@@ -771,18 +787,26 @@ export default function TeacherActivityScheduler() {
           </Card>
 
           {/* Filters */}
-          <Card>
+          <Card sx={{ 
+            bgcolor: '#DCDCDC',
+            '&:hover': {
+              bgcolor: '#DCDCDC'
+            }
+          }}>
             <CardContent>
-              <Typography variant="h6" color="black" gutterBottom>
+              <Typography variant="h6" sx={{ 
+                color: 'black' 
+              }} gutterBottom>
                 <FilterList sx={{ mr: 1, verticalAlign: 'middle' }} />
                 Filters
               </Typography>
               <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Resource</InputLabel>
+                <InputLabel sx={{ color: 'black' }}>Resource</InputLabel>
                 <Select
                   value={filterResource}
                   onChange={(e) => setFilterResource(e.target.value)}
                   label="Resource"
+                  sx={{ color: 'black' }}
                 >
                   <MenuItem value="">All Resources</MenuItem>
                   {resources.map(resource => (
@@ -791,11 +815,12 @@ export default function TeacherActivityScheduler() {
                 </Select>
               </FormControl>
               <FormControl fullWidth>
-                <InputLabel>Department</InputLabel>
+                <InputLabel sx={{ color: 'black' }}>Department</InputLabel>
                 <Select
                   value={filterDepartment}
                   onChange={(e) => setFilterDepartment(e.target.value)}
                   label="Department"
+                  sx={{ color: 'black' }}
                 >
                   <MenuItem value="">All Departments</MenuItem>
                   {departments.map(department => (

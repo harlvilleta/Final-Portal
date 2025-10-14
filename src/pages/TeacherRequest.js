@@ -18,6 +18,7 @@ import {
   DialogActions,
   TextField,
   Grid,
+  useTheme,
   Card,
   CardContent,
   Snackbar,
@@ -37,12 +38,14 @@ import {
   School,
   AccessTime,
   Badge,
-  Delete
+  Delete,
+  Edit
 } from '@mui/icons-material';
 import { collection, getDocs, updateDoc, doc, addDoc, query, orderBy, where, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export default function TeacherRequest() {
+  const theme = useTheme();
   const [teacherRequests, setTeacherRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -255,7 +258,11 @@ export default function TeacherRequest() {
   return (
     <Box sx={{ p: 3 }}>
       <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#800000', mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ 
+          fontWeight: 700, 
+          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+          mb: 3 
+        }}>
           🎓 Teacher Request Management
         </Typography>
         
@@ -372,11 +379,35 @@ export default function TeacherRequest() {
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         {getStatusIcon(request.status)}
-                        <Chip 
-                          label={request.status.charAt(0).toUpperCase() + request.status.slice(1)} 
-                          color={getStatusColor(request.status)} 
-                          size="small" 
-                        />
+                        {request.status === 'approved' ? (
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: '#4caf50', 
+                              fontWeight: 500,
+                              textTransform: 'capitalize'
+                            }}
+                          >
+                            {request.status}
+                          </Typography>
+                        ) : request.status === 'denied' ? (
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: '#f44336', 
+                              fontWeight: 500,
+                              textTransform: 'capitalize'
+                            }}
+                          >
+                            {request.status}
+                          </Typography>
+                        ) : (
+                          <Chip 
+                            label={request.status.charAt(0).toUpperCase() + request.status.slice(1)} 
+                            color={getStatusColor(request.status)} 
+                            size="small" 
+                          />
+                        )}
                       </Box>
                     </TableCell>
                     <TableCell>
@@ -391,6 +422,19 @@ export default function TeacherRequest() {
                             }}
                           >
                             <Visibility />
+                          </IconButton>
+                        </Tooltip>
+                        
+                        <Tooltip title="Edit Status">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleApprovalAction(request, request.status === 'approved' ? 'deny' : 'approve')}
+                            sx={{ 
+                              color: '#666',
+                              '&:hover': { color: '#ff9800' }
+                            }}
+                          >
+                            <Edit />
                           </IconButton>
                         </Tooltip>
                         
@@ -569,6 +613,11 @@ export default function TeacherRequest() {
             )}
             <Typography variant="h6">
               {approvalAction === 'approve' ? 'Approve' : 'Deny'} Teacher Request
+              {selectedRequest && selectedRequest.status !== 'pending' && (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  (Changing from {selectedRequest.status})
+                </Typography>
+              )}
             </Typography>
           </Box>
         </DialogTitle>
@@ -577,6 +626,11 @@ export default function TeacherRequest() {
             <Box sx={{ mt: 2 }}>
               <Typography variant="body1" gutterBottom>
                 You are about to <strong>{approvalAction}</strong> the teacher request for:
+                {selectedRequest.status !== 'pending' && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Current status: <strong>{selectedRequest.status}</strong> → New status: <strong>{approvalAction === 'approve' ? 'approved' : 'denied'}</strong>
+                  </Typography>
+                )}
               </Typography>
               
               <Card variant="outlined" sx={{ p: 2, mb: 3, bgcolor: '#f5f5f5' }}>

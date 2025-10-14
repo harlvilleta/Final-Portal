@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Badge, ListItemText, ListItemIcon, Divider, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
+import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Badge, ListItemText, ListItemIcon, Divider, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, useTheme } from '@mui/material';
 import { AccountCircle, Logout, Notifications, Settings, CheckCircle, Warning, Info, Mail } from '@mui/icons-material';
+import ThemeToggle from './ThemeToggle';
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { collection, query, where, onSnapshot, orderBy, addDoc } from 'firebase/firestore';
 
 export default function TeacherHeader({ currentUser, userProfile }) {
+  const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
   const [notifications, setNotifications] = useState([]);
@@ -113,14 +115,21 @@ export default function TeacherHeader({ currentUser, userProfile }) {
   const userInfo = getUserDisplayInfo();
 
   return (
-    <AppBar position="static" sx={{ bgcolor: '#fff', color: '#333', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+    <AppBar position="static" sx={{ bgcolor: 'background.paper', color: 'text.primary', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
       <Toolbar sx={{ justifyContent: 'space-between' }}>
         <Box sx={{ flex: 0.5 }}></Box>
-        <Typography variant="h4" component="div" sx={{ fontWeight: 700, color: '#800000', flex: 1, textAlign: 'center', ml: -2 }}>
+        <Typography variant="h4" component="div" sx={{ 
+          fontWeight: 700, 
+          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+          flex: 1, 
+          textAlign: 'center', 
+          ml: -2 
+        }}>
           Student Affairs Management System
         </Typography>
         <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <ThemeToggle />
             <IconButton
               size="large"
               aria-label="mail to admin"

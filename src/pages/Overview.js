@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { 
   Typography, Box, Grid, Card, CardContent, Paper, CircularProgress, List, ListItem, ListItemText, 
   Divider, Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert,
-  TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Avatar, Chip, IconButton, Tooltip
+  TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Avatar, Chip, IconButton, Tooltip,
+  useTheme
 } from "@mui/material";
 import PeopleIcon from '@mui/icons-material/People';
 import ReportIcon from '@mui/icons-material/Report';
@@ -17,6 +18,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { useNavigate, Link } from "react-router-dom";
 
 export default function Overview() {
+  const theme = useTheme();
   const [stats, setStats] = useState({
     students: 0,
     violations: 0,
@@ -356,7 +358,13 @@ export default function Overview() {
             >
               <Box sx={{ mr: 2 }}>{stat.icon}</Box>
               <CardContent sx={{ flex: 1, p: '8px !important' }}>
-                <Typography variant="h4" fontWeight={700} color={'#800000'}>
+                <Typography 
+                  variant="h4" 
+                  fontWeight={700} 
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000'
+                  }}
+                >
                   {stat.value.toLocaleString()}
                 </Typography>
                 <Typography color="text.secondary" variant="body2">

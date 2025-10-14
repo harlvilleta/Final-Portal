@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   Box, Typography, Grid, Card, CardContent, List, ListItem, ListItemAvatar, 
-  ListItemText, Avatar, Chip, Button, CircularProgress
+  ListItemText, Avatar, Chip, Button, CircularProgress, useTheme
 } from "@mui/material";
 import { CheckCircle, Warning, Announcement, EventNote, Report, Event, Campaign, People } from "@mui/icons-material";
 import { Link } from "react-router-dom";
@@ -11,6 +11,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 // User Overview Component
 function UserOverview({ currentUser }) {
+  const theme = useTheme();
   const [userViolations, setUserViolations] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [activities, setActivities] = useState([]);
@@ -176,7 +177,7 @@ function UserOverview({ currentUser }) {
       {/* User Profile Section */}
       <Card sx={{ 
         mb: 4, 
-        bgcolor: 'white', 
+        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : 'white', 
         border: 'none',
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
         borderRadius: 2
@@ -196,7 +197,11 @@ function UserOverview({ currentUser }) {
               {!userInfo.photo && (userInfo.name?.charAt(0) || userInfo.email?.charAt(0))}
             </Avatar>
             <Box sx={{ flex: 1, minWidth: 200 }}>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: '#000000', mb: 1 }}>
+              <Typography variant="h4" sx={{ 
+                fontWeight: 700, 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                mb: 1 
+              }}>
                 {userInfo.name}
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
@@ -258,10 +263,14 @@ function UserOverview({ currentUser }) {
               <Report fontSize="large" sx={{ color: '#d32f2f' }} />
             </Box>
             <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
+              }}>
                 {stats.totalViolations.toLocaleString()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+              }} variant="body2">
                 Total Violations
               </Typography>
             </CardContent>
@@ -287,10 +296,14 @@ function UserOverview({ currentUser }) {
               <Warning fontSize="large" sx={{ color: '#ed6c02' }} />
             </Box>
             <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
+              }}>
                 {stats.pendingViolations.toLocaleString()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+              }} variant="body2">
                 Pending
               </Typography>
             </CardContent>
@@ -316,10 +329,14 @@ function UserOverview({ currentUser }) {
               <CheckCircle fontSize="large" sx={{ color: '#2e7d32' }} />
             </Box>
             <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
+              }}>
                 {stats.resolvedViolations.toLocaleString()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+              }} variant="body2">
                 Resolved
               </Typography>
             </CardContent>
@@ -331,16 +348,19 @@ function UserOverview({ currentUser }) {
       {recentNotifications.length > 0 && (
         <Card sx={{ 
           mb: 4, 
-          border: '1px solid #800000',
-          borderLeft: '4px solid #800000',
+          border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #800000',
+          borderLeft: theme.palette.mode === 'dark' ? '4px solid #404040' : '4px solid #800000',
           boxShadow: 3,
-          bgcolor: '#80000015',
+          bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#80000015',
           borderRadius: 2
         }}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <Campaign sx={{ mr: 1, fontSize: 28, color: '#800000' }} />
-              <Typography variant="h6" color="#800000" fontWeight={700}>
+              <Typography variant="h6" sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+                fontWeight: 700 
+              }}>
                 Recent Notifications 
                 {stats.unreadNotifications > 0 && (
                   <Chip 
@@ -433,9 +453,14 @@ function UserOverview({ currentUser }) {
 
       {/* Recent Violations Section */}
       {recentViolations.length > 0 && (
-        <Card sx={{ mb: 4 }}>
+        <Card sx={{ 
+          mb: 4,
+          bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : 'inherit'
+        }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom color="error.main">
+            <Typography variant="h6" gutterBottom sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'error.main' 
+            }}>
               Recent Violations
             </Typography>
             <List>

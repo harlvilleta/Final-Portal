@@ -3,7 +3,7 @@ import { Routes, Route, Link } from "react-router-dom";
 import { 
   Box, Grid, Card, CardActionArea, CardContent, Typography, TextField, Button, Paper, MenuItem, Avatar, Snackbar, Alert, 
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Stack, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText,
-  IconButton, Tooltip, Chip, InputAdornment, Accordion, AccordionSummary, AccordionDetails, CircularProgress
+  IconButton, Tooltip, Chip, InputAdornment, Accordion, AccordionSummary, AccordionDetails, CircularProgress, useTheme
 } from "@mui/material";
 import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete, Search, ExpandMore, Folder, ArrowBack, CloudUpload } from "@mui/icons-material";
 import { db, storage, logActivity } from "../firebase";
@@ -31,6 +31,7 @@ function MenuCard({ icon, title, to }) {
 }
 
 function AddStudent({ onClose, isModal = false }) {
+  const theme = useTheme();
   const [profile, setProfile] = useState({
     id: "",
     lastName: "",
@@ -546,6 +547,7 @@ function AddStudent({ onClose, isModal = false }) {
 }
 
 function LostFound() {
+  const theme = useTheme();
   const [lostForm, setLostForm] = useState({ name: '', description: '', location: '', image: null, timeLost: '', lostBy: '' });
   const [foundForm, setFoundForm] = useState({ name: '', description: '', location: '', image: null, timeFound: '', foundBy: '' });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -986,6 +988,7 @@ function CourseDashboard({
   setPreviewViolationImage,
   violationRecords
 }) {
+  const theme = useTheme();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -1140,10 +1143,15 @@ function CourseDashboard({
           <ArrowBack />
         </IconButton>
         <Box>
-          <Typography variant="h4" sx={{ color: '#800000', fontWeight: 'bold' }}>
+          <Typography variant="h4" sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+            fontWeight: 'bold' 
+          }}>
             {courseName} Students
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body1" sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+          }}>
             {students.length} student{students.length !== 1 ? 's' : ''} enrolled in {courseName}
           </Typography>
         </Box>
@@ -1152,41 +1160,81 @@ function CourseDashboard({
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#f8f9fa', border: '1px solid #e9ecef' }}>
-            <Typography variant="h4" sx={{ color: '#800000', fontWeight: 'bold' }}>
+          <Paper sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+          }}>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              fontWeight: 'bold' 
+            }}>
               {students.length}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
               Total {courseName} Students
             </Typography>
           </Paper>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#f8f9fa', border: '1px solid #e9ecef' }}>
-            <Typography variant="h4" sx={{ color: '#800000', fontWeight: 'bold' }}>
+          <Paper sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+          }}>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              fontWeight: 'bold' 
+            }}>
               {selectedYear === "All Years" ? new Set(students.map(s => s.year)).size : 1}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
               {selectedYear === "All Years" ? 'Year Levels' : 'Selected Year'}
             </Typography>
           </Paper>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#f8f9fa', border: '1px solid #e9ecef' }}>
-            <Typography variant="h4" sx={{ color: '#800000', fontWeight: 'bold' }}>
+          <Paper sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+          }}>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              fontWeight: 'bold' 
+            }}>
               {new Set(filteredStudents.map(s => s.section)).size}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
               Sections
             </Typography>
           </Paper>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#f8f9fa', border: '1px solid #e9ecef' }}>
-            <Typography variant="h4" sx={{ color: '#800000', fontWeight: 'bold' }}>
+          <Paper sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+          }}>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              fontWeight: 'bold' 
+            }}>
               {filteredStudents.length}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
               {search.trim() || selectedYear !== "All Years" ? 'Filtered Results' : 'All Students'}
             </Typography>
           </Paper>
@@ -1195,7 +1243,11 @@ function CourseDashboard({
 
       {/* Year Level Filter */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" sx={{ mb: 2, color: '#800000', fontWeight: 'bold' }}>
+        <Typography variant="h6" sx={{ 
+          mb: 2, 
+          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+          fontWeight: 'bold' 
+        }}>
           Filter by Year Level
         </Typography>
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
@@ -1309,10 +1361,21 @@ function CourseDashboard({
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#fafafa' }}>
-                <TableCell sx={{ fontWeight: 'bold' }}>Image</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>
+              <TableRow sx={{ 
+                bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#fafafa' 
+              }}>
+                <TableCell sx={{ 
+                  fontWeight: 'bold',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
+                }}>Image</TableCell>
+                <TableCell sx={{ 
+                  fontWeight: 'bold',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
+                }}>Name</TableCell>
+                <TableCell sx={{ 
+                  fontWeight: 'bold',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
+                }}>
                   Year
                   {selectedYear !== "All Years" && (
                     <Chip 
@@ -1328,9 +1391,18 @@ function CourseDashboard({
                     />
                   )}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Section</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
+                <TableCell sx={{ 
+                  fontWeight: 'bold',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
+                }}>Section</TableCell>
+                <TableCell sx={{ 
+                  fontWeight: 'bold',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
+                }}>Email</TableCell>
+                <TableCell sx={{ 
+                  fontWeight: 'bold',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
+                }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -1435,6 +1507,7 @@ function StudentList({
   setPreviewViolationImage,
   violationRecords
 }) {
+  const theme = useTheme();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -1977,46 +2050,90 @@ School Administration
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>Student List</Typography>
+      <Typography variant="h4" gutterBottom sx={{ 
+        color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' 
+      }}>
+        Student List
+      </Typography>
       
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#f8f9fa', border: '1px solid #e9ecef' }}>
-            <Typography variant="h4" sx={{ color: '#800000', fontWeight: 'bold' }}>
+          <Paper sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+          }}>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              fontWeight: 'bold' 
+            }}>
               {students.filter(s => s.course && s.course.trim() !== '').length}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
               Students with Assigned Courses
             </Typography>
           </Paper>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#f8f9fa', border: '1px solid #e9ecef' }}>
-            <Typography variant="h4" sx={{ color: '#800000', fontWeight: 'bold' }}>
+          <Paper sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+          }}>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              fontWeight: 'bold' 
+            }}>
               {Object.keys(groupedStudents).length}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
               Course Programs
             </Typography>
           </Paper>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#f8f9fa', border: '1px solid #e9ecef' }}>
-            <Typography variant="h4" sx={{ color: '#800000', fontWeight: 'bold' }}>
+          <Paper sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+          }}>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              fontWeight: 'bold' 
+            }}>
               {Object.values(groupedStudents).reduce((max, students) => Math.max(max, students.length), 0)}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
               Largest Course
             </Typography>
           </Paper>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#f8f9fa', border: '1px solid #e9ecef' }}>
-            <Typography variant="h4" sx={{ color: '#800000', fontWeight: 'bold' }}>
+          <Paper sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+          }}>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              fontWeight: 'bold' 
+            }}>
               {search.trim() ? Object.values(groupedStudents).flat().length : students.filter(s => s.course && s.course.trim() !== '').length}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
               {search.trim() ? 'Search Results' : 'Students with Courses'}
             </Typography>
           </Paper>
@@ -2065,11 +2182,23 @@ School Administration
       </Stack>
       
       {/* Instructions */}
-      <Box sx={{ mb: 3, p: 2, bgcolor: '#f8f9fa', borderRadius: 2, border: '1px solid #e9ecef' }}>
-        <Typography variant="body1" sx={{ color: '#800000', fontWeight: 'medium', mb: 1 }}>
+      <Box sx={{ 
+        mb: 3, 
+        p: 2, 
+        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+        borderRadius: 2, 
+        border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+      }}>
+        <Typography variant="body1" sx={{ 
+          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+          fontWeight: 'medium', 
+          mb: 1 
+        }}>
           📁 Course Organization
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{ 
+          color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+        }}>
           Students with assigned courses are organized by course programs. Click on any course folder below to view all students enrolled in that specific program. 
           Each folder shows the total number of students enrolled in that course. Students without assigned courses are not displayed in this view.
         </Typography>
@@ -2108,12 +2237,21 @@ School Administration
                   <CardContent sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Folder sx={{ color: '#800000', fontSize: 32 }} />
+                        <Folder sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+                          fontSize: 32 
+                        }} />
                         <Box>
-                          <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#800000', mb: 0.5 }}>
+                          <Typography variant="h5" sx={{ 
+                            fontWeight: 'bold', 
+                            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+                            mb: 0.5 
+                          }}>
                             {course}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body2" sx={{ 
+                            color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+                          }}>
                             Click to view all {course} students
                           </Typography>
                         </Box>
@@ -2314,6 +2452,7 @@ function StudentMenu() {
 }
 
 function EditStudentForm({ student, onClose, onSuccess }) {
+  const theme = useTheme();
   const [profile, setProfile] = useState({
     id: student.id || "",
     lastName: student.lastName || "",
@@ -2588,6 +2727,7 @@ function EditStudentForm({ student, onClose, onSuccess }) {
 }
 
 export default function Students() {
+  const theme = useTheme();
   const [openAddStudent, setOpenAddStudent] = useState(false);
   const [openViolationRecord, setOpenViolationRecord] = useState(false);
   const [violationRecords, setViolationRecords] = useState([]);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Typography, Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, TextField, Grid, Chip, Avatar, InputAdornment, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Card, CardContent, CardHeader, Divider, Tooltip, CircularProgress, Snackbar, Alert, Stack, Autocomplete } from "@mui/material";
+import { Typography, Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, TextField, Grid, Chip, Avatar, InputAdornment, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Card, CardContent, CardHeader, Divider, Tooltip, CircularProgress, Snackbar, Alert, Stack, Autocomplete, useTheme } from "@mui/material";
 import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { validateStudentId } from "../utils/studentValidation";
@@ -22,6 +22,7 @@ const EMAILJS_TEMPLATE_ID = 'template_f5q7j6q';
 const EMAILJS_USER_ID = 'L77JuF4PF3ZtGkwHm';
 
 export default function ViolationRecord() {
+  const theme = useTheme();
   const [records, setRecords] = useState([]);
   const [search, setSearch] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
@@ -453,39 +454,57 @@ School Administration
           }
         `}
       </style>
-      <Typography variant="h4" gutterBottom fontWeight={700} color="primary.main">
+      <Typography variant="h4" gutterBottom fontWeight={700} sx={{ 
+        color: theme.palette.mode === 'dark' ? '#ffffff' : 'primary.main' 
+      }}>
         Violation Records
       </Typography>
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} sm={4}>
-          <Card onClick={() => setStatusFilter('all')} sx={{ cursor: 'pointer', bgcolor: '#f5f5f5', boxShadow: 1 }}>
-            <CardHeader avatar={<AssignmentTurnedInIcon sx={{ color: 'grey.600' }} />} title={<Typography variant="subtitle2">Total Violations</Typography>} />
+          <Card onClick={() => setStatusFilter('all')} sx={{ 
+            cursor: 'pointer', 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f5f5f5', 
+            boxShadow: 1 
+          }}>
+            <CardHeader avatar={<AssignmentTurnedInIcon sx={{ color: 'grey.600' }} />} title={<Typography variant="subtitle2" sx={{ color: theme.palette.mode === 'dark' ? '#000000' : 'inherit' }}>Total Violations</Typography>} />
             <CardContent sx={{ pt: 1, pb: 2 }}>
-              <Typography variant="h5" color="text.primary" fontWeight={700}>{total}</Typography>
+              <Typography variant="h5" sx={{ color: theme.palette.mode === 'dark' ? '#000000' : 'text.primary' }} fontWeight={700}>{total}</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={4}>
-          <Card onClick={() => setStatusFilter('pending')} sx={{ cursor: 'pointer', bgcolor: '#f7f7f7', boxShadow: 1 }}>
-            <CardHeader avatar={<PendingActionsIcon sx={{ color: 'grey.600' }} />} title={<Typography variant="subtitle2">Pending</Typography>} />
+          <Card onClick={() => setStatusFilter('pending')} sx={{ 
+            cursor: 'pointer', 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f7f7f7', 
+            boxShadow: 1 
+          }}>
+            <CardHeader avatar={<PendingActionsIcon sx={{ color: 'grey.600' }} />} title={<Typography variant="subtitle2" sx={{ color: theme.palette.mode === 'dark' ? '#000000' : 'inherit' }}>Pending</Typography>} />
             <CardContent sx={{ pt: 1, pb: 2 }}>
-              <Typography variant="h5" color="text.primary" fontWeight={700}>{pending}</Typography>
+              <Typography variant="h5" sx={{ color: theme.palette.mode === 'dark' ? '#000000' : 'text.primary' }} fontWeight={700}>{pending}</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={4}>
-          <Card onClick={() => setStatusFilter('solved')} sx={{ cursor: 'pointer', bgcolor: '#f7f7f7', boxShadow: 1 }}>
-            <CardHeader avatar={<DoneAllIcon sx={{ color: 'grey.600' }} />} title={<Typography variant="subtitle2">Solved</Typography>} />
+          <Card onClick={() => setStatusFilter('solved')} sx={{ 
+            cursor: 'pointer', 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f7f7f7', 
+            boxShadow: 1 
+          }}>
+            <CardHeader avatar={<DoneAllIcon sx={{ color: 'grey.600' }} />} title={<Typography variant="subtitle2" sx={{ color: theme.palette.mode === 'dark' ? '#000000' : 'inherit' }}>Solved</Typography>} />
             <CardContent sx={{ pt: 1, pb: 2 }}>
-              <Typography variant="h5" color="text.primary" fontWeight={700}>{solved}</Typography>
+              <Typography variant="h5" sx={{ color: theme.palette.mode === 'dark' ? '#000000' : 'text.primary' }} fontWeight={700}>{solved}</Typography>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
       {/* Add Violation Form */}
       <Paper sx={{ p: { xs: 1, sm: 3 }, mb: 3, maxWidth: 1200, mx: 'auto', borderRadius: 3, boxShadow: 3 }}>
-        <Typography variant="h6" fontWeight={600} gutterBottom color="primary">Add New Violation</Typography>
+        <Typography variant="h6" fontWeight={600} gutterBottom sx={{ 
+          color: theme.palette.mode === 'dark' ? '#ffffff' : 'primary' 
+        }}>
+          Add New Violation
+        </Typography>
         <Divider sx={{ mb: 2 }} />
         <form onSubmit={handleSubmit}>
           <Grid container spacing={2}>
@@ -611,8 +630,8 @@ School Administration
                 <Button type="submit" variant="outlined" size="small" sx={{ 
                   minWidth: 120, 
                   maxWidth: 160,
-                  color: '#000',
-                  borderColor: '#000',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000',
+                  borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#000',
                   '&:hover': {
                     borderColor: '#800000',
                     backgroundColor: '#800000',
@@ -644,16 +663,51 @@ School Administration
             )
           }}
         />
-        <TableContainer component={Paper} sx={{ maxHeight: 500, width: '100%', overflowX: 'auto' }}>
+        <TableContainer component={Paper} sx={{ 
+          maxHeight: 500, 
+          width: '100%', 
+          overflowX: 'auto',
+          bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : 'inherit'
+        }}>
           <Table size="small" stickyHeader sx={{ minWidth: 880 }}>
             <TableHead>
                 <TableRow sx={{ bgcolor: '#800000' }}>
-                  <TableCell sx={{ minWidth: 160, fontSize: 16, fontWeight: 700, color: 'black' }}>Student Name</TableCell>
-                  <TableCell sx={{ minWidth: 110, fontSize: 16, fontWeight: 700, color: 'black' }}>Student ID</TableCell>
-                  <TableCell sx={{ minWidth: 180, fontSize: 16, fontWeight: 700, color: 'black' }}>Violation</TableCell>
-                  <TableCell sx={{ minWidth: 110, fontSize: 16, fontWeight: 700, color: 'black' }}>Date</TableCell>
-                  <TableCell sx={{ minWidth: 100, fontSize: 16, fontWeight: 700, color: 'black' }}>Time</TableCell>
-                  <TableCell sx={{ minWidth: 60, fontSize: 16, fontWeight: 700, color: 'black' }} align="right">Delete</TableCell>
+                  <TableCell sx={{ 
+                    minWidth: 160, 
+                    fontSize: 16, 
+                    fontWeight: 700, 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : 'black' 
+                  }}>Student Name</TableCell>
+                  <TableCell sx={{ 
+                    minWidth: 110, 
+                    fontSize: 16, 
+                    fontWeight: 700, 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : 'black' 
+                  }}>Student ID</TableCell>
+                  <TableCell sx={{ 
+                    minWidth: 180, 
+                    fontSize: 16, 
+                    fontWeight: 700, 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : 'black' 
+                  }}>Violation</TableCell>
+                  <TableCell sx={{ 
+                    minWidth: 110, 
+                    fontSize: 16, 
+                    fontWeight: 700, 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : 'black' 
+                  }}>Date</TableCell>
+                  <TableCell sx={{ 
+                    minWidth: 100, 
+                    fontSize: 16, 
+                    fontWeight: 700, 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : 'black' 
+                  }}>Time</TableCell>
+                  <TableCell sx={{ 
+                    minWidth: 60, 
+                    fontSize: 16, 
+                    fontWeight: 700, 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : 'black' 
+                  }} align="right">Delete</TableCell>
                 </TableRow>
             </TableHead>
             <TableBody>

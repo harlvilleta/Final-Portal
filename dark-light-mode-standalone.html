@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark/Light Mode Toggle - Standalone</title>
+    <style>
+        /* CSS Variables for Light Theme */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f6fa;
+            --bg-card: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-muted: #999999;
+            --border-color: #e0e0e0;
+            --border-hover: #b0b0b0;
+            --shadow: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-hover: 0 4px 8px rgba(0,0,0,0.15);
+            --accent-color: #800000;
+            --accent-hover: #6b0000;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --warning-color: #ff9800;
+            --info-color: #2196f3;
+        }
+
+        /* CSS Variables for Dark Theme */
+        [data-theme="dark"] {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-card: #2d2d2d;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --text-muted: #666666;
+            --border-color: #404040;
+            --border-hover: #666666;
+            --shadow: 0 2px 4px rgba(0,0,0,0.3);
+            --shadow-hover: 0 4px 8px rgba(0,0,0,0.4);
+            --accent-color: #800000;
+            --accent-hover: #a00000;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --warning-color: #ff9800;
+            --info-color: #2196f3;
+        }
+
+        /* Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            line-height: 1.6;
+        }
+
+        /* Header Styles */
+        .header {
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            padding: 0 20px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-left {
+            flex: 0.5;
+        }
+
+        .header-center {
+            flex: 1;
+            text-align: center;
+        }
+
+        .header-right {
+            flex: 0.5;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-left: -100px; /* Center adjustment */
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--border-color);
+            transform: scale(1.05);
+        }
+
+        .theme-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .theme-toggle svg {
+            width: 24px;
+            height: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover svg {
+            color: var(--warning-color);
+        }
+
+        /* Notification Button */
+        .notification-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+            position: relative;
+        }
+
+        .notification-btn:hover {
+            background-color: var(--border-color);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background-color: var(--error-color);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* Profile Button */
+        .profile-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .profile-btn:hover {
+            background-color: var(--border-color);
+        }
+
+        .profile-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: flex;
+            min-height: calc(100vh - 64px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 20px 0;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-item:hover {
+            background-color: var(--border-color);
+            border-left-color: var(--accent-color);
+        }
+
+        .sidebar-item.active {
+            background-color: var(--border-color);
+            border-left-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .sidebar-item svg {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+        }
+
+        /* Content Area */
+        .content {
+            flex: 1;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            overflow-y: auto;
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .card-content {
+            color: var(--text-secondary);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--border-color);
+        }
+
+        /* Tables */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .table th,
+        .table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table th {
+            background-color: var(--bg-secondary);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .table td {
+            color: var(--text-secondary);
+        }
+
+        .table tr:hover {
+            background-color: var(--border-color);
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .status-approved {
+            color: var(--success-color);
+            font-weight: 500;
+        }
+
+        .status-denied {
+            color: var(--error-color);
+            font-weight: 500;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+            
+            .logo {
+                font-size: 20px;
+                margin-left: -50px;
+            }
+            
+            .header-right {
+                gap: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 100%;
+                position: fixed;
+                top: 64px;
+                left: -100%;
+                height: calc(100vh - 64px);
+                z-index: 999;
+                transition: left 0.3s ease;
+            }
+            
+            .sidebar.open {
+                left: 0;
+            }
+            
+            .content {
+                padding: 10px;
+            }
+        }
+
+        /* Animation for theme transition */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* Utility Classes */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mb-1 { margin-bottom: 8px; }
+        .mb-2 { margin-bottom: 16px; }
+        .mb-3 { margin-bottom: 24px; }
+        .mt-1 { margin-top: 8px; }
+        .mt-2 { margin-top: 16px; }
+        .mt-3 { margin-top: 24px; }
+        .p-1 { padding: 8px; }
+        .p-2 { padding: 16px; }
+        .p-3 { padding: 24px; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left"></div>
+        <div class="header-center">
+            <h1 class="logo">Student Affairs Management System</h1>
+        </div>
+        <div class="header-right">
+            <!-- Theme Toggle Button -->
+            <button class="theme-toggle" id="themeToggle" title="Toggle Dark/Light Mode">
+                <svg id="themeIcon" viewBox="0 0 24 24" fill="currentColor">
+                    <!-- Sun icon for light mode -->
+                    <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"/>
+                </svg>
+            </button>
+
+            <!-- Notification Button -->
+            <button class="notification-btn" title="Notifications">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+                </svg>
+                <span class="notification-badge">3</span>
+            </button>
+
+            <!-- Profile Button -->
+            <button class="profile-btn" title="Profile">
+                <div class="profile-avatar">A</div>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <a href="#" class="sidebar-item active">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+                Dashboard
+            </a>
+            <a href="#" class="sidebar-item">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                Students
+            </a>
+            <a href="#" class="sidebar-item">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                </svg>
+                Activities
+            </a>
+            <a href="#" class="sidebar-item">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                Violations
+            </a>
+            <a href="#" class="sidebar-item">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                Reports
+            </a>
+        </nav>
+
+        <!-- Content Area -->
+        <main class="content">
+            <div class="card">
+                <h2 class="card-title">Teacher Request Management</h2>
+                <div class="card-content">
+                    <p>Review and approve teacher registration requests. Teachers cannot log in until their accounts are approved.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">Recent Requests</h2>
+                <div class="card-content">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Teacher</th>
+                                <th>Email</th>
+                                <th>Request Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>John Smith</td>
+                                <td>john.smith@school.edu</td>
+                                <td>2024-01-15</td>
+                                <td><span class="status-badge status-approved">Approved</span></td>
+                                <td>
+                                    <button class="btn btn-secondary">View</button>
+                                    <button class="btn btn-secondary">Edit</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Jane Doe</td>
+                                <td>jane.doe@school.edu</td>
+                                <td>2024-01-14</td>
+                                <td><span class="status-badge status-denied">Denied</span></td>
+                                <td>
+                                    <button class="btn btn-secondary">View</button>
+                                    <button class="btn btn-secondary">Edit</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Mike Johnson</td>
+                                <td>mike.johnson@school.edu</td>
+                                <td>2024-01-13</td>
+                                <td><span class="status-badge status-pending">Pending</span></td>
+                                <td>
+                                    <button class="btn btn-secondary">View</button>
+                                    <button class="btn btn-secondary">Edit</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">Quick Actions</h2>
+                <div class="card-content">
+                    <button class="btn btn-primary">Approve All Pending</button>
+                    <button class="btn btn-secondary">Export Report</button>
+                    <button class="btn btn-secondary">Send Notifications</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        /**
+         * Dark/Light Mode Toggle Implementation
+         * 
+         * This script provides a complete dark/light mode toggle functionality
+         * that can be integrated into any HTML page.
+         * 
+         * Features:
+         * - Toggle between light and dark themes
+         * - Persist theme preference in localStorage
+         * - Smooth transitions between themes
+         * - Professional school system design
+         * - Responsive design support
+         */
+
+        class ThemeManager {
+            constructor() {
+                this.themeToggle = document.getElementById('themeToggle');
+                this.themeIcon = document.getElementById('themeIcon');
+                this.currentTheme = this.getStoredTheme() || 'light';
+                
+                this.init();
+            }
+
+            /**
+             * Initialize the theme manager
+             */
+            init() {
+                // Apply stored theme on page load
+                this.applyTheme(this.currentTheme);
+                
+                // Add event listener for theme toggle
+                this.themeToggle.addEventListener('click', () => {
+                    this.toggleTheme();
+                });
+
+                // Listen for system theme changes
+                if (window.matchMedia) {
+                    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+                    mediaQuery.addListener((e) => {
+                        // Only auto-switch if user hasn't manually set a preference
+                        if (!this.getStoredTheme()) {
+                            this.applyTheme(e.matches ? 'dark' : 'light');
+                        }
+                    });
+                }
+            }
+
+            /**
+             * Toggle between light and dark themes
+             */
+            toggleTheme() {
+                this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+                this.applyTheme(this.currentTheme);
+                this.storeTheme(this.currentTheme);
+            }
+
+            /**
+             * Apply the specified theme
+             * @param {string} theme - 'light' or 'dark'
+             */
+            applyTheme(theme) {
+                const body = document.body;
+                const isDark = theme === 'dark';
+                
+                // Update data attribute for CSS
+                body.setAttribute('data-theme', theme);
+                
+                // Update theme icon
+                this.updateThemeIcon(isDark);
+                
+                // Update page title for accessibility
+                document.title = `Student Affairs Management System - ${theme.charAt(0).toUpperCase() + theme.slice(1)} Mode`;
+                
+                // Add smooth transition class
+                body.classList.add('theme-transition');
+                setTimeout(() => {
+                    body.classList.remove('theme-transition');
+                }, 300);
+            }
+
+            /**
+             * Update the theme toggle icon
+             * @param {boolean} isDark - Whether the current theme is dark
+             */
+            updateThemeIcon(isDark) {
+                if (isDark) {
+                    // Show sun icon for switching to light mode
+                    this.themeIcon.innerHTML = `
+                        <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"/>
+                    `;
+                    this.themeToggle.title = 'Switch to Light Mode';
+                } else {
+                    // Show moon icon for switching to dark mode
+                    this.themeIcon.innerHTML = `
+                        <path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
+                    `;
+                    this.themeToggle.title = 'Switch to Dark Mode';
+                }
+            }
+
+            /**
+             * Store theme preference in localStorage
+             * @param {string} theme - Theme to store
+             */
+            storeTheme(theme) {
+                try {
+                    localStorage.setItem('theme', theme);
+                } catch (error) {
+                    console.warn('Could not save theme preference:', error);
+                }
+            }
+
+            /**
+             * Get stored theme preference from localStorage
+             * @returns {string|null} Stored theme or null
+             */
+            getStoredTheme() {
+                try {
+                    return localStorage.getItem('theme');
+                } catch (error) {
+                    console.warn('Could not retrieve theme preference:', error);
+                    return null;
+                }
+            }
+
+            /**
+             * Get current theme
+             * @returns {string} Current theme
+             */
+            getCurrentTheme() {
+                return this.currentTheme;
+            }
+
+            /**
+             * Set theme programmatically
+             * @param {string} theme - Theme to set
+             */
+            setTheme(theme) {
+                if (theme === 'light' || theme === 'dark') {
+                    this.currentTheme = theme;
+                    this.applyTheme(theme);
+                    this.storeTheme(theme);
+                }
+            }
+        }
+
+        // Additional utility functions for theme management
+        const ThemeUtils = {
+            /**
+             * Check if the current theme is dark
+             * @returns {boolean} True if dark theme is active
+             */
+            isDarkMode() {
+                return document.body.getAttribute('data-theme') === 'dark';
+            },
+
+            /**
+             * Get theme-aware color value
+             * @param {string} lightColor - Color for light theme
+             * @param {string} darkColor - Color for dark theme
+             * @returns {string} Appropriate color for current theme
+             */
+            getThemeColor(lightColor, darkColor) {
+                return this.isDarkMode() ? darkColor : lightColor;
+            },
+
+            /**
+             * Add theme change listener
+             * @param {Function} callback - Function to call when theme changes
+             */
+            onThemeChange(callback) {
+                // Create a custom event for theme changes
+                document.addEventListener('themeChanged', callback);
+            },
+
+            /**
+             * Dispatch theme change event
+             * @param {string} newTheme - The new theme
+             */
+            dispatchThemeChange(newTheme) {
+                const event = new CustomEvent('themeChanged', {
+                    detail: { theme: newTheme }
+                });
+                document.dispatchEvent(event);
+            }
+        };
+
+        // Initialize theme manager when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.themeManager = new ThemeManager();
+            window.themeUtils = ThemeUtils;
+            
+            // Log theme initialization
+            console.log('Theme Manager initialized with theme:', window.themeManager.getCurrentTheme());
+        });
+
+        // Example usage for other scripts:
+        /*
+        // Check current theme
+        if (window.themeUtils.isDarkMode()) {
+            console.log('Dark mode is active');
+        }
+
+        // Listen for theme changes
+        window.themeUtils.onThemeChange((event) => {
+            console.log('Theme changed to:', event.detail.theme);
+        });
+
+        // Set theme programmatically
+        window.themeManager.setTheme('dark');
+        */
+    </script>
+</body>
+</html>

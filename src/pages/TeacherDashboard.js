@@ -16,7 +16,8 @@ import {
   Divider,
   Paper,
   IconButton,
-  Badge
+  Badge,
+  useTheme
 } from '@mui/material';
 import { 
   Dashboard, 
@@ -43,6 +44,7 @@ import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestor
 import { useNavigate } from 'react-router-dom';
 
 export default function TeacherDashboard() {
+  const theme = useTheme();
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [violations, setViolations] = useState([]);
@@ -203,19 +205,19 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: 'background.default', minHeight: '100vh' }}>
       {/* Welcome Section */}
       <Box sx={{ mb: 4, pt: { xs: 1, sm: 2 }, px: { xs: 1, sm: 0 } }}>
         <Typography 
           variant="h4" 
           fontWeight={700} 
-          color="#800000" 
-          gutterBottom 
           sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
             wordBreak: 'break-word',
             fontSize: { xs: '1.75rem', sm: '2.125rem' },
             lineHeight: 1.2
           }}
+          gutterBottom 
         >
           Hi Teacher {userInfo.name}
         </Typography>
@@ -254,10 +256,14 @@ export default function TeacherDashboard() {
               <Report fontSize="large" sx={{ color: '#d32f2f' }} />
             </Box>
             <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} color="#d32f2f">
+              <Typography variant="h4" fontWeight={700} sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#d32f2f' 
+              }}>
                 {myReportsCount.toLocaleString()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+              }} variant="body2">
                 My Reports
               </Typography>
             </CardContent>
@@ -284,10 +290,14 @@ export default function TeacherDashboard() {
               <Warning fontSize="large" sx={{ color: '#ed6c02' }} />
             </Box>
             <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} color="#ed6c02">
+              <Typography variant="h4" fontWeight={700} sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#ed6c02' 
+              }}>
                 {meetingsCount.toLocaleString()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+              }} variant="body2">
                 Meetings
               </Typography>
             </CardContent>
@@ -314,10 +324,14 @@ export default function TeacherDashboard() {
               <Campaign fontSize="large" sx={{ color: '#2e7d32' }} />
             </Box>
             <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} color="#2e7d32">
+              <Typography variant="h4" fontWeight={700} sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#2e7d32' 
+              }}>
                 {announcements.length.toLocaleString()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+              }} variant="body2">
                 Announcements
               </Typography>
             </CardContent>
@@ -344,10 +358,14 @@ export default function TeacherDashboard() {
               <Notifications fontSize="large" sx={{ color: '#800000' }} />
             </Box>
             <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} color="#800000">
+              <Typography variant="h4" fontWeight={700} sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' 
+              }}>
                 {getUnreadNotificationsCount().toLocaleString()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+              }} variant="body2">
                 Unread Notifications
               </Typography>
             </CardContent>
@@ -362,16 +380,18 @@ export default function TeacherDashboard() {
         {/* Recent Violations */}
         <Grid item xs={12} lg={6}>
           <Card sx={{ 
-            border: '1px solid #800000',
-            borderLeft: '4px solid #800000',
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #800000',
+            borderLeft: theme.palette.mode === 'dark' ? '4px solid #404040' : '4px solid #800000',
             boxShadow: 3,
-            bgcolor: '#80000015',
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#80000015',
             borderRadius: 2,
             height: 'fit-content'
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={700} color="#800000">
+                <Typography variant="h6" fontWeight={700} sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' 
+                }}>
                   Recent Violations
                 </Typography>
                 <Button 
@@ -448,11 +468,14 @@ export default function TeacherDashboard() {
           <Card sx={{ 
             borderRadius: 3, 
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            height: 'fit-content'
+            height: 'fit-content',
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : 'inherit'
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600} color="#2d3436">
+                <Typography variant="h6" fontWeight={600} sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#2d3436' 
+                }}>
                   Recent Announcements
                 </Typography>
                 <Button 
