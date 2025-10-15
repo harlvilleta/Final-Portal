@@ -5,6 +5,7 @@ import {
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Avatar, Chip, IconButton, Tooltip,
   useTheme
 } from "@mui/material";
+import { useTheme as useCustomTheme } from "../contexts/ThemeContext";
 import PeopleIcon from '@mui/icons-material/People';
 import ReportIcon from '@mui/icons-material/Report';
 import EventIcon from '@mui/icons-material/Event';
@@ -19,6 +20,7 @@ import { useNavigate, Link } from "react-router-dom";
 
 export default function Overview() {
   const theme = useTheme();
+  const { isDark } = useCustomTheme();
   const [stats, setStats] = useState({
     students: 0,
     violations: 0,
@@ -402,17 +404,17 @@ export default function Overview() {
                 <XAxis 
                   dataKey="month" 
                   tick={{ fontSize: 12 }}
-                  axisLine={{ stroke: '#800000' }}
+                  axisLine={{ stroke: isDark ? '#D84040' : '#800000' }}
                 />
                 <YAxis 
                   tick={{ fontSize: 12 }}
-                  axisLine={{ stroke: '#800000' }}
+                  axisLine={{ stroke: isDark ? '#D84040' : '#800000' }}
                   domain={[0, 'dataMax + 1']}
                 />
                 <RechartsTooltip 
                   contentStyle={{ 
                     backgroundColor: '#fff', 
-                    border: '1px solid #800000',
+                    border: isDark ? '1px solid #D84040' : '1px solid #800000',
                     borderRadius: '8px'
                   }}
                 />
@@ -420,11 +422,11 @@ export default function Overview() {
                 <Line 
                   type="monotone" 
                   dataKey="count" 
-                  stroke="#800000" 
+                  stroke={isDark ? '#D84040' : '#800000'} 
                   strokeWidth={3}
                   name="Students"
-                  dot={{ fill: '#800000', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: '#800000', strokeWidth: 2 }}
+                  dot={{ fill: isDark ? '#D84040' : '#800000', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: isDark ? '#D84040' : '#800000', strokeWidth: 2 }}
                   connectNulls={false}
                 />
               </LineChart>
@@ -456,24 +458,24 @@ export default function Overview() {
                 <XAxis 
                   dataKey="month" 
                   tick={{ fontSize: 12 }}
-                  axisLine={{ stroke: '#800000' }}
+                  axisLine={{ stroke: isDark ? '#D84040' : '#800000' }}
                 />
                 <YAxis 
                   tick={{ fontSize: 12 }}
-                  axisLine={{ stroke: '#800000' }}
+                  axisLine={{ stroke: isDark ? '#D84040' : '#800000' }}
                   domain={[0, 'dataMax + 1']}
                 />
                 <RechartsTooltip 
                   contentStyle={{ 
                     backgroundColor: '#fff', 
-                    border: '1px solid #800000',
+                    border: isDark ? '1px solid #D84040' : '1px solid #800000',
                     borderRadius: '8px'
                   }}
                 />
                 <Legend />
                 <Bar 
                   dataKey="count" 
-                  fill="#800000" 
+                  fill={isDark ? '#D84040' : '#800000'} 
                   name="Violations"
                   radius={[4, 4, 0, 0]}
                 />

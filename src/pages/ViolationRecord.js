@@ -467,9 +467,9 @@ School Administration
             bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f5f5f5', 
             boxShadow: 1 
           }}>
-            <CardHeader avatar={<AssignmentTurnedInIcon sx={{ color: 'grey.600' }} />} title={<Typography variant="subtitle2" sx={{ color: theme.palette.mode === 'dark' ? '#000000' : 'inherit' }}>Total Violations</Typography>} />
+            <CardHeader avatar={<AssignmentTurnedInIcon sx={{ color: '#f44336' }} />} title={<Typography variant="subtitle2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>Total Violations</Typography>} />
             <CardContent sx={{ pt: 1, pb: 2 }}>
-              <Typography variant="h5" sx={{ color: theme.palette.mode === 'dark' ? '#000000' : 'text.primary' }} fontWeight={700}>{total}</Typography>
+              <Typography variant="h3" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.primary' }} fontWeight={700}>{total}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -479,9 +479,9 @@ School Administration
             bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f7f7f7', 
             boxShadow: 1 
           }}>
-            <CardHeader avatar={<PendingActionsIcon sx={{ color: 'grey.600' }} />} title={<Typography variant="subtitle2" sx={{ color: theme.palette.mode === 'dark' ? '#000000' : 'inherit' }}>Pending</Typography>} />
+            <CardHeader avatar={<PendingActionsIcon sx={{ color: '#ff9800' }} />} title={<Typography variant="subtitle2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>Pending</Typography>} />
             <CardContent sx={{ pt: 1, pb: 2 }}>
-              <Typography variant="h5" sx={{ color: theme.palette.mode === 'dark' ? '#000000' : 'text.primary' }} fontWeight={700}>{pending}</Typography>
+              <Typography variant="h3" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.primary' }} fontWeight={700}>{pending}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -491,9 +491,9 @@ School Administration
             bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f7f7f7', 
             boxShadow: 1 
           }}>
-            <CardHeader avatar={<DoneAllIcon sx={{ color: 'grey.600' }} />} title={<Typography variant="subtitle2" sx={{ color: theme.palette.mode === 'dark' ? '#000000' : 'inherit' }}>Solved</Typography>} />
+            <CardHeader avatar={<DoneAllIcon sx={{ color: '#4caf50' }} />} title={<Typography variant="subtitle2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>Solved</Typography>} />
             <CardContent sx={{ pt: 1, pb: 2 }}>
-              <Typography variant="h5" sx={{ color: theme.palette.mode === 'dark' ? '#000000' : 'text.primary' }} fontWeight={700}>{solved}</Typography>
+              <Typography variant="h3" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.primary' }} fontWeight={700}>{solved}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -510,7 +510,25 @@ School Administration
           <Grid container spacing={2}>
             <Grid item xs={12} sm={3}>
               <Autocomplete
-                options={students}
+                options={students.filter(student => {
+                  // Only show suggestions if user has typed at least one character
+                  if (!studentInputValue || studentInputValue.length < 1) {
+                    return false;
+                  }
+                  
+                  const fullName = `${student.firstName} ${student.lastName}`.toLowerCase();
+                  const input = studentInputValue.toLowerCase();
+                  
+                  // Check for exact match first (both first and last names)
+                  if (fullName === input) {
+                    return true;
+                  }
+                  
+                  // Check if input matches first name, last name, or full name
+                  return student.firstName.toLowerCase().includes(input) ||
+                         student.lastName.toLowerCase().includes(input) ||
+                         fullName.includes(input);
+                }).slice(0, 3)} // Limit to 3 suggestions
                 getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
                 value={selectedStudent}
                 onChange={(event, newValue) => {
@@ -525,6 +543,25 @@ School Administration
                 onInputChange={(event, newInputValue) => {
                   setStudentInputValue(newInputValue);
                 }}
+                open={studentInputValue && studentInputValue.length > 0} // Only open when typing
+                disablePortal={false}
+                PaperComponent={({ children, ...other }) => (
+                  <Paper 
+                    {...other} 
+                    sx={{ 
+                      backgroundColor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
+                      border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none',
+                      '& .MuiAutocomplete-option': {
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                        '&:hover': {
+                          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                        },
+                      }
+                    }}
+                  >
+                    {children}
+                  </Paper>
+                )}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -533,15 +570,38 @@ School Administration
                     fullWidth
                     helperText="Type to search for a student"
                     placeholder="Start typing student name..."
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        backgroundColor: theme.palette.mode === 'dark' ? '#404040' : '#ffffff',
+                        '& fieldset': {
+                          borderColor: theme.palette.mode === 'dark' ? '#666666' : '#e0e0e0',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#b0b0b0',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: theme.palette.mode === 'dark' ? '#b0b0b0' : '#666666',
+                      },
+                      '& .MuiInputBase-input': {
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                      },
+                      '& .MuiAutocomplete-input': {
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                      }
+                    }}
                   />
                 )}
                 renderOption={(props, option) => (
                   <Box component="li" {...props}>
                     <Box>
-                      <Typography variant="body2" fontWeight={500}>
+                      <Typography variant="body2" fontWeight={500} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>
                         {option.firstName} {option.lastName}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#b0b0b0' : 'text.secondary' }}>
                         ID: {option.id}
                       </Typography>
                     </Box>

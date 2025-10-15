@@ -13,7 +13,8 @@ import {
   Autocomplete,
   CircularProgress,
   IconButton,
-  Tooltip
+  Tooltip,
+  useTheme
 } from '@mui/material';
 import {
   Add,
@@ -54,11 +55,47 @@ const severityLevels = [
 
 
 export default function TeacherViolationRecords() {
+  const theme = useTheme();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+
+  // Helper function to get TextField styling for dark mode
+  const getTextFieldSx = () => ({
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: theme.palette.mode === 'dark' ? '#404040' : '#ffffff',
+      '& fieldset': {
+        borderColor: theme.palette.mode === 'dark' ? '#666666' : '#e0e0e0',
+      },
+      '&:hover fieldset': {
+        borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#b0b0b0',
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+      },
+    },
+    '& .MuiInputLabel-root': {
+      color: theme.palette.mode === 'dark' ? '#b0b0b0' : '#666666',
+    },
+    '& .MuiInputBase-input': {
+      color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+    },
+    '& .MuiAutocomplete-input': {
+      color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+    },
+    '& .MuiAutocomplete-paper': {
+      backgroundColor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
+      border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none',
+    },
+    '& .MuiAutocomplete-option': {
+      color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+      '&:hover': {
+        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      },
+    }
+  });
   
   // Form state
   const [formData, setFormData] = useState({
@@ -331,18 +368,30 @@ export default function TeacherViolationRecords() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#800000', mb: 3 }}>
-          📋 Violation Records
-        </Typography>
-        
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-          Record student violations and notify administrators for review.
-        </Typography>
+      <Typography variant="h4" gutterBottom sx={{ 
+        fontWeight: 700, 
+        color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+        mb: 3 
+      }}>
+        📋 Violation Records
+      </Typography>
+      
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+        Record student violations and notify administrators for review.
+      </Typography>
 
-        {/* Add New Violation Form */}
-        <Paper elevation={2} sx={{ p: 3, mb: 3, bgcolor: '#fafafa' }}>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
+      {/* Add New Violation Form */}
+      <Paper elevation={2} sx={{ 
+        p: 3, 
+        mb: 3, 
+        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#fafafa',
+        border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none'
+      }}>
+          <Typography variant="h6" gutterBottom sx={{ 
+            fontWeight: 600, 
+            mb: 3,
+            color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
+          }}>
             Add New Violation
           </Typography>
           
@@ -355,21 +404,39 @@ export default function TeacherViolationRecords() {
                   getOptionLabel={(option) => option.name}
                   value={students.find(s => s.name === formData.studentName) || null}
                   onChange={handleStudentSelect}
+                  PaperComponent={({ children, ...other }) => (
+                    <Paper 
+                      {...other} 
+                      sx={{ 
+                        backgroundColor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
+                        border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none',
+                        '& .MuiAutocomplete-option': {
+                          color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                          '&:hover': {
+                            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                          },
+                        }
+                      }}
+                    >
+                      {children}
+                    </Paper>
+                  )}
                   renderInput={(params) => (
                     <TextField
                       {...params}
                       label="Student Name *"
                       placeholder="Type to search for a student"
                       required
+                      sx={getTextFieldSx()}
                     />
                   )}
                   renderOption={(props, option) => (
                     <Box component="li" {...props}>
                       <Box>
-                        <Typography variant="body2" fontWeight={600}>
+                        <Typography variant="body2" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>
                           {option.name}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#b0b0b0' : 'text.secondary' }}>
                           {option.studentId} • {option.course} • {option.year}
                         </Typography>
                       </Box>
@@ -383,12 +450,30 @@ export default function TeacherViolationRecords() {
                   options={violationTypes}
                   value={formData.violation}
                   onChange={(event, newValue) => handleInputChange('violation', newValue || '')}
+                  PaperComponent={({ children, ...other }) => (
+                    <Paper 
+                      {...other} 
+                      sx={{ 
+                        backgroundColor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
+                        border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none',
+                        '& .MuiAutocomplete-option': {
+                          color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                          '&:hover': {
+                            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                          },
+                        }
+                      }}
+                    >
+                      {children}
+                    </Paper>
+                  )}
                   renderInput={(params) => (
                     <TextField
                       {...params}
                       label="Violation *"
                       placeholder="Type of violation"
                       required
+                      sx={getTextFieldSx()}
                     />
                   )}
                 />
@@ -399,12 +484,30 @@ export default function TeacherViolationRecords() {
                   options={classifications}
                   value={formData.classification}
                   onChange={(event, newValue) => handleInputChange('classification', newValue || '')}
+                  PaperComponent={({ children, ...other }) => (
+                    <Paper 
+                      {...other} 
+                      sx={{ 
+                        backgroundColor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
+                        border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none',
+                        '& .MuiAutocomplete-option': {
+                          color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                          '&:hover': {
+                            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                          },
+                        }
+                      }}
+                    >
+                      {children}
+                    </Paper>
+                  )}
                   renderInput={(params) => (
                     <TextField
                       {...params}
                       label="Classification *"
                       placeholder="Select classification"
                       required
+                      sx={getTextFieldSx()}
                     />
                   )}
                 />
@@ -415,12 +518,30 @@ export default function TeacherViolationRecords() {
                   options={severityLevels}
                   value={formData.severity}
                   onChange={(event, newValue) => handleInputChange('severity', newValue || '')}
+                  PaperComponent={({ children, ...other }) => (
+                    <Paper 
+                      {...other} 
+                      sx={{ 
+                        backgroundColor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
+                        border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none',
+                        '& .MuiAutocomplete-option': {
+                          color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                          '&:hover': {
+                            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                          },
+                        }
+                      }}
+                    >
+                      {children}
+                    </Paper>
+                  )}
                   renderInput={(params) => (
                     <TextField
                       {...params}
                       label="Severity *"
                       placeholder="Severity level"
                       required
+                      sx={getTextFieldSx()}
                     />
                   )}
                 />
@@ -437,6 +558,7 @@ export default function TeacherViolationRecords() {
                   onChange={(e) => handleInputChange('date', e.target.value)}
                   InputLabelProps={{ shrink: true }}
                   required
+                  sx={getTextFieldSx()}
                 />
               </Grid>
               
@@ -448,6 +570,7 @@ export default function TeacherViolationRecords() {
                   value={formData.time}
                   onChange={(e) => handleInputChange('time', e.target.value)}
                   InputLabelProps={{ shrink: true }}
+                  sx={getTextFieldSx()}
                 />
               </Grid>
               
@@ -458,6 +581,7 @@ export default function TeacherViolationRecords() {
                   placeholder="Location (optional)"
                   value={formData.location}
                   onChange={(e) => handleInputChange('location', e.target.value)}
+                  sx={getTextFieldSx()}
                 />
               </Grid>
               
@@ -468,6 +592,7 @@ export default function TeacherViolationRecords() {
                   placeholder="Who reported?"
                   value={formData.reportedBy}
                   onChange={(e) => handleInputChange('reportedBy', e.target.value)}
+                  sx={getTextFieldSx()}
                 />
               </Grid>
               
@@ -478,6 +603,7 @@ export default function TeacherViolationRecords() {
                   placeholder="Action taken (optional)"
                   value={formData.actionTaken}
                   onChange={(e) => handleInputChange('actionTaken', e.target.value)}
+                  sx={getTextFieldSx()}
                 />
               </Grid>
 
@@ -491,6 +617,7 @@ export default function TeacherViolationRecords() {
                   placeholder="Witnesses (optional)"
                   value={formData.witnesses}
                   onChange={(e) => handleInputChange('witnesses', e.target.value)}
+                  sx={getTextFieldSx()}
                 />
               </Grid>
               
@@ -503,6 +630,7 @@ export default function TeacherViolationRecords() {
                   placeholder="Describe the violation (optional)"
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
+                  sx={getTextFieldSx()}
                 />
               </Grid>
 
@@ -522,11 +650,11 @@ export default function TeacherViolationRecords() {
                       component="span"
                       startIcon={<AttachFile />}
                       sx={{
-                        borderColor: '#800000',
-                        color: '#800000',
+                        borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
                         '&:hover': {
-                          borderColor: '#6b0000',
-                          backgroundColor: '#80000010'
+                          borderColor: theme.palette.mode === 'dark' ? '#b0b0b0' : '#6b0000',
+                          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#80000010'
                         }
                       }}
                     >
@@ -573,11 +701,11 @@ export default function TeacherViolationRecords() {
                 disabled={loading}
                 startIcon={loading ? <CircularProgress size={20} /> : <Save />}
                 sx={{
-                  borderColor: '#000000',
-                  color: '#000000',
+                  borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                   '&:hover': {
-                    borderColor: '#333333',
-                    backgroundColor: '#00000010'
+                    borderColor: theme.palette.mode === 'dark' ? '#b0b0b0' : '#333333',
+                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#00000010'
                   }
                 }}
               >
@@ -586,7 +714,6 @@ export default function TeacherViolationRecords() {
             </Box>
           </form>
         </Paper>
-      </Paper>
 
       {/* Snackbar */}
       <Snackbar 

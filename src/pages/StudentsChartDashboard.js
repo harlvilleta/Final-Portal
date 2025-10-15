@@ -8,12 +8,14 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { useNavigate } from "react-router-dom";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase";
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function StudentsChartDashboard() {
   const [monthlyData, setMonthlyData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { isDark } = useTheme();
 
   useEffect(() => {
     fetchYearlyData();
@@ -247,17 +249,17 @@ export default function StudentsChartDashboard() {
             <XAxis 
               dataKey="month" 
               tick={{ fontSize: 12 }}
-              axisLine={{ stroke: '#800000' }}
+              axisLine={{ stroke: isDark ? '#D84040' : '#800000' }}
             />
             <YAxis 
               tick={{ fontSize: 12 }}
-              axisLine={{ stroke: '#800000' }}
+              axisLine={{ stroke: isDark ? '#D84040' : '#800000' }}
               domain={[0, 'dataMax + 1']}
             />
             <RechartsTooltip 
               contentStyle={{ 
                 backgroundColor: '#fff', 
-                border: '1px solid #800000',
+                border: isDark ? '1px solid #D84040' : '1px solid #800000',
                 borderRadius: '8px'
               }}
             />
@@ -265,11 +267,11 @@ export default function StudentsChartDashboard() {
             <Line 
               type="monotone" 
               dataKey="count" 
-              stroke="#800000" 
+              stroke={isDark ? '#D84040' : '#800000'} 
               strokeWidth={3}
               name="Students Registered"
-              dot={{ fill: '#800000', strokeWidth: 2, r: 5 }}
-              activeDot={{ r: 8, stroke: '#800000', strokeWidth: 2 }}
+              dot={{ fill: isDark ? '#D84040' : '#800000', strokeWidth: 2, r: 5 }}
+              activeDot={{ r: 8, stroke: isDark ? '#D84040' : '#800000', strokeWidth: 2 }}
               connectNulls={false}
             />
           </LineChart>

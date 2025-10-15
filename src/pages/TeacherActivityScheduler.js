@@ -555,9 +555,12 @@ export default function TeacherActivityScheduler() {
   };
 
   return (
-    <Box sx={{ p: 3, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
+    <Box sx={{ p: 3, minHeight: '100vh' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: '#800000' }}>
+        <Typography variant="h4" sx={{ 
+          fontWeight: 700, 
+          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' 
+        }}>
           Activity Scheduler
         </Typography>
         <Button
@@ -752,33 +755,58 @@ export default function TeacherActivityScheduler() {
 
         {/* Quick Stats */}
         <Grid item xs={12} lg={4}>
-          <Card sx={{ mb: 3 }}>
+          <Card sx={{ 
+            mb: 3,
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ECDCBF',
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none'
+          }}>
             <CardContent>
-              <Typography variant="h6" color="black" gutterBottom>
+              <Typography variant="h6" sx={{ 
+                color: theme.palette.mode === 'dark' ? '#000000' : 'black',
+                fontWeight: 600
+              }} gutterBottom>
                 My Bookings
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2">Pending:</Typography>
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>Pending:</Typography>
                   <Chip 
                     label={myBookings.filter(b => b.status === 'pending').length} 
-                    color="warning" 
+                    sx={{ 
+                      backgroundColor: '#ff9800', // Orange
+                      color: '#ffffff',
+                      '& .MuiChip-label': {
+                        color: '#ffffff'
+                      }
+                    }}
                     size="small" 
                   />
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2">Approved:</Typography>
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>Approved:</Typography>
                   <Chip 
                     label={myBookings.filter(b => b.status === 'approved').length} 
-                    color="success" 
+                    sx={{ 
+                      backgroundColor: '#4caf50', // Green
+                      color: '#ffffff',
+                      '& .MuiChip-label': {
+                        color: '#ffffff'
+                      }
+                    }}
                     size="small" 
                   />
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2">Rejected:</Typography>
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>Rejected:</Typography>
                   <Chip 
                     label={myBookings.filter(b => b.status === 'rejected').length} 
-                    color="error" 
+                    sx={{ 
+                      backgroundColor: '#f44336', // Red
+                      color: '#ffffff',
+                      '& .MuiChip-label': {
+                        color: '#ffffff'
+                      }
+                    }}
                     size="small" 
                   />
                 </Box>
@@ -834,38 +862,76 @@ export default function TeacherActivityScheduler() {
       </Grid>
 
       {/* My Bookings Table */}
-      <Card sx={{ mt: 3 }}>
+      <Card sx={{ 
+        mt: 3,
+        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
+        border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none'
+      }}>
         <CardContent>
-          <Typography variant="h6" color="black" gutterBottom>
+          <Typography variant="h6" sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : 'black',
+            fontWeight: 600
+          }} gutterBottom>
             My Booking Requests
           </Typography>
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Activity</TableCell>
-                  <TableCell>Resource</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Time</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Notes</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit',
+                    fontWeight: 600
+                  }}>Activity</TableCell>
+                  <TableCell sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit',
+                    fontWeight: 600
+                  }}>Resource</TableCell>
+                  <TableCell sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit',
+                    fontWeight: 600
+                  }}>Date</TableCell>
+                  <TableCell sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit',
+                    fontWeight: 600
+                  }}>Time</TableCell>
+                  <TableCell sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit',
+                    fontWeight: 600
+                  }}>Status</TableCell>
+                  <TableCell sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit',
+                    fontWeight: 600
+                  }}>Notes</TableCell>
+                  <TableCell sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit',
+                    fontWeight: 600
+                  }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {myBookings.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
+                    <TableCell colSpan={7} align="center" sx={{ 
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
+                    }}>
                       No booking requests found
                     </TableCell>
                   </TableRow>
                 ) : (
                   myBookings.map((booking) => (
                     <TableRow key={booking.id}>
-                      <TableCell>{booking.activity}</TableCell>
-                      <TableCell>{booking.resource}</TableCell>
-                      <TableCell>{new Date(booking.date).toLocaleDateString()}</TableCell>
-                      <TableCell>{booking.time}</TableCell>
+                      <TableCell sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
+                      }}>{booking.activity}</TableCell>
+                      <TableCell sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
+                      }}>{booking.resource}</TableCell>
+                      <TableCell sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
+                      }}>{new Date(booking.date).toLocaleDateString()}</TableCell>
+                      <TableCell sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
+                      }}>{booking.time}</TableCell>
                       <TableCell>
                         <Chip
                           icon={getStatusIcon(booking.status)}
@@ -874,19 +940,25 @@ export default function TeacherActivityScheduler() {
                           size="small"
                         />
                       </TableCell>
-                      <TableCell>{booking.notes || '-'}</TableCell>
+                      <TableCell sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
+                      }}>{booking.notes || '-'}</TableCell>
                       <TableCell>
-                        {booking.status === 'pending' && (
-                          <Tooltip title="Delete booking request">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleDeleteBooking(booking)}
-                            >
-                              <Delete />
-                            </IconButton>
-                          </Tooltip>
-                        )}
+                        <Tooltip title="Delete booking request">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteBooking(booking)}
+                            sx={{
+                              color: theme.palette.mode === 'dark' ? '#ffffff' : '#666666',
+                              '&:hover': {
+                                color: '#f44336', // Red on hover
+                                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(244, 67, 54, 0.1)' : 'rgba(244, 67, 54, 0.05)'
+                              }
+                            }}
+                          >
+                            <Delete />
+                          </IconButton>
+                        </Tooltip>
                       </TableCell>
                     </TableRow>
                   ))
