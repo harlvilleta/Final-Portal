@@ -189,7 +189,15 @@ export default function TeacherDashboard() {
   )).length;
 
   const getRecentViolations = () => {
-    return violations.slice(0, 5);
+    // Filter violations to show only those reported by the current teacher
+    // or if user is admin, show all violations
+    const filteredViolations = violations.filter(violation => {
+      if (userProfile?.role === 'Admin') {
+        return true; // Admin can see all violations
+      }
+      return violation.reportedBy === currentUser?.uid || violation.reportedByEmail === currentUser?.email;
+    });
+    return filteredViolations.slice(0, 5);
   };
 
   const getRecentAnnouncements = () => {
@@ -244,12 +252,13 @@ export default function TeacherDashboard() {
             boxShadow: 3, 
             borderRadius: 2,
             borderLeft: '4px solid #d32f2f',
-            background: '#d32f2f20',
+            background: theme.palette.mode === 'dark' ? '#404040' : '#d32f2f20',
+            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : 'none',
             cursor: 'pointer',
             transition: 'box-shadow 0.2s, background 0.2s',
             '&:hover': {
               boxShadow: 6,
-              background: '#d32f2f22',
+              background: theme.palette.mode === 'dark' ? '#4a4a4a' : '#d32f2f22',
             },
           }}>
             <Box sx={{ mr: 2 }}>
@@ -278,12 +287,13 @@ export default function TeacherDashboard() {
             boxShadow: 3, 
             borderRadius: 2,
             borderLeft: '4px solid #ed6c02',
-            background: '#ed6c0220',
+            background: theme.palette.mode === 'dark' ? '#404040' : '#ed6c0220',
+            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : 'none',
             cursor: 'pointer',
             transition: 'box-shadow 0.2s, background 0.2s',
             '&:hover': {
               boxShadow: 6,
-              background: '#ed6c0222',
+              background: theme.palette.mode === 'dark' ? '#4a4a4a' : '#ed6c0222',
             },
           }}>
             <Box sx={{ mr: 2 }}>
@@ -312,12 +322,13 @@ export default function TeacherDashboard() {
             boxShadow: 3, 
             borderRadius: 2,
             borderLeft: '4px solid #2e7d32',
-            background: '#2e7d3220',
+            background: theme.palette.mode === 'dark' ? '#404040' : '#2e7d3220',
+            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : 'none',
             cursor: 'pointer',
             transition: 'box-shadow 0.2s, background 0.2s',
             '&:hover': {
               boxShadow: 6,
-              background: '#2e7d3222',
+              background: theme.palette.mode === 'dark' ? '#4a4a4a' : '#2e7d3222',
             },
           }}>
             <Box sx={{ mr: 2 }}>
@@ -346,12 +357,13 @@ export default function TeacherDashboard() {
             boxShadow: 3, 
             borderRadius: 2,
             borderLeft: '4px solid #800000',
-            background: '#80000020',
+            background: theme.palette.mode === 'dark' ? '#404040' : '#80000020',
+            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : 'none',
             cursor: 'pointer',
             transition: 'box-shadow 0.2s, background 0.2s',
             '&:hover': {
               boxShadow: 6,
-              background: '#80000022',
+              background: theme.palette.mode === 'dark' ? '#4a4a4a' : '#80000022',
             },
           }}>
             <Box sx={{ mr: 2 }}>
@@ -398,11 +410,11 @@ export default function TeacherDashboard() {
                   size="small" 
                   sx={{ 
                     textTransform: 'none',
-                    color: '#800000',
-                    borderColor: '#800000',
+                    color: '#ffffff',
+                    borderColor: '#1976d2',
                     '&:hover': {
-                      borderColor: '#6b0000',
-                      backgroundColor: '#80000010'
+                      borderColor: '#1565c0',
+                      backgroundColor: '#1976d210'
                     }
                   }}
                   variant="outlined"
@@ -418,8 +430,8 @@ export default function TeacherDashboard() {
                     <React.Fragment key={violation.id}>
                       <ListItem sx={{ px: 0, py: 1 }}>
                         <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: '#ff9800', width: 40, height: 40 }}>
-                            <Warning sx={{ fontSize: 20 }} />
+                          <Avatar sx={{ bgcolor: '#800000', width: 32, height: 32 }}>
+                            <Warning sx={{ fontSize: 16 }} />
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
@@ -453,9 +465,8 @@ export default function TeacherDashboard() {
                 </List>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <Warning sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
                   <Typography variant="body2" color="text.secondary">
-                    No violations recorded yet
+                    No violations have been recorded in your list yet.
                   </Typography>
                 </Box>
               )}
@@ -473,8 +484,8 @@ export default function TeacherDashboard() {
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600} sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#2d3436' 
+                <Typography variant="h6" fontWeight={700} sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' 
                 }}>
                   Recent Announcements
                 </Typography>
@@ -482,7 +493,10 @@ export default function TeacherDashboard() {
                   size="small" 
                   color="primary" 
                   onClick={() => navigate('/teacher-announcements')}
-                  sx={{ textTransform: 'none' }}
+                  sx={{ 
+                    textTransform: 'none',
+                    color: '#ffffff'
+                  }}
                 >
                   View All
                 </Button>
@@ -494,8 +508,7 @@ export default function TeacherDashboard() {
                     <React.Fragment key={announcement.id}>
                       <ListItem sx={{ px: 0, py: 1 }}>
                         <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: '#1976d2', width: 40, height: 40 }}>
-                            <Info sx={{ fontSize: 20 }} />
+                          <Avatar sx={{ bgcolor: 'transparent', width: 0, height: 0 }}>
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText

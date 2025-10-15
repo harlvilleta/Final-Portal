@@ -468,13 +468,13 @@ export default function AnnouncementReport() {
                         Teacher Information
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <Person sx={{ mr: 1, color: 'primary.main' }} />
+                        <Person sx={{ mr: 1, color: '#86B0BD' }} />
                         <Typography variant="body1" fontWeight={500}>
                           {getTeacherInfo(selectedAnnouncement).name}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Email sx={{ mr: 1, color: 'primary.main' }} />
+                        <Email sx={{ mr: 1, color: '#86B0BD' }} />
                         <Typography variant="body2" color="text.secondary">
                           {getTeacherInfo(selectedAnnouncement).email}
                         </Typography>

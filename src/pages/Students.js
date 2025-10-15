@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Routes, Route, Link } from "react-router-dom";
 import { 
   Box, Grid, Card, CardActionArea, CardContent, Typography, TextField, Button, Paper, MenuItem, Avatar, Snackbar, Alert, 
@@ -1610,7 +1610,7 @@ function StudentList({
   }, []);
 
   // Group students by course and apply search filter
-  const groupedStudents = (() => {
+  const groupedStudents = useMemo(() => {
     let filteredStudents = students;
     
     // Apply search filter if search term exists
@@ -1652,9 +1652,9 @@ function StudentList({
     });
     
     return grouped;
-  })();
+  }, [students, search]);
 
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     const csvRows = [
       ["ID", "First Name", "Last Name", "Course", "Year", "Section", "Email"],
       ...students.map(s => [
@@ -1666,10 +1666,10 @@ function StudentList({
     link.href = csvContent;
     link.download = "students.csv";
     link.click();
-  };
+  }, [students]);
 
   // Refresh student list
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setLoading(true);
     try {
       console.log("Refreshing students from Firebase...");
@@ -1716,7 +1716,7 @@ function StudentList({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Handle view student details
   const handleViewStudent = (student) => {
@@ -2182,13 +2182,7 @@ School Administration
       </Stack>
       
       {/* Instructions */}
-      <Box sx={{ 
-        mb: 3, 
-        p: 2, 
-        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-        borderRadius: 2, 
-        border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
-      }}>
+      <Box sx={{ mb: 3 }}>
         <Typography variant="body1" sx={{ 
           color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
           fontWeight: 'medium', 
@@ -2223,7 +2217,7 @@ School Administration
               <Card 
                 key={course} 
                 sx={{ 
-                  mb: 2, 
+                  mb: 1.5, 
                   cursor: 'pointer',
                   transition: 'all 0.2s ease-in-out',
                   '&:hover': { 
@@ -2234,15 +2228,15 @@ School Administration
                 onClick={() => setCurrentView(course)}
               >
                 <CardActionArea>
-                  <CardContent sx={{ p: 3 }}>
+                  <CardContent sx={{ p: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Folder sx={{ 
-                          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
-                          fontSize: 32 
+                          color: theme.palette.mode === 'dark' ? '#FFCF71' : '#800000', 
+                          fontSize: 28 
                         }} />
                         <Box>
-                          <Typography variant="h5" sx={{ 
+                          <Typography variant="h6" sx={{ 
                             fontWeight: 'bold', 
                             color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
                             mb: 0.5 

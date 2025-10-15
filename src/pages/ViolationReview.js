@@ -444,7 +444,7 @@ export default function ViolationReview() {
                         Teacher Information
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <Person sx={{ mr: 1, color: 'secondary.main' }} />
+                        <Person sx={{ mr: 1, color: '#86B0BD' }} />
                         <Typography variant="body1" fontWeight={500}>
                           {selectedViolation.reportedByName || selectedViolation.reportedBy || 'Unknown Teacher'}
                         </Typography>

@@ -273,36 +273,72 @@ export default function TeacherRequest() {
         {/* Summary Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} md={4}>
-            <Card sx={{ bgcolor: '#ffffff', borderLeft: '4px solid #ffc107', border: '1px solid #e0e0e0' }}>
+            <Card sx={{ 
+              bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5', 
+              borderLeft: '4px solid #ffc107', 
+              border: '1px solid #ffffff',
+              transition: 'box-shadow 0.2s',
+              '&:hover': {
+                boxShadow: 4
+              }
+            }}>
               <CardContent>
-                <Typography variant="h6" fontWeight={700} sx={{ color: '#000000' }} gutterBottom>
+                <Typography variant="h6" fontWeight={700} sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
+                }} gutterBottom>
                   Pending Requests
                 </Typography>
-                <Typography variant="h4" fontWeight={700} sx={{ color: '#856404' }}>
+                <Typography variant="h4" fontWeight={700} sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#856404' 
+                }}>
                   {pendingRequests.length}
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Card sx={{ bgcolor: '#ffffff', borderLeft: '4px solid #28a745', border: '1px solid #e0e0e0' }}>
+            <Card sx={{ 
+              bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5', 
+              borderLeft: '4px solid #28a745', 
+              border: '1px solid #ffffff',
+              transition: 'box-shadow 0.2s',
+              '&:hover': {
+                boxShadow: 4
+              }
+            }}>
               <CardContent>
-                <Typography variant="h6" fontWeight={700} sx={{ color: '#000000' }} gutterBottom>
+                <Typography variant="h6" fontWeight={700} sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
+                }} gutterBottom>
                   Approved
                 </Typography>
-                <Typography variant="h4" fontWeight={700} sx={{ color: '#155724' }}>
+                <Typography variant="h4" fontWeight={700} sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#155724' 
+                }}>
                   {approvedRequests.length}
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Card sx={{ bgcolor: '#ffffff', borderLeft: '4px solid #dc3545', border: '1px solid #e0e0e0' }}>
+            <Card sx={{ 
+              bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5', 
+              borderLeft: '4px solid #dc3545', 
+              border: '1px solid #ffffff',
+              transition: 'box-shadow 0.2s',
+              '&:hover': {
+                boxShadow: 4
+              }
+            }}>
               <CardContent>
-                <Typography variant="h6" fontWeight={700} sx={{ color: '#000000' }} gutterBottom>
+                <Typography variant="h6" fontWeight={700} sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
+                }} gutterBottom>
                   Denied
                 </Typography>
-                <Typography variant="h4" fontWeight={700} sx={{ color: '#721c24' }}>
+                <Typography variant="h4" fontWeight={700} sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#721c24' 
+                }}>
                   {deniedRequests.length}
                 </Typography>
               </CardContent>
@@ -497,7 +533,7 @@ export default function TeacherRequest() {
       >
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <School sx={{ mr: 1, color: 'primary.main' }} />
+            <School sx={{ mr: 1, color: '#86B0BD' }} />
             <Typography variant="h6">
               Teacher Request Details
             </Typography>
@@ -530,14 +566,14 @@ export default function TeacherRequest() {
                         </Box>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <Email sx={{ mr: 1, color: 'primary.main' }} />
+                        <Email sx={{ mr: 1, color: '#86B0BD' }} />
                         <Typography variant="body2">
                           {selectedRequest.email}
                         </Typography>
                       </Box>
                       {selectedRequest.phone && (
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                          <Phone sx={{ mr: 1, color: 'primary.main' }} />
+                          <Phone sx={{ mr: 1, color: '#86B0BD' }} />
                           <Typography variant="body2">
                             {selectedRequest.phone}
                           </Typography>
@@ -545,7 +581,7 @@ export default function TeacherRequest() {
                       )}
                       {selectedRequest.address && (
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <LocationOn sx={{ mr: 1, color: 'primary.main' }} />
+                          <LocationOn sx={{ mr: 1, color: '#86B0BD' }} />
                           <Typography variant="body2">
                             {selectedRequest.address}
                           </Typography>
