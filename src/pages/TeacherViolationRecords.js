@@ -57,6 +57,7 @@ const severityLevels = [
 export default function TeacherViolationRecords() {
   const theme = useTheme();
   const [students, setStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [currentUser, setCurrentUser] = useState(null);
@@ -143,12 +144,14 @@ export default function TeacherViolationRecords() {
   }, []);
 
   useEffect(() => {
-    fetchStudents();
-  }, []);
+    if (currentUser?.uid) {
+      fetchStudents();
+    }
+  }, [currentUser]);
 
   const fetchStudents = async () => {
     try {
-      // Fetch all students from both collections
+      // Fetch all students from both collections (teachers can report violations for any student)
       const [studentsSnapshot, usersSnapshot] = await Promise.all([
         getDocs(collection(db, 'students')),
         getDocs(query(collection(db, 'users'), where('role', '==', 'Student')))
@@ -169,9 +172,38 @@ export default function TeacherViolationRecords() {
       }));
 
       setStudents(allStudents);
+      setFilteredStudents([]); // Start with empty filtered list
     } catch (error) {
       console.error('Error fetching students:', error);
       setSnackbar({ open: true, message: 'Error loading students', severity: 'error' });
+    }
+  };
+
+  const filterStudents = (searchText) => {
+    if (!searchText || searchText.trim() === '') {
+      setFilteredStudents([]);
+      return;
+    }
+
+    const searchLower = searchText.toLowerCase().trim();
+    
+    // First, try to find exact matches
+    const exactMatches = students.filter(student => 
+      student.name.toLowerCase() === searchLower
+    );
+
+    if (exactMatches.length > 0) {
+      // If exact match found, show only that student
+      setFilteredStudents(exactMatches);
+    } else {
+      // If no exact match, show up to 3 suggestions that start with the search text
+      const suggestions = students
+        .filter(student => 
+          student.name.toLowerCase().startsWith(searchLower)
+        )
+        .slice(0, 3); // Limit to 3 suggestions
+      
+      setFilteredStudents(suggestions);
     }
   };
 
@@ -196,6 +228,18 @@ export default function TeacherViolationRecords() {
         studentId: ''
       }));
     }
+  };
+
+  const handleStudentInputChange = (event, value) => {
+    // Update the form data with the typed value
+    setFormData(prev => ({
+      ...prev,
+      studentName: value || '',
+      studentId: ''
+    }));
+    
+    // Filter students based on the input
+    filterStudents(value);
   };
 
   const handleEvidenceUpload = (event) => {
@@ -381,12 +425,12 @@ export default function TeacherViolationRecords() {
       </Typography>
 
       {/* Add New Violation Form */}
-      <Paper elevation={2} sx={{ 
-        p: 3, 
-        mb: 3, 
-        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#fafafa',
-        border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none'
-      }}>
+        <Paper elevation={2} sx={{ 
+          p: 3, 
+          mb: 3, 
+          bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#fafafa',
+          border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none'
+        }}>
           <Typography variant="h6" gutterBottom sx={{ 
             fontWeight: 600, 
             mb: 3,
@@ -400,10 +444,12 @@ export default function TeacherViolationRecords() {
               {/* First Row */}
               <Grid item xs={12} md={6}>
                 <Autocomplete
-                  options={students}
+                  options={filteredStudents}
                   getOptionLabel={(option) => option.name}
                   value={students.find(s => s.name === formData.studentName) || null}
                   onChange={handleStudentSelect}
+                  onInputChange={handleStudentInputChange}
+                  freeSolo
                   PaperComponent={({ children, ...other }) => (
                     <Paper 
                       {...other} 

@@ -2994,8 +2994,8 @@ export default function Students() {
               onClose={() => setOpenEditStudent(false)}
               onSuccess={() => {
                 setOpenEditStudent(false);
-                // Refresh the student list
-                window.location.reload(); // Simple refresh for now
+                // Refresh the student list without page reload
+                // The EditStudentForm should handle the refresh internally
               }}
             />
           )}

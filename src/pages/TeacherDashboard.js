@@ -16,8 +16,7 @@ import {
   Divider,
   Paper,
   IconButton,
-  Badge,
-  useTheme
+  Badge
 } from '@mui/material';
 import { 
   Dashboard, 
@@ -44,7 +43,6 @@ import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestor
 import { useNavigate } from 'react-router-dom';
 
 export default function TeacherDashboard() {
-  const theme = useTheme();
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [violations, setViolations] = useState([]);
@@ -189,15 +187,7 @@ export default function TeacherDashboard() {
   )).length;
 
   const getRecentViolations = () => {
-    // Filter violations to show only those reported by the current teacher
-    // or if user is admin, show all violations
-    const filteredViolations = violations.filter(violation => {
-      if (userProfile?.role === 'Admin') {
-        return true; // Admin can see all violations
-      }
-      return violation.reportedBy === currentUser?.uid || violation.reportedByEmail === currentUser?.email;
-    });
-    return filteredViolations.slice(0, 5);
+    return violations.slice(0, 5);
   };
 
   const getRecentAnnouncements = () => {
@@ -213,19 +203,19 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: 'background.default', minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
       {/* Welcome Section */}
       <Box sx={{ mb: 4, pt: { xs: 1, sm: 2 }, px: { xs: 1, sm: 0 } }}>
         <Typography 
           variant="h4" 
           fontWeight={700} 
+          color="#800000" 
+          gutterBottom 
           sx={{ 
-            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
             wordBreak: 'break-word',
             fontSize: { xs: '1.75rem', sm: '2.125rem' },
             lineHeight: 1.2
           }}
-          gutterBottom 
         >
           Hi Teacher {userInfo.name}
         </Typography>
@@ -252,27 +242,22 @@ export default function TeacherDashboard() {
             boxShadow: 3, 
             borderRadius: 2,
             borderLeft: '4px solid #d32f2f',
-            background: theme.palette.mode === 'dark' ? '#404040' : '#d32f2f20',
-            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : 'none',
+            background: '#d32f2f20',
             cursor: 'pointer',
             transition: 'box-shadow 0.2s, background 0.2s',
             '&:hover': {
               boxShadow: 6,
-              background: theme.palette.mode === 'dark' ? '#4a4a4a' : '#d32f2f22',
+              background: '#d32f2f22',
             },
           }}>
             <Box sx={{ mr: 2 }}>
               <Report fontSize="large" sx={{ color: '#d32f2f' }} />
             </Box>
             <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#d32f2f' 
-              }}>
+              <Typography variant="h4" fontWeight={700} color="#d32f2f">
                 {myReportsCount.toLocaleString()}
               </Typography>
-              <Typography sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
-              }} variant="body2">
+              <Typography color="text.secondary" variant="body2">
                 My Reports
               </Typography>
             </CardContent>
@@ -287,27 +272,22 @@ export default function TeacherDashboard() {
             boxShadow: 3, 
             borderRadius: 2,
             borderLeft: '4px solid #ed6c02',
-            background: theme.palette.mode === 'dark' ? '#404040' : '#ed6c0220',
-            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : 'none',
+            background: '#ed6c0220',
             cursor: 'pointer',
             transition: 'box-shadow 0.2s, background 0.2s',
             '&:hover': {
               boxShadow: 6,
-              background: theme.palette.mode === 'dark' ? '#4a4a4a' : '#ed6c0222',
+              background: '#ed6c0222',
             },
           }}>
             <Box sx={{ mr: 2 }}>
               <Warning fontSize="large" sx={{ color: '#ed6c02' }} />
             </Box>
             <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#ed6c02' 
-              }}>
+              <Typography variant="h4" fontWeight={700} color="#ed6c02">
                 {meetingsCount.toLocaleString()}
               </Typography>
-              <Typography sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
-              }} variant="body2">
+              <Typography color="text.secondary" variant="body2">
                 Meetings
               </Typography>
             </CardContent>
@@ -322,27 +302,22 @@ export default function TeacherDashboard() {
             boxShadow: 3, 
             borderRadius: 2,
             borderLeft: '4px solid #2e7d32',
-            background: theme.palette.mode === 'dark' ? '#404040' : '#2e7d3220',
-            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : 'none',
+            background: '#2e7d3220',
             cursor: 'pointer',
             transition: 'box-shadow 0.2s, background 0.2s',
             '&:hover': {
               boxShadow: 6,
-              background: theme.palette.mode === 'dark' ? '#4a4a4a' : '#2e7d3222',
+              background: '#2e7d3222',
             },
           }}>
             <Box sx={{ mr: 2 }}>
               <Campaign fontSize="large" sx={{ color: '#2e7d32' }} />
             </Box>
             <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#2e7d32' 
-              }}>
+              <Typography variant="h4" fontWeight={700} color="#2e7d32">
                 {announcements.length.toLocaleString()}
               </Typography>
-              <Typography sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
-              }} variant="body2">
+              <Typography color="text.secondary" variant="body2">
                 Announcements
               </Typography>
             </CardContent>
@@ -357,27 +332,22 @@ export default function TeacherDashboard() {
             boxShadow: 3, 
             borderRadius: 2,
             borderLeft: '4px solid #800000',
-            background: theme.palette.mode === 'dark' ? '#404040' : '#80000020',
-            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : 'none',
+            background: '#80000020',
             cursor: 'pointer',
             transition: 'box-shadow 0.2s, background 0.2s',
             '&:hover': {
               boxShadow: 6,
-              background: theme.palette.mode === 'dark' ? '#4a4a4a' : '#80000022',
+              background: '#80000022',
             },
           }}>
             <Box sx={{ mr: 2 }}>
               <Notifications fontSize="large" sx={{ color: '#800000' }} />
             </Box>
             <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' 
-              }}>
+              <Typography variant="h4" fontWeight={700} color="#800000">
                 {getUnreadNotificationsCount().toLocaleString()}
               </Typography>
-              <Typography sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
-              }} variant="body2">
+              <Typography color="text.secondary" variant="body2">
                 Unread Notifications
               </Typography>
             </CardContent>
@@ -392,29 +362,27 @@ export default function TeacherDashboard() {
         {/* Recent Violations */}
         <Grid item xs={12} lg={6}>
           <Card sx={{ 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #800000',
-            borderLeft: theme.palette.mode === 'dark' ? '4px solid #404040' : '4px solid #800000',
+            border: '1px solid #800000',
+            borderLeft: '4px solid #800000',
             boxShadow: 3,
-            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#80000015',
+            bgcolor: '#80000015',
             borderRadius: 2,
             height: 'fit-content'
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={700} sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' 
-                }}>
+                <Typography variant="h6" fontWeight={700} color="#800000">
                   Recent Violations
                 </Typography>
                 <Button 
                   size="small" 
                   sx={{ 
                     textTransform: 'none',
-                    color: '#ffffff',
-                    borderColor: '#1976d2',
+                    color: '#800000',
+                    borderColor: '#800000',
                     '&:hover': {
-                      borderColor: '#1565c0',
-                      backgroundColor: '#1976d210'
+                      borderColor: '#6b0000',
+                      backgroundColor: '#80000010'
                     }
                   }}
                   variant="outlined"
@@ -430,8 +398,8 @@ export default function TeacherDashboard() {
                     <React.Fragment key={violation.id}>
                       <ListItem sx={{ px: 0, py: 1 }}>
                         <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: '#800000', width: 32, height: 32 }}>
-                            <Warning sx={{ fontSize: 16 }} />
+                          <Avatar sx={{ bgcolor: '#ff9800', width: 40, height: 40 }}>
+                            <Warning sx={{ fontSize: 20 }} />
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
@@ -465,8 +433,9 @@ export default function TeacherDashboard() {
                 </List>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <Warning sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
                   <Typography variant="body2" color="text.secondary">
-                    No violations have been recorded in your list yet.
+                    No violations recorded yet
                   </Typography>
                 </Box>
               )}
@@ -479,24 +448,18 @@ export default function TeacherDashboard() {
           <Card sx={{ 
             borderRadius: 3, 
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            height: 'fit-content',
-            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : 'inherit'
+            height: 'fit-content'
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={700} sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' 
-                }}>
+                <Typography variant="h6" fontWeight={600} color="#2d3436">
                   Recent Announcements
                 </Typography>
                 <Button 
                   size="small" 
                   color="primary" 
                   onClick={() => navigate('/teacher-announcements')}
-                  sx={{ 
-                    textTransform: 'none',
-                    color: '#ffffff'
-                  }}
+                  sx={{ textTransform: 'none' }}
                 >
                   View All
                 </Button>
@@ -508,7 +471,8 @@ export default function TeacherDashboard() {
                     <React.Fragment key={announcement.id}>
                       <ListItem sx={{ px: 0, py: 1 }}>
                         <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: 'transparent', width: 0, height: 0 }}>
+                          <Avatar sx={{ bgcolor: '#1976d2', width: 40, height: 40 }}>
+                            <Info sx={{ fontSize: 20 }} />
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText

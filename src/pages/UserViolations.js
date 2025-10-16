@@ -230,7 +230,10 @@ export default function UserViolations({ currentUser }) {
         </Typography>
         <Button 
           variant="contained" 
-          onClick={() => window.location.reload()}
+          onClick={() => {
+            // Refresh without page reload to maintain auth state
+            window.location.href = '/user-violations';
+          }}
           sx={{ mt: 2 }}
         >
           Refresh Page

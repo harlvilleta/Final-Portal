@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { List, ListItem, ListItemIcon, ListItemText, Drawer, Divider, Box, Typography, Avatar, Badge, Chip } from "@mui/material";
 import { 
   Dashboard, Notifications, Assignment, Announcement, Search, Person, Logout, 
-  Warning, CheckCircle, Info, Settings, Assessment, Schedule, Report, Event
+  Warning, CheckCircle, Info, Settings, Assessment, Schedule, Report, Event, People
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from '../firebase';
@@ -11,6 +11,7 @@ import { collection, query, where, onSnapshot, doc, getDoc, getDocs } from 'fire
 
 const teacherMenu = [
   { text: "Dashboard", icon: <Dashboard sx={{ color: 'inherit' }} />, path: "/teacher-dashboard" },
+  { text: "My Classrooms", icon: <People sx={{ color: 'inherit' }} />, path: "/teacher-my-students" },
   { text: "Violation Records", icon: <Report sx={{ color: 'inherit' }} />, path: "/teacher-violation-records" },
   { text: "Activity Scheduler", icon: <Event sx={{ color: 'inherit' }} />, path: "/teacher-activity-scheduler" },
   { text: "Announcements", icon: <Announcement sx={{ color: 'inherit' }} />, path: "/teacher-announcements" },

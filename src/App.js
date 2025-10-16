@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Button, CircularProgress, Alert, Tooltip, Badge, List, ListItem, ListItemText, ListItemAvatar, Divider, useTheme } from "@mui/material";
 import { AccountCircle, Logout, Notifications, Settings, Search, Announcement } from "@mui/icons-material";
-import ThemeToggle from "./components/ThemeToggle";
+import ProfileDropdown from "./components/ProfileDropdown";
 import ThemeWrapper from "./components/ThemeWrapper";
 import { ThemeProvider as CustomThemeProvider } from "./contexts/ThemeContext";
 import Sidebar from "./components/Sidebar";
@@ -54,10 +54,12 @@ import TeacherRequest from "./pages/TeacherRequest";
 import TeacherViolationRecords from "./pages/TeacherViolationRecords";
 import TeacherActivityScheduler from "./pages/TeacherActivityScheduler";
 import AdminActivityScheduler from "./pages/AdminActivityScheduler";
+import ClassroomManager from "./components/ClassroomManager";
+import TeacherStudentsView from "./components/TeacherStudentsView";
+import ClassroomDashboard from "./pages/ClassroomDashboard";
 
 // Header component for admin dashboard
 function AdminHeader({ currentUser, userProfile }) {
-  const [anchorEl, setAnchorEl] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationLoading, setNotificationLoading] = useState(false);
@@ -65,34 +67,6 @@ function AdminHeader({ currentUser, userProfile }) {
   const [isOnNotificationsPage, setIsOnNotificationsPage] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-
-  const handleMenu = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleSettingsClick = () => {
-    setAnchorEl(null);
-    navigate('/profile');
-  };
-
-  const handleLogout = async () => {
-    try {
-      setAnchorEl(null); // Close the menu first
-      console.log('Starting logout process...');
-      await signOut(auth);
-      console.log('Successfully signed out');
-      // Force navigation to login page
-      window.location.href = '/';
-    } catch (error) {
-      console.error('Error signing out:', error);
-      // Even if there's an error, try to navigate to login page
-      window.location.href = '/';
-    }
-  };
 
   // Notification handling functions
   const handleNotificationClick = (event) => {
@@ -193,7 +167,6 @@ function AdminHeader({ currentUser, userProfile }) {
         </Typography>
         <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <ThemeToggle />
             <Tooltip title={isOnNotificationsPage ? "Back to Dashboard" : "View Notifications"}>
               <IconButton
                 size="large"
@@ -210,56 +183,11 @@ function AdminHeader({ currentUser, userProfile }) {
                 </Badge>
               </IconButton>
             </Tooltip>
-            <Tooltip title="Account">
-              <IconButton
-                size="large"
-                aria-label="account of current user"
-                aria-controls="menu-appbar"
-                aria-haspopup="true"
-                onClick={handleMenu}
-                color="inherit"
-              >
-                <Avatar 
-                  src={userInfo.photo} 
-                  sx={{ 
-                    width: 32, 
-                    height: 32,
-                    bgcolor: userInfo.photo ? 'transparent' : '#1976d2'
-                  }}
-                >
-                  {!userInfo.photo && (userInfo.name?.charAt(0) || userInfo.email?.charAt(0))}
-                </Avatar>
-              </IconButton>
-            </Tooltip>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorEl}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'right',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={Boolean(anchorEl)}
-              onClose={handleClose}
-            >
-              <MenuItem disabled sx={{ opacity: 1, cursor: 'default' }}>
-                <Typography variant="subtitle1" fontWeight={600} sx={{ color: '#333' }}>
-                  {userInfo.name}
-                </Typography>
-              </MenuItem>
-              <MenuItem onClick={handleSettingsClick}>
-                <Settings sx={{ mr: 1 }} />
-                Settings & Privacy
-              </MenuItem>
-              <MenuItem onClick={handleLogout}>
-                <Logout sx={{ mr: 1 }} />
-                Logout
-              </MenuItem>
-            </Menu>
+            <ProfileDropdown 
+              currentUser={currentUser} 
+              userProfile={userProfile}
+              profileRoute="/profile"
+            />
           </Box>
         </Box>
       </Toolbar>
@@ -270,28 +198,9 @@ function AdminHeader({ currentUser, userProfile }) {
 // Header component for user dashboard
 function UserHeader({ currentUser, userProfile }) {
   const theme = useTheme();
-  const [anchorEl, setAnchorEl] = useState(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
   const [studentNotifications, setStudentNotifications] = useState([]);
   const [notificationLoading, setNotificationLoading] = useState(false);
-
-  const handleMenu = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      // Force navigation to login page
-      window.location.href = '/';
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
 
   // Fetch student-specific notifications (Lost and Found + Teacher Announcements)
   useEffect(() => {
@@ -428,7 +337,6 @@ function UserHeader({ currentUser, userProfile }) {
           </Typography>
           <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <ThemeToggle />
               <Tooltip title="Notifications" arrow>
                 <IconButton
                   size="large"
@@ -445,50 +353,11 @@ function UserHeader({ currentUser, userProfile }) {
                   </Badge>
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Account" arrow>
-                <IconButton
-                  size="large"
-                  aria-label="account of current user"
-                  aria-controls="menu-appbar"
-                  aria-haspopup="true"
-                  onClick={handleMenu}
-                  color="inherit"
-                >
-                  <Avatar 
-                    src={userInfo.photo} 
-                    sx={{ 
-                      width: 32, 
-                      height: 32,
-                      bgcolor: userInfo.photo ? 'transparent' : '#1976d2'
-                    }}
-                  >
-                    {!userInfo.photo && (userInfo.name?.charAt(0) || userInfo.email?.charAt(0))}
-                  </Avatar>
-                </IconButton>
-              </Tooltip>
-              <Menu
-                id="menu-appbar"
-                anchorEl={anchorEl}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                keepMounted
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                open={Boolean(anchorEl)}
-                onClose={handleClose}
-              >
-                <MenuItem onClick={handleClose}>
-                  <Typography variant="body2">{userInfo.email}</Typography>
-                </MenuItem>
-                <MenuItem onClick={handleLogout}>
-                  <Logout sx={{ mr: 1 }} />
-                  Logout
-                </MenuItem>
-              </Menu>
+              <ProfileDropdown 
+                currentUser={currentUser} 
+                userProfile={userProfile}
+                profileRoute="/profile"
+              />
             </Box>
           </Box>
         </Toolbar>
@@ -618,6 +487,7 @@ function App() {
     const hasLoggedInBefore = localStorage.getItem('hasLoggedInBefore');
     return !hasLoggedInBefore; // Only force login on first visit
   });
+  const [authInitialized, setAuthInitialized] = useState(false);
 
   useEffect(() => {
     console.log('App component mounted, starting auth check...');
@@ -630,10 +500,18 @@ function App() {
         console.log('No role set but user exists, defaulting to Student');
         setUserRole('Student'); // Default fallback
       }
-    }, 8000);
+    }, 10000); // Increased timeout to 10 seconds
+
+    let isMounted = true; // Flag to prevent state updates after unmount
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!isMounted) return; // Prevent state updates if component is unmounted
       console.log('Auth state changed:', user ? `User logged in: ${user.email}` : 'User logged out');
+      
+      // Mark auth as initialized after first check
+      if (!authInitialized) {
+        setAuthInitialized(true);
+      }
       
       if (user && !forceLogin) { // Only process user if forceLogin is false
         console.log('Setting user state...');
@@ -712,17 +590,21 @@ function App() {
         setUserProfile(null);
         setUserRole(null);
         setAuthError(null);
-        setForceLogin(true); // Force login page to show
+        // Only force login if auth is initialized (prevents auto-logout on page refresh)
+        if (authInitialized) {
+          setForceLogin(true); // Force login page to show
+        }
         clearTimeout(loadingTimeout);
         setLoading(false);
       }
     });
 
     return () => {
+      isMounted = false; // Mark component as unmounted
       clearTimeout(loadingTimeout);
       unsubscribe();
     };
-  }, [forceLogin]); // Add forceLogin to dependency array
+  }, [forceLogin, authInitialized]); // Add forceLogin and authInitialized to dependency array
 
   console.log('Current state:', { user: !!user, userRole, loading, userEmail: user?.email, forceLogin });
 
@@ -865,8 +747,10 @@ function App() {
                       <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
                         <Routes>
                           <Route path="/" element={<Navigate to="/teacher-dashboard" />} />
-                          <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
-                          <Route path="/teacher-students" element={<Students />} />
+                          <Route path="/teacher-dashboard" element={<TeacherDashboard currentUser={currentUser} userProfile={userProfile} />} />
+                          <Route path="/teacher-my-students" element={<ClassroomManager currentUser={currentUser} />} />
+                          <Route path="/classroom/:course/:yearLevel/:section" element={<ClassroomDashboard currentUser={currentUser} />} />
+                          <Route path="/teacher-students" element={<TeacherStudentsView currentUser={currentUser} />} />
                           <Route path="/teacher-announcements" element={<Announcements />} />
                           <Route path="/teacher-assessments" element={<div>Teacher Assessments</div>} />
                           <Route path="/teacher-schedule" element={<TeacherSchedule />} />

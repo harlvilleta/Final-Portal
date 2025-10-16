@@ -250,8 +250,8 @@ function UserOverview({ currentUser }) {
             p: 2, 
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
             borderRadius: 2,
-            background: 'white',
-            border: 'none',
+            background: theme.palette.mode === 'dark' ? '#6b7280' : 'white',
+            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : 'none',
             cursor: 'pointer',
             transition: 'box-shadow 0.2s, transform 0.2s',
             '&:hover': {
@@ -260,7 +260,7 @@ function UserOverview({ currentUser }) {
             },
           }}>
             <Box sx={{ mr: 2 }}>
-              <Report fontSize="large" sx={{ color: '#d32f2f' }} />
+              <Report fontSize="large" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#d32f2f' }} />
             </Box>
             <CardContent sx={{ flex: 1, p: '8px !important' }}>
               <Typography variant="h4" fontWeight={700} sx={{ 
@@ -283,8 +283,8 @@ function UserOverview({ currentUser }) {
             p: 2, 
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
             borderRadius: 2,
-            background: 'white',
-            border: 'none',
+            background: theme.palette.mode === 'dark' ? '#6b7280' : 'white',
+            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : 'none',
             cursor: 'pointer',
             transition: 'box-shadow 0.2s, transform 0.2s',
             '&:hover': {
@@ -293,7 +293,7 @@ function UserOverview({ currentUser }) {
             },
           }}>
             <Box sx={{ mr: 2 }}>
-              <Warning fontSize="large" sx={{ color: '#ed6c02' }} />
+              <Warning fontSize="large" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#ed6c02' }} />
             </Box>
             <CardContent sx={{ flex: 1, p: '8px !important' }}>
               <Typography variant="h4" fontWeight={700} sx={{ 
@@ -316,8 +316,8 @@ function UserOverview({ currentUser }) {
             p: 2, 
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
             borderRadius: 2,
-            background: 'white',
-            border: 'none',
+            background: theme.palette.mode === 'dark' ? '#6b7280' : 'white',
+            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : 'none',
             cursor: 'pointer',
             transition: 'box-shadow 0.2s, transform 0.2s',
             '&:hover': {
@@ -326,7 +326,7 @@ function UserOverview({ currentUser }) {
             },
           }}>
             <Box sx={{ mr: 2 }}>
-              <CheckCircle fontSize="large" sx={{ color: '#2e7d32' }} />
+              <CheckCircle fontSize="large" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#2e7d32' }} />
             </Box>
             <CardContent sx={{ flex: 1, p: '8px !important' }}>
               <Typography variant="h4" fontWeight={700} sx={{ 

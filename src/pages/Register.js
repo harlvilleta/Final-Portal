@@ -9,6 +9,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import Link from '@mui/material/Link';
+import { checkStudentIdAvailability, checkEmailAvailability } from '../utils/studentValidation';
 
 const roles = ['Student', 'Admin', 'Teacher'];
 const courses = ["BSIT", "BSBA", "BSED", "BEED", "BSN"];
@@ -30,8 +31,8 @@ function validatePhoneNumber(phone) {
   return phoneRegex.test(phone);
 }
 
-// Student ID validation function
-function validateStudentId(studentId) {
+// Student ID format validation function
+function validateStudentIdFormat(studentId) {
   // Must start with "SCC", followed by 10 digits and a dash
   const studentIdRegex = /^SCC-\d{2}-\d{8}$/;
   return studentIdRegex.test(studentId);
@@ -174,7 +175,7 @@ export default function Register() {
     }
   };
 
-  const handleStudentIdChange = (e) => {
+  const handleStudentIdChange = async (e) => {
     const value = e.target.value;
     setStudentId(value);
     
@@ -184,15 +185,27 @@ export default function Register() {
       return;
     }
     
-    // Validate student ID
-    if (!validateStudentId(value)) {
+    // Validate student ID format first
+    if (!validateStudentIdFormat(value)) {
       setStudentIdError('Student ID must be in format: SCC-XX-XXXXXXXX');
-    } else {
-      setStudentIdError('');
+      return;
+    }
+    
+    // If format is valid, check availability
+    try {
+      const availabilityCheck = await checkStudentIdAvailability(value.trim());
+      if (!availabilityCheck.isAvailable) {
+        setStudentIdError(availabilityCheck.error || 'Student ID is already registered');
+      } else {
+        setStudentIdError('');
+      }
+    } catch (error) {
+      console.error('Error checking student ID availability:', error);
+      setStudentIdError('Error checking student ID availability');
     }
   };
 
-  const handleEmailChange = (e) => {
+  const handleEmailChange = async (e) => {
     const value = e.target.value;
     setEmail(value);
     
@@ -202,11 +215,26 @@ export default function Register() {
       return;
     }
     
-    // Validate email format
+    // Validate email format first
     if (!validateEmail(value)) {
       setEmailError('Please enter a valid email address');
-    } else {
-      setEmailError('');
+      return;
+    }
+    
+    // If format is valid, check availability
+    setEmailValidating(true);
+    try {
+      const availabilityCheck = await checkEmailAvailability(value.trim());
+      if (!availabilityCheck.isAvailable) {
+        setEmailError(availabilityCheck.error || 'Email is already registered');
+      } else {
+        setEmailError('');
+      }
+    } catch (error) {
+      console.warn('⚠️ Email availability check failed, clearing error:', error);
+      setEmailError(''); // Clear error to allow registration attempt
+    } finally {
+      setEmailValidating(false);
     }
   };
 
@@ -227,6 +255,21 @@ export default function Register() {
     if (emailError) {
       setSnackbar({ open: true, message: 'Please fix email validation errors.', severity: 'error' });
       return;
+    }
+    
+    // Check if email is available for registration (with fallback)
+    console.log('🔍 Checking email availability...');
+    try {
+      const emailAvailabilityCheck = await checkEmailAvailability(email.trim());
+      if (!emailAvailabilityCheck.isAvailable) {
+        console.log('❌ Email availability check failed:', emailAvailabilityCheck.error);
+        setSnackbar({ open: true, message: emailAvailabilityCheck.error || 'Email is already registered.', severity: 'error' });
+        return;
+      }
+      console.log('✅ Email is available for registration');
+    } catch (availabilityError) {
+      console.warn('⚠️ Email availability check failed, proceeding with registration:', availabilityError);
+      // Continue with registration - Firebase Auth will handle duplicate emails
     }
     if (!fullName) {
       setSnackbar({ open: true, message: 'Full name is required.', severity: 'error' });
@@ -265,7 +308,7 @@ export default function Register() {
         setSnackbar({ open: true, message: 'Student ID is required.', severity: 'error' });
         return;
       }
-      if (!validateStudentId(studentId)) {
+      if (!validateStudentIdFormat(studentId)) {
         setSnackbar({ open: true, message: 'Student ID must be in format: SCC-XX-XXXXXXXX.', severity: 'error' });
         return;
       }
@@ -285,6 +328,16 @@ export default function Register() {
         setSnackbar({ open: true, message: 'Birthdate is required for students.', severity: 'error' });
         return;
       }
+      
+      // Check if student ID is available for registration
+      console.log('🔍 Checking student ID availability...');
+      const availabilityCheck = await checkStudentIdAvailability(studentId.trim());
+      if (!availabilityCheck.isAvailable) {
+        console.log('❌ Student ID availability check failed:', availabilityCheck.error);
+        setSnackbar({ open: true, message: availabilityCheck.error || 'Student ID is already registered.', severity: 'error' });
+        return;
+      }
+      console.log('✅ Student ID is available for registration');
     }
     
     console.log('Starting registration process...');
@@ -302,11 +355,15 @@ export default function Register() {
       console.log('Registration details:', { email, role, fullName });
       
       // Create user account in Firebase Auth
-      console.log('Creating Firebase Auth user...');
+      console.log('🔐 Creating Firebase Auth user...');
+      console.log('📧 Email:', email);
+      console.log('🔑 Password length:', password.length);
+      
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      console.log('✅ Firebase Auth user created:', user.uid);
+      console.log('✅ Firebase Auth user created successfully:', user.uid);
+      console.log('📧 User email:', user.email);
       
       // Update profile with display name and photo (use base64 if available)
       await updateProfile(user, {

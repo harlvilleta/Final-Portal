@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Badge, ListItemText, ListItemIcon, Divider, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, useTheme } from '@mui/material';
 import { AccountCircle, Logout, Notifications, Settings, CheckCircle, Warning, Info, Mail } from '@mui/icons-material';
-import ThemeToggle from './ThemeToggle';
+import ProfileDropdown from './ProfileDropdown';
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +9,6 @@ import { collection, query, where, onSnapshot, orderBy, addDoc } from 'firebase/
 
 export default function TeacherHeader({ currentUser, userProfile }) {
   const theme = useTheme();
-  const [anchorEl, setAnchorEl] = useState(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -35,13 +34,6 @@ export default function TeacherHeader({ currentUser, userProfile }) {
     return unsubscribe;
   }, [currentUser]);
 
-  const handleMenu = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
 
   const handleNotificationMenu = (event) => {
     setNotificationAnchorEl(event.currentTarget);
@@ -86,33 +78,6 @@ export default function TeacherHeader({ currentUser, userProfile }) {
     return date.toLocaleDateString();
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate('/');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
-  const getUserDisplayInfo = () => {
-    if (userProfile) {
-      return {
-        name: userProfile.fullName || currentUser?.displayName || 'Teacher',
-        email: userProfile.email || currentUser?.email,
-        photo: userProfile.profilePic || currentUser?.photoURL,
-        role: userProfile.role || 'Teacher'
-      };
-    }
-    return {
-      name: currentUser?.displayName || 'Teacher',
-      email: currentUser?.email,
-      photo: currentUser?.photoURL,
-      role: 'Teacher'
-    };
-  };
-
-  const userInfo = getUserDisplayInfo();
 
   return (
     <AppBar position="static" sx={{ bgcolor: 'background.paper', color: 'text.primary', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
@@ -129,7 +94,6 @@ export default function TeacherHeader({ currentUser, userProfile }) {
         </Typography>
         <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <ThemeToggle />
             <IconButton
               size="large"
               aria-label="mail to admin"
@@ -148,79 +112,15 @@ export default function TeacherHeader({ currentUser, userProfile }) {
                 <Notifications />
               </Badge>
             </IconButton>
-            <IconButton
-              size="large"
-              aria-label="settings"
-              onClick={() => navigate('/teacher-profile')}
-              color="inherit"
-            >
-              <Settings />
-            </IconButton>
-            <IconButton
-              size="large"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleMenu}
-              color="inherit"
-            >
-              <Avatar 
-                sx={{ width: 32, height: 32, bgcolor: userInfo.photo ? 'transparent' : '#1976d2' }}
-                src={userInfo.photo}
-              >
-                {userInfo.name?.charAt(0) || 'T'}
-              </Avatar>
-            </IconButton>
+            <ProfileDropdown 
+              currentUser={currentUser} 
+              userProfile={userProfile}
+              profileRoute="/teacher-profile"
+            />
           </Box>
         </Box>
       </Toolbar>
 
-      {/* User Menu */}
-      <Menu
-        id="menu-appbar"
-        anchorEl={anchorEl}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-        keepMounted
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-        open={Boolean(anchorEl)}
-        onClose={handleClose}
-      >
-        <MenuItem onClick={handleClose}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Avatar sx={{ width: 24, height: 24, bgcolor: '#1976d2' }}>
-              {userInfo.name?.charAt(0) || 'T'}
-            </Avatar>
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                {userInfo.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {userInfo.email}
-              </Typography>
-            </Box>
-          </Box>
-        </MenuItem>
-        <Divider />
-        <MenuItem onClick={() => { navigate('/teacher-profile'); handleClose(); }}>
-          <ListItemIcon>
-            <Settings fontSize="small" />
-          </ListItemIcon>
-          Profile Settings
-        </MenuItem>
-        <Divider />
-        <MenuItem onClick={handleLogout}>
-          <ListItemIcon>
-            <Logout fontSize="small" />
-          </ListItemIcon>
-          Logout
-        </MenuItem>
-      </Menu>
 
       {/* Notifications Menu */}
       <Menu
