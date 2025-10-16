@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
-import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Menu, MenuItem, Button, CircularProgress, Alert, Tooltip, Badge, List, ListItem, ListItemText, ListItemAvatar, Divider, useTheme } from "@mui/material";
-import { AccountCircle, Logout, Notifications, Settings, Search, Announcement } from "@mui/icons-material";
+import { Box, AppBar, Toolbar, Typography, Avatar, Chip, IconButton, Button, CircularProgress, Alert, Tooltip, Badge, useTheme } from "@mui/material";
+import { AccountCircle, Logout, Notifications, Settings } from "@mui/icons-material";
 import ProfileDropdown from "./components/ProfileDropdown";
 import ThemeWrapper from "./components/ThemeWrapper";
 import { ThemeProvider as CustomThemeProvider } from "./contexts/ThemeContext";
@@ -26,7 +26,7 @@ import UserDashboard from './pages/UserDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { getDoc, doc, setDoc, collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { getDoc, doc, setDoc, collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
 import AnnouncementReport from "./pages/AnnouncementReport";
 import UserViolations from "./pages/UserViolations";
 import UserAnnouncements from "./pages/UserAnnouncements";
@@ -57,6 +57,8 @@ import AdminActivityScheduler from "./pages/AdminActivityScheduler";
 import ClassroomManager from "./components/ClassroomManager";
 import TeacherStudentsView from "./components/TeacherStudentsView";
 import ClassroomDashboard from "./pages/ClassroomDashboard";
+import StudentClassroom from "./pages/StudentClassroom";
+import EditProfile from "./pages/EditProfile";
 
 // Header component for admin dashboard
 function AdminHeader({ currentUser, userProfile }) {
@@ -198,109 +200,108 @@ function AdminHeader({ currentUser, userProfile }) {
 // Header component for user dashboard
 function UserHeader({ currentUser, userProfile }) {
   const theme = useTheme();
-  const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
   const [studentNotifications, setStudentNotifications] = useState([]);
   const [notificationLoading, setNotificationLoading] = useState(false);
+  const [previousPage, setPreviousPage] = useState('/user-dashboard');
+  const [isOnNotificationsPage, setIsOnNotificationsPage] = useState(false);
 
-  // Fetch student-specific notifications (Lost and Found + Teacher Announcements)
+  // Fetch student-specific notifications (all relevant notifications for students)
   useEffect(() => {
     if (!currentUser?.email) return;
 
     const fetchStudentNotifications = async () => {
       setNotificationLoading(true);
       try {
-        // Fetch Lost and Found notifications
-        const lostFoundQuery = query(
+        // Fetch all notifications for the student
+        const notificationsQuery = query(
           collection(db, "notifications"),
-          where("type", "in", ["lost_item", "found_item"]),
+          where("recipientEmail", "==", currentUser.email),
           orderBy("createdAt", "desc"),
-          limit(10)
+          limit(20)
         );
 
-        // Fetch Teacher Announcements
-        const announcementsQuery = query(
-          collection(db, "notifications"),
-          where("type", "==", "announcement"),
-          where("senderRole", "==", "Teacher"),
-          orderBy("createdAt", "desc"),
-          limit(10)
-        );
+        const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
+          const allNotifications = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
 
-        const [lostFoundSnapshot, announcementsSnapshot] = await Promise.all([
-          getDocs(lostFoundQuery),
-          getDocs(announcementsQuery)
-        ]);
+          // Filter out enrollment/joining related notifications for students
+          const filteredNotifications = allNotifications.filter(notification => {
+            // Exclude notifications related to student enrollment, joining, or registration
+            const title = notification.title?.toLowerCase() || '';
+            const message = notification.message?.toLowerCase() || '';
+            const type = notification.type?.toLowerCase() || '';
+            
+            // Keywords to exclude (but allow classroom_addition notifications)
+            const excludeKeywords = [
+              'enrollment', 'enroll', 'joining', 'joined', 'registration', 'register',
+              'student added', 'new student', 'student created', 'account created',
+              'welcome new student', 'student registration', 'enrolled student'
+            ];
+            
+            // Allow classroom_addition notifications
+            if (type === 'classroom_addition') {
+              return true;
+            }
+            
+            // Check if notification contains any exclusion keywords
+            const shouldExclude = excludeKeywords.some(keyword => 
+              title.includes(keyword) || message.includes(keyword) || type.includes(keyword)
+            );
+            
+            // Only show lost and found, announcements, and other non-enrollment notifications
+            return !shouldExclude;
+          });
 
-        const lostFoundNotifications = lostFoundSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+          setStudentNotifications(filteredNotifications);
+          setNotificationLoading(false);
+        }, (error) => {
+          console.error('Error fetching student notifications:', error);
+          setNotificationLoading(false);
+        });
 
-        const teacherAnnouncements = announcementsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-
-        // Combine and sort by date
-        const allNotifications = [...lostFoundNotifications, ...teacherAnnouncements]
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-          .slice(0, 10);
-
-        setStudentNotifications(allNotifications);
+        return unsubscribe;
       } catch (error) {
-        console.error('Error fetching student notifications:', error);
-      } finally {
+        console.error('Error setting up notification listeners:', error);
         setNotificationLoading(false);
+        return () => {};
       }
     };
 
-    fetchStudentNotifications();
+    const unsubscribe = fetchStudentNotifications();
+    return () => {
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, [currentUser]);
 
+  // Track location changes to update notification page state
+  useEffect(() => {
+    const currentPath = location.pathname;
+    if (currentPath === '/notifications') {
+      setIsOnNotificationsPage(true);
+    } else {
+      setIsOnNotificationsPage(false);
+    }
+  }, [location.pathname]);
+
   const handleNotificationClick = (event) => {
-    setNotificationAnchorEl(event.currentTarget);
-  };
-
-  const handleNotificationClose = () => {
-    setNotificationAnchorEl(null);
-  };
-
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case 'lost_item':
-        return <Search sx={{ fontSize: 20 }} />;
-      case 'found_item':
-        return <Search sx={{ fontSize: 20 }} />;
-      case 'announcement':
-        return <Announcement sx={{ fontSize: 20 }} />;
-      default:
-        return <Announcement sx={{ fontSize: 20 }} />;
+    // If we're currently on the notifications page, go back to previous page
+    if (isOnNotificationsPage) {
+      navigate(previousPage);
+      setIsOnNotificationsPage(false);
+    } else {
+      // If we're not on notifications page, save current page and go to notifications
+      setPreviousPage(location.pathname);
+      navigate('/notifications');
+      setIsOnNotificationsPage(true);
     }
   };
 
-  const getNotificationColor = (type) => {
-    switch (type) {
-      case 'lost_item':
-        return 'warning';
-      case 'found_item':
-        return 'success';
-      case 'announcement':
-        return 'primary';
-      default:
-        return 'primary';
-    }
-  };
-
-  const formatTimeAgo = (timestamp) => {
-    const now = new Date();
-    const time = new Date(timestamp);
-    const diffInSeconds = Math.floor((now - time) / 1000);
-
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    return `${Math.floor(diffInSeconds / 86400)}d ago`;
-  };
 
   const getUserDisplayInfo = () => {
     if (userProfile) {
@@ -337,7 +338,7 @@ function UserHeader({ currentUser, userProfile }) {
           </Typography>
           <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Tooltip title="Notifications" arrow>
+              <Tooltip title={isOnNotificationsPage ? "Back to Dashboard" : "View Notifications"}>
                 <IconButton
                   size="large"
                   aria-label="notifications"
@@ -363,114 +364,6 @@ function UserHeader({ currentUser, userProfile }) {
         </Toolbar>
       </AppBar>
 
-      {/* Notifications Menu */}
-      <Menu
-        anchorEl={notificationAnchorEl}
-        open={Boolean(notificationAnchorEl)}
-        onClose={handleNotificationClose}
-        PaperProps={{
-          sx: {
-            width: 400,
-            maxHeight: 500,
-            mt: 1
-          }
-        }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-      >
-        <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
-          <Typography variant="h6" fontWeight={700} color="#800000">
-            Notifications
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Lost & Found items and teacher announcements
-          </Typography>
-        </Box>
-
-        {notificationLoading ? (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-            <CircularProgress size={24} />
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Loading notifications...
-            </Typography>
-          </Box>
-        ) : studentNotifications.length === 0 ? (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              No notifications
-            </Typography>
-          </Box>
-        ) : (
-          <List sx={{ maxHeight: 300, overflow: 'auto' }}>
-            {studentNotifications.map((notification, index) => (
-              <React.Fragment key={notification.id}>
-                <ListItem sx={{ py: 1.5 }}>
-                  <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: `${getNotificationColor(notification.type)}.light`, width: 32, height: 32 }}>
-                      {getNotificationIcon(notification.type)}
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {notification.title || 'Notification'}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ 
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis'
-                        }}>
-                          {notification.message || 'No message'}
-                        </Typography>
-                      </Box>
-                    }
-                    secondary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatTimeAgo(notification.createdAt)}
-                        </Typography>
-                        {!notification.read && (
-                          <Box sx={{ 
-                            width: 8, 
-                            height: 8, 
-                            borderRadius: '50%', 
-                            bgcolor: '#d32f2f' 
-                          }} />
-                        )}
-                      </Box>
-                    }
-                  />
-                </ListItem>
-                {index < studentNotifications.length - 1 && <Divider />}
-              </React.Fragment>
-            ))}
-          </List>
-        )}
-
-        <Box sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
-          <Button 
-            fullWidth 
-            variant="outlined" 
-            sx={{ 
-              color: '#800000',
-              borderColor: '#800000',
-              '&:hover': {
-                borderColor: '#6b0000',
-                backgroundColor: '#80000010'
-              }
-            }}
-            onClick={() => {
-              handleNotificationClose();
-              // Navigate to full notifications page if needed
-            }}
-          >
-            View All Notifications
-          </Button>
-        </Box>
-      </Menu>
     </>
   );
 }
@@ -779,10 +672,13 @@ function App() {
                         <Route path="/announcements" element={<UserAnnouncements />} />
                         <Route path="/activity" element={<ActivitiesView />} />
                         <Route path="/lost-found" element={<UserLostFound currentUser={currentUser} />} />
-                        <Route path="/notifications" element={<UserNotifications currentUser={currentUser} />} />
                         <Route path="/receipt-submission" element={<ReceiptSubmission />} />
                         <Route path="/receipt-history" element={<ReceiptHistory />} />
                         <Route path="/profile" element={<Profile />} />
+                        <Route path="/edit-profile" element={<EditProfile />} />
+                        <Route path="/classroom" element={<StudentClassroom currentUser={currentUser} />} />
+                        <Route path="/classroom/:course/:yearLevel/:section" element={<ClassroomDashboard currentUser={currentUser} />} />
+                        <Route path="/notifications" element={<UserNotifications currentUser={currentUser} />} />
                         <Route path="/*" element={<Navigate to="/user-dashboard" />} />
                       </Routes>
                     </Box>

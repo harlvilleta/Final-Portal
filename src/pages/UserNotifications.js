@@ -10,12 +10,15 @@ import {
 } from "@mui/icons-material";
 import { db } from "../firebase";
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
 export default function UserNotifications({ currentUser }) {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
+
 
   useEffect(() => {
     if (!currentUser?.email) {
@@ -32,6 +35,18 @@ export default function UserNotifications({ currentUser }) {
     const unsubscribe = onSnapshot(notificationsQuery, (snap) => {
       const allNotifications = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
+      console.log('📊 All notifications received for student:', {
+        email: currentUser.email,
+        totalCount: allNotifications.length,
+        notifications: allNotifications.map(n => ({
+          id: n.id,
+          title: n.title,
+          type: n.type,
+          recipientEmail: n.recipientEmail,
+          createdAt: n.createdAt
+        }))
+      });
+      
       // Filter out enrollment/joining related notifications for students
       const filteredNotifications = allNotifications.filter(notification => {
         // Exclude notifications related to student enrollment, joining, or registration
@@ -39,20 +54,41 @@ export default function UserNotifications({ currentUser }) {
         const message = notification.message?.toLowerCase() || '';
         const type = notification.type?.toLowerCase() || '';
         
-        // Keywords to exclude
+        // Keywords to exclude (but allow classroom_addition notifications)
         const excludeKeywords = [
           'enrollment', 'enroll', 'joining', 'joined', 'registration', 'register',
           'student added', 'new student', 'student created', 'account created',
           'welcome new student', 'student registration', 'enrolled student'
         ];
         
+        // Allow classroom_addition notifications
+        if (type === 'classroom_addition') {
+          console.log('✅ Allowing classroom_addition notification:', notification.title);
+          return true;
+        }
+        
         // Check if notification contains any exclusion keywords
         const shouldExclude = excludeKeywords.some(keyword => 
           title.includes(keyword) || message.includes(keyword) || type.includes(keyword)
         );
         
+        if (shouldExclude) {
+          console.log('❌ Excluding notification:', notification.title, 'reason: contains exclusion keyword');
+        }
+        
         // Only show lost and found, announcements, and other non-enrollment notifications
         return !shouldExclude;
+      });
+      
+      console.log('📊 Filtered notifications for student:', {
+        email: currentUser.email,
+        filteredCount: filteredNotifications.length,
+        filteredNotifications: filteredNotifications.map(n => ({
+          id: n.id,
+          title: n.title,
+          type: n.type,
+          recipientEmail: n.recipientEmail
+        }))
       });
       
       setNotifications(filteredNotifications);
@@ -224,8 +260,13 @@ export default function UserNotifications({ currentUser }) {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>Notifications</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="h4" gutterBottom>Notifications</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Stay updated with your latest notifications
+          </Typography>
+        </Box>
         {unreadCount > 0 && (
           <Chip 
             icon={<NotificationsActive />} 
@@ -291,6 +332,31 @@ export default function UserNotifications({ currentUser }) {
                     <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
                       {notification.message}
                     </Typography>
+                    
+                    {/* Classroom Link for classroom_addition notifications */}
+                    {notification.type === 'classroom_addition' && notification.classroomLink && (
+                      <Box sx={{ mt: 2, mb: 1 }}>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={() => {
+                            // Extract the path from the full URL
+                            const url = new URL(notification.classroomLink);
+                            const path = url.pathname;
+                            // Close any open dialogs first
+                            setOpenDetailDialog(false);
+                            // Navigate to classroom
+                            navigate(path);
+                          }}
+                          sx={{ 
+                            fontWeight: 600,
+                            textTransform: 'none'
+                          }}
+                        >
+                          🎓 Access Classroom Dashboard
+                        </Button>
+                      </Box>
+                    )}
                     
                     {notification.type === 'violation' && notification.violationDetails && (
                       <Alert severity="warning" sx={{ mb: 2 }}>

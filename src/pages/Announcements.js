@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper, TextField, Button, Stack, Snackbar, Alert, List, ListItem, ListItemText, Divider, MenuItem, Card, CardContent, CardHeader, Chip, Tabs, Tab, Badge, Dialog, DialogTitle, DialogContent, DialogActions, Select, InputAdornment } from "@mui/material";
-import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc, getDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc, getDoc, where } from "firebase/firestore";
 import { db, logActivity } from "../firebase";
 import PrintIcon from '@mui/icons-material/Print';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -110,7 +110,7 @@ export default function Announcements() {
       const userEmail = currentUser?.email || 'unknown@school.com';
       const userName = currentUser?.displayName || userEmail.split('@')[0];
       
-      await addDoc(collection(db, "announcements"), {
+      const announcementRef = await addDoc(collection(db, "announcements"), {
         ...form,
         date: form.date || new Date().toISOString(),
         createdAt: new Date().toISOString(),
@@ -122,6 +122,46 @@ export default function Announcements() {
         reviewedAt: null,
         reviewReason: null
       });
+
+      // Create notifications for all students if audience is "All" or "Students"
+      if (form.audience === "All" || form.audience === "Students") {
+        try {
+          // Get all students from the users collection
+          const studentsQuery = query(
+            collection(db, "users"),
+            where("role", "==", "Student")
+          );
+          const studentsSnapshot = await getDocs(studentsQuery);
+          
+          // Create notifications for each student
+          const notificationPromises = studentsSnapshot.docs.map(doc => {
+            const student = doc.data();
+            return addDoc(collection(db, "notifications"), {
+              recipientEmail: student.email,
+              recipientName: student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim(),
+              title: `📢 New Announcement: ${form.title}`,
+              message: form.message.length > 100 ? `${form.message.substring(0, 100)}...` : form.message,
+              type: "announcement",
+              announcementId: announcementRef.id,
+              senderId: currentUser.uid,
+              senderEmail: userEmail,
+              senderName: userName,
+              read: false,
+              createdAt: new Date().toISOString(),
+              priority: form.priority.toLowerCase(),
+              category: form.category,
+              audience: form.audience
+            });
+          });
+          
+          await Promise.all(notificationPromises);
+          console.log(`✅ Announcement notifications sent to ${studentsSnapshot.docs.length} students`);
+        } catch (notificationError) {
+          console.error('❌ Error sending announcement notifications:', notificationError);
+          // Don't fail the entire operation if notifications fail
+        }
+      }
+
       await logActivity({ message: `Announcement posted: ${form.title}`, type: 'add_announcement' });
       setSnackbar({ open: true, message: "Announcement submitted for approval!", severity: "success" });
       setForm({ title: "", message: "", date: "", category: "General", audience: "All", priority: "Normal", scheduleDate: "", expiryDate: "" });

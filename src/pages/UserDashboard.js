@@ -4,7 +4,7 @@ import {
   ListItemText, Avatar, Chip, Button, CircularProgress, useTheme
 } from "@mui/material";
 import { CheckCircle, Warning, Announcement, EventNote, Report, Event, Campaign, People } from "@mui/icons-material";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { db, auth, logActivity } from "../firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, where, query, onSnapshot, orderBy, setDoc, getDoc, limit } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -12,6 +12,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 // User Overview Component
 function UserOverview({ currentUser }) {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [userViolations, setUserViolations] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [activities, setActivities] = useState([]);
@@ -115,12 +116,17 @@ function UserOverview({ currentUser }) {
         const message = notification.message?.toLowerCase() || '';
         const type = notification.type?.toLowerCase() || '';
         
-        // Keywords to exclude
+        // Keywords to exclude (but allow classroom_addition notifications)
         const excludeKeywords = [
           'enrollment', 'enroll', 'joining', 'joined', 'registration', 'register',
           'student added', 'new student', 'student created', 'account created',
           'welcome new student', 'student registration', 'enrolled student'
         ];
+        
+        // Allow classroom_addition notifications
+        if (type === 'classroom_addition') {
+          return true;
+        }
         
         // Check if notification contains any exclusion keywords
         const shouldExclude = excludeKeywords.some(keyword => 
@@ -240,6 +246,81 @@ function UserOverview({ currentUser }) {
           </Box>
         </CardContent>
       </Card>
+
+      {/* Classroom Access Section */}
+      {userProfile && userProfile.course && userProfile.year && userProfile.section && (
+        <Card sx={{ 
+          mb: 4, 
+          bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f0f8ff', 
+          border: '2px solid #1976d2',
+          boxShadow: '0 4px 20px rgba(25, 118, 210, 0.1)',
+          borderRadius: 2
+        }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ 
+                  bgcolor: '#1976d2', 
+                  borderRadius: '50%', 
+                  p: 1.5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <People sx={{ color: 'white', fontSize: 28 }} />
+                </Box>
+                <Box>
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 700, 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#1976d2',
+                    mb: 0.5
+                  }}>
+                    Your Classroom
+                  </Typography>
+                  <Typography variant="body1" sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                    fontWeight: 500
+                  }}>
+                    {userProfile.course} - {userProfile.year} - {userProfile.section}
+                  </Typography>
+                  {userProfile.studentId && (
+                    <Typography variant="body2" color="text.secondary">
+                      Student ID: {userProfile.studentId}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={<People />}
+                onClick={() => {
+                  const classroomLink = `/classroom/${encodeURIComponent(userProfile.course)}/${encodeURIComponent(userProfile.year)}/${encodeURIComponent(userProfile.section)}`;
+                  navigate(classroomLink);
+                }}
+                sx={{
+                  bgcolor: '#1976d2',
+                  color: 'white',
+                  fontWeight: 600,
+                  px: 4,
+                  py: 1.5,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  '&:hover': {
+                    bgcolor: '#1565c0',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)'
+                  },
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Go to Classroom
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -420,6 +501,31 @@ function UserOverview({ currentUser }) {
                             : notification.message
                           }
                         </Typography>
+                        
+                        {/* Classroom Link for classroom_addition notifications */}
+                        {notification.type === 'classroom_addition' && notification.classroomLink && (
+                          <Box sx={{ mt: 1, mb: 1 }}>
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              size="small"
+                              onClick={() => {
+                                // Extract the path from the full URL
+                                const url = new URL(notification.classroomLink);
+                                const path = url.pathname;
+                                // Navigate directly to classroom
+                                navigate(path);
+                              }}
+                              sx={{ 
+                                fontWeight: 600,
+                                textTransform: 'none',
+                                fontSize: '0.75rem'
+                              }}
+                            >
+                              🎓 Access Classroom
+                            </Button>
+                          </Box>
+                        )}
                         <Typography variant="caption" color="text.secondary">
                           {new Date(notification.createdAt).toLocaleString()}
                         </Typography>
@@ -589,15 +695,73 @@ function UserOverview({ currentUser }) {
 export default function UserDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setCurrentUser(user);
+      
+      if (user) {
+        // Fetch user profile to check for classroom information
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUserProfile(userData);
+            
+            // Check if student has classroom information and redirect automatically
+            if (userData.role === 'Student' && userData.course && userData.year && userData.section) {
+              console.log('🎓 Student has classroom info, checking for automatic redirect...');
+              
+              // Check if there's a recent classroom addition notification with auto-redirect flag
+              const notificationsQuery = query(
+                collection(db, "notifications"),
+                where("recipientEmail", "==", user.email),
+                where("type", "==", "classroom_addition"),
+                where("autoRedirect", "==", true),
+                orderBy("createdAt", "desc"),
+                limit(1)
+              );
+              
+              const notificationsSnapshot = await getDocs(notificationsQuery);
+              if (!notificationsSnapshot.empty) {
+                const latestNotification = notificationsSnapshot.docs[0].data();
+                const notificationTime = new Date(latestNotification.createdAt);
+                const now = new Date();
+                const timeDiff = now - notificationTime;
+                
+                // If notification is less than 10 minutes old and has autoRedirect flag, auto-redirect
+                if (timeDiff < 10 * 60 * 1000) {
+                  console.log('🚀 Auto-redirecting to classroom dashboard based on Student ID:', userData.studentId);
+                  console.log('📊 Classroom info:', {
+                    course: userData.course,
+                    year: userData.year,
+                    section: userData.section,
+                    studentId: userData.studentId
+                  });
+                  const classroomLink = `/classroom/${encodeURIComponent(userData.course)}/${encodeURIComponent(userData.year)}/${encodeURIComponent(userData.section)}`;
+                  console.log('🔗 Navigating to:', classroomLink);
+                  
+                  // Show a brief notification before redirecting
+                  console.log('📢 Student has been automatically redirected to their classroom');
+                  
+                  navigate(classroomLink, { replace: true });
+                  return;
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching user profile for auto-redirect:', error);
+        }
+      }
+      
       setLoading(false);
     });
 
     return unsubscribe;
-  }, []);
+  }, [navigate]);
 
   // Removed full-page loading spinner per requirements
 

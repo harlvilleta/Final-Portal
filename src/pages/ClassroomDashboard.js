@@ -21,7 +21,8 @@ import {
   Paper,
   Chip,
   Breadcrumbs,
-  Link
+  Link,
+  CircularProgress
 } from '@mui/material';
 import {
   ArrowBack,
@@ -30,11 +31,12 @@ import {
   School,
   Group,
   Class,
-  Add
+  Add,
+  PersonAdd
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, getDocs, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc, query, where, getDoc } from 'firebase/firestore';
 import { validateStudentId } from '../utils/studentValidation';
 
 export default function ClassroomDashboard({ currentUser }) {
@@ -45,22 +47,117 @@ export default function ClassroomDashboard({ currentUser }) {
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [isDeletingStudent, setIsDeletingStudent] = useState(false);
+  const [userRole, setUserRole] = useState(null);
+  const [teacherInfo, setTeacherInfo] = useState(null);
+
+  // Fetch user role
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (!currentUser?.uid) return;
+      
+      try {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUserRole(userData.role || 'Student');
+        } else {
+          setUserRole('Student'); // Default role
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+        setUserRole('Student'); // Default role
+      }
+    };
+
+    fetchUserRole();
+  }, [currentUser]);
 
   // Fetch students for this specific classroom
   useEffect(() => {
-    if (!currentUser?.uid || !course || !yearLevel || !section) return;
+    if (!currentUser?.uid || !course || !yearLevel || !section || !userRole) return;
 
     const fetchStudents = async () => {
       try {
         setLoading(true);
         
-        const studentsQuery = query(
-          collection(db, "students"),
-          where("teacherId", "==", currentUser.uid),
-          where("course", "==", course),
-          where("yearLevel", "==", yearLevel),
-          where("section", "==", section)
-        );
+        let studentsQuery;
+        
+        if (userRole === 'Teacher') {
+          // For teachers, fetch students they manage
+          studentsQuery = query(
+            collection(db, "students"),
+            where("teacherId", "==", currentUser.uid),
+            where("course", "==", course),
+            where("yearLevel", "==", yearLevel),
+            where("section", "==", section)
+          );
+        } else {
+          // For students, fetch all students in the same classroom from both collections
+          const studentsQuery = query(
+            collection(db, "students"),
+            where("course", "==", course),
+            where("yearLevel", "==", yearLevel),
+            where("section", "==", section)
+          );
+          
+          const usersQuery = query(
+            collection(db, "users"),
+            where("role", "==", "Student"),
+            where("course", "==", course),
+            where("year", "==", yearLevel),
+            where("section", "==", section)
+          );
+          
+          const [studentsSnapshot, usersSnapshot] = await Promise.all([
+            getDocs(studentsQuery),
+            getDocs(usersQuery)
+          ]);
+          
+          // Combine results from both collections
+          const studentsFromStudentsCollection = studentsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            source: 'students_collection'
+          }));
+          
+          const studentsFromUsersCollection = usersSnapshot.docs.map(doc => ({
+            id: doc.id,
+            name: doc.data().fullName || `${doc.data().firstName || ''} ${doc.data().lastName || ''}`.trim(),
+            studentId: doc.data().studentId || '',
+            course: doc.data().course,
+            yearLevel: doc.data().year, // Map year to yearLevel for consistency
+            section: doc.data().section,
+            email: doc.data().email,
+            source: 'users_collection'
+          }));
+          
+          // Combine and deduplicate
+          const allStudentsData = [...studentsFromStudentsCollection, ...studentsFromUsersCollection];
+          const uniqueStudents = allStudentsData.filter((student, index, self) => 
+            index === self.findIndex(s => s.studentId === student.studentId || s.email === student.email)
+          );
+          
+          console.log('Found students in classroom:', uniqueStudents.length);
+          console.log('From students collection:', studentsFromStudentsCollection.length);
+          console.log('From users collection:', studentsFromUsersCollection.length);
+          
+          // For students, fetch teacher information from any student record
+          if (uniqueStudents.length > 0 && uniqueStudents[0].teacherId) {
+            try {
+              const teacherDoc = await getDoc(doc(db, 'users', uniqueStudents[0].teacherId));
+              if (teacherDoc.exists()) {
+                setTeacherInfo(teacherDoc.data());
+              }
+            } catch (error) {
+              console.error('Error fetching teacher info for student view:', error);
+            }
+          }
+          
+          // Set the students data
+          setStudents(uniqueStudents);
+          setLoading(false);
+          return; // Exit early since we handled the data
+        }
         
         const studentsSnapshot = await getDocs(studentsQuery);
         const allStudentsData = studentsSnapshot.docs.map(doc => ({
@@ -96,6 +193,18 @@ export default function ClassroomDashboard({ currentUser }) {
         
         setStudents(validStudents);
         
+        // Fetch teacher information if students exist
+        if (validStudents.length > 0 && validStudents[0].teacherId) {
+          try {
+            const teacherDoc = await getDoc(doc(db, 'users', validStudents[0].teacherId));
+            if (teacherDoc.exists()) {
+              setTeacherInfo(teacherDoc.data());
+            }
+          } catch (error) {
+            console.error('Error fetching teacher info:', error);
+          }
+        }
+        
         // Show notification if invalid students were found
         if (invalidStudents.length > 0) {
           setSnackbar({ 
@@ -113,7 +222,7 @@ export default function ClassroomDashboard({ currentUser }) {
     };
 
     fetchStudents();
-  }, [currentUser, course, yearLevel, section]);
+  }, [currentUser, course, yearLevel, section, userRole]);
 
   const handleDeleteStudent = async (student) => {
     if (window.confirm(`Are you sure you want to remove ${student.name} from this classroom?`)) {
@@ -135,13 +244,18 @@ export default function ClassroomDashboard({ currentUser }) {
   };
 
   const handleBackToClassrooms = () => {
-    navigate('/teacher-my-students');
+    if (userRole === 'Teacher') {
+      navigate('/teacher-my-students');
+    } else {
+      navigate('/user-dashboard');
+    }
   };
 
-  if (loading || !currentUser) {
+  if (loading || !currentUser || !userRole) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Typography>Loading classroom...</Typography>
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Loading classroom...</Typography>
       </Box>
     );
   }
@@ -168,7 +282,7 @@ export default function ClassroomDashboard({ currentUser }) {
               onClick={handleBackToClassrooms}
               sx={{ cursor: 'pointer' }}
             >
-              My Classrooms
+              {userRole === 'Teacher' ? 'My Classrooms' : 'Dashboard'}
             </Link>
             <Typography color="#ffffff">
               {course} - {yearLevel} - {section}
@@ -188,7 +302,10 @@ export default function ClassroomDashboard({ currentUser }) {
           variant="body1" 
           color="#e0e0e0"
         >
-          Manage students in {course} - {yearLevel} - {section}
+          {userRole === 'Teacher' 
+            ? `Manage students in ${course} - ${yearLevel} - ${section}`
+            : `View your classmates in ${course} - ${yearLevel} - ${section}`
+          }
         </Typography>
       </Box>
 
@@ -214,7 +331,7 @@ export default function ClassroomDashboard({ currentUser }) {
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <Chip 
                   icon={<Group />} 
-                  label={`${students.length} Students`} 
+                  label={userRole === 'Teacher' ? `${students.length} Students` : `${students.length} ${students.length === 1 ? 'Student' : 'Students'}`} 
                   sx={{ bgcolor: '#B6CEB4', color: '#2c3e2c' }}
                 />
                 <Chip 
@@ -231,7 +348,10 @@ export default function ClassroomDashboard({ currentUser }) {
                   {students.length}
                 </Typography>
                 <Typography variant="body1" color="#3d4f3d">
-                  {students.length === 1 ? 'Student' : 'Students'} Enrolled
+                  {userRole === 'Teacher' 
+                    ? `${students.length === 1 ? 'Student' : 'Students'} Enrolled`
+                    : `${students.length === 1 ? 'Student' : 'Students'} in Class`
+                  }
                 </Typography>
               </Box>
             </Grid>
@@ -239,98 +359,215 @@ export default function ClassroomDashboard({ currentUser }) {
         </CardContent>
       </Card>
 
+      {/* Teacher Information Card - Always show for students */}
+      {userRole === 'Student' && (
+        <Card sx={{ mb: 4, border: '1px solid #666666', bgcolor: '#f8f9fa' }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Avatar sx={{ bgcolor: '#1976d2', width: 50, height: 50 }}>
+                <PersonAdd sx={{ fontSize: 24 }} />
+              </Avatar>
+              <Box>
+                <Typography variant="h6" fontWeight={600} color="#2c3e2c">
+                  Your Teacher
+                </Typography>
+                <Typography variant="body2" color="#3d4f3d">
+                  Classroom instructor information
+                </Typography>
+              </Box>
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, bgcolor: '#ffffff', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+              <Avatar 
+                src={teacherInfo?.profilePic} 
+                sx={{ 
+                  width: 60, 
+                  height: 60, 
+                  bgcolor: teacherInfo?.profilePic ? 'transparent' : '#1976d2',
+                  border: '2px solid #1976d2'
+                }}
+              >
+                {!teacherInfo?.profilePic && (teacherInfo?.fullName?.charAt(0) || 'T')}
+              </Avatar>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h6" fontWeight={600} color="#2c3e2c">
+                  {teacherInfo?.fullName || 'Your Teacher'}
+                </Typography>
+                <Typography variant="body2" color="#3d4f3d" sx={{ mb: 1 }}>
+                  {teacherInfo?.email || 'Teacher information will be available soon'}
+                </Typography>
+                <Chip 
+                  label="Teacher" 
+                  size="small" 
+                  sx={{ 
+                    bgcolor: '#1976d2', 
+                    color: 'white',
+                    fontWeight: 600
+                  }} 
+                />
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Students List */}
       <Card sx={{ border: '1px solid #666666', bgcolor: '#f8f9fa' }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="h6" fontWeight={600} color="#2c3e2c">
-              Students in this Classroom
+              {userRole === 'Teacher' ? 'Students in this Classroom' : 'Your Classmates'}
             </Typography>
-            <Button
-              variant="outlined"
-              startIcon={<Add />}
-              onClick={() => navigate('/teacher-my-students')}
-              sx={{
-                borderColor: '#800000',
-                color: '#800000'
-              }}
-            >
-              Add Student
-            </Button>
+            {userRole === 'Teacher' && (
+              <Button
+                variant="outlined"
+                startIcon={<Add />}
+                onClick={() => navigate('/teacher-my-students')}
+                sx={{
+                  borderColor: '#800000',
+                  color: '#800000'
+                }}
+              >
+                Add Student
+              </Button>
+            )}
           </Box>
 
           {students.length === 0 ? (
             <Box sx={{ textAlign: 'center', py: 6 }}>
               <Person sx={{ fontSize: 80, color: '#3d4f3d', mb: 2 }} />
               <Typography variant="h6" color="#3d4f3d" gutterBottom>
-                No Students Yet
+                {userRole === 'Teacher' ? 'No Students Yet' : 'No Classmates Yet'}
               </Typography>
               <Typography variant="body2" color="#3d4f3d" sx={{ mb: 3 }}>
-                This classroom doesn't have any students yet. Add students to get started.
+                {userRole === 'Teacher' 
+                  ? "This classroom doesn't have any students yet. Add students to get started."
+                  : "This classroom doesn't have any classmates yet. Check back later."
+                }
               </Typography>
-              <Button
-                variant="contained"
-                startIcon={<Add />}
-                onClick={() => navigate('/teacher-my-students')}
-                sx={{
-                  bgcolor: '#800000',
-                  color: 'white'
-                }}
-              >
-                Add First Student
-              </Button>
+              {userRole === 'Teacher' && (
+                <Button
+                  variant="contained"
+                  startIcon={<Add />}
+                  onClick={() => navigate('/teacher-my-students')}
+                  sx={{
+                    bgcolor: '#800000',
+                    color: 'white'
+                  }}
+                >
+                  Add First Student
+                </Button>
+              )}
+            </Box>
+          ) : userRole === 'Student' && students.length === 1 && students[0].email === currentUser.email ? (
+            // Special case: Student viewing their own classroom with no other students
+            <Box sx={{ textAlign: 'center', py: 6 }}>
+              <Avatar sx={{ 
+                width: 100, 
+                height: 100, 
+                bgcolor: '#800000', 
+                mx: 'auto', 
+                mb: 3,
+                fontSize: 40
+              }}>
+                <Person sx={{ fontSize: 50 }} />
+              </Avatar>
+              <Typography variant="h4" fontWeight={600} color="#2c3e2c" gutterBottom>
+                You
+              </Typography>
+              <Typography variant="h6" color="#3d4f3d" gutterBottom>
+                {students[0].name}
+              </Typography>
+              <Typography variant="body2" color="#3d4f3d" sx={{ mb: 3 }}>
+                Student ID: {students[0].studentId}
+              </Typography>
+              <Typography variant="body1" color="#3d4f3d" sx={{ mb: 3 }}>
+                You are currently the only student in this classroom. Your teacher may add more students later.
+              </Typography>
+              <Chip 
+                label="Only Student" 
+                sx={{ 
+                  bgcolor: '#e3f2fd', 
+                  color: '#1976d2',
+                  fontWeight: 600,
+                  fontSize: '0.9rem'
+                }} 
+              />
             </Box>
           ) : (
-            <List>
+            <Grid container spacing={2}>
               {students.map((student, index) => (
-                <React.Fragment key={student.id}>
-                  <ListItem 
+                <Grid item xs={12} sm={6} md={4} key={student.id}>
+                  <Card 
                     sx={{ 
-                      px: 0, 
-                      py: 2
+                      border: '1px solid #e0e0e0',
+                      bgcolor: '#ffffff',
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: 2
+                      }
                     }}
                   >
-                    <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: '#800000', width: 50, height: 50 }}>
-                        <Person sx={{ fontSize: 24 }} />
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={
-                        <Typography variant="h6" fontWeight={600} color="#2c3e2c">
-                          {student.name}
-                        </Typography>
-                      }
-                      secondary={
-                        <Box>
-                          <Typography variant="body2" color="#3d4f3d" sx={{ mb: 0.5 }}>
-                            Student ID: {student.studentId}
+                    <CardContent sx={{ p: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                        <Avatar sx={{ bgcolor: '#800000', width: 50, height: 50 }}>
+                          <Person sx={{ fontSize: 24 }} />
+                        </Avatar>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="h6" fontWeight={600} color="#2c3e2c" sx={{ mb: 0.5 }}>
+                            {userRole === 'Student' && student.email === currentUser.email ? 'You' : student.name}
                           </Typography>
-                          <Typography variant="caption" color="#3d4f3d">
-                            Added: {new Date(student.createdAt).toLocaleDateString()}
+                          <Typography variant="body2" color="#3d4f3d">
+                            ID: {student.studentId}
                           </Typography>
                         </Box>
-                      }
-                    />
-                    <ListItemSecondaryAction>
-                      <Tooltip title="Remove Student">
-                        <IconButton
-                          size="large"
-                          onClick={() => handleDeleteStudent(student)}
-                          disabled={isDeletingStudent}
+                        {userRole === 'Teacher' && (
+                          <Tooltip title="Remove Student">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDeleteStudent(student)}
+                              disabled={isDeletingStudent}
+                              sx={{ 
+                                color: '#f44336'
+                              }}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
+                      
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <Chip 
+                          label={userRole === 'Student' && student.email === currentUser.email ? "You" : "Student"} 
+                          size="small" 
                           sx={{ 
-                            color: '#f44336'
-                          }}
-                        >
-                          <Delete />
-                        </IconButton>
-                      </Tooltip>
-                    </ListItemSecondaryAction>
-                  </ListItem>
-                  {index < students.length - 1 && <Divider />}
-                </React.Fragment>
+                            bgcolor: userRole === 'Student' && student.email === currentUser.email ? '#800000' : '#e3f2fd', 
+                            color: userRole === 'Student' && student.email === currentUser.email ? 'white' : '#1976d2',
+                            fontWeight: 600
+                          }} 
+                        />
+                        <Chip 
+                          label={course} 
+                          size="small" 
+                          variant="outlined"
+                          sx={{ 
+                            borderColor: '#800000',
+                            color: '#800000',
+                            fontWeight: 500
+                          }} 
+                        />
+                      </Box>
+                      
+                      <Typography variant="caption" color="#3d4f3d" sx={{ mt: 1, display: 'block' }}>
+                        Joined: {new Date(student.createdAt).toLocaleDateString()}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
               ))}
-            </List>
+            </Grid>
           )}
         </CardContent>
       </Card>

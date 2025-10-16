@@ -185,16 +185,27 @@ export default function TeacherReportViolation() {
         recipientId: selectedStudent.id,
         recipientEmail: selectedStudent.email,
         recipientName: selectedStudent.fullName,
-        title: 'Violation Report Filed',
+        title: '🚨 Violation Report Filed',
         message: `You have been reported for a violation: ${violationType} by ${currentUser.displayName || 'Teacher'}. The case is under review by administration.`,
-        type: 'violation_report',
+        type: 'violation',
         violationId: violationRef.id,
         senderId: currentUser.uid,
         senderEmail: currentUser.email,
         senderName: currentUser.displayName || 'Teacher',
         read: false,
         createdAt: new Date().toISOString(),
-        priority: 'high'
+        priority: 'high',
+        severity: severity,
+        violationDetails: {
+          type: violationType,
+          classification: violationType,
+          severity: severity,
+          date: date,
+          time: time,
+          location: location,
+          description: description,
+          reportedBy: currentUser.displayName || 'Teacher'
+        }
       });
 
       // Create notification for admin

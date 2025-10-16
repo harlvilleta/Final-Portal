@@ -1,29 +1,28 @@
 import React, { useState, useEffect } from "react";
-import { List, ListItem, ListItemIcon, ListItemText, Drawer, Divider, Box, Typography, Avatar, Badge, Chip } from "@mui/material";
+import { List, ListItem, ListItemIcon, ListItemText, Drawer, Divider, Box, Typography, Avatar } from "@mui/material";
 import { 
-  Dashboard, Notifications, Assignment, Announcement, Search, Person, Logout, 
-  Warning, CheckCircle, Info, Settings, Receipt, History
+  Dashboard, Assignment, Announcement, Search, Person, Logout, 
+  Settings, Receipt, History, School
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 const userMenu = [
   { text: "Dashboard", icon: <Dashboard sx={{ color: 'inherit' }} />, path: "/" },
   { text: "My Violations", icon: <Assignment sx={{ color: 'inherit' }} />, path: "/violations" },
+  { text: "Classroom", icon: <School sx={{ color: 'inherit' }} />, path: "/classroom" },
   { text: "Announcements", icon: <Announcement sx={{ color: 'inherit' }} />, path: "/announcements" },
   { text: "Lost & Found", icon: <Search sx={{ color: 'inherit' }} />, path: "/lost-found" },
   { text: "Activities", icon: <History sx={{ color: 'inherit' }} />, path: "/activity" },
   { text: "Receipt Submission", icon: <Receipt sx={{ color: 'inherit' }} />, path: "/receipt-submission" },
-  { text: "Notifications", icon: <Notifications sx={{ color: 'inherit' }} />, path: "/notifications" },
   { text: "Account Settings", icon: <Settings sx={{ color: 'inherit' }} />, path: "/profile" },
 ];
 
 export default function UserSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
 
@@ -47,21 +46,6 @@ export default function UserSidebar() {
     return unsubscribe;
   }, []);
 
-  useEffect(() => {
-    if (!currentUser?.email) return;
-
-    const notificationsQuery = query(
-      collection(db, "notifications"),
-      where("recipientEmail", "==", currentUser.email),
-      where("read", "==", false)
-    );
-
-    const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
-      setUnreadNotifications(snapshot.docs.length);
-    });
-
-    return unsubscribe;
-  }, [currentUser]);
 
   const handleLogout = async () => {
     try {
@@ -148,13 +132,7 @@ export default function UserSidebar() {
             }}
           >
             <ListItemIcon sx={{ minWidth: 40, color: 'white' }}>
-              {item.text === "Notifications" ? (
-                <Badge badgeContent={unreadNotifications} color="error">
-                  {item.icon}
-                </Badge>
-              ) : (
-                item.icon
-              )}
+              {item.icon}
             </ListItemIcon>
             <ListItemText 
               primary={item.text} 
@@ -196,19 +174,6 @@ export default function UserSidebar() {
         </ListItem>
       </List>
 
-      {/* Notification Summary */}
-      {unreadNotifications > 0 && (
-        <Box sx={{ p: 2, mt: 'auto', borderTop: '1px solid #636e72' }}>
-          <Chip
-            icon={<Warning />}
-            label={`${unreadNotifications} unread notification${unreadNotifications > 1 ? 's' : ''}`}
-            color="error"
-            variant="outlined"
-            sx={{ width: '100%', justifyContent: 'flex-start', bgcolor: 'rgba(244, 67, 54, 0.1)', borderColor: '#f44336', color: '#f44336' }}
-            onClick={() => navigate('/notifications')}
-          />
-        </Box>
-      )}
     </Drawer>
   );
 } 

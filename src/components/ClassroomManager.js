@@ -46,8 +46,7 @@ import {
 } from '@mui/icons-material';
 import { db } from '../firebase';
 import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, where, onSnapshot } from 'firebase/firestore';
-import { validateStudentId } from '../utils/studentValidation';
-import { withAuthCheck, authOperationQueue } from '../utils/authUtils';
+import { validateStudentId, getStudentById } from '../utils/studentValidation';
 
 const courses = ["BSIT", "BSBA", "BSCRIM", "BSHTM", "BEED", "BSED", "BSHM"];
 const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
@@ -173,62 +172,160 @@ export default function ClassroomManager({ currentUser }) {
       return;
     }
 
-    // Use auth operation queue to prevent conflicts
-    const operationKey = `add-student-${currentUser?.uid}`;
-    
-    await authOperationQueue.execute(operationKey, async () => {
-      return await withAuthCheck(async () => {
-        setIsAddingStudent(true);
-        try {
-          console.log('🔍 Validating student ID:', studentForm.studentId);
-          
-          // Validate student ID against main registration database
-          const validation = await validateStudentId(studentForm.studentId);
-          if (!validation.isValid) {
-            console.log('❌ Student validation failed:', validation.error);
-            setSnackbar({ open: true, message: validation.error || 'Student not found in the system.', severity: 'error' });
-            return;
-          }
+    setIsAddingStudent(true);
+    try {
+      console.log('🔍 Validating student ID:', studentForm.studentId);
+      
+      // Validate student ID against main registration database
+      const validation = await validateStudentId(studentForm.studentId);
+      console.log('📊 Validation result:', validation);
+      
+      if (!validation.isValid) {
+        console.log('❌ Student validation failed:', validation.error);
+        console.log('📊 Validation details:', {
+          studentId: studentForm.studentId,
+          isValid: validation.isValid,
+          isRegisteredInUsers: validation.isRegisteredInUsers,
+          isRegisteredInStudents: validation.isRegisteredInStudents,
+          error: validation.error
+        });
+        
+        // Check if student exists in either collection but validation failed
+        if (validation.isRegisteredInUsers || validation.isRegisteredInStudents) {
+          console.log('⚠️ Student exists in database but validation failed - proceeding with addition');
+          // Continue with the addition process even if validation failed
+        } else {
+          // Provide more specific error message
+          let errorMessage = validation.error || 'Student not found in the system.';
+          setSnackbar({ open: true, message: errorMessage, severity: 'error' });
+          return;
+        }
+      }
 
-          console.log('✅ Student validation passed, adding to database...');
+      console.log('✅ Student validation passed, adding to database...');
 
-          const newStudent = {
-            name: studentForm.name.trim(),
-            studentId: studentForm.studentId.trim(),
+      const newStudent = {
+        name: studentForm.name.trim(),
+        studentId: studentForm.studentId.trim(),
+        course: studentForm.course,
+        yearLevel: studentForm.yearLevel,
+        section: studentForm.section.trim(),
+        teacherId: currentUser.uid,
+        createdAt: new Date().toISOString()
+      };
+
+      console.log('📝 Adding student to database:', newStudent);
+      const studentDocRef = await addDoc(collection(db, "students"), newStudent);
+      console.log('✅ Student added to database successfully with ID:', studentDocRef.id);
+      
+      // Update student's profile in users collection if they are registered
+      // and send notification
+      let studentInfo = null;
+      let profileUpdated = false;
+      let notificationSent = false;
+      
+      try {
+        console.log('🔍 Looking up student info for profile update and notification...');
+        studentInfo = await getStudentById(studentForm.studentId.trim());
+        console.log('📊 Student info result:', studentInfo);
+        
+        if (studentInfo.student && studentInfo.student.isRegisteredUser) {
+          // Update the student's profile in users collection with classroom information
+          console.log('📝 Updating student profile in users collection...');
+          await updateDoc(doc(db, "users", studentInfo.student.id), {
             course: studentForm.course,
-            yearLevel: studentForm.yearLevel,
+            year: studentForm.yearLevel, // Map yearLevel to year for users collection
             section: studentForm.section.trim(),
             teacherId: currentUser.uid,
-            createdAt: new Date().toISOString()
-          };
-
-          await addDoc(collection(db, "students"), newStudent);
-          console.log('✅ Student added to database successfully');
-          
-          // Optimize: Update local state immediately instead of full refresh
-          const newStudentWithId = { id: 'temp-id', ...newStudent };
-          setStudents(prev => [...prev, newStudentWithId]);
-          
-          // Regenerate classroom boxes with the new student
-          const updatedStudents = [...students, newStudentWithId];
-          generateClassroomBoxes(updatedStudents);
-          
-          setSnackbar({ open: true, message: 'Student added successfully', severity: 'success' });
-          setStudentForm({ name: '', studentId: '', course: '', yearLevel: '', section: '' });
-          setOpenAddStudentDialog(false);
-          
-        } catch (error) {
-          console.error('❌ Error adding student:', error);
-          setSnackbar({ open: true, message: 'Error adding student. Please try again.', severity: 'error' });
-          throw error;
-        } finally {
-          setIsAddingStudent(false);
+            classroomUpdatedAt: new Date().toISOString(),
+            classroomUpdatedBy: currentUser.uid
+          });
+          console.log('✅ Student profile updated in users collection');
+          profileUpdated = true;
         }
-      }, (authError) => {
-        console.error('❌ Authentication error:', authError);
-        setSnackbar({ open: true, message: 'Authentication error. Please log in again.', severity: 'error' });
-      });
-    });
+        
+        if (studentInfo.student && studentInfo.student.email) {
+          // Generate classroom link
+          const classroomLink = `${window.location.origin}/classroom/${encodeURIComponent(studentForm.course)}/${encodeURIComponent(studentForm.yearLevel)}/${encodeURIComponent(studentForm.section)}`;
+          
+          const notificationData = {
+            recipientEmail: studentInfo.student.email,
+            recipientName: studentInfo.student.fullName || studentInfo.student.firstName + ' ' + studentInfo.student.lastName,
+            recipientStudentId: studentForm.studentId.trim(), // Include Student ID for better tracking
+            title: `🎓 You've been added to a classroom!`,
+            message: `You have been added to the classroom: ${studentForm.course} - ${studentForm.yearLevel} - ${studentForm.section}. Click the link below to access your classroom dashboard and see your classmates.`,
+            type: "classroom_addition",
+            read: false,
+            createdAt: new Date().toISOString(),
+            classroomInfo: {
+              course: studentForm.course,
+              yearLevel: studentForm.yearLevel,
+              section: studentForm.section,
+              teacherId: currentUser.uid,
+              studentId: studentForm.studentId.trim() // Include Student ID in classroom info
+            },
+            classroomLink: classroomLink,
+            priority: "medium",
+            autoRedirect: true // Flag to indicate this notification should trigger auto-redirect
+          };
+          
+          console.log('📝 Creating notification:', notificationData);
+          const notificationRef = await addDoc(collection(db, "notifications"), notificationData);
+          console.log('✅ Classroom addition notification sent to student:', studentInfo.student.email, 'with ID:', notificationRef.id);
+          notificationSent = true;
+        } else {
+          console.log('ℹ️ Student found but no email available for notification');
+          console.log('Student info:', studentInfo);
+        }
+      } catch (notificationError) {
+        console.error('❌ Error in profile update or notification:', notificationError);
+        // Don't fail the entire operation if notification fails
+      }
+      
+      // Update local state immediately
+      const newStudentWithId = { id: studentDocRef.id, ...newStudent };
+      setStudents(prev => [...prev, newStudentWithId]);
+      
+      // Regenerate classroom boxes with the new student
+      const updatedStudents = [...students, newStudentWithId];
+      generateClassroomBoxes(updatedStudents);
+      
+      // Determine success message based on what was accomplished
+      let successMessage = 'Student added to classroom successfully!';
+      
+      if (profileUpdated && notificationSent) {
+        successMessage += ' Profile updated and notification sent.';
+      } else if (profileUpdated && !notificationSent) {
+        successMessage += ' Profile updated. (No email available for notification)';
+      } else if (!profileUpdated && notificationSent) {
+        successMessage += ' Notification sent.';
+      } else {
+        successMessage += ' (Student not registered in system - no profile update or notification sent)';
+      }
+      
+      setSnackbar({ open: true, message: successMessage, severity: 'success' });
+      setStudentForm({ name: '', studentId: '', course: '', yearLevel: '', section: '' });
+      setOpenAddStudentDialog(false);
+      
+    } catch (error) {
+      console.error('❌ Error adding student:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Error adding student';
+      if (error.message.includes('permission')) {
+        errorMessage = 'Permission denied. Please check your access rights.';
+      } else if (error.message.includes('network')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message.includes('validation')) {
+        errorMessage = 'Student validation failed. Please verify the Student ID is correct.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setSnackbar({ open: true, message: errorMessage, severity: 'error' });
+    } finally {
+      setIsAddingStudent(false);
+    }
   };
 
 

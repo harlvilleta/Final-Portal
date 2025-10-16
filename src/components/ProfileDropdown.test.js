@@ -131,3 +131,4 @@ describe('ProfileDropdown', () => {
     expect(screen.getByText('Logout')).toBeInTheDocument();
   });
 });
+

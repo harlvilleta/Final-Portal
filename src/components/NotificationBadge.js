@@ -2,20 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { Badge, IconButton, Tooltip, Menu, MenuItem, Typography, Box, Divider, List, ListItem, ListItemText, ListItemIcon, Avatar, Chip } from '@mui/material';
 import { Notifications, CheckCircle, Cancel, PersonAddAlt1, Warning, Search, Event, Assignment } from '@mui/icons-material';
 import { collection, query, where, orderBy, getDocs, onSnapshot, limit } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 
 export default function NotificationBadge() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    const fetchAllNotifications = async () => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser?.email) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    const fetchUserNotifications = async () => {
       try {
-        // Fetch all notifications from the notifications collection
+        // Fetch notifications for the current user only
         const notificationsQuery = query(
           collection(db, "notifications"),
+          where("recipientEmail", "==", currentUser.email),
           orderBy("createdAt", "desc"),
           limit(20)
         );
@@ -35,12 +51,17 @@ export default function NotificationBadge() {
             const message = notification.message?.toLowerCase() || '';
             const type = notification.type?.toLowerCase() || '';
             
-            // Keywords to exclude
+            // Keywords to exclude (but allow classroom_addition notifications)
             const excludeKeywords = [
               'enrollment', 'enroll', 'joining', 'joined', 'registration', 'register',
               'student added', 'new student', 'student created', 'account created',
               'welcome new student', 'student registration', 'enrolled student'
             ];
+            
+            // Allow classroom_addition notifications
+            if (type === 'classroom_addition') {
+              return true;
+            }
             
             // Check if notification contains any exclusion keywords
             const shouldExclude = excludeKeywords.some(keyword => 
@@ -64,11 +85,11 @@ export default function NotificationBadge() {
       }
     };
 
-    const unsubscribe = fetchAllNotifications();
+    const unsubscribe = fetchUserNotifications();
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, []);
+  }, [currentUser]);
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -96,6 +117,8 @@ export default function NotificationBadge() {
         return <Assignment />;
       case 'announcement':
         return <Notifications />;
+      case 'classroom_addition':
+        return <PersonAddAlt1 />;
       default:
         return <Notifications />;
     }
@@ -119,6 +142,8 @@ export default function NotificationBadge() {
         return 'primary';
       case 'announcement':
         return 'secondary';
+      case 'classroom_addition':
+        return 'success';
       default:
         return 'primary';
     }

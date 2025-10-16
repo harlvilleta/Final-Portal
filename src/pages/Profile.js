@@ -7,6 +7,7 @@ import {
   Person, Security, PhotoCamera, Save, Edit, Visibility, VisibilityOff,
   Email, Phone, Home, Work
 } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 import { collection, addDoc, doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { updatePassword, updateProfile, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { db, auth } from "../firebase";
@@ -15,6 +16,7 @@ import { storage } from '../firebase';
 
 
 export default function Profile() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,6 +28,7 @@ export default function Profile() {
   
   const [profile, setProfile] = useState({
     id: "",
+    studentId: "",
     lastName: "",
     firstName: "",
     middleInitial: "",
@@ -41,7 +44,8 @@ export default function Profile() {
     guardian: "",
     guardianContact: "",
     homeAddress: "",
-    image: null
+    image: null,
+    role: "Student"
   });
 
   const [passwordForm, setPasswordForm] = useState({
@@ -73,10 +77,25 @@ export default function Profile() {
         const userData = userDoc.data();
         setProfile(prev => ({
           ...prev,
+          id: uid,
+          studentId: userData.studentId || "",
           email: userData.email || currentUser?.email || "",
-          firstName: userData.fullName?.split(' ')[0] || "",
-          lastName: userData.fullName?.split(' ').slice(1).join(' ') || "",
-          image: userData.profilePic || null
+          firstName: userData.firstName || userData.fullName?.split(' ')[0] || "",
+          lastName: userData.lastName || userData.fullName?.split(' ').slice(1).join(' ') || "",
+          middleInitial: userData.middleInitial || "",
+          sex: userData.sex || "",
+          age: userData.age || "",
+          birthdate: userData.birthdate || "",
+          contact: userData.contact || userData.phoneNumber || "",
+          fatherName: userData.fatherName || "",
+          fatherOccupation: userData.fatherOccupation || "",
+          motherName: userData.motherName || "",
+          motherOccupation: userData.motherOccupation || "",
+          guardian: userData.guardian || "",
+          guardianContact: userData.guardianContact || "",
+          homeAddress: userData.homeAddress || userData.address || "",
+          image: userData.profilePic || null,
+          role: userData.role || "Student"
         }));
       }
     } catch (error) {
@@ -155,8 +174,22 @@ export default function Profile() {
       await setDoc(doc(db, 'users', currentUser.uid), {
         email: profile.email,
         fullName: fullName,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        middleInitial: profile.middleInitial,
+        sex: profile.sex,
+        age: profile.age,
+        birthdate: profile.birthdate,
+        contact: profile.contact,
+        fatherName: profile.fatherName,
+        fatherOccupation: profile.fatherOccupation,
+        motherName: profile.motherName,
+        motherOccupation: profile.motherOccupation,
+        guardian: profile.guardian,
+        guardianContact: profile.guardianContact,
+        homeAddress: profile.homeAddress,
         profilePic: imageURL,
-        role: 'Student',
+        role: profile.role || 'Student',
         updatedAt: new Date().toISOString()
       }, { merge: true });
 
@@ -239,51 +272,55 @@ export default function Profile() {
           <Grid item xs={12} md={4}>
             <Card>
               <CardContent sx={{ textAlign: 'center' }}>
-                <Box sx={{ position: 'relative', display: 'inline-block' }}>
-                  <Avatar 
-                    src={profile.image} 
-                    sx={{ 
-                      width: 120, 
-                      height: 120, 
-                      fontSize: '3rem',
-                      bgcolor: 'primary.main',
-                      mb: 2
-                    }}
-                  >
-                    {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}
-                  </Avatar>
-                  <IconButton
-                    sx={{
-                      position: 'absolute',
-                      bottom: 8,
-                      right: 8,
-                      bgcolor: 'primary.main',
-                      color: 'white',
-                      '&:hover': { bgcolor: 'primary.dark' }
-                    }}
-                    component="label"
-                  >
-                    <PhotoCamera />
-                    <input type="file" accept="image/*" hidden onChange={handleImage} />
-                  </IconButton>
-                </Box>
+                <Avatar 
+                  src={profile.image} 
+                  sx={{ 
+                    width: 120, 
+                    height: 120, 
+                    fontSize: '3rem',
+                    bgcolor: 'primary.main',
+                    mb: 2,
+                    mx: 'auto'
+                  }}
+                >
+                  {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}
+                </Avatar>
                 <Typography variant="h6" gutterBottom>
                   {profile.firstName} {profile.lastName}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
                   {profile.email}
                 </Typography>
+                {profile.studentId && (
+                  <Typography variant="body2" color="textSecondary" sx={{ mt: 0.5 }}>
+                    ID: {profile.studentId}
+                  </Typography>
+                )}
                 <Chip 
-                  label="Admin" 
+                  label={profile.role || "Student"} 
                   color="primary" 
                   variant="outlined" 
                   sx={{ mt: 1 }}
                 />
+                <Box sx={{ mt: 3 }}>
+                  <Button 
+                    variant="contained" 
+                    startIcon={<Edit />}
+                    onClick={() => navigate('/edit-profile')}
+                    sx={{ 
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      px: 3
+                    }}
+                  >
+                    Edit Profile
+                  </Button>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
 
-          {/* Profile Form */}
+          {/* Profile Information Display */}
           <Grid item xs={12} md={8}>
             <Card>
               <CardContent>
@@ -292,117 +329,177 @@ export default function Profile() {
                 </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <TextField 
-                      fullWidth 
-                      label="First Name" 
-                      name="firstName" 
-                      value={profile.firstName} 
-                      onChange={handleChange}
-                      required
-                    />
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        First Name
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 500,
+                        p: 1.5,
+                        bgcolor: 'grey.50',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        {profile.firstName || 'Not provided'}
+                      </Typography>
+                    </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField 
-                      fullWidth 
-                      label="Last Name" 
-                      name="lastName" 
-                      value={profile.lastName} 
-                      onChange={handleChange}
-                      required
-                    />
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Last Name
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 500,
+                        p: 1.5,
+                        bgcolor: 'grey.50',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        {profile.lastName || 'Not provided'}
+                      </Typography>
+                    </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField 
-                      fullWidth 
-                      label="Email Address" 
-                      name="email" 
-                      value={profile.email} 
-                      onChange={handleChange}
-                      type="email"
-                      required
-                    />
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Middle Initial
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 500,
+                        p: 1.5,
+                        bgcolor: 'grey.50',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        {profile.middleInitial || 'Not provided'}
+                      </Typography>
+                    </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField 
-                      fullWidth 
-                      label="Contact Number" 
-                      name="contact" 
-                      value={profile.contact} 
-                      onChange={handleChange}
-                    />
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Email Address
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 500,
+                        p: 1.5,
+                        bgcolor: 'grey.50',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        {profile.email || 'Not provided'}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Student ID
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 500,
+                        p: 1.5,
+                        bgcolor: 'grey.50',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        {profile.studentId || 'Not provided'}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Contact Number
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 500,
+                        p: 1.5,
+                        bgcolor: 'grey.50',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        {profile.contact || 'Not provided'}
+                      </Typography>
+                    </Box>
                   </Grid>
                   <Grid item xs={12} sm={4}>
-                    <TextField 
-                      fullWidth 
-                      label="Sex" 
-                      name="sex" 
-                      value={profile.sex} 
-                      onChange={handleChange}
-                      select
-                    >
-                      <MenuItem value="Male">Male</MenuItem>
-                      <MenuItem value="Female">Female</MenuItem>
-                    </TextField>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Sex
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 500,
+                        p: 1.5,
+                        bgcolor: 'grey.50',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        {profile.sex || 'Not provided'}
+                      </Typography>
+                    </Box>
                   </Grid>
                   <Grid item xs={12} sm={4}>
-                    <TextField 
-                      fullWidth 
-                      label="Age" 
-                      name="age" 
-                      value={profile.age} 
-                      onChange={handleChange}
-                      type="number"
-                    />
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Age
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 500,
+                        p: 1.5,
+                        bgcolor: 'grey.50',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        {profile.age || 'Not provided'}
+                      </Typography>
+                    </Box>
                   </Grid>
                   <Grid item xs={12} sm={4}>
-                    <TextField 
-                      fullWidth 
-                      label="Birthdate" 
-                      name="birthdate" 
-                      value={profile.birthdate} 
-                      onChange={handleChange}
-                      type="date"
-                      InputLabelProps={{ shrink: true }}
-                    />
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Birthdate
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 500,
+                        p: 1.5,
+                        bgcolor: 'grey.50',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        {profile.birthdate || 'Not provided'}
+                      </Typography>
+                    </Box>
                   </Grid>
                 </Grid>
 
                 <Divider sx={{ my: 3 }} />
-
 
                 <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Home /> Address Information
                 </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
-                    <TextField 
-                      fullWidth 
-                      label="Home Address" 
-                      name="homeAddress" 
-                      value={profile.homeAddress} 
-                      onChange={handleChange}
-                      multiline
-                      rows={3}
-                    />
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Home Address
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 500,
+                        p: 1.5,
+                        bgcolor: 'grey.50',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0',
+                        minHeight: '60px',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}>
+                        {profile.homeAddress || 'Not provided'}
+                      </Typography>
+                    </Box>
                   </Grid>
                 </Grid>
-
-                <Box sx={{ mt: 3, textAlign: 'right' }}>
-                  <Button 
-                    variant="contained" 
-                    onClick={handleSaveProfile}
-                    disabled={saving || saveSuccess}
-                    startIcon={<Save />}
-                    color={saveSuccess ? "success" : "primary"}
-                    sx={{
-                      transition: 'all 0.3s ease',
-                      transform: saveSuccess ? 'scale(1.05)' : 'scale(1)',
-                      boxShadow: saveSuccess ? '0 4px 12px rgba(76, 175, 80, 0.4)' : '0 2px 8px rgba(25, 118, 210, 0.3)'
-                    }}
-                  >
-                    {saving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save Changes'}
-                  </Button>
-                </Box>
               </CardContent>
             </Card>
           </Grid>
