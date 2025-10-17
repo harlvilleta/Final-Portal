@@ -3,13 +3,13 @@ import { Routes, Route, Link } from "react-router-dom";
 import { 
   Box, Grid, Card, CardActionArea, CardContent, Typography, TextField, Button, Paper, MenuItem, Avatar, Snackbar, Alert, 
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Stack, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText,
-  IconButton, Tooltip, Chip, InputAdornment, Accordion, AccordionSummary, AccordionDetails, CircularProgress, useTheme
+  IconButton, Tooltip, Chip, InputAdornment, Accordion, AccordionSummary, AccordionDetails, CircularProgress, useTheme, Tabs, Tab
 } from "@mui/material";
 import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete, Search, ExpandMore, Folder, ArrowBack, CloudUpload } from "@mui/icons-material";
 import { db, storage, logActivity } from "../firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, where, query, onSnapshot, orderBy, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { validateStudentId } from "../utils/studentValidation";
+// Removed validateStudentId import for AddStudent function - admin can freely add students
 
 const courses = ["BSIT", "BSBA", "BSCRIM", "BSHTM", "BEED", "BSED", "BSHM"];
 const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
@@ -32,6 +32,7 @@ function MenuCard({ icon, title, to }) {
 
 function AddStudent({ onClose, isModal = false }) {
   const theme = useTheme();
+  const [formKey, setFormKey] = useState(0); // Force re-render key
   const [profile, setProfile] = useState({
     id: "",
     lastName: "",
@@ -44,16 +45,14 @@ function AddStudent({ onClose, isModal = false }) {
     course: "",
     year: "",
     section: "",
-    email: "",
     image: null
   });
   const [imageFile, setImageFile] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [studentIdError, setStudentIdError] = useState('');
-  const [isValidatingStudentId, setIsValidatingStudentId] = useState(false);
 
-  // Test Firebase connectivity on component mount
+  // Test Firebase connectivity on component mount and ensure form is properly initialized
   useEffect(() => {
     const testConnection = async () => {
       const isConnected = await testFirebaseConnection();
@@ -69,6 +68,10 @@ function AddStudent({ onClose, isModal = false }) {
       }
     };
     testConnection();
+    
+    // Ensure form is properly initialized
+    console.log('🔄 AddStudent component mounted, initializing form');
+    resetForm();
   }, []);
 
   // Sync offline data to Firebase
@@ -102,9 +105,122 @@ function AddStudent({ onClose, isModal = false }) {
     }
   };
 
+  // Student ID format validation function
+  const validateStudentIdFormat = (studentId) => {
+    // Must match format: SCC-22-00000000
+    // Must start with SCC-22- and have exactly 8 digits after the last dash
+    const pattern = /^SCC-22-\d{8}$/;
+    return pattern.test(studentId);
+  };
+
+  // Age calculation function based on birthdate
+  const calculateAge = (birthdate) => {
+    if (!birthdate) return '';
+    
+    const today = new Date();
+    const birth = new Date(birthdate);
+    
+    // Check if birthdate is valid
+    if (isNaN(birth.getTime())) return '';
+    
+    // Check if birthdate is in the future
+    if (birth > today) return '';
+    
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    // Adjust age if birthday hasn't occurred this year
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    // Return age if it's reasonable (0-150 years)
+    return (age >= 0 && age <= 150) ? age.toString() : '';
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setProfile((prev) => ({ ...prev, [name]: value }));
+    console.log('🔄 AddStudent handleChange:', { name, value });
+    
+    setProfile((prev) => {
+      const updated = { ...prev, [name]: value };
+      console.log('📝 Profile updated:', updated);
+      return updated;
+    });
+  };
+
+  // Handle birthdate change with automatic age calculation
+  const handleBirthdateChange = (e) => {
+    const birthdate = e.target.value;
+    const calculatedAge = calculateAge(birthdate);
+    
+    setProfile((prev) => ({ 
+      ...prev, 
+      birthdate: birthdate,
+      age: calculatedAge
+    }));
+  };
+
+  // Reset form function
+  const resetForm = () => {
+    console.log('🔄 Resetting AddStudent form');
+    setProfile({
+      id: "",
+      lastName: "",
+      firstName: "",
+      middleInitial: "",
+      sex: "",
+      age: "",
+      birthdate: "",
+      contact: "",
+      course: "",
+      year: "",
+      section: "",
+      image: null
+    });
+    setImageFile(null);
+    setStudentIdError('');
+    setFormKey(prev => prev + 1); // Force re-render
+  };
+
+  // Handle Student ID input with format validation
+  const handleStudentIdChange = (e) => {
+    let studentId = e.target.value;
+    
+    // Auto-format the input to help users
+    // Remove any non-alphanumeric characters except dashes
+    studentId = studentId.replace(/[^A-Za-z0-9-]/g, '');
+    
+    // Convert to uppercase
+    studentId = studentId.toUpperCase();
+    
+    // Auto-add dashes in the right places
+    if (studentId.length > 3 && studentId.charAt(3) !== '-') {
+      studentId = studentId.slice(0, 3) + '-' + studentId.slice(3);
+    }
+    if (studentId.length > 6 && studentId.charAt(6) !== '-') {
+      studentId = studentId.slice(0, 6) + '-' + studentId.slice(6);
+    }
+    
+    // Limit to the expected format length (SCC-22-00000000 = 15 characters)
+    if (studentId.length > 15) {
+      studentId = studentId.slice(0, 15);
+    }
+    
+    setProfile(prev => ({ ...prev, id: studentId }));
+    
+    // Clear error if field is empty
+    if (!studentId.trim()) {
+      setStudentIdError('');
+      return;
+    }
+    
+    // Validate format
+    if (!validateStudentIdFormat(studentId.trim())) {
+      setStudentIdError('Invalid Student ID format. Please use this format: SCC-22-00000000');
+    } else {
+      setStudentIdError('');
+    }
   };
 
   const handleImage = async (e) => {
@@ -148,34 +264,7 @@ function AddStudent({ onClose, isModal = false }) {
     setSnackbar({ open: true, message: "Form reset. You can try submitting again.", severity: "info" });
   };
 
-  // Handle student ID validation
-  const handleStudentIdChange = async (e) => {
-    const studentId = e.target.value;
-    setProfile(prev => ({ ...prev, id: studentId }));
-    
-    // Clear error if field is empty
-    if (!studentId.trim()) {
-      setStudentIdError('');
-      return;
-    }
-    
-    setIsValidatingStudentId(true);
-    setStudentIdError('');
-    
-    try {
-      const validation = await validateStudentId(studentId.trim());
-      if (!validation.isValid) {
-        setStudentIdError(validation.error || 'Student ID is not registered in the system');
-      } else {
-        setStudentIdError('');
-      }
-    } catch (error) {
-      console.error('Error validating student ID:', error);
-      setStudentIdError('Error validating student ID. Please try again.');
-    } finally {
-      setIsValidatingStudentId(false);
-    }
-  };
+  // Admin can freely input student ID without validation
 
   // Remove selected image
   const handleRemoveImage = () => {
@@ -228,20 +317,15 @@ function AddStudent({ onClose, isModal = false }) {
       return;
     }
 
-    // Validate student ID exists in system
-    if (studentIdError) {
-      console.log("Validation failed - student ID error");
-      setSnackbar({ open: true, message: studentIdError, severity: "error" });
+    // Validate Student ID format
+    if (!validateStudentIdFormat(profile.id.trim())) {
+      console.log("Validation failed - invalid Student ID format");
+      setSnackbar({ open: true, message: "Invalid Student ID format. Please use this format: SCC-22-00000000", severity: "error" });
       return;
     }
 
-    // Double-check student ID validation before submission
-    const validation = await validateStudentId(profile.id.trim());
-    if (!validation.isValid) {
-      console.log("Validation failed - student ID not registered");
-      setSnackbar({ open: true, message: validation.error || 'Student ID is not registered in the system', severity: "error" });
-      return;
-    }
+    // Admin can freely add students without ID validation
+    // This allows admins to create student records that can then be used for registration validation
 
     console.log("Setting isSubmitting to true");
     setIsSubmitting(true);
@@ -302,22 +386,7 @@ function AddStudent({ onClose, isModal = false }) {
       
       // Reset form
       console.log("Resetting form...");
-      setProfile({
-        id: "",
-        lastName: "",
-        firstName: "",
-        middleInitial: "",
-        sex: "",
-        age: "",
-        birthdate: "",
-        contact: "",
-        course: "",
-        year: "",
-        section: "",
-        email: "",
-        image: null
-      });
-      setImageFile(null);
+      resetForm();
       
       // Close modal if provided
       if (onClose) {
@@ -361,22 +430,7 @@ function AddStudent({ onClose, isModal = false }) {
         });
         
         // Reset form even if saved offline
-        setProfile({
-          id: "",
-          lastName: "",
-          firstName: "",
-          middleInitial: "",
-          sex: "",
-          age: "",
-          birthdate: "",
-          contact: "",
-          course: "",
-          year: "",
-          section: "",
-          email: "",
-          image: null
-        });
-        setImageFile(null);
+        resetForm();
         
         if (onClose) onClose();
         
@@ -397,7 +451,7 @@ function AddStudent({ onClose, isModal = false }) {
   };
 
   const formContent = (
-        <form onSubmit={handleSubmit}>
+        <form key={formKey} onSubmit={handleSubmit}>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <TextField 
@@ -408,18 +462,17 @@ function AddStudent({ onClose, isModal = false }) {
                 onChange={handleStudentIdChange} 
                 required 
                 error={!!studentIdError}
-                helperText={studentIdError}
-                InputProps={{
-                  endAdornment: isValidatingStudentId ? (
-                    <InputAdornment position="end">
-                      <CircularProgress size={20} />
-                    </InputAdornment>
-                  ) : null
+                helperText={studentIdError || "Format: SCC-22-00000000"}
+                placeholder="SCC-22-00000000"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '&.Mui-focused fieldset': {
+                      borderColor: studentIdError ? 'error.main' : 
+                                  (profile.id && validateStudentIdFormat(profile.id.trim())) ? 'success.main' : 'primary.main'
+                    }
+                  }
                 }}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField fullWidth label="Email Address" name="email" value={profile.email} onChange={handleChange} type="email" />
             </Grid>
             <Grid item xs={12} sm={4}>
               <TextField fullWidth label="Last Name" name="lastName" value={profile.lastName} onChange={handleChange} required />
@@ -437,10 +490,33 @@ function AddStudent({ onClose, isModal = false }) {
               </TextField>
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField fullWidth label="Age" name="age" value={profile.age} onChange={handleChange} type="number" />
+              <TextField 
+                fullWidth 
+                label="Age" 
+                name="age" 
+                value={profile.age} 
+                type="number" 
+                InputProps={{ readOnly: true }}
+                helperText="Auto-calculated from birthdate"
+                sx={{
+                  '& .MuiInputBase-input': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    cursor: 'default'
+                  }
+                }}
+              />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField fullWidth label="Birthdate" name="birthdate" value={profile.birthdate} onChange={handleChange} type="date" InputLabelProps={{ shrink: true }} />
+              <TextField 
+                fullWidth 
+                label="Birthdate" 
+                name="birthdate" 
+                value={profile.birthdate} 
+                onChange={handleBirthdateChange} 
+                type="date" 
+                InputLabelProps={{ shrink: true }} 
+                helperText="Age will be calculated automatically"
+              />
             </Grid>
             <Grid item xs={12} sm={3}>
               <TextField fullWidth label="Contact Number" name="contact" value={profile.contact} onChange={handleChange} />
@@ -503,15 +579,16 @@ function AddStudent({ onClose, isModal = false }) {
             >
               {isSubmitting ? "Saving..." : "Save Student"}
             </Button>
-            {isSubmitting && (
-              <Button 
-                variant="outlined" 
-                color="secondary" 
-                onClick={handleReset}
-              >
-                Reset Form
-              </Button>
-            )}
+            <Button 
+              type="button" 
+              variant="outlined" 
+              color="secondary" 
+              onClick={resetForm}
+              disabled={isSubmitting}
+              sx={{ ml: 1 }}
+            >
+              🔄 Reset Form
+            </Button>
           </Stack>
             </Grid>
           </Grid>
@@ -1513,6 +1590,7 @@ function StudentList({
   const [search, setSearch] = useState("");
   const [currentView, setCurrentView] = useState('all'); // 'all' or course name
   const [openViolation, setOpenViolation] = useState(false);
+  const [activeTab, setActiveTab] = useState(0); // 0: All Students, 1: Unregistered, 2: Registered
   const [violation, setViolation] = useState({ 
     violation: "", 
     classification: "", 
@@ -1535,7 +1613,15 @@ function StudentList({
         
         // Fetch from 'students' collection (manually added students)
         const studentsQuerySnapshot = await getDocs(collection(db, "students"));
-        const studentsData = studentsQuerySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const studentsData = studentsQuerySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            studentId: data.id, // Map the 'id' field to 'studentId' for consistency
+            isRegisteredUser: data.isRegistered || false // Check if student has registered
+          };
+        });
         
         // Fetch from 'users' collection (registered students)
         const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
@@ -1609,26 +1695,79 @@ function StudentList({
     fetchStudents();
   }, []);
 
-  // Group students by course and apply search filter
-  const groupedStudents = useMemo(() => {
-    let filteredStudents = students;
+  // Keyboard shortcut for search (Ctrl+F or Cmd+F)
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
+        event.preventDefault();
+        // Focus on search input
+        const searchInput = document.querySelector('input[placeholder*="Search by name"]');
+        if (searchInput) {
+          searchInput.focus();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Filter students based on registration status and search
+  const filteredStudents = useMemo(() => {
+    let filtered = students;
     
     // Apply search filter if search term exists
     if (search.trim()) {
       const term = search.trim().toLowerCase();
-      filteredStudents = students.filter(s => {
+      console.log('🔍 Searching for:', term);
+      console.log('📊 Total students to search:', students.length);
+      
+      filtered = students.filter(s => {
         const fullName = `${s.firstName || ""} ${s.lastName || ""}`.trim().toLowerCase();
         const course = (s.course || "").toLowerCase();
         const email = (s.email || "").toLowerCase();
-        const studentId = (s.id || "").toLowerCase();
+        const studentId = (s.id || s.studentId || "").toLowerCase();
+        const year = (s.year || "").toLowerCase();
+        const section = (s.section || "").toLowerCase();
         
-        return fullName.includes(term) || 
+        const matches = fullName.includes(term) || 
                course.includes(term) || 
                email.includes(term) || 
-               studentId.includes(term);
+                       studentId.includes(term) ||
+                       year.includes(term) ||
+                       section.includes(term);
+        
+        if (matches) {
+          console.log('✅ Match found:', {
+            name: fullName,
+            course,
+            email,
+            studentId,
+            year,
+            section
+          });
+        }
+        
+        return matches;
       });
+      
+      console.log('🎯 Search results:', filtered.length, 'matches found');
     }
     
+    // Apply tab filter
+    if (activeTab === 1) {
+      // Unregistered students only
+      filtered = filtered.filter(student => !student.isRegisteredUser);
+    } else if (activeTab === 2) {
+      // Registered students only
+      filtered = filtered.filter(student => student.isRegisteredUser);
+    }
+    
+    return filtered;
+  }, [students, search, activeTab]);
+
+  // Group students by course
+  const groupedStudents = useMemo(() => {
     // Group by course - only include students with actual courses
     const grouped = filteredStudents.reduce((acc, student) => {
       const course = student.course;
@@ -1652,7 +1791,7 @@ function StudentList({
     });
     
     return grouped;
-  }, [students, search]);
+  }, [filteredStudents]);
 
   const handleExport = useCallback(() => {
     const csvRows = [
@@ -2056,6 +2195,42 @@ School Administration
         Student List
       </Typography>
       
+      {/* Tabs for Student Categories */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs 
+          value={activeTab} 
+          onChange={(e, newValue) => setActiveTab(newValue)}
+          sx={{
+            '& .MuiTab-root': {
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#666',
+              fontWeight: 500,
+              textTransform: 'none',
+              fontSize: '1rem'
+            },
+            '& .Mui-selected': {
+              color: '#800000 !important',
+              fontWeight: 'bold'
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#800000'
+            }
+          }}
+        >
+          <Tab 
+            label={`All Students (${students.length})`} 
+            value={0}
+          />
+          <Tab 
+            label={`Unregistered (${students.filter(s => !s.isRegisteredUser).length})`} 
+            value={1}
+          />
+          <Tab 
+            label={`Registered (${students.filter(s => s.isRegisteredUser).length})`} 
+            value={2}
+          />
+        </Tabs>
+      </Box>
+      
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
@@ -2069,12 +2244,14 @@ School Administration
               color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
               fontWeight: 'bold' 
             }}>
-              {students.filter(s => s.course && s.course.trim() !== '').length}
+              {filteredStudents.filter(s => s.course && s.course.trim() !== '').length}
             </Typography>
             <Typography variant="body2" sx={{ 
               color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
             }}>
-              Students with Assigned Courses
+              {activeTab === 1 ? 'Unregistered with Courses' : 
+               activeTab === 2 ? 'Registered with Courses' : 
+               'Students with Assigned Courses'}
             </Typography>
           </Paper>
         </Grid>
@@ -2129,12 +2306,15 @@ School Administration
               color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
               fontWeight: 'bold' 
             }}>
-              {search.trim() ? Object.values(groupedStudents).flat().length : students.filter(s => s.course && s.course.trim() !== '').length}
+              {filteredStudents.length}
             </Typography>
             <Typography variant="body2" sx={{ 
               color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
             }}>
-              {search.trim() ? 'Search Results' : 'Students with Courses'}
+              {search.trim() ? `Search Results (${filteredStudents.length} found)` : 
+               activeTab === 1 ? 'Unregistered Students' : 
+               activeTab === 2 ? 'Registered Students' : 
+               'Total Students'}
             </Typography>
           </Paper>
         </Grid>
@@ -2169,12 +2349,37 @@ School Administration
           value={search}
           onChange={e => setSearch(e.target.value)}
           size="small"
-          placeholder="Search by name, course, email, or ID..."
-          sx={{ width: 300 }}
+          placeholder="Search by name, course, email, ID, year, or section..."
+          sx={{ 
+            width: 350,
+            '& .MuiOutlinedInput-root': {
+              '&:hover fieldset': {
+                borderColor: '#1976d2',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: '#1976d2',
+                borderWidth: 2,
+              },
+            }
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <Search sx={{ fontSize: 18, color: 'text.secondary' }} />
+                <Search sx={{ fontSize: 18, color: search.trim() ? '#1976d2' : 'text.secondary' }} />
+              </InputAdornment>
+            ),
+            endAdornment: search.trim() && (
+              <InputAdornment position="end">
+                <IconButton
+                  size="small"
+                  onClick={() => setSearch("")}
+                  sx={{ 
+                    color: 'text.secondary',
+                    '&:hover': { color: '#1976d2' }
+                  }}
+                >
+                  ✕
+                </IconButton>
               </InputAdornment>
             )
           }}
@@ -2196,6 +2401,36 @@ School Administration
           Students with assigned courses are organized by course programs. Click on any course folder below to view all students enrolled in that specific program. 
           Each folder shows the total number of students enrolled in that course. Students without assigned courses are not displayed in this view.
         </Typography>
+        
+        {/* Search Tips */}
+        {search.trim() && (
+          <Box sx={{ 
+            mt: 2, 
+            p: 2, 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f0f8ff', 
+            borderRadius: 1,
+            border: '1px solid #1976d2'
+          }}>
+            <Typography variant="body2" sx={{ 
+              color: '#1976d2', 
+              fontWeight: 600,
+              mb: 1
+            }}>
+              💡 Search Tips:
+            </Typography>
+            <Typography variant="caption" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary',
+              display: 'block'
+            }}>
+              • Search by <strong>name</strong> (e.g., "John Doe")<br/>
+              • Search by <strong>course</strong> (e.g., "BSIT", "BSBA")<br/>
+              • Search by <strong>student ID</strong> (e.g., "SCC-22-00012345")<br/>
+              • Search by <strong>year</strong> (e.g., "1st Year", "2nd Year")<br/>
+              • Search by <strong>section</strong> (e.g., "A", "B")<br/>
+              • Search by <strong>email</strong> (e.g., "student@email.com")
+        </Typography>
+          </Box>
+        )}
       </Box>
 
       {loading ? (
@@ -2210,7 +2445,25 @@ School Administration
         <Box>
           {Object.keys(groupedStudents).length === 0 ? (
             <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Typography>No students match your search criteria.</Typography>
+              {search.trim() ? (
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 2, color: 'text.secondary' }}>
+                    🔍 No students found for "{search}"
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+                    Try searching with different keywords or check your spelling.
+                  </Typography>
+                  <Button 
+                    variant="outlined" 
+                    onClick={() => setSearch("")}
+                    sx={{ mt: 1 }}
+                  >
+                    Clear Search
+                  </Button>
+                </Box>
+              ) : (
+                <Typography>No students found.</Typography>
+              )}
             </Box>
           ) : (
             Object.entries(groupedStudents).map(([course, courseStudents]) => (
@@ -2447,6 +2700,7 @@ function StudentMenu() {
 
 function EditStudentForm({ student, onClose, onSuccess }) {
   const theme = useTheme();
+  const [formKey, setFormKey] = useState(0); // Force re-render key
   const [profile, setProfile] = useState({
     id: student.id || "",
     lastName: student.lastName || "",
@@ -2459,7 +2713,6 @@ function EditStudentForm({ student, onClose, onSuccess }) {
     course: student.course || "",
     year: student.year || "",
     section: student.section || "",
-    email: student.email || "",
     image: student.image || null
   });
   const [imageFile, setImageFile] = useState(null);
@@ -2468,9 +2721,82 @@ function EditStudentForm({ student, onClose, onSuccess }) {
   const [studentIdError, setStudentIdError] = useState('');
   const [isValidatingStudentId, setIsValidatingStudentId] = useState(false);
 
+  // Age calculation function based on birthdate
+  const calculateAge = (birthdate) => {
+    if (!birthdate) return '';
+    
+    const today = new Date();
+    const birth = new Date(birthdate);
+    
+    // Check if birthdate is valid
+    if (isNaN(birth.getTime())) return '';
+    
+    // Check if birthdate is in the future
+    if (birth > today) return '';
+    
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    // Adjust age if birthday hasn't occurred this year
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    // Return age if it's reasonable (0-150 years)
+    return (age >= 0 && age <= 150) ? age.toString() : '';
+  };
+
+  // Calculate age when component loads with existing birthdate
+  useEffect(() => {
+    if (student.birthdate) {
+      const calculatedAge = calculateAge(student.birthdate);
+      setProfile(prev => ({ ...prev, age: calculatedAge }));
+    }
+  }, [student.birthdate]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setProfile((prev) => ({ ...prev, [name]: value }));
+    console.log('🔄 EditStudentForm handleChange:', { name, value });
+    
+    setProfile((prev) => {
+      const updated = { ...prev, [name]: value };
+      console.log('📝 Profile updated:', updated);
+      return updated;
+    });
+  };
+
+  // Reset form function
+  const resetForm = () => {
+    console.log('🔄 Resetting EditStudentForm');
+    setProfile({
+      id: student.id || "",
+      lastName: student.lastName || "",
+      firstName: student.firstName || "",
+      middleInitial: student.middleInitial || "",
+      sex: student.sex || "",
+      age: student.age || "",
+      birthdate: student.birthdate || "",
+      contact: student.contact || "",
+      course: student.course || "",
+      year: student.year || "",
+      section: student.section || "",
+      image: student.image || null
+    });
+    setImageFile(null);
+    setStudentIdError('');
+    setFormKey(prev => prev + 1); // Force re-render
+  };
+
+  // Handle birthdate change with automatic age calculation
+  const handleBirthdateChange = (e) => {
+    const birthdate = e.target.value;
+    const calculatedAge = calculateAge(birthdate);
+    
+    setProfile((prev) => ({ 
+      ...prev, 
+      birthdate: birthdate,
+      age: calculatedAge
+    }));
   };
 
   // Handle student ID validation
@@ -2600,7 +2926,7 @@ function EditStudentForm({ student, onClose, onSuccess }) {
 
   return (
     <Box>
-      <form onSubmit={handleSubmit}>
+      <form key={formKey} onSubmit={handleSubmit}>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6}>
             <TextField 
@@ -2621,9 +2947,6 @@ function EditStudentForm({ student, onClose, onSuccess }) {
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth label="Email Address" name="email" value={profile.email} onChange={handleChange} type="email" />
-          </Grid>
           <Grid item xs={12} sm={4}>
             <TextField fullWidth label="Last Name" name="lastName" value={profile.lastName} onChange={handleChange} required />
           </Grid>
@@ -2640,10 +2963,33 @@ function EditStudentForm({ student, onClose, onSuccess }) {
             </TextField>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <TextField fullWidth label="Age" name="age" value={profile.age} onChange={handleChange} type="number" />
+            <TextField 
+              fullWidth 
+              label="Age" 
+              name="age" 
+              value={profile.age} 
+              type="number" 
+              InputProps={{ readOnly: true }}
+              helperText="Auto-calculated from birthdate"
+              sx={{
+                '& .MuiInputBase-input': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  cursor: 'default'
+                }
+              }}
+            />
           </Grid>
           <Grid item xs={12} sm={3}>
-            <TextField fullWidth label="Birthdate" name="birthdate" value={profile.birthdate} onChange={handleChange} type="date" InputLabelProps={{ shrink: true }} />
+            <TextField 
+              fullWidth 
+              label="Birthdate" 
+              name="birthdate" 
+              value={profile.birthdate} 
+              onChange={handleBirthdateChange} 
+              type="date" 
+              InputLabelProps={{ shrink: true }} 
+              helperText="Age will be calculated automatically"
+            />
           </Grid>
           <Grid item xs={12} sm={3}>
             <TextField fullWidth label="Contact Number" name="contact" value={profile.contact} onChange={handleChange} />
@@ -2699,6 +3045,14 @@ function EditStudentForm({ student, onClose, onSuccess }) {
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Updating..." : "Update Student"}
+              </Button>
+              <Button 
+                variant="outlined" 
+                onClick={resetForm}
+                disabled={isSubmitting}
+                sx={{ color: '#666', borderColor: '#666' }}
+              >
+                🔄 Reset
               </Button>
               <Button 
                 variant="outlined" 

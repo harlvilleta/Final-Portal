@@ -1,42 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Paper, Typography, TextField, Button, Snackbar, Alert, InputAdornment, IconButton, Avatar, MenuItem, LinearProgress, Checkbox, FormControlLabel, CircularProgress, Grid } from '@mui/material';
-import { Visibility, VisibilityOff, PersonAddAlt1, CloudUpload, Email } from '@mui/icons-material';
+import { Box, Paper, Typography, TextField, Button, Snackbar, Alert, InputAdornment, IconButton, MenuItem, Grid, FormControl, InputLabel, Select, Avatar } from '@mui/material';
+import { Visibility, VisibilityOff, PersonAddAlt1 } from '@mui/icons-material';
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification, signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import { setDoc, doc, addDoc, collection } from 'firebase/firestore';
+import { setDoc, doc, query, collection, getDocs, updateDoc, where } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../firebase';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import Link from '@mui/material/Link';
-import { checkStudentIdAvailability, checkEmailAvailability } from '../utils/studentValidation';
+import { validateStudentIdForRegistration, testStudentIdValidation } from '../utils/studentValidation';
 
-const roles = ['Student', 'Admin', 'Teacher'];
-const courses = ["BSIT", "BSBA", "BSED", "BEED", "BSN"];
-const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
-
-function getPasswordStrength(password) {
-  let score = 0;
-  if (password.length >= 8) score++;
-  if (/[A-Z]/.test(password)) score++;
-  if (/[0-9]/.test(password)) score++;
-  if (/[^A-Za-z0-9]/.test(password)) score++;
-  return score;
-}
-
-// Phone number validation function
-function validatePhoneNumber(phone) {
-  // Must be exactly 11 digits and start with 09
-  const phoneRegex = /^09\d{9}$/;
-  return phoneRegex.test(phone);
-}
-
-// Student ID format validation function
-function validateStudentIdFormat(studentId) {
-  // Must start with "SCC", followed by 10 digits and a dash
-  const studentIdRegex = /^SCC-\d{2}-\d{8}$/;
-  return studentIdRegex.test(studentId);
-}
+const roles = ['Student', 'Teacher', 'Admin'];
 
 // Email validation function
 function validateEmail(email) {
@@ -44,54 +17,24 @@ function validateEmail(email) {
   return emailRegex.test(email);
 }
 
-// Function to convert file to base64
-const convertToBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
-  });
-};
-
-// Function to upload image to Firebase Storage
-const uploadImageToStorage = async (file, userId) => {
-  const storageRef = ref(storage, `profile-pictures/${userId}/${Date.now()}_${file.name}`);
-  const snapshot = await uploadBytes(storageRef, file);
-  const downloadURL = await getDownloadURL(snapshot.ref);
-  return downloadURL;
-};
-
 export default function Register() {
-  const [fullName, setFullName] = useState('');
+  // Core registration fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('Student');
-  const [profilePic, setProfilePic] = useState(null);
-  const [profilePicBase64, setProfilePicBase64] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [terms, setTerms] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(0);
-  const [uploading, setUploading] = useState(false);
-  const [phoneError, setPhoneError] = useState('');
-  const [studentIdError, setStudentIdError] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [emailValidating, setEmailValidating] = useState(false);
   
   // Student-specific fields
   const [studentId, setStudentId] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [course, setCourse] = useState('');
-  const [year, setYear] = useState('');
-  const [gender, setGender] = useState('');
-  const [birthdate, setBirthdate] = useState('');
-  const [age, setAge] = useState('');
+  const [studentIdError, setStudentIdError] = useState('');
+  
+  // Teacher-specific fields
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   
   const navigate = useNavigate();
 
@@ -100,1566 +43,774 @@ export default function Register() {
     const ensureCleanAuthState = async () => {
       try {
         if (auth.currentUser) {
-          console.log('Registration page: User already signed in, signing out...');
           await signOut(auth);
-          console.log('✅ Registration page: User signed out successfully');
         }
       } catch (error) {
-        console.warn('Registration page: Could not sign out user:', error);
+        console.log('No user to sign out');
       }
     };
-    
     ensureCleanAuthState();
   }, []);
 
-  const handleProfilePic = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setSnackbar({ open: true, message: 'Please select an image file', severity: 'error' });
-        return;
-      }
-      
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        setSnackbar({ open: true, message: 'Image size should be less than 10MB', severity: 'error' });
-        return;
-      }
-      
-      setProfilePic(file);
-      setUploading(true);
-      
-      try {
-        // Convert to base64 for preview only
-        const base64String = await convertToBase64(file);
-        setProfilePicBase64(base64String);
-        setSnackbar({ open: true, message: 'Profile picture uploaded successfully!', severity: 'success' });
-      } catch (error) {
-        console.error('Error processing image:', error);
-        setSnackbar({ open: true, message: 'Failed to process image. Please try again.', severity: 'error' });
-        setProfilePic(null);
-      } finally {
-        setUploading(false);
-      }
-    }
-  };
-
-  const handleFirstNameChange = (e) => {
-    const value = e.target.value;
-    setFirstName(value);
-    setFullName(`${value} ${lastName}`.trim());
-  };
-
-  const handleLastNameChange = (e) => {
-    const value = e.target.value;
-    setLastName(value);
-    setFullName(`${firstName} ${value}`.trim());
-  };
-
-  const handlePhoneChange = (e) => {
-    const value = e.target.value;
-    setPhone(value);
-    
-    // Clear error if field is empty
-    if (!value) {
-      setPhoneError('');
-      return;
-    }
-    
-    // Validate phone number
-    if (!validatePhoneNumber(value)) {
-      setPhoneError('Phone number must be 11 digits starting with 09');
-    } else {
-      setPhoneError('');
-    }
-  };
-
+  // Student ID validation
   const handleStudentIdChange = async (e) => {
     const value = e.target.value;
     setStudentId(value);
     
-    // Clear error if field is empty
-    if (!value) {
-      setStudentIdError('');
-      return;
-    }
-    
-    // Validate student ID format first
-    if (!validateStudentIdFormat(value)) {
-      setStudentIdError('Student ID must be in format: SCC-XX-XXXXXXXX');
-      return;
-    }
-    
-    // If format is valid, check availability
-    try {
-      const availabilityCheck = await checkStudentIdAvailability(value.trim());
-      if (!availabilityCheck.isAvailable) {
-        setStudentIdError(availabilityCheck.error || 'Student ID is already registered');
+    if (value) {
+      const result = await validateStudentIdForRegistration(value);
+      if (!result.isValid) {
+        setStudentIdError(result.error);
       } else {
         setStudentIdError('');
       }
-    } catch (error) {
-      console.error('Error checking student ID availability:', error);
-      setStudentIdError('Error checking student ID availability');
+    } else {
+      setStudentIdError('');
     }
   };
 
-  const handleEmailChange = async (e) => {
-    const value = e.target.value;
-    setEmail(value);
-    
-    // Clear error if field is empty
-    if (!value) {
-      setEmailError('');
-      return;
+  // Debug function to test validation (temporary)
+  const testValidation = async () => {
+    if (studentId) {
+      console.log("🧪 Testing validation for:", studentId);
+      const result = await testStudentIdValidation(studentId);
+      console.log("🧪 Test result:", result);
     }
-    
-    // Validate email format first
-    if (!validateEmail(value)) {
-      setEmailError('Please enter a valid email address');
-      return;
-    }
-    
-    // If format is valid, check availability
-    setEmailValidating(true);
-    try {
-      const availabilityCheck = await checkEmailAvailability(value.trim());
-      if (!availabilityCheck.isAvailable) {
-        setEmailError(availabilityCheck.error || 'Email is already registered');
-      } else {
-        setEmailError('');
-      }
-    } catch (error) {
-      console.warn('⚠️ Email availability check failed, clearing error:', error);
-      setEmailError(''); // Clear error to allow registration attempt
-    } finally {
-      setEmailValidating(false);
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    switch (name) {
+      case 'email':
+        setEmail(value);
+        break;
+      case 'password':
+        setPassword(value);
+        break;
+      case 'confirmPassword':
+        setConfirmPassword(value);
+        break;
+      case 'role':
+        setRole(value);
+        break;
+      case 'fullName':
+        setFullName(value);
+        break;
+      case 'phone':
+        setPhone(value);
+        break;
+      case 'address':
+        setAddress(value);
+        break;
+      case 'studentId':
+        handleStudentIdChange(e);
+        break;
+      default:
+        break;
     }
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!role) {
-      setSnackbar({ open: true, message: 'Please select a role.', severity: 'error' });
+    setLoading(true);
+
+    // Basic validation
+    if (!email || !password || !confirmPassword) {
+      setSnackbar({ open: true, message: 'Please fill in all required fields', severity: 'error' });
+      setLoading(false);
       return;
     }
-    if (!email) {
-      setSnackbar({ open: true, message: 'Email is required.', severity: 'error' });
-      return;
-    }
+
     if (!validateEmail(email)) {
-      setSnackbar({ open: true, message: 'Please enter a valid email address.', severity: 'error' });
+      setSnackbar({ open: true, message: 'Please enter a valid email address', severity: 'error' });
+      setLoading(false);
       return;
     }
-    if (emailError) {
-      setSnackbar({ open: true, message: 'Please fix email validation errors.', severity: 'error' });
-      return;
-    }
-    
-    // Check if email is available for registration (with fallback)
-    console.log('🔍 Checking email availability...');
-    try {
-      const emailAvailabilityCheck = await checkEmailAvailability(email.trim());
-      if (!emailAvailabilityCheck.isAvailable) {
-        console.log('❌ Email availability check failed:', emailAvailabilityCheck.error);
-        setSnackbar({ open: true, message: emailAvailabilityCheck.error || 'Email is already registered.', severity: 'error' });
-        return;
-      }
-      console.log('✅ Email is available for registration');
-    } catch (availabilityError) {
-      console.warn('⚠️ Email availability check failed, proceeding with registration:', availabilityError);
-      // Continue with registration - Firebase Auth will handle duplicate emails
-    }
-    if (!fullName) {
-      setSnackbar({ open: true, message: 'Full name is required.', severity: 'error' });
-      return;
-    }
+
     if (password !== confirmPassword) {
-      setSnackbar({ open: true, message: 'Passwords do not match.', severity: 'error' });
+      setSnackbar({ open: true, message: 'Passwords do not match', severity: 'error' });
+      setLoading(false);
       return;
     }
-    if (!terms) {
-      setSnackbar({ open: true, message: 'You must agree to the terms.', severity: 'error' });
+
+    if (password.length < 6) {
+      setSnackbar({ open: true, message: 'Password must be at least 6 characters', severity: 'error' });
+      setLoading(false);
       return;
     }
-    
-    // Ensure no user is currently signed in before registration
-    try {
-      if (auth.currentUser) {
-        console.log('User already signed in, signing out before registration...');
-        await signOut(auth);
-        console.log('✅ User signed out successfully');
-      }
-    } catch (signOutError) {
-      console.warn('Warning: Could not sign out existing user:', signOutError);
-      // Continue with registration even if sign out fails
-    }
-    
-    // Validate phone number if provided
-    if (phone && !validatePhoneNumber(phone)) {
-      setSnackbar({ open: true, message: 'Phone number must be 11 digits starting with 09.', severity: 'error' });
-      return;
-    }
-    
-    // Validate student-specific fields
+
+    // Role-specific validation
     if (role === 'Student') {
       if (!studentId) {
-        setSnackbar({ open: true, message: 'Student ID is required.', severity: 'error' });
+        setSnackbar({ open: true, message: 'Please enter your Student ID', severity: 'error' });
+        setLoading(false);
         return;
       }
-      if (!validateStudentIdFormat(studentId)) {
-        setSnackbar({ open: true, message: 'Student ID must be in format: SCC-XX-XXXXXXXX.', severity: 'error' });
+      if (studentIdError) {
+        setSnackbar({ open: true, message: 'Please fix the Student ID error', severity: 'error' });
+        setLoading(false);
         return;
       }
-      if (!firstName || !lastName) {
-        setSnackbar({ open: true, message: 'First name and last name are required for students.', severity: 'error' });
-        return;
-      }
-      if (!course || !year) {
-        setSnackbar({ open: true, message: 'Course and year are required for students.', severity: 'error' });
-        return;
-      }
-      if (!gender) {
-        setSnackbar({ open: true, message: 'Gender is required for students.', severity: 'error' });
-        return;
-      }
-      if (!birthdate) {
-        setSnackbar({ open: true, message: 'Birthdate is required for students.', severity: 'error' });
-        return;
-      }
-      
-      // Check if student ID is available for registration
-      console.log('🔍 Checking student ID availability...');
-      const availabilityCheck = await checkStudentIdAvailability(studentId.trim());
-      if (!availabilityCheck.isAvailable) {
-        console.log('❌ Student ID availability check failed:', availabilityCheck.error);
-        setSnackbar({ open: true, message: availabilityCheck.error || 'Student ID is already registered.', severity: 'error' });
-        return;
-      }
-      console.log('✅ Student ID is available for registration');
     }
-    
-    console.log('Starting registration process...');
-    setLoading(true);
-    
-    // Add timeout protection
-    const timeoutId = setTimeout(() => {
-      console.error('Registration timed out - forcing reset');
-      setSnackbar({ open: true, message: 'Registration timed out. Please try again.', severity: 'error' });
-      setLoading(false);
-    }, 30000); // 30 second timeout
-    
+
+    if (role === 'Teacher') {
+      if (!fullName || !phone || !address) {
+        setSnackbar({ open: true, message: 'Please fill in all teacher information', severity: 'error' });
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
-      console.log('Starting registration process...');
-      console.log('Registration details:', { email, role, fullName });
-      
-      // Create user account in Firebase Auth
-      console.log('🔐 Creating Firebase Auth user...');
-      console.log('📧 Email:', email);
-      console.log('🔑 Password length:', password.length);
-      
+      // Create user account
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      
-      console.log('✅ Firebase Auth user created successfully:', user.uid);
-      console.log('📧 User email:', user.email);
-      
-      // Update profile with display name and photo (use base64 if available)
-      await updateProfile(user, {
-        displayName: fullName
-      });
-      
-      console.log('✅ User profile updated');
-      
-      // Send email verification
-      try {
-        await sendEmailVerification(user);
-        console.log('✅ Email verification sent');
-      } catch (verificationError) {
-        console.error('❌ Failed to send email verification:', verificationError);
-        // Continue with registration even if email verification fails
-      }
-      
-      // Upload image to Firebase Storage if provided
-      let imageURL = '';
-      if (profilePic) {
-        try {
-          imageURL = await uploadImageToStorage(profilePic, user.uid);
-          console.log('✅ Image uploaded to Storage:', imageURL);
-        } catch (uploadError) {
-          console.error('❌ Image upload error:', uploadError);
-          // Continue with registration even if image upload fails
-        }
-      }
-      
-      // Prepare comprehensive user data for Firestore
-      const userData = {
-        email: user.email,
-        fullName: fullName,
+
+      // Prepare user data based on role
+      let userData = {
+        email: email,
         role: role,
-        phone: phone || '',
-        address: address || '',
-        profilePic: imageURL || '', // Save Storage URL instead of base64
-        profilePicType: profilePic ? profilePic.type : '', // Save image type
-        profilePicName: profilePic ? profilePic.name : '', // Save original filename
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        uid: user.uid,
-        isActive: true,
-        lastLogin: null,
-        registrationMethod: 'email'
+        isActive: true
       };
-      
-      // Add student-specific data if role is Student
+
       if (role === 'Student') {
-        userData.studentId = studentId;
-        userData.firstName = firstName;
-        userData.lastName = lastName;
-        userData.course = course;
-        userData.year = year;
-        userData.gender = gender;
-        userData.birthdate = birthdate;
-        userData.age = age;
-        userData.studentInfo = {
+        userData = {
+          ...userData,
           studentId: studentId,
-          firstName: firstName,
-          lastName: lastName,
-          course: course,
-          year: year,
-          gender: gender,
-          birthdate: birthdate,
-          age: age,
-          enrollmentDate: new Date().toISOString()
-        };
-      }
-      
-      // Add role-specific data
-      if (role === 'Admin') {
-        userData.adminInfo = {
-          permissions: ['all'],
-          adminLevel: 'super',
-          assignedBy: 'system'
+          displayName: studentId // Use student ID as display name
         };
       } else if (role === 'Teacher') {
-        // For teachers, we need admin approval first
-        userData.teacherInfo = {
-          subjects: [],
-          department: '',
-          hireDate: new Date().toISOString(),
-          isApproved: false, // Teacher needs admin approval
-          approvalStatus: 'pending'
+        userData = {
+          ...userData,
+          fullName: fullName,
+          phone: phone,
+          address: address,
+          displayName: fullName
+        };
+      } else if (role === 'Admin') {
+        userData = {
+          ...userData,
+          displayName: email.split('@')[0] // Use email prefix as display name
         };
       }
-      
-      console.log('📝 Saving user data to Firestore...');
-      
-      // Save user data to Firestore with better error handling
-      try {
-        await setDoc(doc(db, 'users', user.uid), userData);
-        console.log('✅ User data saved to Firestore successfully');
-      } catch (firestoreError) {
-        console.error('❌ Firestore save error:', firestoreError);
-        // If Firestore fails, we should clean up the Auth user
-        await user.delete();
-        throw new Error('Failed to save user data. Please try again.');
-      }
-      
-      // If role is Teacher, create a teacher approval request
-      if (role === 'Teacher') {
-        try {
-          const teacherRequestData = {
-            userId: user.uid,
-            email: user.email,
-            fullName: fullName,
-            phone: phone || '',
-            address: address || '',
-            profilePic: imageURL || '',
-            requestDate: new Date().toISOString(),
-            status: 'pending', // pending, approved, denied
-            reviewedBy: null,
-            reviewDate: null,
-            reviewReason: null,
-            requestType: 'teacher_registration',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          };
-          
-          await addDoc(collection(db, 'teacher_requests'), teacherRequestData);
-          console.log('✅ Teacher approval request created');
 
-          // Create notification for admin
-          await addDoc(collection(db, 'notifications'), {
-            recipientId: 'admin',
-            recipientEmail: 'admin@school.com',
-            recipientName: 'Administrator',
-            title: 'New Teacher Registration Request',
-            message: `${fullName} has requested to register as a teacher. Please review and approve their account.`,
-            type: 'teacher_request',
-            requestId: user.uid,
-            senderId: user.uid,
-            senderEmail: user.email,
-            senderName: fullName,
-            read: false,
-            createdAt: new Date().toISOString(),
-            priority: 'high'
-          });
-          console.log('✅ Admin notification created for teacher request');
-        } catch (requestError) {
-          console.error('❌ Failed to create teacher approval request:', requestError);
-          // Don't fail registration if request creation fails
+      // Update Firebase Auth profile
+      await updateProfile(user, {
+        displayName: userData.displayName
+      });
+
+      // Save user data to Firestore
+      await setDoc(doc(db, 'users', user.uid), userData);
+
+      // If student registered, update the student record to mark as registered
+      if (role === 'Student' && studentId) {
+        try {
+          // Find the student record in the students collection
+          // Note: In the students collection, the field is called "id", not "studentId"
+          const studentsQuery = query(collection(db, "students"), where("id", "==", studentId.trim()));
+          const studentsSnapshot = await getDocs(studentsQuery);
+          
+          if (!studentsSnapshot.empty) {
+            // Update the first matching student record
+            const studentDoc = studentsSnapshot.docs[0];
+            await updateDoc(doc(db, "students", studentDoc.id), {
+              isRegistered: true,
+              registeredAt: new Date().toISOString(),
+              registeredUserId: user.uid,
+              email: email
+            });
+            console.log("✅ Student record updated as registered:", studentId);
+          }
+        } catch (updateError) {
+          console.error("Error updating student record:", updateError);
+          // Don't fail registration if student record update fails
         }
       }
-      
-      // Log activity with more details
-      try {
-        await addDoc(collection(db, 'activity_log'), {
-          message: `New user registered: ${fullName} (${role})`,
-          type: 'registration',
-          user: user.uid,
-          userEmail: user.email,
-          userRole: role,
-          timestamp: new Date().toISOString(),
-          details: {
-            registrationMethod: 'email',
-            hasProfilePic: !!imageURL,
-            profilePicSize: profilePic ? `${(profilePic.size / 1024).toFixed(2)} KB` : 'N/A',
-            studentInfo: role === 'Student' ? {
-              studentId,
-              course,
-              year,
-              section
-            } : null
-          }
-        });
-        console.log('✅ Activity logged successfully');
-      } catch (logError) {
-        console.warn('⚠️ Failed to log activity:', logError);
-        // Don't fail registration if logging fails
-      }
-      
-      // Create user preferences document
-      try {
-        await setDoc(doc(db, 'user_preferences', user.uid), {
-          uid: user.uid,
-          email: user.email,
-          theme: 'light',
-          language: 'en',
-          notifications: {
-            email: true,
-            push: true,
-            sms: false
-          },
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        });
-        console.log('✅ User preferences created');
-      } catch (prefError) {
-        console.warn('⚠️ Failed to create user preferences:', prefError);
-        // Don't fail registration if preferences creation fails
-      }
-      
-      clearTimeout(timeoutId);
-      
-      // Show success message with user details
-      let successMessage = `Registration successful! Welcome ${fullName}. A confirmation email has been sent to ${email}. Please check your email and verify your account. Redirecting to login page...`;
-      if (role === 'Teacher') {
-        successMessage = `Registration successful! Your teacher account is pending admin approval. A confirmation email has been sent to ${email}. Please check your email and verify your account. You will be notified once approved. Redirecting to login page...`;
-      }
-      
+
+      // Send email verification
+      await sendEmailVerification(user);
+
       setSnackbar({ 
         open: true, 
-        message: successMessage, 
+        message: `Registration successful! Please check your email to verify your account.`, 
         severity: 'success' 
       });
-      
-      console.log(`🎉 Registration completed successfully for ${role}: ${user.email}`);
-      
-      // Sign out the user after successful registration
-      try {
-        await auth.signOut();
-        console.log('✅ User signed out after registration');
-      } catch (signOutError) {
-        console.warn('⚠️ Error signing out after registration:', signOutError);
-      }
-      
-      // Redirect to login page with email pre-filled
+
+      // Redirect to login after successful registration
       setTimeout(() => {
-        navigate('/login', { 
-          state: { 
-            email: email,
-            message: `Registration successful! Please login with your new account.`
-          },
-          replace: true 
-        });
+        navigate('/login');
       }, 2000);
-      
+
     } catch (error) {
-      clearTimeout(timeoutId);
-      console.error('❌ Registration error:', error);
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
-      console.error('Full error object:', error);
-      
-      let msg = 'Registration failed. Please try again.';
+      console.error('Registration error:', error);
+      let errorMessage = 'Registration failed. Please try again.';
       
       if (error.code === 'auth/email-already-in-use') {
-        msg = 'An account with this email already exists. Please use a different email or try logging in.';
-        console.log('🔍 Email already exists error - this might be a false positive. Check Firebase console for existing users.');
+        errorMessage = 'This email is already registered. Please use a different email.';
       } else if (error.code === 'auth/weak-password') {
-        msg = 'Password is too weak. Please choose a stronger password (at least 6 characters).';
+        errorMessage = 'Password is too weak. Please choose a stronger password.';
       } else if (error.code === 'auth/invalid-email') {
-        msg = 'Please enter a valid email address.';
-      } else if (error.code === 'auth/network-request-failed') {
-        msg = 'Network error. Please check your internet connection and try again.';
-      } else if (error.code === 'auth/operation-not-allowed') {
-        msg = 'Email/password accounts are not enabled. Please contact support.';
-      } else if (error.code === 'auth/too-many-requests') {
-        msg = 'Too many failed attempts. Please try again later.';
-      } else if (error.message.includes('Firestore')) {
-        msg = 'Failed to save user data. Please try again.';
-      } else {
-        // Log unknown errors for debugging
-        console.error('Unknown registration error:', error);
-        msg = `Registration failed: ${error.message || 'Unknown error'}. Please try again.`;
+        errorMessage = 'Invalid email address. Please check your email format.';
       }
       
-      setSnackbar({ open: true, message: msg, severity: 'error' });
+      setSnackbar({ open: true, message: errorMessage, severity: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePasswordChange = (e) => {
-    const newPassword = e.target.value;
-    setPassword(newPassword);
-    setPasswordStrength(getPasswordStrength(newPassword));
-  };
-
-  const getPasswordStrengthColor = () => {
-    if (passwordStrength === 0) return '#e0e0e0';
-    if (passwordStrength === 1) return '#ff5722';
-    if (passwordStrength === 2) return '#ff9800';
-    if (passwordStrength === 3) return '#ffc107';
-    return '#4caf50';
-  };
-
-  const getPasswordStrengthText = () => {
-    if (passwordStrength === 0) return 'Very Weak';
-    if (passwordStrength === 1) return 'Weak';
-    if (passwordStrength === 2) return 'Fair';
-    if (passwordStrength === 3) return 'Good';
-    return 'Strong';
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   return (
     <Box sx={{ 
-      height: '100vh', 
-      width: '100vw', 
+      height: '100vh',
+      width: '100vw',
       display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#f5f5f5',
       overflow: 'hidden',
       position: 'fixed',
       top: 0,
-      left: 0,
-      background: '#800000'
+      left: 0
     }}>
-      {/* Left Side - Image Area */}
+      {/* Main Container */}
       <Box sx={{
-        width: '50%',
-        height: '100vh',
-        backgroundImage: `url(${process.env.PUBLIC_URL + '/2121.jpg'})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
+        width: '100%',
+        maxWidth: { xs: '100%', sm: '700px', md: '800px', lg: '900px' },
+        height: { xs: '100vh', sm: '80vh', md: '500px' },
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(128, 0, 0, 0.3)',
-          zIndex: 1
-        }
+        flexDirection: { xs: 'column', md: 'row' },
+        borderRadius: { xs: 0, md: 3 },
+        overflow: 'hidden',
+        boxShadow: { xs: 'none', md: '0 10px 40px rgba(0,0,0,0.1)' },
+        backgroundColor: '#ffffff',
+        border: { xs: 'none', md: '1px solid #e0e0e0' }
       }}>
+        {/* Left Side - Image Area (50%) */}
         <Box sx={{
+          width: { xs: '100%', md: '50%' },
+          height: { xs: '50vh', md: '100%' },
+          backgroundImage: `url(${process.env.PUBLIC_URL + '/2121.jpg'})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
           position: 'relative',
-          zIndex: 2,
-          textAlign: 'center',
-          color: '#fff',
-          padding: 4
+          flex: '0 0 50%',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(128, 0, 0, 0.5)',
+            zIndex: 1
+          }
         }}>
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="h1" fontWeight={900} sx={{
-              fontSize: '3.5rem',
-              textShadow: '0 8px 16px rgba(0,0,0,0.7), 0 4px 8px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3)',
+          <Box sx={{
+            position: 'relative',
+            zIndex: 2,
+            textAlign: 'center',
+            color: '#fff',
+            padding: { xs: 2, md: 4 },
+            width: '100%',
+            maxWidth: '500px'
+          }}>
+            <Typography variant="h3" fontWeight={700} sx={{
+              mb: 2,
+              textShadow: '0 4px 8px rgba(0,0,0,0.5)',
               letterSpacing: '-0.02em',
-              transform: 'translateY(-5px)',
-              filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.6))',
-              textStroke: '1px rgba(255,255,255,0.1)',
-              WebkitTextStroke: '1px rgba(255,255,255,0.1)',
-              lineHeight: 1.1,
-              mb: 0.5
+              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+              lineHeight: 1.2
             }}>
-              Welcome to
+              Welcome to CeciServe
             </Typography>
-            <Typography variant="h1" fontWeight={900} sx={{
-              fontSize: '3.5rem',
-              textShadow: '0 8px 16px rgba(0,0,0,0.7), 0 4px 8px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3)',
-              letterSpacing: '-0.02em',
-              transform: 'translateY(-5px)',
-              filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.6))',
-              textStroke: '1px rgba(255,255,255,0.1)',
-              WebkitTextStroke: '1px rgba(255,255,255,0.1)',
-              lineHeight: 1.1
+            <Typography variant="h6" sx={{
+              textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+              fontWeight: 400,
+              opacity: 0.9,
+              fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
+              lineHeight: 1.4
             }}>
-              CeciServe
+              Your gateway to St. Cecilia's College
             </Typography>
           </Box>
-          <Typography variant="h4" sx={{
-            fontSize: '1.75rem',
-            textShadow: '0 4px 8px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.4)',
-            fontWeight: 500,
-            opacity: 0.95,
-            transform: 'translateY(-3px)',
-            filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.5))'
-          }}>
-            Your gateway to St. Cecilia's College
-          </Typography>
         </Box>
-      </Box>
 
-      {/* Right Side - Form Area */}
-      <Box sx={{
-        width: '50%',
-        height: '100vh',
-        backgroundColor: '#ffffff',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 3,
-        position: 'relative',
-        boxShadow: '-4px 0 20px rgba(0,0,0,0.1)',
-        overflowY: 'auto',
-        '&::-webkit-scrollbar': {
-          width: '8px',
-        },
-        '&::-webkit-scrollbar-track': {
-          background: '#f1f1f1',
-          borderRadius: '4px',
-        },
-        '&::-webkit-scrollbar-thumb': {
-          background: '#800000',
-          borderRadius: '4px',
-          '&:hover': {
-            background: '#6b0000',
-          },
-        },
-      }}>
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
+        {/* Right Side - Form Area (50%) */}
+        <Box sx={{
+          width: { xs: '100%', md: '50%' },
+          height: { xs: '50vh', md: '100%' },
+          backgroundColor: '#ffffff',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
           justifyContent: 'center',
-          mb: 2,
-          gap: 1,
-          mt: 1
+          padding: { xs: 2, sm: 3, md: 4 },
+          position: 'relative',
+          overflow: 'hidden',
+          flex: '0 0 50%'
         }}>
-          <PersonAddAlt1 sx={{ fontSize: 24, color: '#87CEEB' }} />
-          <Typography variant="h4" fontWeight={600} sx={{ 
-            color: '#000',
-            fontSize: '1.75rem',
-            letterSpacing: '0.01em'
+          <Avatar sx={{ 
+            bgcolor: '#800000', 
+            width: 50, 
+            height: 50, 
+            mb: 0.8, 
+            boxShadow: '0 8px 32px rgba(128,0,0,0.3)'
+          }}>
+            <PersonAddAlt1 sx={{ fontSize: 24, color: '#fff' }} />
+          </Avatar>
+          <Typography variant="h5" fontWeight={600} gutterBottom sx={{ 
+            mb: 0.5, 
+            color: '#333',
+            textAlign: 'center',
+            letterSpacing: '-0.02em',
+            fontSize: { xs: '1.1rem', sm: '1.3rem', md: '1.4rem' }
           }}>
             Create Account
           </Typography>
-        </Box>
-        <Box sx={{ 
-          width: '100%', 
-          maxWidth: '600px',
-          mx: 'auto'
-        }}>
-          <form onSubmit={handleRegister} style={{ width: '100%' }}>
-            <Grid container spacing={1.5}>
-            <Grid item xs={12} sm={6}>
-              <TextField 
-                label="Email" 
-                type="email" 
-                value={email} 
-                onChange={handleEmailChange} 
-                fullWidth 
-                required 
-                size="small" 
-                InputProps={{ 
-                  style: { fontSize: 14, height: 32 },
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Email />
-                    </InputAdornment>
-                  ),
-                  endAdornment: emailValidating ? (
-                    <InputAdornment position="end">
-                      <CircularProgress size={16} />
-                    </InputAdornment>
-                  ) : null
-                }}
-                error={!!emailError}
-                helperText={emailError || 'Please enter a valid email address'}
+          <Typography variant="body2" sx={{ 
+            mb: 1, 
+            color: '#666',
+            textAlign: 'center',
+            fontWeight: 400,
+            letterSpacing: '0.01em',
+            fontSize: '0.85rem'
+          }}>
+            Join our platform and get started
+          </Typography>
+
+        <Box component="form" onSubmit={handleRegister} sx={{ width: '100%', maxWidth: '260px', minWidth: '220px' }}>
+            {/* Role Selection */}
+            <FormControl fullWidth sx={{ mb: 0.8 }}>
+              <InputLabel sx={{ color: '#666', fontWeight: 500, fontSize: '0.8rem' }}>Role</InputLabel>
+              <Select
+                name="role"
+                value={role}
+                label="Role"
+                onChange={handleChange}
+                required
+                size="small"
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    bgcolor: '#ffffff',
-                    color: '#000',
-                    borderRadius: 2,
-                    fontSize: '0.875rem',
+                    bgcolor: '#fafafa',
+                    color: '#333',
+                    borderRadius: 8,
+                    height: 32,
+                    fontSize: 12,
                     '& fieldset': { 
-                      borderColor: emailError ? '#d32f2f' : '#000',
-                      borderWidth: 0.5
+                      borderColor: '#e0e0e0',
+                      borderWidth: 1
                     },
                     '&:hover fieldset': { 
-                      borderColor: emailError ? '#d32f2f' : '#000',
-                      borderWidth: 0.5
+                      borderColor: '#800000',
+                      borderWidth: 1
                     },
                     '&.Mui-focused fieldset': { 
-                      borderColor: emailError ? '#d32f2f' : '#000',
-                      borderWidth: 0.5
+                      borderColor: '#800000',
+                      borderWidth: 2
                     },
-                    '& input': {
-                      fontSize: '0.875rem',
-                      color: '#000',
-                      padding: '8px 12px'
+                    '&.Mui-focused': { 
+                      boxShadow: '0 0 0 3px rgba(128,0,0,0.1)'
                     }
-                  },
-                  '& .MuiInputLabel-root': { 
-                    color: emailError ? '#d32f2f' : '#000',
-                    fontWeight: 400,
-                    fontSize: '0.875rem'
-                  },
-                  '& .MuiInputAdornment-root .MuiSvgIcon-root': { 
-                    color: '#87CEEB',
-                    fontSize: '1rem'
-                  },
-                  '& .MuiFormHelperText-root': { 
-                    color: emailError ? '#d32f2f' : '#000',
-                    fontWeight: 400,
-                    fontSize: '0.75rem'
                   }
-                }}
-              />
-            </Grid>
-            
-            
-            <Grid item xs={12} sm={6}>
-              <TextField 
-                label="Role" 
-                select 
-                value={role} 
-                onChange={e => setRole(e.target.value)} 
-                fullWidth 
-                required 
-                size="small" 
-                InputProps={{ style: { fontSize: 14, height: 32 } }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: '#ffffff',
-                    color: '#000',
-                    borderRadius: 2,
-                    fontSize: '0.875rem',
-                    '& fieldset': { 
-                      borderColor: '#000',
-                      borderWidth: 0.5
-                    },
-                    '&:hover fieldset': { 
-                      borderColor: '#000',
-                      borderWidth: 0.5
-                    },
-                    '&.Mui-focused fieldset': { 
-                      borderColor: '#000',
-                      borderWidth: 0.5
-                    },
-                    '& input': {
-                      fontSize: '0.875rem',
-                      color: '#000',
-                      padding: '8px 12px'
-                    }
-                  },
-                  '& .MuiInputLabel-root': { 
-                    color: '#000',
-                    fontWeight: 400,
-                    fontSize: '0.875rem'
-                  },
-                  '& .MuiSelect-icon': { color: '#eaeaea' }
                 }}
               >
-                {roles.map(r => <MenuItem key={r} value={r}>{r}</MenuItem>)}
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField 
-                label="Phone Number" 
-                value={phone} 
-                onChange={handlePhoneChange}
-                fullWidth 
-                size="small" 
-                InputProps={{ style: { fontSize: 14, height: 32 } }}
-                error={!!phoneError}
-                helperText={phoneError}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: '#ffffff',
-                    color: '#000',
-                    borderRadius: 2,
-                    fontSize: '0.875rem',
-                    '& fieldset': { 
-                      borderColor: '#000',
-                      borderWidth: 0.5
-                    },
-                    '&:hover fieldset': { 
-                      borderColor: '#000',
-                      borderWidth: 0.5
-                    },
-                    '&.Mui-focused fieldset': { 
-                      borderColor: '#000',
-                      borderWidth: 0.5
-                    },
-                    '& input': {
-                      fontSize: '0.875rem',
-                      color: '#000',
-                      padding: '8px 12px'
-                    }
+                {roles.map((roleOption) => (
+                  <MenuItem key={roleOption} value={roleOption} sx={{ fontSize: '0.8rem' }}>
+                    {roleOption}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Email */}
+            <TextField
+              name="email"
+              label="Email"
+              type="email"
+              value={email}
+              onChange={handleChange}
+              fullWidth
+              required
+              sx={{ 
+                mb: 1.2,
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: '#fafafa',
+                  color: '#333',
+                  borderRadius: 12,
+                  height: 44,
+                  fontSize: 15,
+                  '& fieldset': { 
+                    borderColor: '#e0e0e0',
+                    borderWidth: 1
                   },
-                  '& .MuiInputLabel-root': { 
-                    color: '#000',
-                    fontWeight: 400,
-                    fontSize: '0.875rem'
+                  '&:hover fieldset': { 
+                    borderColor: '#800000',
+                    borderWidth: 1
                   },
-                  '& .MuiFormHelperText-root': { 
-                    color: '#000',
-                    fontWeight: 400,
-                    fontSize: '0.75rem'
+                  '&.Mui-focused fieldset': { 
+                    borderColor: '#800000',
+                    borderWidth: 2
+                  },
+                  '&.Mui-focused': { 
+                    boxShadow: '0 0 0 3px rgba(128,0,0,0.1)'
                   }
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField 
-                label="Address" 
-                value={address} 
-                onChange={e => setAddress(e.target.value)} 
-                fullWidth 
-                size="small" 
-                InputProps={{ style: { fontSize: 14, height: 32 } }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: '#ffffff',
-                    color: '#000',
-                    borderRadius: 2,
-                    fontSize: '0.875rem',
-                    '& fieldset': { 
-                      borderColor: '#000',
-                      borderWidth: 0.5
-                    },
-                    '&:hover fieldset': { 
-                      borderColor: '#000',
-                      borderWidth: 0.5
-                    },
-                    '&.Mui-focused fieldset': { 
-                      borderColor: '#000',
-                      borderWidth: 0.5
-                    },
-                    '& input': {
-                      fontSize: '0.875rem',
-                      color: '#000',
-                      padding: '8px 12px'
-                    }
-                  },
-                  '& .MuiInputLabel-root': { 
-                    color: '#000',
-                    fontWeight: 400,
-                    fontSize: '0.875rem'
-                  }
-                }}
-              />
-            </Grid>
-            
-            {/* Student-specific fields - only show when role is Student */}
+                },
+                '& .MuiInputLabel-root': { 
+                  color: '#666',
+                  fontWeight: 500,
+                  fontSize: '0.95rem'
+                }
+              }}
+              placeholder="Enter your email"
+            />
+
+            {/* Student ID - Only for Students */}
             {role === 'Student' && (
-              <>
-                <Grid item xs={12} sm={6}>
-                  <TextField 
-                    label="Student ID" 
-                    value={studentId} 
-                    onChange={handleStudentIdChange}
-                    fullWidth 
-                    required 
-                    size="small" 
-                    InputProps={{ style: { fontSize: 14, height: 32 } }}
-                    error={!!studentIdError}
-                    helperText={studentIdError}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: '#ffffff',
-                        color: '#000',
-                        borderRadius: 2,
-                        fontSize: '0.875rem',
-                        '& fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&:hover fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&.Mui-focused fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '& input': {
-                          fontSize: '0.875rem',
-                          color: '#000',
-                          padding: '8px 12px'
-                        }
-                      },
-                      '& .MuiInputLabel-root': { 
-                        color: '#000',
-                        fontWeight: 400,
-                        fontSize: '0.875rem'
-                      },
-                      '& .MuiFormHelperText-root': { 
-                        color: '#000',
-                        fontWeight: 400,
-                        fontSize: '0.75rem'
-                      }
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField 
-                    label="First Name" 
-                    value={firstName} 
-                    onChange={handleFirstNameChange} 
-                    fullWidth 
-                    required 
-                    size="small" 
-                    InputProps={{ style: { fontSize: 14, height: 32 } }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: '#ffffff',
-                        color: '#000',
-                        borderRadius: 2,
-                        fontSize: '0.875rem',
-                        '& fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&:hover fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&.Mui-focused fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '& input': {
-                          fontSize: '0.875rem',
-                          color: '#000',
-                          padding: '8px 12px'
-                        }
-                      },
-                      '& .MuiInputLabel-root': { 
-                        color: '#000',
-                        fontWeight: 400,
-                        fontSize: '0.875rem'
-                      }
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField 
-                    label="Last Name" 
-                    value={lastName} 
-                    onChange={handleLastNameChange} 
-                    fullWidth 
-                    required 
-                    size="small" 
-                    InputProps={{ style: { fontSize: 14, height: 32 } }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: '#ffffff',
-                        color: '#000',
-                        borderRadius: 2,
-                        fontSize: '0.875rem',
-                        '& fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&:hover fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&.Mui-focused fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '& input': {
-                          fontSize: '0.875rem',
-                          color: '#000',
-                          padding: '8px 12px'
-                        }
-                      },
-                      '& .MuiInputLabel-root': { 
-                        color: '#000',
-                        fontWeight: 400,
-                        fontSize: '0.875rem'
-                      }
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField 
-                    label="Course" 
-                    select 
-                    value={course} 
-                    onChange={e => setCourse(e.target.value)} 
-                    fullWidth 
-                    required 
-                    size="small" 
-                    InputProps={{ style: { fontSize: 14, height: 32 } }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: '#ffffff',
-                        color: '#000',
-                        borderRadius: 2,
-                        fontSize: '0.875rem',
-                        '& fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&:hover fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&.Mui-focused fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '& input': {
-                          fontSize: '0.875rem',
-                          color: '#000',
-                          padding: '8px 12px'
-                        }
-                      },
-                      '& .MuiInputLabel-root': { 
-                        color: '#000',
-                        fontWeight: 400,
-                        fontSize: '0.875rem'
-                      },
-                      '& .MuiSelect-icon': { color: '#000' }
-                    }}
-                  >
-                    {courses.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
-                  </TextField>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField 
-                    label="Year Level" 
-                    select 
-                    value={year} 
-                    onChange={e => setYear(e.target.value)} 
-                    fullWidth 
-                    required 
-                    size="small" 
-                    InputProps={{ style: { fontSize: 14, height: 32 } }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: '#ffffff',
-                        color: '#000',
-                        borderRadius: 2,
-                        fontSize: '0.875rem',
-                        '& fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&:hover fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&.Mui-focused fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '& input': {
-                          fontSize: '0.875rem',
-                          color: '#000',
-                          padding: '8px 12px'
-                        }
-                      },
-                      '& .MuiInputLabel-root': { 
-                        color: '#000',
-                        fontWeight: 400,
-                        fontSize: '0.875rem'
-                      },
-                      '& .MuiSelect-icon': { color: '#000' }
-                    }}
-                  >
-                    {years.map(y => <MenuItem key={y} value={y}>{y}</MenuItem>)}
-                  </TextField>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField 
-                    label="Gender" 
-                    select 
-                    value={gender} 
-                    onChange={e => setGender(e.target.value)} 
-                    fullWidth 
-                    required 
-                    size="small" 
-                    InputProps={{ style: { fontSize: 14, height: 32 } }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: '#ffffff',
-                        color: '#000',
-                        borderRadius: 2,
-                        fontSize: '0.875rem',
-                        '& fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&:hover fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&.Mui-focused fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '& input': {
-                          fontSize: '0.875rem',
-                          color: '#000',
-                          padding: '8px 12px'
-                        }
-                      },
-                      '& .MuiInputLabel-root': { 
-                        color: '#000',
-                        fontWeight: 400,
-                        fontSize: '0.875rem'
-                      },
-                      '& .MuiSelect-icon': { color: '#000' }
-                    }}
-                  >
-                    <MenuItem value="Male">Male</MenuItem>
-                    <MenuItem value="Female">Female</MenuItem>
-                    <MenuItem value="Other">Other</MenuItem>
-                  </TextField>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField 
-                    label="Birthdate" 
-                    type="date" 
-                    value={birthdate} 
-                    onChange={e => {
-                      const v = e.target.value; setBirthdate(v);
-                      if (v) {
-                        const dob = new Date(v);
-                        const diffMs = Date.now() - dob.getTime();
-                        const ageDt = new Date(diffMs);
-                        const computedAge = Math.abs(ageDt.getUTCFullYear() - 1970);
-                        setAge(String(computedAge));
-                      } else { setAge(''); }
-                    }} 
-                    fullWidth 
-                    required 
-                    size="small" 
-                    InputLabelProps={{ shrink: true }} 
-                    InputProps={{ style: { fontSize: 14, height: 32 } }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: '#ffffff',
-                        color: '#000',
-                        borderRadius: 2,
-                        fontSize: '0.875rem',
-                        '& fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&:hover fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&.Mui-focused fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '& input': {
-                          fontSize: '0.875rem',
-                          color: '#000',
-                          padding: '8px 12px'
-                        }
-                      },
-                      '& .MuiInputLabel-root': { 
-                        color: '#000',
-                        fontWeight: 400,
-                        fontSize: '0.875rem'
-                      }
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField 
-                    label="Age" 
-                    value={age} 
-                    fullWidth 
-                    size="small" 
-                    InputProps={{ readOnly: true, style: { fontSize: 14, height: 32 } }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: '#ffffff',
-                        color: '#000',
-                        borderRadius: 2,
-                        fontSize: '0.875rem',
-                        '& fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&:hover fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '&.Mui-focused fieldset': { 
-                          borderColor: '#000',
-                          borderWidth: 0.5
-                        },
-                        '& input': {
-                          fontSize: '0.875rem',
-                          color: '#000',
-                          padding: '8px 12px'
-                        }
-                      },
-                      '& .MuiInputLabel-root': { 
-                        color: '#000',
-                        fontWeight: 400,
-                        fontSize: '0.875rem'
-                      }
-                    }}
-                  />
-                </Grid>
-              </>
+              <TextField
+                name="studentId"
+                label="Student ID"
+                value={studentId}
+                onChange={handleChange}
+                fullWidth
+                required
+                error={!!studentIdError}
+                helperText={studentIdError || "Enter your Student ID"}
+                placeholder="SCC-22-00000000"
+                sx={{ 
+                  mb: 0.8,
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: '#fafafa',
+                    color: '#333',
+                    borderRadius: 12,
+                    height: 32,
+                    fontSize: 12,
+                    '& fieldset': { 
+                      borderColor: '#e0e0e0',
+                      borderWidth: 1
+                    },
+                    '&:hover fieldset': { 
+                      borderColor: '#800000',
+                      borderWidth: 1
+                    },
+                    '&.Mui-focused fieldset': { 
+                      borderColor: '#800000',
+                      borderWidth: 2
+                    },
+                    '&.Mui-focused': { 
+                      boxShadow: '0 0 0 3px rgba(128,0,0,0.1)'
+                    }
+                  },
+                  '& .MuiInputLabel-root': { 
+                    color: '#666',
+                    fontWeight: 500,
+                    fontSize: '0.95rem'
+                  }
+                }}
+              />
             )}
-            
-            {/* Non-student full name field */}
-            {role !== 'Student' && (
-              <Grid item xs={12}>
-                <TextField 
-                  label="Full Name" 
-                  value={fullName} 
-                  onChange={e => setFullName(e.target.value)} 
-                  fullWidth 
-                  required 
-                  size="small" 
-                  InputProps={{ style: { fontSize: 14, height: 32 } }}
-                  sx={{
+
+            {/* Teacher Information - Only for Teachers */}
+            {role === 'Teacher' && (
+              <>
+                <TextField
+                  name="fullName"
+                  label="Full Name"
+                  value={fullName}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  placeholder="Enter your full name"
+                  sx={{ 
+                    mb: 1.2,
                     '& .MuiOutlinedInput-root': {
-                      bgcolor: '#ffffff',
-                      color: '#000',
-                      borderRadius: 2,
-                      fontSize: '0.875rem',
+                      bgcolor: '#fafafa',
+                      color: '#333',
+                      borderRadius: 12,
+                      height: 32,
+                      fontSize: 12,
                       '& fieldset': { 
-                        borderColor: '#000',
-                        borderWidth: 0.5
+                        borderColor: '#e0e0e0',
+                        borderWidth: 1
                       },
                       '&:hover fieldset': { 
-                        borderColor: '#000',
-                        borderWidth: 0.5
+                        borderColor: '#800000',
+                        borderWidth: 1
                       },
                       '&.Mui-focused fieldset': { 
-                        borderColor: '#000',
-                        borderWidth: 0.5
+                        borderColor: '#800000',
+                        borderWidth: 2
                       },
-                      '& input': {
-                        fontSize: '0.875rem',
-                        color: '#000',
-                        padding: '8px 12px'
+                      '&.Mui-focused': { 
+                        boxShadow: '0 0 0 3px rgba(128,0,0,0.1)'
                       }
                     },
-                    '& .MuiInputLabel-root': { 
-                      color: '#000',
-                      fontWeight: 400,
-                      fontSize: '0.875rem'
-                    }
+                  '& .MuiInputLabel-root': { 
+                    color: '#666',
+                    fontWeight: 500,
+                    fontSize: '0.8rem'
+                  }
                   }}
                 />
-              </Grid>
-            )}
-            
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={handlePasswordChange}
-                fullWidth
-                required
-                size="small"
-                InputProps={{
-                  style: { fontSize: 14, height: 32 },
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowPassword(s => !s)} edge="end" sx={{ color: '#87CEEB' }}>
-                        {showPassword ? <VisibilityOff sx={{ fontSize: '1rem' }} /> : <Visibility sx={{ fontSize: '1rem' }} />}
-                      </IconButton>
-                    </InputAdornment>
-                  )
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: '#ffffff',
-                    color: '#000',
-                    borderRadius: 2,
-                    fontSize: '0.875rem',
-                    '& fieldset': { 
-                      borderColor: '#000',
-                      borderWidth: 0.5
-                    },
-                    '&:hover fieldset': { 
-                      borderColor: '#000',
-                      borderWidth: 0.5
-                    },
-                    '&.Mui-focused fieldset': { 
-                      borderColor: '#000',
-                      borderWidth: 0.5
-                    },
-                    '& input': {
-                      fontSize: '0.875rem',
-                      color: '#000',
-                      padding: '8px 12px'
-                    }
-                  },
-                  '& .MuiInputLabel-root': { 
-                    color: '#000',
-                    fontWeight: 400,
-                    fontSize: '0.875rem'
-                  },
-                  '& .MuiInputAdornment-root .MuiSvgIcon-root': { 
-                    color: '#87CEEB',
-                    fontSize: '1rem'
-                  }
-                }}
-              />
-              {password && (
-                <Box sx={{ mt: 1 }}>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={(passwordStrength / 4) * 100} 
-                    sx={{ 
-                      height: 4, 
-                      borderRadius: 2,
-                      bgcolor: '#e0e0e0',
-                      '& .MuiLinearProgress-bar': {
-                        bgcolor: getPasswordStrengthColor()
-                      }
-                    }} 
-                  />
-                  <Typography variant="caption" sx={{ color: '#000', fontSize: '0.75rem' }}>
-                    Password strength: {getPasswordStrengthText()}
-                  </Typography>
-                </Box>
-              )}
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Confirm Password"
-                type="password"
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                fullWidth
-                required
-                size="small"
-                InputProps={{ style: { fontSize: 14, height: 32 } }}
-                error={password !== confirmPassword && confirmPassword !== ''}
-                helperText={password !== confirmPassword && confirmPassword !== '' ? 'Passwords do not match' : ''}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: '#ffffff',
-                    color: '#000',
-                    borderRadius: 2,
-                    fontSize: '0.875rem',
-                    '& fieldset': { 
-                      borderColor: '#000',
-                      borderWidth: 0.5
-                    },
-                    '&:hover fieldset': { 
-                      borderColor: '#000',
-                      borderWidth: 0.5
-                    },
-                    '&.Mui-focused fieldset': { 
-                      borderColor: '#000',
-                      borderWidth: 0.5
-                    },
-                    '& input': {
-                      fontSize: '0.875rem',
-                      color: '#000',
-                      padding: '8px 12px'
-                    }
-                  },
-                  '& .MuiInputLabel-root': { 
-                    color: '#000',
-                    fontWeight: 400,
-                    fontSize: '0.875rem'
-                  },
-                  '& .MuiFormHelperText-root': { 
-                    color: '#000',
-                    fontWeight: 400,
-                    fontSize: '0.75rem'
-                  }
-                }}
-              />
-            </Grid>
-            
-            <Grid item xs={12}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                <input
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  id="profile-pic-upload"
-                  type="file"
-                  onChange={handleProfilePic}
-                />
-                <label htmlFor="profile-pic-upload">
-                  <Button
-                    variant="outlined"
-                    component="span"
-                    startIcon={<CloudUpload />}
-                    disabled={uploading}
-                    sx={{
-                      color: '#000',
-                      borderColor: '#000',
-                      '&:hover': {
-                        color: '#1976d2',
-                        borderColor: '#1976d2',
-                        '& .MuiSvgIcon-root': {
-                          color: '#1976d2'
-                        }
+                <TextField
+                  name="phone"
+                  label="Phone Number"
+                  value={phone}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  placeholder="09XXXXXXXXX"
+                  sx={{ 
+                    mb: 1.2,
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: '#fafafa',
+                      color: '#333',
+                      borderRadius: 12,
+                      height: 32,
+                      fontSize: 12,
+                      '& fieldset': { 
+                        borderColor: '#e0e0e0',
+                        borderWidth: 1
                       },
-                      '& .MuiSvgIcon-root': {
-                        color: '#000'
+                      '&:hover fieldset': { 
+                        borderColor: '#800000',
+                        borderWidth: 1
+                      },
+                      '&.Mui-focused fieldset': { 
+                        borderColor: '#800000',
+                        borderWidth: 2
+                      },
+                      '&.Mui-focused': { 
+                        boxShadow: '0 0 0 3px rgba(128,0,0,0.1)'
                       }
-                    }}
-                  >
-                    {uploading ? 'Processing...' : 'Upload Profile Picture'}
-                  </Button>
-                </label>
-                {profilePicBase64 && (
-                  <Avatar src={profilePicBase64} sx={{ width: 40, height: 40 }} />
-                )}
-                {profilePic && (
-                  <Typography variant="caption" sx={{ color: '#000', fontSize: '0.75rem' }}>
-                    {profilePic.name} ({(profilePic.size / 1024).toFixed(2)} KB)
-                  </Typography>
-                )}
-              </Box>
-              <Typography variant="body2" sx={{ color: '#000', fontSize: '0.875rem' }}>
-                Supported formats: JPG, PNG, GIF. Max size: 10MB
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#000', fontSize: '0.75rem' }}>
-                Images will be uploaded to secure cloud storage. Max size: 10MB
-              </Typography>
-            </Grid>
-            
-            <Grid item xs={12}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={terms}
-                    onChange={e => setTerms(e.target.checked)}
-                    sx={{ 
-                      color: '#000',
-                      '&.Mui-checked': { color: '#800000' },
-                      '& .MuiSvgIcon-root': { fontSize: '1rem' }
-                    }}
-                  />
+                    },
+                  '& .MuiInputLabel-root': { 
+                    color: '#666',
+                    fontWeight: 500,
+                    fontSize: '0.8rem'
+                  }
+                  }}
+                />
+                <TextField
+                  name="address"
+                  label="Address"
+                  value={address}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  placeholder="Enter your address"
+                  sx={{ 
+                    mb: 1.2,
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: '#fafafa',
+                      color: '#333',
+                      borderRadius: 12,
+                      height: 32,
+                      fontSize: 12,
+                      '& fieldset': { 
+                        borderColor: '#e0e0e0',
+                        borderWidth: 1
+                      },
+                      '&:hover fieldset': { 
+                        borderColor: '#800000',
+                        borderWidth: 1
+                      },
+                      '&.Mui-focused fieldset': { 
+                        borderColor: '#800000',
+                        borderWidth: 2
+                      },
+                      '&.Mui-focused': { 
+                        boxShadow: '0 0 0 3px rgba(128,0,0,0.1)'
+                      }
+                    },
+                  '& .MuiInputLabel-root': { 
+                    color: '#666',
+                    fontWeight: 500,
+                    fontSize: '0.8rem'
+                  }
+                  }}
+                />
+              </>
+            )}
+
+            {/* Password */}
+            <TextField
+              name="password"
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={handleChange}
+              fullWidth
+              required
+              sx={{ 
+                mb: 1.2,
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: '#fafafa',
+                  color: '#333',
+                  borderRadius: 12,
+                  height: 44,
+                  fontSize: 15,
+                  '& fieldset': { 
+                    borderColor: '#e0e0e0',
+                    borderWidth: 1
+                  },
+                  '&:hover fieldset': { 
+                    borderColor: '#800000',
+                    borderWidth: 1
+                  },
+                  '&.Mui-focused fieldset': { 
+                    borderColor: '#800000',
+                    borderWidth: 2
+                  },
+                  '&.Mui-focused': { 
+                    boxShadow: '0 0 0 3px rgba(128,0,0,0.1)'
+                  }
+                },
+                '& .MuiInputLabel-root': { 
+                  color: '#666',
+                  fontWeight: 500,
+                  fontSize: '0.95rem'
+                },
+                '& .MuiInputAdornment-root .MuiSvgIcon-root': { 
+                  color: '#800000' 
                 }
-                label={
-                  <Typography sx={{ color: '#000', fontSize: '0.875rem' }}>
-                    I agree to the terms and conditions
-                  </Typography>
+              }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              placeholder="Enter your password"
+            />
+
+            {/* Confirm Password */}
+            <TextField
+              name="confirmPassword"
+              label="Confirm Password"
+              type={showPassword ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={handleChange}
+              fullWidth
+              required
+              placeholder="Confirm your password"
+              sx={{ 
+                mb: 1.2,
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: '#fafafa',
+                  color: '#333',
+                  borderRadius: 12,
+                  height: 44,
+                  fontSize: 15,
+                  '& fieldset': { 
+                    borderColor: '#e0e0e0',
+                    borderWidth: 1
+                  },
+                  '&:hover fieldset': { 
+                    borderColor: '#800000',
+                    borderWidth: 1
+                  },
+                  '&.Mui-focused fieldset': { 
+                    borderColor: '#800000',
+                    borderWidth: 2
+                  },
+                  '&.Mui-focused': { 
+                    boxShadow: '0 0 0 3px rgba(128,0,0,0.1)'
+                  }
+                },
+                '& .MuiInputLabel-root': { 
+                  color: '#666',
+                  fontWeight: 500,
+                  fontSize: '0.95rem'
                 }
-              />
-            </Grid>
-            
-            <Grid item xs={12}>
+              }}
+            />
+
+            {/* Submit Button */}
               <Button
                 type="submit"
-                variant="contained"
-                color="inherit"
                 fullWidth
-                disabled={loading || !terms}
-                sx={{ 
-                  py: 0.75, 
-                  fontSize: 13, 
-                  fontWeight: 500,
-                  borderRadius: 2, 
+                variant="contained"
+                disabled={loading}
+                sx={{
+                  mb: 0.6,
+                  height: 32,
+                  minHeight: 32,
+                  maxHeight: 32,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  borderRadius: 6,
+                  boxShadow: '0 2px 8px rgba(128,0,0,0.2)',
                   backgroundColor: '#800000',
                   color: '#fff',
-                  border: '0.5px solid #000',
-                  maxWidth: '300px',
-                  margin: '0 auto',
-                  display: 'block',
+                  padding: '6px 12px',
+                  textTransform: 'none',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                   '&:hover': { 
-                    backgroundColor: '#1976d2',
-                    borderColor: '#1976d2'
+                    backgroundColor: '#6b0000',
+                    boxShadow: '0 4px 12px rgba(128,0,0,0.3)',
+                    transform: 'translateY(-1px)'
                   },
                   '&:disabled': {
                     backgroundColor: '#ccc',
                     color: '#666'
-                  }
+                  },
+                  transition: 'all 0.2s ease'
                 }}
               >
-                {loading ? <CircularProgress size={20} color="inherit" /> : 'Register'}
-              </Button>
-            </Grid>
-          </Grid>
-          </form>
+              {loading ? 'Creating Account...' : 'Create Account'}
+            </Button>
+
+            {/* Login Link */}
+            <Box sx={{ textAlign: 'center', mb: 1 }}>
+              <Typography variant="body2" sx={{ color: '#666', fontWeight: 400, fontSize: '0.9rem' }}>
+                Already have an account?{' '}
+                <Link 
+                  component={RouterLink} 
+                  to="/login" 
+                  underline="hover" 
+                  sx={{ 
+                    color: '#800000',
+                    fontWeight: 600,
+                    '&:hover': { color: '#6b0000' }
+                  }}
+                >
+                  Sign In.
+                </Link>
+              </Typography>
+            </Box>
         </Box>
-        
-        <Box sx={{ textAlign: 'center', mt: 2, mb: 1 }}>
-          <Typography variant="body2" sx={{ color: '#000', fontWeight: 400, fontSize: '0.875rem' }}>
-            Already have an account?{' '}
-            <Link 
-              component={RouterLink} 
-              to="/login" 
-              underline="hover" 
-              sx={{ 
-                color: '#000',
-                fontWeight: 500,
-                fontSize: '0.875rem',
-                '&:hover': { color: '#666' }
-              }}
-            >
-              Login
-            </Link>
-          </Typography>
-        </Box>
+      </Box>
       </Box>
       
       {/* Snackbar for notifications */}
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={4000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={() => setSnackbar({ ...snackbar, open: false })} 
-          severity={snackbar.severity} 
-          sx={{ width: '100%' }}
-        >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>
     </Box>
   );
-} 
+}

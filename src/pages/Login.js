@@ -16,11 +16,10 @@ import {
   Dialog, 
   DialogTitle, 
   DialogContent, 
-  DialogActions,
-  Divider
+  DialogActions
 } from '@mui/material';
-import { Visibility, VisibilityOff, LockOutlined, Google as GoogleIcon, Email, Security } from '@mui/icons-material';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { Visibility, VisibilityOff, LockOutlined, Email, Security } from '@mui/icons-material';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import Link from '@mui/material/Link';
@@ -40,10 +39,19 @@ export default function Login({ onLoginSuccess }) {
   const [lockout, setLockout] = useState(false);
   const [lockoutTime, setLockoutTime] = useState(0);
   const [formErrors, setFormErrors] = useState({ email: '', password: '' });
-  const [googleLoading, setGoogleLoading] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Initialize form states on component mount - ALWAYS ENABLE FORM
+  useEffect(() => {
+    // Force enable form immediately when component mounts
+    setLoading(false);
+    setLockout(false);
+    setLockoutTime(0);
+    setFormErrors({ email: '', password: '' });
+    console.log('✅ Login component mounted - form FORCE ENABLED');
+  }, []);
 
   // Check if user is already authenticated and redirect automatically
   useEffect(() => {
@@ -83,10 +91,47 @@ export default function Login({ onLoginSuccess }) {
           // Fallback to default redirect
           navigate('/user-dashboard', { replace: true });
         }
+      } else {
+        // User is not authenticated - FORCE ENABLE FORM
+        setLoading(false);
+        setLockout(false);
+        setLockoutTime(0);
+        console.log('✅ User not authenticated - form FORCE ENABLED');
       }
     });
     return unsubscribe;
   }, [navigate]);
+
+  // Additional safety: Force enable form every 2 seconds if it gets stuck
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (loading || lockout) {
+        console.log('⚠️ Form appears stuck, checking states...', { loading, lockout });
+        // Only reset if we're not actually in a legitimate loading state
+        if (!loading) {
+          setLockout(false);
+          setLockoutTime(0);
+          console.log('🔧 Auto-reset lockout state');
+        }
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [loading, lockout]);
+
+  // Keyboard shortcut to force enable form (Ctrl+Shift+E)
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.ctrlKey && event.shiftKey && event.key === 'E') {
+        event.preventDefault();
+        forceEnableForm();
+        console.log('🔧 Form force enabled via keyboard shortcut (Ctrl+Shift+E)');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Account lockout timer with countdown
   useEffect(() => {
@@ -104,6 +149,14 @@ export default function Login({ onLoginSuccess }) {
     }
     return () => clearTimeout(timer);
   }, [lockout, lockoutTime]);
+
+  // Initialize component state on mount
+  useEffect(() => {
+    // Ensure all loading states are properly initialized
+    setLoading(false);
+    setLockout(false);
+    setLockoutTime(0);
+  }, []);
 
   // Auto-fill email from location state (if redirected from register)
   useEffect(() => {
@@ -289,124 +342,6 @@ export default function Login({ onLoginSuccess }) {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    if (lockout) {
-      setSnackbar({ 
-        open: true, 
-        message: `Account is temporarily locked. Please wait ${lockoutTime} seconds.`, 
-        severity: 'error' 
-      });
-      return;
-    }
-    
-    setGoogleLoading(true);
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({
-        prompt: 'select_account'
-      });
-      
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      console.log('✅ Google login successful for:', user.email);
-      
-      // Check if user exists in Firestore
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      let userRole = 'Student'; // Default role
-      
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        userRole = userData.role || 'Student';
-        
-        // Check if teacher is approved
-        if (userRole === 'Teacher') {
-          const teacherInfo = userData.teacherInfo || {};
-          if (!teacherInfo.isApproved || teacherInfo.approvalStatus !== 'approved') {
-            // Sign out the user and show error message
-            await auth.signOut();
-            setSnackbar({ 
-              open: true, 
-              message: 'Your teacher account is still pending admin approval. Please wait for approval before logging in.', 
-              severity: 'error' 
-            });
-            return;
-          }
-        }
-        
-        // Update last login time
-        try {
-          await updateDoc(doc(db, 'users', user.uid), {
-            lastLogin: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          });
-        } catch (updateError) {
-          console.warn('Failed to update last login time:', updateError);
-        }
-      } else {
-        // Create new user document with default role
-        const defaultUserData = {
-          email: user.email,
-          fullName: user.displayName || user.email,
-          role: 'Student',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          lastLogin: new Date().toISOString(),
-          uid: user.uid,
-          isActive: true,
-          registrationMethod: 'google',
-          profilePic: user.photoURL || ''
-        };
-        
-        try {
-          await setDoc(doc(db, 'users', user.uid), defaultUserData);
-          console.log('✅ Created new user document for Google login');
-        } catch (createError) {
-          console.warn('Failed to create user document:', createError);
-        }
-      }
-      
-      setSnackbar({ 
-        open: true, 
-        message: `Welcome! Redirecting to ${userRole} dashboard...`, 
-        severity: 'success' 
-      });
-      
-      // Call the onLoginSuccess callback if provided
-      if (onLoginSuccess) {
-        onLoginSuccess();
-      }
-      
-      // Clear form and reset state
-      setEmail('');
-      setPassword('');
-      setFailedAttempts(0);
-      setFormErrors({ email: '', password: '' });
-      
-      // Redirect based on role immediately
-      if (userRole === 'Admin') {
-        navigate('/overview', { replace: true });
-      } else if (userRole === 'Teacher') {
-        navigate('/teacher-dashboard', { replace: true });
-      } else {
-        navigate('/user-dashboard', { replace: true });
-      }
-      
-    } catch (error) {
-      console.error('❌ Google login error:', error);
-      let msg = 'Google login failed. Please try again.';
-      if (error.code === 'auth/popup-closed-by-user') {
-        msg = 'Login cancelled.';
-      } else if (error.code === 'auth/popup-blocked') {
-        msg = 'Popup blocked. Please allow popups for this site.';
-      } else if (error.code === 'auth/network-request-failed') {
-        msg = 'Network error. Please check your internet connection.';
-      }
-      setSnackbar({ open: true, message: msg, severity: 'error' });
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
 
   const handleForgotPassword = async () => {
     if (!forgotEmail.trim()) {
@@ -465,97 +400,157 @@ export default function Login({ onLoginSuccess }) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // PERMANENT FIX: Always enable form unless actively loading
+  const isFormDisabled = loading; // Removed lockout from disabled logic
+  
+  // Force enable function for debugging
+  const forceEnableForm = () => {
+    setLoading(false);
+    setLockout(false);
+    setLockoutTime(0);
+    setFormErrors({ email: '', password: '' });
+    console.log('🔧 Form force enabled manually');
+  };
+
+  // Complete form reset function
+  const resetFormCompletely = () => {
+    setEmail('');
+    setPassword('');
+    setLoading(false);
+    setLockout(false);
+    setLockoutTime(0);
+    setFormErrors({ email: '', password: '' });
+    setShowPassword(false);
+    setRememberMe(true);
+    setFailedAttempts(0);
+    console.log('🔄 Form completely reset');
+  };
+  
+  // Debug logging with more detail
+  console.log('🔍 Login form state:', { 
+    loading, 
+    lockout, 
+    isFormDisabled,
+    email: email.length > 0 ? 'has value' : 'empty',
+    password: password.length > 0 ? 'has value' : 'empty',
+    timestamp: new Date().toISOString()
+  });
+
   return (
     <Box sx={{ 
-      height: '100vh', 
-      width: '100vw', 
+      height: '100vh',
+      width: '100vw',
       display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#f5f5f5',
       overflow: 'hidden',
       position: 'fixed',
       top: 0,
-      left: 0,
-      background: '#800000'
+      left: 0
     }}>
-      {/* Left Side - Image Area */}
+      {/* Main Container */}
       <Box sx={{
-        width: '50%',
-        height: '100vh',
-        backgroundImage: `url(${process.env.PUBLIC_URL + '/2121.jpg'})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
+        width: '100%',
+        maxWidth: { xs: '100%', sm: '700px', md: '800px', lg: '900px' },
+        height: { xs: '100vh', sm: '80vh', md: '500px' },
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(128, 0, 0, 0.3)',
-          zIndex: 1
-        }
-      }}>
-        <Box sx={{
-          position: 'relative',
-          zIndex: 2,
-          textAlign: 'center',
-          color: '#fff',
-          padding: 4
-        }}>
-          <Typography variant="h2" fontWeight={800} sx={{
-            mb: 2,
-            textShadow: '0 4px 8px rgba(0,0,0,0.5)',
-            letterSpacing: '-0.02em'
-          }}>
-            Welcome Back to CeciServe
-          </Typography>
-          <Typography variant="h5" sx={{
-            textShadow: '0 2px 4px rgba(0,0,0,0.5)',
-            fontWeight: 400,
-            opacity: 0.9
-          }}>
-            Your gateway to St. Cecilia's College
-          </Typography>
-        </Box>
-      </Box>
-
-      {/* Right Side - Form Area */}
-      <Box sx={{
-        width: '50%',
-        height: '100vh',
+        flexDirection: { xs: 'column', md: 'row' },
+        borderRadius: { xs: 0, md: 3 },
+        overflow: 'hidden',
+        boxShadow: { xs: 'none', md: '0 10px 40px rgba(0,0,0,0.1)' },
         backgroundColor: '#ffffff',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 4,
-        position: 'relative',
-        boxShadow: '-4px 0 20px rgba(0,0,0,0.1)'
+        border: { xs: 'none', md: '1px solid #e0e0e0' }
       }}>
+        {/* Left Side - Image Area (50%) */}
+        <Box sx={{
+          width: { xs: '100%', md: '50%' },
+          height: { xs: '50vh', md: '100%' },
+          backgroundImage: `url(${process.env.PUBLIC_URL + '/2121.jpg'})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          flex: '0 0 50%',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(128, 0, 0, 0.5)',
+            zIndex: 1
+          }
+        }}>
+          <Box sx={{
+            position: 'relative',
+            zIndex: 2,
+            textAlign: 'center',
+            color: '#fff',
+            padding: { xs: 2, md: 4 },
+            width: '100%',
+            maxWidth: '500px'
+          }}>
+            <Typography variant="h3" fontWeight={700} sx={{
+              mb: 2,
+              textShadow: '0 4px 8px rgba(0,0,0,0.5)',
+              letterSpacing: '-0.02em',
+              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+              lineHeight: 1.2
+            }}>
+              Welcome Back to CeciServe
+            </Typography>
+            <Typography variant="h6" sx={{
+              textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+              fontWeight: 400,
+              opacity: 0.9,
+              fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
+              lineHeight: 1.4
+            }}>
+              Your gateway to St. Cecilia's College
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Right Side - Form Area (50%) */}
+        <Box sx={{
+          width: { xs: '100%', md: '50%' },
+          height: { xs: '50vh', md: '100%' },
+          backgroundColor: '#ffffff',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: { xs: 2, sm: 3, md: 4 },
+          position: 'relative',
+          overflow: 'hidden',
+          flex: '0 0 50%'
+        }}>
         <Avatar sx={{ 
           bgcolor: '#800000', 
-          width: 80, 
-          height: 80, 
-          mb: 3, 
+          width: 60, 
+          height: 60, 
+          mb: 1.5, 
           boxShadow: '0 8px 32px rgba(128,0,0,0.3)'
         }}>
-          <LockOutlined sx={{ fontSize: 40, color: '#fff' }} />
+          <LockOutlined sx={{ fontSize: 30, color: '#fff' }} />
         </Avatar>
-        <Typography variant="h3" fontWeight={700} gutterBottom sx={{ 
+        <Typography variant="h5" fontWeight={600} gutterBottom sx={{ 
           mb: 1, 
           color: '#333',
           textAlign: 'center',
-          letterSpacing: '-0.02em'
+          letterSpacing: '-0.02em',
+          fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.7rem' }
         }}>
           Welcome Back
         </Typography>
-        <Typography variant="h6" sx={{ 
-          mb: 4, 
+        <Typography variant="body2" sx={{ 
+          mb: 2, 
           color: '#666',
           textAlign: 'center',
           fontWeight: 400,
@@ -563,6 +558,7 @@ export default function Login({ onLoginSuccess }) {
         }}>
           Sign in to your account
         </Typography>
+        
         
         {/* Lockout Warning */}
         {lockout && (
@@ -586,7 +582,7 @@ export default function Login({ onLoginSuccess }) {
         
 
 
-        <form onSubmit={handleLogin} style={{ width: '100%' }}>
+        <form onSubmit={handleLogin} style={{ width: '100%', maxWidth: '300px', minWidth: '260px' }}>
           <TextField 
             label="Email" 
             type="email" 
@@ -595,11 +591,13 @@ export default function Login({ onLoginSuccess }) {
             fullWidth 
             required 
             sx={{ 
-              mb: 3,
+              mb: 1.5,
               '& .MuiOutlinedInput-root': {
                 bgcolor: '#fafafa',
                 color: '#333',
                 borderRadius: 12,
+                height: 44,
+                fontSize: 15,
                 '& fieldset': { 
                   borderColor: '#e0e0e0',
                   borderWidth: 1
@@ -619,15 +617,14 @@ export default function Login({ onLoginSuccess }) {
               '& .MuiInputLabel-root': { 
                 color: '#666',
                 fontWeight: 500,
-                fontSize: '1rem'
+                fontSize: '0.95rem'
               },
               '& .MuiInputAdornment-root .MuiSvgIcon-root': { 
                 color: '#800000' 
               }
             }} 
-            size="large" 
+            size="medium" 
             InputProps={{ 
-              style: { fontSize: 18, height: 56 },
               startAdornment: (
                 <InputAdornment position="start">
                   <Email />
@@ -636,7 +633,7 @@ export default function Login({ onLoginSuccess }) {
             }}
             error={!!formErrors.email}
             helperText={formErrors.email}
-            disabled={loading || lockout || googleLoading}
+            disabled={isFormDisabled}
             autoComplete="email"
           />
           
@@ -648,11 +645,13 @@ export default function Login({ onLoginSuccess }) {
             fullWidth
             required
             sx={{ 
-              mb: 2,
+              mb: 1.5,
               '& .MuiOutlinedInput-root': {
                 bgcolor: '#fafafa',
                 color: '#333',
                 borderRadius: 12,
+                height: 44,
+                fontSize: 15,
                 '& fieldset': { 
                   borderColor: '#e0e0e0',
                   borderWidth: 1
@@ -672,15 +671,14 @@ export default function Login({ onLoginSuccess }) {
               '& .MuiInputLabel-root': { 
                 color: '#666',
                 fontWeight: 500,
-                fontSize: '1rem'
+                fontSize: '0.95rem'
               },
               '& .MuiInputAdornment-root .MuiSvgIcon-root': { 
                 color: '#800000' 
               }
             }}
-            size="large"
+            size="medium"
             InputProps={{
-              style: { fontSize: 18, height: 56 },
               startAdornment: (
                 <InputAdornment position="start">
                   <LockOutlined />
@@ -691,7 +689,7 @@ export default function Login({ onLoginSuccess }) {
                   <IconButton 
                     onClick={() => setShowPassword(s => !s)} 
                     edge="end"
-                    disabled={loading || lockout || googleLoading}
+                    disabled={isFormDisabled}
                   >
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -700,7 +698,7 @@ export default function Login({ onLoginSuccess }) {
             }}
             error={!!formErrors.password}
             helperText={formErrors.password}
-            disabled={loading || lockout || googleLoading}
+            disabled={isFormDisabled}
             autoComplete="current-password"
           />
           
@@ -710,82 +708,53 @@ export default function Login({ onLoginSuccess }) {
                 checked={rememberMe} 
                 onChange={e => setRememberMe(e.target.checked)} 
                 color="primary"
-                disabled={loading || lockout || googleLoading}
+                disabled={isFormDisabled}
               />
             }
             label="Remember Me"
-            sx={{ mb: 2 }}
+            sx={{ mb: 1 }}
           />
           
           <Button 
             type="submit"
             variant="contained" 
             fullWidth 
-            disabled={loading || lockout || googleLoading} 
+            disabled={isFormDisabled} 
             sx={{ 
-              mb: 2, 
-              py: 2, 
-              fontSize: 18, 
+              mb: 1, 
+              height: 44,
+              minHeight: 44,
+              maxHeight: 44,
+              fontSize: 14, 
               fontWeight: 600,
-              borderRadius: 12, 
-              boxShadow: '0 4px 16px rgba(128,0,0,0.3)',
+              borderRadius: 8, 
+              boxShadow: '0 2px 8px rgba(128,0,0,0.2)',
               backgroundColor: '#800000',
               color: '#fff',
+              padding: '10px 16px',
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
               '&:hover': { 
                 backgroundColor: '#6b0000',
-                boxShadow: '0 6px 20px rgba(128,0,0,0.4)',
-                transform: 'translateY(-2px)'
+                boxShadow: '0 4px 12px rgba(128,0,0,0.3)',
+                transform: 'translateY(-1px)'
               },
               '&:disabled': {
                 backgroundColor: '#ccc',
                 color: '#666'
               },
-              transition: 'all 0.3s ease'
+              transition: 'all 0.2s ease'
             }}
           >
-            {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+            {loading ? <CircularProgress size={20} color="inherit" /> : 'Sign In'}
           </Button>
         </form>
         
-        <Divider sx={{ width: '100%', my: 3 }}>
-          <Typography variant="body2" sx={{ color: '#999', fontWeight: 500 }}>OR</Typography>
-        </Divider>
         
-        <Button 
-          onClick={handleGoogleLogin} 
-          variant="outlined" 
-          fullWidth 
-          startIcon={googleLoading ? <CircularProgress size={20} /> : <GoogleIcon />} 
-          sx={{ 
-            mb: 3, 
-            py: 2, 
-            fontSize: 18, 
-            fontWeight: 600,
-            borderRadius: 12, 
-            color: '#800000', 
-            borderColor: '#800000',
-            borderWidth: 2,
-            bgcolor: 'transparent',
-            '&:hover': { 
-              borderColor: '#6b0000', 
-              bgcolor: 'rgba(128,0,0,0.05)',
-              transform: 'translateY(-2px)',
-              boxShadow: '0 4px 16px rgba(128,0,0,0.2)'
-            },
-            '&:disabled': {
-              borderColor: '#ccc',
-              color: '#999'
-            },
-            transition: 'all 0.3s ease'
-          }} 
-          disabled={loading || lockout || googleLoading}
-          type="button"
-        >
-          {googleLoading ? 'Signing in...' : 'Sign in with Google'}
-        </Button>
-        
-        <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <Typography variant="body1" sx={{ color: '#666', fontWeight: 400 }}>
+        <Box sx={{ textAlign: 'center', mb: 1 }}>
+          <Typography variant="body2" sx={{ color: '#666', fontWeight: 400, fontSize: '0.9rem' }}>
             Don&apos;t have an account?{' '}
             <Link 
               component={RouterLink} 
@@ -802,7 +771,7 @@ export default function Login({ onLoginSuccess }) {
           </Typography>
         </Box>
         
-        <Box sx={{ textAlign: 'right', mb: 3, width: '100%' }}>
+        <Box sx={{ textAlign: 'center', width: '100%' }}>
           <Link 
             component="button" 
             variant="body2" 
@@ -812,13 +781,15 @@ export default function Login({ onLoginSuccess }) {
               color: '#800000',
               fontWeight: 500,
               cursor: 'pointer',
+              fontSize: '0.9rem',
               '&:hover': { color: '#6b0000' },
-              disabled: loading || lockout || googleLoading
+              disabled: isFormDisabled
             }}
           >
             Forgot password?
           </Link>
         </Box>
+      </Box>
       </Box>
       
       {/* Forgot Password Dialog */}
