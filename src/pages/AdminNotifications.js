@@ -3,7 +3,7 @@ import {
   Box, Grid, Card, CardContent, Typography, Paper, Avatar, Button, List, Chip,
   Dialog, DialogTitle, DialogContent, DialogActions, Divider, Stack, Alert, IconButton,
   Badge, Tabs, Tab, ListItem, ListItemText, ListItemAvatar, ListItemSecondaryAction,
-  TableContainer, Table, TableHead, TableBody, TableRow, TableCell
+  TableContainer, Table, TableHead, TableBody, TableRow, TableCell, useTheme
 } from "@mui/material";
 import { 
   Warning, Announcement, Search, Info, NotificationsActive, 
@@ -17,6 +17,7 @@ import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
 
 export default function AdminNotifications() {
+  const theme = useTheme();
   const [notifications, setNotifications] = useState([]);
   const [activityNotifications, setActivityNotifications] = useState([]);
   const [announcementNotifications, setAnnouncementNotifications] = useState([]);
@@ -204,7 +205,7 @@ export default function AdminNotifications() {
     return (
       <Paper sx={{ mb: 3 }}>
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography variant="h6" fontWeight={600}>
+          <Typography variant="h6" fontWeight={600} color={theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'}>
             {title}
           </Typography>
         </Box>
@@ -213,8 +214,8 @@ export default function AdminNotifications() {
             <React.Fragment key={notification.id}>
               <ListItem
                 sx={{
-                  bgcolor: notification.read ? 'transparent' : '#f3f4f6',
-                  '&:hover': { bgcolor: '#f9fafb' },
+                  bgcolor: notification.read ? 'transparent' : (theme.palette.mode === 'dark' ? '#404040' : '#f3f4f6'),
+                  '&:hover': { bgcolor: theme.palette.mode === 'dark' ? '#505050' : '#f9fafb' },
                   cursor: 'pointer'
                 }}
                 onClick={() => handleViewDetails(notification)}
@@ -227,7 +228,7 @@ export default function AdminNotifications() {
                 <ListItemText
                   primary={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="subtitle1" fontWeight={notification.read ? 400 : 600}>
+                      <Typography variant="subtitle1" fontWeight={notification.read ? 400 : 600} color={theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'}>
                         {notification.title || notification.message}
                       </Typography>
                       {!notification.read && (
@@ -276,7 +277,7 @@ export default function AdminNotifications() {
               {getNotificationIcon(selectedNotification.type)}
             </Avatar>
             <Box>
-              <Typography variant="h6">
+              <Typography variant="h6" color={theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'}>
                 {selectedNotification.title || selectedNotification.message}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -287,13 +288,13 @@ export default function AdminNotifications() {
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2}>
-            <Typography variant="body1">
+            <Typography variant="body1" color={theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'}>
               {selectedNotification.description || selectedNotification.message}
             </Typography>
             
             {selectedNotification.type === 'violation' && (
               <Box>
-                <Typography variant="subtitle2" gutterBottom>Violation Details:</Typography>
+                <Typography variant="subtitle2" gutterBottom color={theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'}>Violation Details:</Typography>
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
                     <TableBody>
@@ -357,7 +358,7 @@ export default function AdminNotifications() {
     <Box sx={{ p: { xs: 2, sm: 3 }, minHeight: '100vh' }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={700} color="#2d3436" gutterBottom>
+        <Typography variant="h4" fontWeight={700} color={theme.palette.mode === 'dark' ? '#ffffff' : '#2d3436'} gutterBottom>
           Admin Notifications
         </Typography>
         <Typography variant="body1" color="text.secondary">
@@ -366,14 +367,18 @@ export default function AdminNotifications() {
       </Box>
 
       {/* Statistics Card */}
-      <Card sx={{ mb: 3, bgcolor: '#e3f2fd', border: '1px solid #2196f3' }}>
+      <Card sx={{ 
+        mb: 3, 
+        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#e3f2fd', 
+        border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #2196f3' 
+      }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Avatar sx={{ bgcolor: '#1976d2' }}>
               <NotificationsActive />
             </Avatar>
             <Box>
-              <Typography variant="h6" fontWeight={600}>
+              <Typography variant="h6" fontWeight={600} color={theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'}>
                 {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
               </Typography>
               <Typography variant="body2" color="text.secondary">

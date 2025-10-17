@@ -69,8 +69,9 @@ export default function TeacherHeader({ currentUser, userProfile }) {
           fontWeight: 700, 
           color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
           flex: 1, 
-          textAlign: 'center', 
-          ml: -2 
+          textAlign: 'center',
+          fontSize: '1.75rem',
+          lineHeight: 1.2
         }}>
           Student Affairs Management System
         </Typography>
