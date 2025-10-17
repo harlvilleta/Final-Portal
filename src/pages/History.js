@@ -75,11 +75,11 @@ export default function History() {
       <Paper sx={{ p: 2, borderRadius: 3, boxShadow: 2, bgcolor: '#f5f6fa' }}>
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ bgcolor: '#e3f2fd' }}>
-              <TableCell sx={{ fontWeight: 700 }}>Operation</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Used For</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Operation Date</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Details</TableCell>
+            <TableRow sx={{ bgcolor: '#800000' }}>
+              <TableCell sx={{ color: 'white', fontWeight: 700 }}>Operation</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 700 }}>Used For</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 700 }}>Operation Date</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 700 }}>Details</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

@@ -8,7 +8,7 @@ import {
   Email, Phone, Home, Work
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import { collection, addDoc, doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
+import { collection, addDoc, doc, getDoc, updateDoc, setDoc, query, where, getDocs } from "firebase/firestore";
 import { updatePassword, updateProfile, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { db, auth } from "../firebase";
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -190,10 +190,90 @@ export default function Profile() {
         homeAddress: profile.homeAddress,
         profilePic: imageURL,
         role: profile.role || 'Student',
+        studentId: profile.studentId, // Ensure studentId is included
         updatedAt: new Date().toISOString()
       }, { merge: true });
 
-      setSnackbar({ open: true, message: "Profile updated successfully!", severity: "success" });
+      // 🔄 SYNC WITH ADMIN STUDENT LIST
+      // If this is a student, also update their record in the admin's students collection
+      if (profile.role === 'Student' && profile.studentId) {
+        try {
+          console.log('🔄 Syncing student profile with admin records...');
+          
+          // Find the student record in the admin's students collection
+          const studentsQuery = query(
+            collection(db, 'students'),
+            where('id', '==', profile.studentId)
+          );
+          
+          const studentsSnapshot = await getDocs(studentsQuery);
+          
+          if (!studentsSnapshot.empty) {
+            // Update the existing student record in admin's collection
+            const studentDoc = studentsSnapshot.docs[0];
+            await updateDoc(doc(db, 'students', studentDoc.id), {
+              firstName: profile.firstName,
+              lastName: profile.lastName,
+              middleInitial: profile.middleInitial,
+              sex: profile.sex,
+              age: profile.age,
+              birthdate: profile.birthdate,
+              contact: profile.contact,
+              fatherName: profile.fatherName,
+              fatherOccupation: profile.fatherOccupation,
+              motherName: profile.motherName,
+              motherOccupation: profile.motherOccupation,
+              guardian: profile.guardian,
+              guardianContact: profile.guardianContact,
+              homeAddress: profile.homeAddress,
+              profilePic: imageURL,
+              email: profile.email,
+              isRegistered: true,
+              registeredUserId: currentUser.uid,
+              lastUpdated: new Date().toISOString(),
+              updatedBy: 'student'
+            });
+            
+            console.log('✅ Student record synced with admin list successfully');
+          } else {
+            console.log('⚠️ Student record not found in admin collection, creating new record...');
+            
+            // Create a new student record in admin's collection if not found
+            await addDoc(collection(db, 'students'), {
+              id: profile.studentId,
+              firstName: profile.firstName,
+              lastName: profile.lastName,
+              middleInitial: profile.middleInitial,
+              sex: profile.sex,
+              age: profile.age,
+              birthdate: profile.birthdate,
+              contact: profile.contact,
+              fatherName: profile.fatherName,
+              fatherOccupation: profile.fatherOccupation,
+              motherName: profile.motherName,
+              motherOccupation: profile.motherOccupation,
+              guardian: profile.guardian,
+              guardianContact: profile.guardianContact,
+              homeAddress: profile.homeAddress,
+              profilePic: imageURL,
+              email: profile.email,
+              isRegistered: true,
+              registeredUserId: currentUser.uid,
+              registeredAt: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
+              lastUpdated: new Date().toISOString(),
+              updatedBy: 'student'
+            });
+            
+            console.log('✅ New student record created in admin collection');
+          }
+        } catch (syncError) {
+          console.error('❌ Error syncing with admin student list:', syncError);
+          // Don't fail the entire operation if sync fails
+        }
+      }
+
+      setSnackbar({ open: true, message: "Profile updated successfully! Changes synced with admin records.", severity: "success" });
       setSaveSuccess(true); // Set success state
       setTimeout(() => setSaveSuccess(false), 3000); // Reset success state after 3 seconds
     } catch (error) {

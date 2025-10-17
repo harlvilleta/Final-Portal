@@ -14,7 +14,8 @@ import {
   useTheme,
   Chip,
   CircularProgress,
-  Alert
+  Alert,
+  IconButton
 } from '@mui/material';
 import {
   School,
@@ -32,6 +33,7 @@ export default function StudentClassroom({ currentUser }) {
   const [classrooms, setClassrooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [teacherInfo, setTeacherInfo] = useState(null);
 
   useEffect(() => {
     if (!currentUser?.email) return;
@@ -109,16 +111,32 @@ export default function StudentClassroom({ currentUser }) {
         console.log('From students collection:', studentsFromStudentsCollection.length);
         console.log('From users collection:', studentsFromUsersCollection.length);
 
+        // Fetch teacher information if teacherId exists
+        let teacherData = null;
+        if (uniqueClassmates.length > 0 && uniqueClassmates[0].teacherId) {
+          try {
+            const teacherDoc = await getDoc(doc(db, 'users', uniqueClassmates[0].teacherId));
+            if (teacherDoc.exists()) {
+              teacherData = teacherDoc.data();
+              console.log('Found teacher info:', teacherData);
+            }
+          } catch (teacherError) {
+            console.error('Error fetching teacher info:', teacherError);
+          }
+        }
+
         // Create classroom object
         const classroom = {
           course,
           yearLevel: year,
           section,
           classmates: uniqueClassmates,
-          teacherId: uniqueClassmates.length > 0 ? uniqueClassmates[0].teacherId : null
+          teacherId: uniqueClassmates.length > 0 ? uniqueClassmates[0].teacherId : null,
+          teacherInfo: teacherData
         };
 
         setClassrooms([classroom]);
+        setTeacherInfo(teacherData);
       } catch (error) {
         console.error('Error fetching student classrooms:', error);
         setError('Error loading classroom information');
@@ -183,109 +201,121 @@ export default function StudentClassroom({ currentUser }) {
           </CardContent>
         </Card>
       ) : (
-        <Grid container spacing={3}>
+        <Grid container spacing={3} justifyContent="flex-start">
           {classrooms.map((classroom, index) => (
-            <Grid item xs={12} key={index}>
+            <Grid item xs={12} sm={6} md={4} lg={3} xl={2.4} key={index}>
               <Card sx={{ 
-                border: '1px solid #666666', 
-                bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa',
+                borderRadius: 3,
+                overflow: 'hidden',
                 cursor: 'pointer',
                 transition: 'transform 0.2s, box-shadow 0.2s',
+                maxWidth: '300px',
+                width: '100%',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 '&:hover': {
                   transform: 'translateY(-4px)',
-                  boxShadow: 4
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.15)'
                 }
               }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                    <Avatar sx={{ bgcolor: '#800000', width: 60, height: 60 }}>
-                      <School sx={{ fontSize: 30 }} />
-                    </Avatar>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="h4" fontWeight={700} color="#2c3e2c">
-                        {classroom.course}
+                {/* Header with colored background */}
+                <Box sx={{ 
+                  bgcolor: '#1976d2', 
+                  p: 2, 
+                  position: 'relative',
+                  minHeight: '120px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  {/* Course info */}
+                  <Box>
+                    <Typography variant="h6" fontWeight={700} color="white" sx={{ mb: 0.5, lineHeight: 1.2 }}>
+                      {classroom.course}
+                    </Typography>
+                    <Typography variant="body2" color="rgba(255,255,255,0.9)" sx={{ mb: 0.5 }}>
+                      {classroom.yearLevel} - {classroom.section}
+                    </Typography>
+                    {classroom.teacherInfo && (
+                      <Typography variant="caption" color="rgba(255,255,255,0.8)" sx={{ fontSize: '0.7rem', display: 'block', mb: 0.5 }}>
+                        {classroom.teacherInfo.fullName || `${classroom.teacherInfo.firstName || ''} ${classroom.teacherInfo.lastName || ''}`.trim() || 'Your Teacher'}
                       </Typography>
-                      <Typography variant="h6" color="#3d4f3d">
-                        {classroom.yearLevel} - {classroom.section}
-                      </Typography>
-                    </Box>
-                    <Button
-                      variant="contained"
-                      onClick={() => openClassroomDashboard(classroom)}
-                      sx={{
-                        bgcolor: '#800000',
-                        color: 'white',
-                        fontWeight: 600,
-                        '&:hover': {
-                          bgcolor: '#600000'
-                        }
-                      }}
-                    >
-                      View Classroom
-                    </Button>
-                  </Box>
-                  
-                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
-                    <Chip 
-                      icon={<Group />} 
-                      label={classroom.classmates.length === 1 && classroom.classmates[0].email === currentUser.email 
+                    )}
+                    <Typography variant="caption" color="rgba(255,255,255,0.7)" sx={{ fontSize: '0.65rem' }}>
+                      {classroom.classmates.length === 1 && classroom.classmates[0].email === currentUser.email 
                         ? 'Only You' 
                         : `${classroom.classmates.length} Students`
-                      } 
-                      sx={{ bgcolor: '#B6CEB4', color: '#2c3e2c' }}
-                    />
-                    <Chip 
-                      icon={<Class />} 
-                      label="Active Classroom" 
-                      sx={{ bgcolor: '#A8C4A6', color: '#2c3e2c' }}
-                    />
+                      }
+                    </Typography>
                   </Box>
+                  
+                  {/* Decorative icon */}
+                  <Box sx={{ 
+                    position: 'absolute', 
+                    top: 8, 
+                    right: 8,
+                    opacity: 0.3
+                  }}>
+                    <School sx={{ fontSize: 24, color: 'white' }} />
+                  </Box>
+                  
+                  {/* Profile avatar overlapping */}
+                  <Box sx={{ 
+                    position: 'absolute', 
+                    bottom: -20, 
+                    right: 12,
+                    border: '3px solid white',
+                    borderRadius: '50%'
+                  }}>
+                    <Avatar sx={{ 
+                      width: 40, 
+                      height: 40, 
+                      bgcolor: '#800000'
+                    }}>
+                      <Person sx={{ fontSize: 20 }} />
+                    </Avatar>
+                  </Box>
+                </Box>
 
-                  {classroom.classmates.length > 0 && (
-                    <Box>
-                      <Typography variant="h6" fontWeight={600} color="#2c3e2c" sx={{ mb: 2 }}>
-                        {classroom.classmates.length === 1 && classroom.classmates[0].email === currentUser.email 
-                          ? 'You (Only Student)' 
-                          : `Your Classmates (${classroom.classmates.length})`
-                        }
-                      </Typography>
-                      <List sx={{ maxHeight: 200, overflow: 'auto' }}>
-                        {classroom.classmates.slice(0, 5).map((classmate, idx) => (
-                          <ListItem key={classmate.id} sx={{ px: 0, py: 0.5 }}>
-                            <ListItemAvatar>
-                              <Avatar sx={{ bgcolor: '#800000', width: 32, height: 32 }}>
-                                <Person sx={{ fontSize: 18 }} />
-                              </Avatar>
-                            </ListItemAvatar>
-                            <ListItemText
-                              primary={
-                                <Typography variant="body2" fontWeight={500} color="#2c3e2c">
-                                  {classmate.email === currentUser.email ? 'You' : classmate.name}
-                                </Typography>
-                              }
-                              secondary={
-                                <Typography variant="caption" color="#3d4f3d">
-                                  ID: {classmate.studentId}
-                                </Typography>
-                              }
-                            />
-                          </ListItem>
-                        ))}
-                        {classroom.classmates.length > 5 && (
-                          <ListItem sx={{ px: 0, py: 0.5 }}>
-                            <ListItemText
-                              primary={
-                                <Typography variant="body2" color="#3d4f3d" sx={{ fontStyle: 'italic' }}>
-                                  ... and {classroom.classmates.length - 5} more classmates
-                                </Typography>
-                              }
-                            />
-                          </ListItem>
-                        )}
-                      </List>
-                    </Box>
-                  )}
-                </CardContent>
+                {/* Body content */}
+                <Box sx={{ p: 2, pt: 3, bgcolor: 'white' }}>
+                  {/* Action icons at bottom */}
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-around', 
+                    alignItems: 'center',
+                    pt: 1,
+                    borderTop: '1px solid #f0f0f0'
+                  }}>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => openClassroomDashboard(classroom)}
+                      sx={{ 
+                        color: '#666',
+                        '&:hover': { color: '#1976d2' }
+                      }}
+                    >
+                      <Group sx={{ fontSize: 20 }} />
+                    </IconButton>
+                    <IconButton 
+                      size="small"
+                      sx={{ 
+                        color: '#666',
+                        '&:hover': { color: '#1976d2' }
+                      }}
+                    >
+                      <Class sx={{ fontSize: 20 }} />
+                    </IconButton>
+                    <IconButton 
+                      size="small"
+                      sx={{ 
+                        color: '#666',
+                        '&:hover': { color: '#1976d2' }
+                      }}
+                    >
+                      <School sx={{ fontSize: 20 }} />
+                    </IconButton>
+                  </Box>
+                </Box>
               </Card>
             </Grid>
           ))}

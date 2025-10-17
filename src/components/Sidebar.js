@@ -97,15 +97,15 @@ export default function Sidebar() {
     <Drawer
       variant="permanent"
       sx={{
-        width: 280,
+        width: 230,
         flexShrink: 0,
-        [`& .MuiDrawer-paper`]: { width: 280, boxSizing: "border-box", bgcolor: "#2d3436", color: "#fff", display: 'flex', flexDirection: 'column', overflowX: 'hidden' }
+        [`& .MuiDrawer-paper`]: { width: 230, boxSizing: "border-box", bgcolor: "#2d3436", color: "#fff", display: 'flex', flexDirection: 'column', overflowX: 'hidden' }
       }}
     >
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {/* Logo Section */}
         <Box sx={{ mb: 2 }}>
-          <img src="gt.jpg" alt="Logo" style={{ width: 200, height: 160, borderRadius: 10, boxShadow: '0 2px 8px #0002' }} />
+          <img src="gt.jpg" alt="Logo" style={{ width: 180, height: 144, borderRadius: 10, boxShadow: '0 2px 8px #0002' }} />
         </Box>
         <Divider sx={{ width: '100%', mb: 2, bgcolor: '#b2bec3' }} />
       </Box>

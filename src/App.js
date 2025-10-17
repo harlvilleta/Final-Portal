@@ -641,8 +641,6 @@ function App() {
                         <Routes>
                           <Route path="/" element={<Navigate to="/teacher-dashboard" />} />
                           <Route path="/teacher-dashboard" element={<TeacherDashboard currentUser={currentUser} userProfile={userProfile} />} />
-                          <Route path="/teacher-my-students" element={<ClassroomManager currentUser={currentUser} />} />
-                          <Route path="/classroom/:course/:yearLevel/:section" element={<ClassroomDashboard currentUser={currentUser} />} />
                           <Route path="/teacher-students" element={<TeacherStudentsView currentUser={currentUser} />} />
                           <Route path="/teacher-announcements" element={<Announcements />} />
                           <Route path="/teacher-assessments" element={<div>Teacher Assessments</div>} />
@@ -676,8 +674,6 @@ function App() {
                         <Route path="/receipt-history" element={<ReceiptHistory />} />
                         <Route path="/profile" element={<Profile />} />
                         <Route path="/edit-profile" element={<EditProfile />} />
-                        <Route path="/classroom" element={<StudentClassroom currentUser={currentUser} />} />
-                        <Route path="/classroom/:course/:yearLevel/:section" element={<ClassroomDashboard currentUser={currentUser} />} />
                         <Route path="/notifications" element={<UserNotifications currentUser={currentUser} />} />
                         <Route path="/*" element={<Navigate to="/user-dashboard" />} />
                       </Routes>

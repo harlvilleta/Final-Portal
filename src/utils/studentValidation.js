@@ -132,6 +132,114 @@ export const checkStudentIdAvailability = async (studentId) => {
 };
 
 /**
+ * Validates if a student ID exists in admin's student records (for registration validation)
+ * @param {string} studentId - The student ID to validate
+ * @returns {Promise<{isValid: boolean, error?: string}>}
+ */
+// Test function to verify student ID validation (for debugging)
+export const testStudentIdValidation = async (studentId) => {
+  console.log("🧪 Testing Student ID validation for:", studentId);
+  
+  try {
+    // Check students collection
+    const studentsQuery = query(collection(db, "students"), where("id", "==", studentId.trim()));
+    const studentsSnapshot = await getDocs(studentsQuery);
+    
+    console.log("📋 Students collection results:", {
+      query: `where("id", "==", "${studentId.trim()}")`,
+      count: studentsSnapshot.size,
+      docs: studentsSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
+    });
+    
+    // Check users collection
+    const usersQuery = query(collection(db, "users"), where("studentId", "==", studentId.trim()));
+    const usersSnapshot = await getDocs(usersQuery);
+    
+    console.log("👥 Users collection results:", {
+      query: `where("studentId", "==", "${studentId.trim()}")`,
+      count: usersSnapshot.size,
+      docs: usersSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
+    });
+    
+    return {
+      existsInStudents: !studentsSnapshot.empty,
+      existsInUsers: !usersSnapshot.empty,
+      studentsData: studentsSnapshot.docs.map(doc => doc.data()),
+      usersData: usersSnapshot.docs.map(doc => doc.data())
+    };
+  } catch (error) {
+    console.error("❌ Test validation error:", error);
+    return { error: error.message };
+  }
+};
+
+export const validateStudentIdForRegistration = async (studentId) => {
+  try {
+    if (!studentId || !studentId.trim()) {
+      return {
+        isValid: false,
+        error: 'Student ID is required'
+      };
+    }
+
+    console.log("🔍 Validating student ID for registration:", studentId.trim());
+    
+    // Check if student exists in the students collection (admin-added records)
+    // Note: In the students collection, the field is called "id", not "studentId"
+    const studentsQuery = query(collection(db, "students"), where("id", "==", studentId.trim()));
+    const studentsSnapshot = await getDocs(studentsQuery);
+    
+    // Check if student exists in the users collection (already registered)
+    const usersQuery = query(collection(db, "users"), where("studentId", "==", studentId.trim()));
+    const usersSnapshot = await getDocs(usersQuery);
+    
+    const existsInStudents = !studentsSnapshot.empty;
+    const existsInUsers = !usersSnapshot.empty;
+    
+    console.log("📊 Student ID registration validation result:", { 
+      studentId: studentId.trim(), 
+      existsInStudents, 
+      existsInUsers,
+      studentsCount: studentsSnapshot.size,
+      usersCount: usersSnapshot.size
+    });
+    
+    // Debug: Log the actual student records found
+    if (studentsSnapshot.size > 0) {
+      console.log("🔍 Found student records:", studentsSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() })));
+    }
+    
+    if (existsInUsers) {
+      console.log("❌ Student ID already registered in users collection");
+      return {
+        isValid: false,
+        error: `Student ID ${studentId} is already registered. Please contact your administrator if you believe this is an error.`
+      };
+    }
+    
+    if (existsInStudents) {
+      console.log("✅ Student ID found in admin records - registration allowed");
+      return {
+        isValid: true,
+        error: null
+      };
+    }
+    
+    console.log("❌ Student ID not found in admin records");
+    return {
+      isValid: false,
+      error: "Student ID not found. Please contact your administrator."
+    };
+  } catch (error) {
+    console.error("❌ Error validating student ID for registration:", error);
+    return {
+      isValid: false,
+      error: "Error validating student ID. Please try again."
+    };
+  }
+};
+
+/**
  * Checks if an email is available for new registration (not already taken)
  * @param {string} email - The email to check
  * @returns {Promise<{isAvailable: boolean, error?: string}>}

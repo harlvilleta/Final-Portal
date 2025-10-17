@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Snackbar, Alert, Chip, Select, InputLabel, FormControl
 } from "@mui/material";
+import { CheckCircle, Cancel, Schedule, Warning } from "@mui/icons-material";
 import { collection, getDocs, updateDoc, doc, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -105,7 +106,42 @@ export default function EventSchedulingAdmin() {
                 <TableCell>{event.date}</TableCell>
                 <TableCell>{event.location}</TableCell>
                 <TableCell>
-                  <Chip label={event.status} color={event.status === "approved" ? "success" : event.status === "rejected" ? "error" : "warning"} />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ 
+                      width: 20, 
+                      height: 20, 
+                      bgcolor: event.status === 'approved' ? '#4caf50' : 
+                              event.status === 'rejected' ? '#f44336' : 
+                              event.status === 'pending' ? '#ff9800' : '#9e9e9e', 
+                      borderRadius: 1, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      {event.status === 'approved' ? (
+                        <CheckCircle sx={{ fontSize: 14, color: 'white' }} />
+                      ) : event.status === 'rejected' ? (
+                        <Cancel sx={{ fontSize: 14, color: 'white' }} />
+                      ) : event.status === 'pending' ? (
+                        <Schedule sx={{ fontSize: 14, color: 'white' }} />
+                      ) : (
+                        <Warning sx={{ fontSize: 14, color: 'white' }} />
+                      )}
+                    </Box>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: event.status === 'pending' ? '#ff9800' : 
+                              event.status === 'approved' ? '#4caf50' : 
+                              event.status === 'rejected' ? '#f44336' : '#000',
+                        fontWeight: 500,
+                        textTransform: 'capitalize'
+                      }}
+                    >
+                      {event.status}
+                    </Typography>
+                  </Box>
                 </TableCell>
                 <TableCell>
                   <Button size="small" onClick={() => { setSelectedEvent(event); setRemarks(event.adminRemarks || ""); }}>View</Button>

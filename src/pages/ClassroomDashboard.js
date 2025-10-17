@@ -22,7 +22,11 @@ import {
   Chip,
   Breadcrumbs,
   Link,
-  CircularProgress
+  CircularProgress,
+  Tabs,
+  Tab,
+  TextField,
+  InputAdornment
 } from '@mui/material';
 import {
   ArrowBack,
@@ -32,7 +36,11 @@ import {
   Group,
   Class,
   Add,
-  PersonAdd
+  PersonAdd,
+  Info,
+  Assignment,
+  MoreVert,
+  Search
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { db } from '../firebase';
@@ -49,6 +57,8 @@ export default function ClassroomDashboard({ currentUser }) {
   const [isDeletingStudent, setIsDeletingStudent] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [teacherInfo, setTeacherInfo] = useState(null);
+  const [activeTab, setActiveTab] = useState(0);
+  const [allClassmates, setAllClassmates] = useState([]);
 
   // Fetch user role
   useEffect(() => {
@@ -194,16 +204,31 @@ export default function ClassroomDashboard({ currentUser }) {
         setStudents(validStudents);
         
         // Fetch teacher information if students exist
+        let teacherData = null;
         if (validStudents.length > 0 && validStudents[0].teacherId) {
           try {
             const teacherDoc = await getDoc(doc(db, 'users', validStudents[0].teacherId));
             if (teacherDoc.exists()) {
-              setTeacherInfo(teacherDoc.data());
+              teacherData = teacherDoc.data();
+              setTeacherInfo(teacherData);
             }
           } catch (error) {
             console.error('Error fetching teacher info:', error);
           }
         }
+        
+        // Create allClassmates array including teacher
+        const classmates = [...validStudents];
+        if (teacherData) {
+          classmates.unshift({
+            id: teacherData.uid || 'teacher',
+            name: teacherData.fullName || `${teacherData.firstName || ''} ${teacherData.lastName || ''}`.trim(),
+            email: teacherData.email,
+            role: 'Teacher',
+            profilePic: teacherData.profilePic
+          });
+        }
+        setAllClassmates(classmates);
         
         // Show notification if invalid students were found
         if (invalidStudents.length > 0) {
@@ -260,412 +285,315 @@ export default function ClassroomDashboard({ currentUser }) {
     );
   }
 
-  return (
-    <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: '#44444E', minHeight: '100vh' }}>
-      {/* Header with Back Button */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <IconButton 
-            onClick={handleBackToClassrooms}
-            sx={{ 
-              mr: 2, 
-              bgcolor: '#424242', 
-              color: 'white'
-            }}
-          >
-            <ArrowBack />
-          </IconButton>
-          <Breadcrumbs aria-label="breadcrumb">
-            <Link 
-              underline="none" 
-              color="#e0e0e0" 
-              onClick={handleBackToClassrooms}
-              sx={{ cursor: 'pointer' }}
-            >
-              {userRole === 'Teacher' ? 'My Classrooms' : 'Dashboard'}
-            </Link>
-            <Typography color="#ffffff">
-              {course} - {yearLevel} - {section}
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
+
+  const renderStreamContent = () => (
+    <Grid container spacing={3}>
+      <Grid item xs={12} md={8}>
+        <Card sx={{ borderRadius: 2, boxShadow: 'none', border: '1px solid #e0e0e0' }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600, color: '#333', mb: 2 }}>
+              Coming soon
             </Typography>
-          </Breadcrumbs>
-        </Box>
-        
-        <Typography 
-          variant="h4" 
-          fontWeight={700} 
-          color="#ffffff" 
-          gutterBottom
-        >
-          Classroom Dashboard
-        </Typography>
-        <Typography 
-          variant="body1" 
-          color="#e0e0e0"
-        >
-          {userRole === 'Teacher' 
-            ? `Manage students in ${course} - ${yearLevel} - ${section}`
-            : `View your classmates in ${course} - ${yearLevel} - ${section}`
-          }
-        </Typography>
-      </Box>
-
-      {/* Classroom Overview Card */}
-      <Card sx={{ mb: 4, border: '1px solid #666666', bgcolor: '#f8f9fa' }}>
-        <CardContent>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={8}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                <Avatar sx={{ bgcolor: '#800000', width: 60, height: 60 }}>
-                  <School sx={{ fontSize: 30 }} />
-                </Avatar>
-                <Box>
-                  <Typography variant="h4" fontWeight={700} color="#2c3e2c">
-                    {course}
-                  </Typography>
-                  <Typography variant="h6" color="#3d4f3d">
-                    {yearLevel} - {section}
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <Chip 
-                  icon={<Group />} 
-                  label={userRole === 'Teacher' ? `${students.length} Students` : `${students.length} ${students.length === 1 ? 'Student' : 'Students'}`} 
-                  sx={{ bgcolor: '#B6CEB4', color: '#2c3e2c' }}
-                />
-                <Chip 
-                  icon={<Class />} 
-                  label="Active Classroom" 
-                  sx={{ bgcolor: '#A8C4A6', color: '#2c3e2c' }}
-                />
-              </Box>
-            </Grid>
-            
-            <Grid item xs={12} md={4}>
-              <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
-                <Typography variant="h2" fontWeight={700} color="#2c3e2c">
-                  {students.length}
-                </Typography>
-                <Typography variant="body1" color="#3d4f3d">
-                  {userRole === 'Teacher' 
-                    ? `${students.length === 1 ? 'Student' : 'Students'} Enrolled`
-                    : `${students.length === 1 ? 'Student' : 'Students'} in Class`
-                  }
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-
-      {/* Teacher Information Card - Always show for students */}
-      {userRole === 'Student' && (
-        <Card sx={{ mb: 4, border: '1px solid #666666', bgcolor: '#f8f9fa' }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-              <Avatar sx={{ bgcolor: '#1976d2', width: 50, height: 50 }}>
-                <PersonAdd sx={{ fontSize: 24 }} />
-              </Avatar>
-              <Box>
-                <Typography variant="h6" fontWeight={600} color="#2c3e2c">
-                  Your Teacher
-                </Typography>
-                <Typography variant="body2" color="#3d4f3d">
-                  Classroom instructor information
-                </Typography>
-              </Box>
-            </Box>
-            
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, bgcolor: '#ffffff', borderRadius: 2, border: '1px solid #e0e0e0' }}>
-              <Avatar 
-                src={teacherInfo?.profilePic} 
+            <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#666', mb: 2 }}>
+              Woohoo, no work to finish right away!
+            </Typography>
+            <Box sx={{ textAlign: 'right' }}>
+              <Button 
+                variant="text" 
                 sx={{ 
-                  width: 60, 
-                  height: 60, 
-                  bgcolor: teacherInfo?.profilePic ? 'transparent' : '#1976d2',
-                  border: '2px solid #1976d2'
+                  fontSize: '0.875rem', 
+                  color: '#1976d2', 
+                  textTransform: 'none',
+                  p: 0,
+                  minWidth: 'auto'
                 }}
               >
-                {!teacherInfo?.profilePic && (teacherInfo?.fullName?.charAt(0) || 'T')}
-              </Avatar>
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="h6" fontWeight={600} color="#2c3e2c">
-                  {teacherInfo?.fullName || 'Your Teacher'}
-                </Typography>
-                <Typography variant="body2" color="#3d4f3d" sx={{ mb: 1 }}>
-                  {teacherInfo?.email || 'Teacher information will be available soon'}
-                </Typography>
-                <Chip 
-                  label="Teacher" 
-                  size="small" 
-                  sx={{ 
-                    bgcolor: '#1976d2', 
-                    color: 'white',
-                    fontWeight: 600
-                  }} 
-                />
-              </Box>
+                See all
+              </Button>
             </Box>
           </CardContent>
         </Card>
-      )}
-
-      {/* Students List */}
-      <Card sx={{ border: '1px solid #666666', bgcolor: '#f8f9fa' }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h6" fontWeight={600} color="#2c3e2c">
-              {userRole === 'Teacher' ? 'Students in this Classroom' : 'Your Classmates'}
-            </Typography>
-            {userRole === 'Teacher' && (
-              <Button
-                variant="outlined"
-                startIcon={<Add />}
-                onClick={() => navigate('/teacher-my-students')}
-                sx={{
-                  borderColor: '#800000',
-                  color: '#800000'
-                }}
-              >
-                Add Student
-              </Button>
-            )}
-          </Box>
-
-          {students.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 6 }}>
-              <Person sx={{ fontSize: 80, color: '#3d4f3d', mb: 2 }} />
-              <Typography variant="h6" color="#3d4f3d" gutterBottom>
-                {userRole === 'Teacher' ? 'No Students Yet' : 'No Classmates Yet'}
-              </Typography>
-              <Typography variant="body2" color="#3d4f3d" sx={{ mb: 3 }}>
-                {userRole === 'Teacher' 
-                  ? "This classroom doesn't have any students yet. Add students to get started."
-                  : "This classroom doesn't have any classmates yet. Check back later."
-                }
-              </Typography>
-              {userRole === 'Teacher' && (
-                <Button
-                  variant="contained"
-                  startIcon={<Add />}
-                  onClick={() => navigate('/teacher-my-students')}
-                  sx={{
-                    bgcolor: '#800000',
-                    color: 'white'
-                  }}
-                >
-                  Add First Student
-                </Button>
-              )}
-            </Box>
-          ) : userRole === 'Student' && students.length === 1 && students[0].email === currentUser.email ? (
-            // Special case: Student viewing their own classroom with no other students
-            <Box sx={{ textAlign: 'center', py: 6 }}>
-              <Avatar sx={{ 
-                width: 100, 
-                height: 100, 
-                bgcolor: '#800000', 
-                mx: 'auto', 
-                mb: 3,
-                fontSize: 40
-              }}>
-                <Person sx={{ fontSize: 50 }} />
+      </Grid>
+      <Grid item xs={12} md={4}>
+        <Card sx={{ borderRadius: 2, boxShadow: 'none', border: '1px solid #e0e0e0', mb: 2 }}>
+          <CardContent sx={{ p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Avatar sx={{ width: 32, height: 32, bgcolor: '#f0f0f0' }}>
+                <Person sx={{ fontSize: 18, color: '#666' }} />
               </Avatar>
-              <Typography variant="h4" fontWeight={600} color="#2c3e2c" gutterBottom>
-                You
-              </Typography>
-              <Typography variant="h6" color="#3d4f3d" gutterBottom>
-                {students[0].name}
-              </Typography>
-              <Typography variant="body2" color="#3d4f3d" sx={{ mb: 3 }}>
-                Student ID: {students[0].studentId}
-              </Typography>
-              <Typography variant="body1" color="#3d4f3d" sx={{ mb: 3 }}>
-                You are currently the only student in this classroom. Your teacher may add more students later.
-              </Typography>
-              <Chip 
-                label="Only Student" 
-                sx={{ 
-                  bgcolor: '#e3f2fd', 
-                  color: '#1976d2',
-                  fontWeight: 600,
-                  fontSize: '0.9rem'
-                }} 
+              <TextField
+                placeholder="Advertise in your class"
+                variant="outlined"
+                size="small"
+                fullWidth
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    fontSize: '0.875rem',
+                    '& fieldset': {
+                      borderColor: '#e0e0e0',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#ccc',
+                    },
+                  },
+                }}
               />
             </Box>
-          ) : (
-            <Grid container spacing={2}>
-              {students.map((student, index) => (
-                <Grid item xs={12} sm={6} md={4} key={student.id}>
-                  <Card 
-                    sx={{ 
-                      border: '1px solid #e0e0e0',
-                      bgcolor: '#ffffff',
-                      transition: 'transform 0.2s, box-shadow 0.2s',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: 2
-                      }
-                    }}
-                  >
-                    <CardContent sx={{ p: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                        <Avatar sx={{ bgcolor: '#800000', width: 50, height: 50 }}>
-                          <Person sx={{ fontSize: 24 }} />
-                        </Avatar>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="h6" fontWeight={600} color="#2c3e2c" sx={{ mb: 0.5 }}>
-                            {userRole === 'Student' && student.email === currentUser.email ? 'You' : student.name}
-                          </Typography>
-                          <Typography variant="body2" color="#3d4f3d">
-                            ID: {student.studentId}
-                          </Typography>
-                        </Box>
-                        {userRole === 'Teacher' && (
-                          <Tooltip title="Remove Student">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDeleteStudent(student)}
-                              disabled={isDeletingStudent}
-                              sx={{ 
-                                color: '#f44336'
-                              }}
-                            >
-                              <Delete />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </Box>
-                      
-                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                        <Chip 
-                          label={userRole === 'Student' && student.email === currentUser.email ? "You" : "Student"} 
-                          size="small" 
-                          sx={{ 
-                            bgcolor: userRole === 'Student' && student.email === currentUser.email ? '#800000' : '#e3f2fd', 
-                            color: userRole === 'Student' && student.email === currentUser.email ? 'white' : '#1976d2',
-                            fontWeight: 600
-                          }} 
-                        />
-                        <Chip 
-                          label={course} 
-                          size="small" 
-                          variant="outlined"
-                          sx={{ 
-                            borderColor: '#800000',
-                            color: '#800000',
-                            fontWeight: 500
-                          }} 
-                        />
-                      </Box>
-                      
-                      <Typography variant="caption" color="#3d4f3d" sx={{ mt: 1, display: 'block' }}>
-                        Joined: {new Date(student.createdAt).toLocaleDateString()}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        
+        {/* Assignment Cards */}
+        <Card sx={{ borderRadius: 2, boxShadow: 'none', border: '1px solid #e0e0e0', mb: 2 }}>
+          <CardContent sx={{ p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+              <Box sx={{ 
+                width: 24, 
+                height: 24, 
+                bgcolor: '#4caf50', 
+                borderRadius: 1, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Assignment sx={{ fontSize: 16, color: 'white' }} />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#333', mb: 0.5, lineHeight: 1.4 }}>
+                  Jhon Ericson Brigildo posted a new assignment: Research Fee: Proof of Payment
+                </Typography>
+                <Typography variant="caption" sx={{ fontSize: '0.75rem', color: '#999' }}>
+                  Yesterday
+                </Typography>
+              </Box>
+              <IconButton size="small" sx={{ color: '#666' }}>
+                <MoreVert sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Box>
+          </CardContent>
+        </Card>
 
-      {/* Statistics Cards */}
-      <Grid container spacing={3} sx={{ mt: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            border: '1px solid #666666', 
-            bgcolor: '#f8f9fa',
-            textAlign: 'center',
-            p: 2,
-            '&:hover': {
-              bgcolor: '#f8f9fa', // Keep the same color on hover
-              transform: 'none', // Prevent any transform effects
-              boxShadow: 'none' // Prevent shadow changes
-            }
-          }}>
-            <CardContent>
-              <Typography variant="h4" fontWeight={700} color="#2c3e2c">
-                {students.length}
-              </Typography>
-              <Typography variant="body2" color="#3d4f3d">
-                Total Students
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            border: '1px solid #666666', 
-            bgcolor: '#f8f9fa',
-            textAlign: 'center',
-            p: 2,
-            '&:hover': {
-              bgcolor: '#f8f9fa', // Keep the same color on hover
-              transform: 'none', // Prevent any transform effects
-              boxShadow: 'none' // Prevent shadow changes
-            }
-          }}>
-            <CardContent>
-              <Typography variant="h4" fontWeight={700} color="#2c3e2c">
-                {course}
-              </Typography>
-              <Typography variant="body2" color="#3d4f3d">
-                Course
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            border: '1px solid #666666', 
-            bgcolor: '#f8f9fa',
-            textAlign: 'center',
-            p: 2,
-            '&:hover': {
-              bgcolor: '#f8f9fa', // Keep the same color on hover
-              transform: 'none', // Prevent any transform effects
-              boxShadow: 'none' // Prevent shadow changes
-            }
-          }}>
-            <CardContent>
-              <Typography variant="h4" fontWeight={700} color="#2c3e2c">
-                {yearLevel}
-              </Typography>
-              <Typography variant="body2" color="#3d4f3d">
-                Year Level
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            border: '1px solid #666666', 
-            bgcolor: '#f8f9fa',
-            textAlign: 'center',
-            p: 2,
-            '&:hover': {
-              bgcolor: '#f8f9fa', // Keep the same color on hover
-              transform: 'none', // Prevent any transform effects
-              boxShadow: 'none' // Prevent shadow changes
-            }
-          }}>
-            <CardContent>
-              <Typography variant="h4" fontWeight={700} color="#2c3e2c">
-                {section}
-              </Typography>
-              <Typography variant="body2" color="#3d4f3d">
-                Section
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+        <Card sx={{ borderRadius: 2, boxShadow: 'none', border: '1px solid #e0e0e0' }}>
+          <CardContent sx={{ p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+              <Box sx={{ 
+                width: 24, 
+                height: 24, 
+                bgcolor: '#4caf50', 
+                borderRadius: 1, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Assignment sx={{ fontSize: 16, color: 'white' }} />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#333', mb: 0.5, lineHeight: 1.4 }}>
+                  Jhon Ericson Brigildo posted a new assignment: Capstone Project: Final Presentation Defen...
+                </Typography>
+                <Typography variant="caption" sx={{ fontSize: '0.75rem', color: '#999' }}>
+                  Yesterday (Edited Yesterday)
+                </Typography>
+              </Box>
+              <IconButton size="small" sx={{ color: '#666' }}>
+                <MoreVert sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Box>
+          </CardContent>
+        </Card>
       </Grid>
+    </Grid>
+  );
+
+  const renderPeopleContent = () => (
+    <Box>
+      <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600, color: '#333', mb: 3 }}>
+        People ({allClassmates.length})
+      </Typography>
+      <Grid container spacing={2}>
+        {allClassmates.map((person, index) => (
+          <Grid item xs={12} sm={6} md={4} lg={3} key={person.id || index}>
+            <Card sx={{ 
+              borderRadius: 2, 
+              boxShadow: 'none', 
+              border: '1px solid #e0e0e0',
+              '&:hover': {
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              }
+            }}>
+              <CardContent sx={{ p: 2, textAlign: 'center' }}>
+                <Avatar 
+                  src={person.profilePic} 
+                  sx={{ 
+                    width: 60, 
+                    height: 60, 
+                    mx: 'auto', 
+                    mb: 1,
+                    bgcolor: person.role === 'Teacher' ? '#1976d2' : '#800000'
+                  }}
+                >
+                  {person.role === 'Teacher' ? 'T' : 'S'}
+                </Avatar>
+                <Typography variant="subtitle2" sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#333', mb: 0.5 }}>
+                  {person.name || person.fullName || `${person.firstName || ''} ${person.lastName || ''}`.trim()}
+                </Typography>
+                <Typography variant="caption" sx={{ fontSize: '0.75rem', color: '#666', display: 'block', mb: 1 }}>
+                  {person.email}
+                </Typography>
+                <Chip 
+                  label={person.role === 'Teacher' ? 'Teacher' : 'Student'} 
+                  size="small"
+                  sx={{ 
+                    fontSize: '0.7rem',
+                    height: 20,
+                    bgcolor: person.role === 'Teacher' ? '#1976d2' : '#800000',
+                    color: 'white'
+                  }} 
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
+  );
+
+  return (
+    <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+      {/* Top Navigation */}
+      <Box sx={{ p: 2, bgcolor: 'white', borderBottom: '1px solid #e0e0e0' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+          <IconButton 
+            onClick={handleBackToClassrooms}
+            sx={{ 
+              mr: 1, 
+              color: '#666',
+              p: 0.5
+            }}
+          >
+            <ArrowBack sx={{ fontSize: 20 }} />
+          </IconButton>
+          <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#666' }}>
+            {course} - {yearLevel} - {section}
+          </Typography>
+        </Box>
+        <Typography variant="body2" sx={{ fontSize: '0.75rem', color: '#999', ml: 4 }}>
+          {yearLevel} - {section}
+        </Typography>
+      </Box>
+
+      {/* Blue Header Banner */}
+      <Box sx={{ 
+        bgcolor: '#1976d2', 
+        p: 3, 
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{ position: 'relative', zIndex: 2 }}>
+          <Typography variant="h4" sx={{ 
+            fontSize: '1.5rem', 
+            fontWeight: 700, 
+            color: 'white', 
+            mb: 1,
+            textAlign: 'center'
+          }}>
+            {course} - {section} ({yearLevel.toUpperCase()})
+          </Typography>
+          <Typography variant="body1" sx={{ 
+            fontSize: '1rem', 
+            color: 'rgba(255,255,255,0.9)', 
+            textAlign: 'center',
+            mb: 1
+          }}>
+            {yearLevel} - {section}
+          </Typography>
+          {teacherInfo && (
+            <Typography variant="body2" sx={{ 
+              fontSize: '0.875rem', 
+              color: 'rgba(255,255,255,0.8)', 
+              textAlign: 'center'
+            }}>
+              {teacherInfo.fullName || `${teacherInfo.firstName || ''} ${teacherInfo.lastName || ''}`.trim()}
+            </Typography>
+          )}
+        </Box>
+        
+        {/* Graduation Cap Icons */}
+        <Box sx={{ 
+          position: 'absolute', 
+          top: 8, 
+          right: 16,
+          opacity: 0.3,
+          zIndex: 1
+        }}>
+          <School sx={{ fontSize: 32, color: 'white', mr: 1 }} />
+          <School sx={{ fontSize: 28, color: 'white' }} />
+        </Box>
+        
+        {/* Info Icon */}
+        <IconButton 
+          sx={{ 
+            position: 'absolute', 
+            bottom: 8, 
+            right: 8,
+            color: 'white',
+            zIndex: 2
+          }}
+        >
+          <Info sx={{ fontSize: 20 }} />
+        </IconButton>
+      </Box>
+
+      {/* Navigation Tabs */}
+      <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #e0e0e0' }}>
+        <Tabs 
+          value={activeTab} 
+          onChange={handleTabChange}
+          sx={{
+            '& .MuiTab-root': {
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              textTransform: 'none',
+              minHeight: 48,
+              color: '#666',
+              '&.Mui-selected': {
+                color: '#1976d2',
+                fontWeight: 600
+              }
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#1976d2',
+              height: 2
+            }
+          }}
+        >
+          <Tab label="Stream" />
+          <Tab label="Announcement" />
+          <Tab label="People" />
+        </Tabs>
+      </Box>
+
+      {/* Content Area */}
+      <Box sx={{ p: 3 }}>
+        {activeTab === 0 && renderStreamContent()}
+        {activeTab === 1 && (
+          <Card sx={{ borderRadius: 2, boxShadow: 'none', border: '1px solid #e0e0e0' }}>
+            <CardContent sx={{ p: 3, textAlign: 'center' }}>
+              <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600, color: '#333', mb: 2 }}>
+                Announcements
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#666' }}>
+                No announcements yet. Check back later for updates from your teacher.
+              </Typography>
+            </CardContent>
+          </Card>
+        )}
+        {activeTab === 2 && renderPeopleContent()}
+      </Box>
 
       {/* Snackbar */}
       <Snackbar

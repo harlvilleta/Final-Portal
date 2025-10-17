@@ -245,7 +245,7 @@ export default function AnnouncementReport() {
         <TableContainer component={Paper} elevation={3}>
           <Table>
             <TableHead>
-              <TableRow sx={{ bgcolor: 'primary.main' }}>
+              <TableRow sx={{ bgcolor: '#800000' }}>
                 <TableCell sx={{ color: 'white', fontWeight: 600 }}>Date Submitted</TableCell>
                 <TableCell sx={{ color: 'white', fontWeight: 600 }}>Title</TableCell>
                 <TableCell sx={{ color: 'white', fontWeight: 600 }}>Teacher</TableCell>
@@ -320,14 +320,40 @@ export default function AnnouncementReport() {
                       />
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        {getStatusIcon(status)}
-                        <Chip 
-                          label={status} 
-                          size="small" 
-                          color={statusColors[status]}
-                          sx={{ ml: 1 }}
-                        />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ 
+                          width: 20, 
+                          height: 20, 
+                          bgcolor: status === 'Approved' ? '#4caf50' : 
+                                  status === 'Denied' ? '#f44336' : 
+                                  status === 'Pending' ? '#ff9800' : '#9e9e9e', 
+                          borderRadius: 1, 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          {status === 'Approved' ? (
+                            <CheckCircle sx={{ fontSize: 14, color: 'white' }} />
+                          ) : status === 'Denied' ? (
+                            <Cancel sx={{ fontSize: 14, color: 'white' }} />
+                          ) : status === 'Pending' ? (
+                            <Schedule sx={{ fontSize: 14, color: 'white' }} />
+                          ) : (
+                            <Warning sx={{ fontSize: 14, color: 'white' }} />
+                          )}
+                        </Box>
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            color: status === 'Pending' ? '#ff9800' : 
+                                  status === 'Approved' ? '#4caf50' : 
+                                  status === 'Denied' ? '#f44336' : '#000',
+                            fontWeight: 500
+                          }}
+                        >
+                          {status}
+                        </Typography>
                       </Box>
                     </TableCell>
                     <TableCell>
@@ -389,12 +415,12 @@ export default function AnnouncementReport() {
           <TableContainer component={Paper} elevation={1}>
             <Table size="small">
               <TableHead>
-                <TableRow sx={{ bgcolor: 'grey.200' }}>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Title</TableCell>
-                  <TableCell>Category</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Label</TableCell>
+                <TableRow sx={{ bgcolor: '#800000' }}>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Date</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Title</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Category</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Label</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

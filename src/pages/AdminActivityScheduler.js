@@ -37,7 +37,9 @@ import {
   Warning,
   FilterList,
   Visibility,
-  Edit
+  Edit,
+  AccessTime,
+  Help
 } from '@mui/icons-material';
 import { auth, db } from '../firebase';
 import { collection, getDocs, query, where, orderBy, onSnapshot, updateDoc, doc, addDoc } from 'firebase/firestore';
@@ -800,20 +802,42 @@ export default function AdminActivityScheduler() {
                         borderBottom: '1px solid rgba(255,255,255,0.2)',
                         backgroundColor: 'rgba(255,255,255,0.05)'
                       }}>
-                        <Chip
-                          label={booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                          sx={{
-                            backgroundColor: 'transparent',
-                            color: booking.status === 'approved' ? '#4caf50' : 
-                                   booking.status === 'rejected' ? '#f44336' : 
-                                   booking.status === 'pending' ? '#ff9800' : 'black',
-                            border: 'none',
-                            '& .MuiChip-label': {
-                              padding: '4px 8px'
-                            }
-                          }}
-                          size="small"
-                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box sx={{ 
+                            width: 20, 
+                            height: 20, 
+                            bgcolor: booking.status === 'approved' ? '#4caf50' : 
+                                    booking.status === 'rejected' ? '#f44336' : 
+                                    booking.status === 'pending' ? '#ff9800' : '#9e9e9e', 
+                            borderRadius: 1, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}>
+                            {booking.status === 'approved' ? (
+                              <CheckCircle sx={{ fontSize: 14, color: 'white' }} />
+                            ) : booking.status === 'rejected' ? (
+                              <Cancel sx={{ fontSize: 14, color: 'white' }} />
+                            ) : booking.status === 'pending' ? (
+                              <AccessTime sx={{ fontSize: 14, color: 'white' }} />
+                            ) : (
+                              <Help sx={{ fontSize: 14, color: 'white' }} />
+                            )}
+                          </Box>
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: booking.status === 'approved' ? '#4caf50' : 
+                                     booking.status === 'rejected' ? '#f44336' : 
+                                     booking.status === 'pending' ? '#ff9800' : 'black',
+                              fontWeight: 500,
+                              textTransform: 'capitalize'
+                            }}
+                          >
+                            {booking.status}
+                          </Typography>
+                        </Box>
                       </TableCell>
                       <TableCell sx={{
                         borderBottom: '1px solid rgba(255,255,255,0.2)',

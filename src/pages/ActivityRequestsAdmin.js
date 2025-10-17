@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Chip, Snackbar, Alert } from '@mui/material';
-import { Visibility } from '@mui/icons-material';
+import { Visibility, CheckCircle, Cancel, Schedule, Warning } from '@mui/icons-material';
 import { collection, getDocs, updateDoc, addDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
@@ -71,7 +71,42 @@ export default function ActivityRequestsAdmin() {
                 <TableCell>{r.date}</TableCell>
                 <TableCell>{r.location}</TableCell>
                 <TableCell>
-                  <Chip label={r.status} color={r.status === 'approved' ? 'success' : r.status === 'rejected' ? 'error' : 'warning'} size="small" />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ 
+                      width: 20, 
+                      height: 20, 
+                      bgcolor: r.status === 'approved' ? '#4caf50' : 
+                              r.status === 'rejected' ? '#f44336' : 
+                              r.status === 'pending' ? '#ff9800' : '#9e9e9e', 
+                      borderRadius: 1, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      {r.status === 'approved' ? (
+                        <CheckCircle sx={{ fontSize: 14, color: 'white' }} />
+                      ) : r.status === 'rejected' ? (
+                        <Cancel sx={{ fontSize: 14, color: 'white' }} />
+                      ) : r.status === 'pending' ? (
+                        <Schedule sx={{ fontSize: 14, color: 'white' }} />
+                      ) : (
+                        <Warning sx={{ fontSize: 14, color: 'white' }} />
+                      )}
+                    </Box>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: r.status === 'pending' ? '#ff9800' : 
+                              r.status === 'approved' ? '#4caf50' : 
+                              r.status === 'rejected' ? '#f44336' : '#000',
+                        fontWeight: 500,
+                        textTransform: 'capitalize'
+                      }}
+                    >
+                      {r.status}
+                    </Typography>
+                  </Box>
                 </TableCell>
                 <TableCell>{r.requestedByEmail || r.requestedBy}</TableCell>
                 <TableCell>

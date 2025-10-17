@@ -46,7 +46,7 @@ import {
 } from '@mui/icons-material';
 import { db } from '../firebase';
 import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, where, onSnapshot } from 'firebase/firestore';
-import { validateStudentId, getStudentById } from '../utils/studentValidation';
+import { getStudentById } from '../utils/studentValidation';
 
 const courses = ["BSIT", "BSBA", "BSCRIM", "BSHTM", "BEED", "BSED", "BSHM"];
 const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
@@ -60,6 +60,10 @@ export default function ClassroomManager({ currentUser }) {
   const [openAddStudentDialog, setOpenAddStudentDialog] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [isAddingStudent, setIsAddingStudent] = useState(false);
+  
+  // Filter states
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
 
   // Student Form State - Now includes course, year, section
   const [studentForm, setStudentForm] = useState({
@@ -115,29 +119,37 @@ export default function ClassroomManager({ currentUser }) {
     fetchAndProcessStudentData();
   }, [currentUser]);
 
+  // Filter students based on selected course and year
+  const filteredStudents = students.filter(student => {
+    const courseMatch = !selectedCourse || student.course === selectedCourse;
+    const yearMatch = !selectedYear || student.yearLevel === selectedYear;
+    return courseMatch && yearMatch;
+  });
+
+  // Group filtered students by course-year-section for display
+  const groupedStudents = filteredStudents.reduce((groups, student) => {
+    const key = `${student.course}-${student.yearLevel}-${student.section}`;
+    if (!groups[key]) {
+      groups[key] = {
+        course: student.course,
+        yearLevel: student.yearLevel,
+        section: student.section,
+        students: []
+      };
+    }
+    groups[key].students.push(student);
+    return groups;
+  }, {});
+
+  const classroomBoxes = Object.values(groupedStudents).map((classroom, index) => ({
+    id: `${classroom.course}-${classroom.yearLevel}-${classroom.section}`,
+    ...classroom,
+    studentCount: classroom.students.length
+  }));
+
   const generateClassroomBoxes = (studentsData) => {
-    const classroomMap = {};
-    
-    studentsData.forEach(student => {
-      const key = `${student.course}-${student.yearLevel}-${student.section}`;
-      if (!classroomMap[key]) {
-        classroomMap[key] = {
-          course: student.course,
-          yearLevel: student.yearLevel,
-          section: student.section,
-          students: []
-        };
-      }
-      classroomMap[key].students.push(student);
-    });
-    
-    const classroomBoxes = Object.values(classroomMap).map((classroom, index) => ({
-      id: `${classroom.course}-${classroom.yearLevel}-${classroom.section}`,
-      ...classroom,
-      studentCount: classroom.students.length
-    }));
-    
-    setClassrooms(classroomBoxes);
+    // This function is now handled by the filtering logic above
+    setClassrooms([]);
   };
 
 
@@ -176,33 +188,8 @@ export default function ClassroomManager({ currentUser }) {
     try {
       console.log('🔍 Validating student ID:', studentForm.studentId);
       
-      // Validate student ID against main registration database
-      const validation = await validateStudentId(studentForm.studentId);
-      console.log('📊 Validation result:', validation);
-      
-      if (!validation.isValid) {
-        console.log('❌ Student validation failed:', validation.error);
-        console.log('📊 Validation details:', {
-          studentId: studentForm.studentId,
-          isValid: validation.isValid,
-          isRegisteredInUsers: validation.isRegisteredInUsers,
-          isRegisteredInStudents: validation.isRegisteredInStudents,
-          error: validation.error
-        });
-        
-        // Check if student exists in either collection but validation failed
-        if (validation.isRegisteredInUsers || validation.isRegisteredInStudents) {
-          console.log('⚠️ Student exists in database but validation failed - proceeding with addition');
-          // Continue with the addition process even if validation failed
-        } else {
-          // Provide more specific error message
-          let errorMessage = validation.error || 'Student not found in the system.';
-          setSnackbar({ open: true, message: errorMessage, severity: 'error' });
-          return;
-        }
-      }
-
-      console.log('✅ Student validation passed, adding to database...');
+      // Admin can freely add students without ID validation
+      console.log('✅ Adding student to classroom (no validation required for admin)...');
 
       const newStudent = {
         name: studentForm.name.trim(),
@@ -337,6 +324,15 @@ export default function ClassroomManager({ currentUser }) {
     navigate(`/classroom/${course}/${yearLevel}/${section}`);
   };
 
+  // Handle course filter selection - navigate to course dashboard
+  const handleCourseFilter = (course) => {
+    setSelectedCourse(course);
+    if (course) {
+      // Navigate to the course dashboard
+      navigate(`/classroom/${encodeURIComponent(course)}`);
+    }
+  };
+
   const handleDeleteClassroom = async (classroom, event) => {
     // Prevent the card click event from firing
     event.stopPropagation();
@@ -378,11 +374,7 @@ export default function ClassroomManager({ currentUser }) {
   };
 
   const getStudentsForClassroom = (classroom) => {
-    return students.filter(student => 
-      student.course === classroom.course &&
-      student.yearLevel === classroom.yearLevel &&
-      student.section === classroom.section
-    );
+    return classroom.students || [];
   };
 
   if (loading || !currentUser) {
@@ -398,7 +390,7 @@ export default function ClassroomManager({ currentUser }) {
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5" fontWeight={700} color="text.primary">
-          My Classrooms
+          Student Management
         </Typography>
         <Button
           variant="contained"
@@ -413,17 +405,87 @@ export default function ClassroomManager({ currentUser }) {
         </Button>
       </Box>
 
+      {/* Filter Section */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+        <FormControl sx={{ minWidth: 150 }}>
+          <InputLabel>Filter by Course</InputLabel>
+          <Select
+            value={selectedCourse}
+            onChange={(e) => handleCourseFilter(e.target.value)}
+            label="Filter by Course"
+          >
+            <MenuItem value="">
+              <em>All Courses</em>
+            </MenuItem>
+            {courses.map((course) => (
+              <MenuItem key={course} value={course}>
+                {course}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        
+        <FormControl sx={{ minWidth: 150 }}>
+          <InputLabel>Filter by Year</InputLabel>
+          <Select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            label="Filter by Year"
+          >
+            <MenuItem value="">
+              <em>All Years</em>
+            </MenuItem>
+            {years.map((year) => (
+              <MenuItem key={year} value={year}>
+                {year}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {(selectedCourse || selectedYear) && (
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setSelectedCourse('');
+              setSelectedYear('');
+            }}
+            sx={{ alignSelf: 'flex-end' }}
+          >
+            Clear Filters
+          </Button>
+        )}
+      </Box>
+
+      {/* Summary Section */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          {selectedCourse || selectedYear ? 
+            `Showing ${filteredStudents.length} student(s) from ${classroomBoxes.length} classroom(s)` :
+            `Total: ${students.length} student(s) in ${classroomBoxes.length} classroom(s)`
+          }
+        </Typography>
+        {(selectedCourse || selectedYear) && (
+          <Typography variant="body2" color="text.secondary">
+            Filtered by: {selectedCourse && `Course: ${selectedCourse}`} {selectedCourse && selectedYear && ' • '} {selectedYear && `Year: ${selectedYear}`}
+          </Typography>
+        )}
+      </Box>
+
       {/* Classrooms Grid */}
-      {classrooms.length === 0 ? (
+      {classroomBoxes.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 4 }}>
           <Typography variant="body1" color="text.secondary">
-            👉 No classrooms created yet.
+            {selectedCourse || selectedYear ? 
+              `No students found for the selected filters.` : 
+              `👉 No students added yet.`
+            }
           </Typography>
         </Box>
       ) : (
         <Grid container spacing={3}>
-          {classrooms.map((classroom) => {
-            const classroomStudents = getStudentsForClassroom(classroom);
+          {classroomBoxes.map((classroom) => {
+            const classroomStudents = classroom.students;
             return (
               <Grid item xs={12} sm={6} md={4} key={classroom.id}>
                 <Card

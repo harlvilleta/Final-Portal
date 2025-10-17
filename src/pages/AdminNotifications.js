@@ -354,7 +354,7 @@ export default function AdminNotifications() {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, minHeight: '100vh' }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={700} color="#2d3436" gutterBottom>

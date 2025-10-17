@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Routes, Route, Link } from "react-router-dom";
 import { 
-  Box, Grid, Card, CardActionArea, CardContent, Typography, TextField, Button, Paper, MenuItem, Avatar, Snackbar, Alert, 
+  Box, Grid, Typography, TextField, Button, Paper, MenuItem, Avatar, Snackbar, Alert, 
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Stack, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText,
-  IconButton, Tooltip, Chip, InputAdornment, Accordion, AccordionSummary, AccordionDetails, CircularProgress, useTheme, Tabs, Tab
+  IconButton, Tooltip, Chip, InputAdornment, CircularProgress, useTheme, Tabs, Tab
 } from "@mui/material";
-import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete, Search, ExpandMore, Folder, ArrowBack, CloudUpload } from "@mui/icons-material";
+import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete, Search, CloudUpload, PictureAsPdf } from "@mui/icons-material";
 import { db, storage, logActivity } from "../firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, where, query, onSnapshot, orderBy, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -1588,7 +1588,7 @@ function StudentList({
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [currentView, setCurrentView] = useState('all'); // 'all' or course name
+  const [courseFilter, setCourseFilter] = useState('all'); // 'all' or specific course name
   const [openViolation, setOpenViolation] = useState(false);
   const [activeTab, setActiveTab] = useState(0); // 0: All Students, 1: Unregistered, 2: Registered
   const [violation, setViolation] = useState({ 
@@ -1712,36 +1712,38 @@ function StudentList({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Filter students based on registration status and search
+  // Filter students based on registration status, search, and course filter
   const filteredStudents = useMemo(() => {
     let filtered = students;
+    
+    // Apply course filter
+    if (courseFilter !== 'all') {
+      filtered = filtered.filter(student => student.course === courseFilter);
+    }
     
     // Apply search filter if search term exists
     if (search.trim()) {
       const term = search.trim().toLowerCase();
       console.log('🔍 Searching for:', term);
-      console.log('📊 Total students to search:', students.length);
+      console.log('📊 Total students to search:', filtered.length);
       
-      filtered = students.filter(s => {
+      filtered = filtered.filter(s => {
         const fullName = `${s.firstName || ""} ${s.lastName || ""}`.trim().toLowerCase();
         const course = (s.course || "").toLowerCase();
-        const email = (s.email || "").toLowerCase();
         const studentId = (s.id || s.studentId || "").toLowerCase();
         const year = (s.year || "").toLowerCase();
         const section = (s.section || "").toLowerCase();
         
         const matches = fullName.includes(term) || 
                course.includes(term) || 
-               email.includes(term) || 
-                       studentId.includes(term) ||
-                       year.includes(term) ||
-                       section.includes(term);
+               studentId.includes(term) ||
+               year.includes(term) ||
+               section.includes(term);
         
         if (matches) {
           console.log('✅ Match found:', {
             name: fullName,
             course,
-            email,
             studentId,
             year,
             section
@@ -1764,40 +1766,20 @@ function StudentList({
     }
     
     return filtered;
-  }, [students, search, activeTab]);
+  }, [students, search, activeTab, courseFilter]);
 
-  // Group students by course
-  const groupedStudents = useMemo(() => {
-    // Group by course - only include students with actual courses
-    const grouped = filteredStudents.reduce((acc, student) => {
-      const course = student.course;
-      // Only include students who have a course assigned
-      if (course && course.trim() !== '') {
-        if (!acc[course]) {
-          acc[course] = [];
-        }
-        acc[course].push(student);
-      }
-      return acc;
-    }, {});
-    
-    // Sort students within each course by name
-    Object.keys(grouped).forEach(course => {
-      grouped[course].sort((a, b) => {
-        const nameA = `${a.firstName || ""} ${a.lastName || ""}`.trim().toLowerCase();
-        const nameB = `${b.firstName || ""} ${b.lastName || ""}`.trim().toLowerCase();
-        return nameA.localeCompare(nameB);
-      });
-    });
-    
-    return grouped;
-  }, [filteredStudents]);
+  // Get unique courses for filter dropdown
+  const availableCourses = useMemo(() => {
+    const courses = [...new Set(students.map(student => student.course).filter(course => course && course.trim() !== ''))];
+    return courses.sort();
+  }, [students]);
+
 
   const handleExport = useCallback(() => {
     const csvRows = [
-      ["ID", "First Name", "Last Name", "Course", "Year", "Section", "Email"],
+      ["ID", "First Name", "Last Name", "Course", "Year", "Section"],
       ...students.map(s => [
-        s.id, s.firstName, s.lastName, s.course, s.year, s.section, s.email
+        s.id, s.firstName, s.lastName, s.course, s.year, s.section
       ])
     ];
     const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
@@ -1806,6 +1788,78 @@ function StudentList({
     link.download = "students.csv";
     link.click();
   }, [students]);
+
+
+  const handleExportToPDF = useCallback(() => {
+    // For PDF export, we'll use the browser's print functionality with PDF option
+    // This is a simple approach that works across all browsers
+    const printWindow = window.open('', '_blank');
+    const tableData = filteredStudents.map(student => ({
+      name: `${student.firstName} ${student.lastName}`,
+      studentId: student.studentId || student.id,
+      course: student.course || 'Not Assigned',
+      year: student.year || 'N/A',
+      section: student.section || 'N/A',
+      status: student.isRegisteredUser ? 'Registered' : 'Unregistered'
+    }));
+
+    const pdfContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Student List - PDF Export</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1 { color: #800000; text-align: center; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f5f5f5; font-weight: bold; }
+            .status-registered { color: #2e7d32; }
+            .status-unregistered { color: #f57c00; }
+            @media print { 
+              body { margin: 0; }
+              @page { margin: 1cm; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Student List</h1>
+          <p>Generated on: ${new Date().toLocaleDateString()}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>Student ID</th>
+                <th>Course</th>
+                <th>Year & Section</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableData.map(student => `
+                <tr>
+                  <td>${student.name}</td>
+                  <td>${student.studentId}</td>
+                  <td>${student.course}</td>
+                  <td>${student.year} • ${student.section}</td>
+                  <td class="status-${student.status.toLowerCase()}">${student.status}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+    
+    printWindow.document.write(pdfContent);
+    printWindow.document.close();
+    
+    // Show a message to guide the user
+    setTimeout(() => {
+      alert('Please use your browser\'s print dialog and select "Save as PDF" to export the document.');
+      printWindow.print();
+    }, 500);
+  }, [filteredStudents]);
 
   // Refresh student list
   const handleRefresh = useCallback(async () => {
@@ -2166,27 +2220,6 @@ School Administration
   };
 
   // If viewing a specific course, show the course dashboard
-  if (currentView !== 'all') {
-    return (
-      <CourseDashboard
-        courseName={currentView}
-        onBack={() => setCurrentView('all')}
-        setOpenAddStudent={setOpenAddStudent}
-        setOpenViolationRecord={setOpenViolationRecord}
-        setViolationRecords={setViolationRecords}
-        currentStudent={currentStudent}
-        setCurrentStudent={setCurrentStudent}
-        setOpenViewDetails={setOpenViewDetails}
-        setOpenEditStudent={setOpenEditStudent}
-        setStudentToView={setStudentToView}
-        setStudentToEdit={setStudentToEdit}
-        setOpenViolationImagePreview={setOpenViolationImagePreview}
-        setPreviewViolationImage={setPreviewViolationImage}
-        violationRecords={violationRecords}
-      />
-    );
-  }
-
   return (
     <Box>
       <Typography variant="h4" gutterBottom sx={{ 
@@ -2266,12 +2299,12 @@ School Administration
               color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
               fontWeight: 'bold' 
             }}>
-              {Object.keys(groupedStudents).length}
+              {availableCourses.length}
             </Typography>
             <Typography variant="body2" sx={{ 
               color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
             }}>
-              Course Programs
+              Available Courses
             </Typography>
           </Paper>
         </Grid>
@@ -2286,12 +2319,12 @@ School Administration
               color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
               fontWeight: 'bold' 
             }}>
-              {Object.values(groupedStudents).reduce((max, students) => Math.max(max, students.length), 0)}
+              {courseFilter !== 'all' ? filteredStudents.length : students.length}
             </Typography>
             <Typography variant="body2" sx={{ 
               color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
             }}>
-              Largest Course
+              {courseFilter !== 'all' ? `${courseFilter} Students` : 'Total Students'}
             </Typography>
           </Paper>
         </Grid>
@@ -2314,7 +2347,7 @@ School Administration
               {search.trim() ? `Search Results (${filteredStudents.length} found)` : 
                activeTab === 1 ? 'Unregistered Students' : 
                activeTab === 2 ? 'Registered Students' : 
-               'Total Students'}
+               'Filtered Students'}
             </Typography>
           </Paper>
         </Grid>
@@ -2323,67 +2356,176 @@ School Administration
       <Stack direction="row" spacing={2} sx={{ mb: 2, alignItems: 'center', justifyContent: 'space-between' }}>
         <Stack direction="row" spacing={2}>
           <Button 
-            variant="outlined" 
+            variant="contained" 
             onClick={() => setOpenAddStudent(true)}
-            sx={{ bgcolor: '#fff', color: '#000', borderColor: '#000', '&:hover': { bgcolor: '#800000', color: '#fff', borderColor: '#800000' } }}
+            sx={{ 
+              bgcolor: '#666666', 
+              color: '#ffffff', 
+              borderColor: '#666666', 
+              fontSize: '0.75rem',
+              fontWeight: 400,
+              textTransform: 'none',
+              padding: '6px 12px',
+              minHeight: '32px',
+              boxShadow: 'none',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000',
+                boxShadow: 'none'
+              } 
+            }}
           >
           Add Student
           </Button>
           <Button 
-            variant="outlined" 
+            variant="contained" 
             onClick={handleExport} 
             disabled={students.length === 0}
-            sx={{ bgcolor: '#fff', color: '#000', borderColor: '#000', '&:hover': { bgcolor: '#800000', color: '#fff', borderColor: '#800000' } }}
+            sx={{ 
+              bgcolor: '#666666', 
+              color: '#ffffff', 
+              borderColor: '#666666', 
+              fontSize: '0.75rem',
+              fontWeight: 400,
+              textTransform: 'none',
+              padding: '6px 12px',
+              minHeight: '32px',
+              boxShadow: 'none',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000',
+                boxShadow: 'none'
+              },
+              '&:disabled': {
+                color: '#cccccc',
+                borderColor: '#999999',
+                bgcolor: '#999999'
+              }
+            }}
           >
           Export
           </Button>
           <Button 
-            variant="outlined" 
+            variant="contained" 
             onClick={handleRefresh}
-            sx={{ bgcolor: '#fff', color: '#000', borderColor: '#000', '&:hover': { bgcolor: '#800000', color: '#fff', borderColor: '#800000' } }}
+            sx={{ 
+              bgcolor: '#666666', 
+              color: '#ffffff', 
+              borderColor: '#666666', 
+              fontSize: '0.75rem',
+              fontWeight: 400,
+              textTransform: 'none',
+              padding: '6px 12px',
+              minHeight: '32px',
+              boxShadow: 'none',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000',
+                boxShadow: 'none'
+              } 
+            }}
           >
           Refresh
           </Button>
+          <Button 
+            variant="contained" 
+            onClick={handleExportToPDF}
+            disabled={filteredStudents.length === 0}
+            sx={{ 
+              bgcolor: '#666666', 
+              color: '#ffffff', 
+              borderColor: '#666666', 
+              fontSize: '0.75rem',
+              fontWeight: 400,
+              textTransform: 'none',
+              padding: '6px 12px',
+              minHeight: '32px',
+              boxShadow: 'none',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000',
+                boxShadow: 'none'
+              },
+              '&:disabled': {
+                color: '#cccccc',
+                borderColor: '#999999',
+                bgcolor: '#999999'
+              }
+            }}
+          >
+            <PictureAsPdf sx={{ mr: 0.5, fontSize: '0.875rem', color: '#ffffff' }} />
+            Export PDF
+          </Button>
         </Stack>
-        <TextField 
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          size="small"
-          placeholder="Search by name, course, email, ID, year, or section..."
-          sx={{ 
-            width: 350,
-            '& .MuiOutlinedInput-root': {
-              '&:hover fieldset': {
-                borderColor: '#1976d2',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#1976d2',
-                borderWidth: 2,
-              },
-            }
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search sx={{ fontSize: 18, color: search.trim() ? '#1976d2' : 'text.secondary' }} />
-              </InputAdornment>
-            ),
-            endAdornment: search.trim() && (
-              <InputAdornment position="end">
-                <IconButton
-                  size="small"
-                  onClick={() => setSearch("")}
-                  sx={{ 
-                    color: 'text.secondary',
-                    '&:hover': { color: '#1976d2' }
-                  }}
-                >
-                  ✕
-                </IconButton>
-              </InputAdornment>
-            )
-          }}
-        />
+        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+          <TextField
+            select
+            label="Filter by Course"
+            value={courseFilter}
+            onChange={e => setCourseFilter(e.target.value)}
+            size="small"
+            sx={{ 
+              minWidth: 200,
+              '& .MuiOutlinedInput-root': {
+                '&:hover fieldset': {
+                  borderColor: '#1976d2',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#1976d2',
+                  borderWidth: 2,
+                },
+              }
+            }}
+          >
+            <MenuItem value="all">All Courses</MenuItem>
+            {availableCourses.map(course => (
+              <MenuItem key={course} value={course}>{course}</MenuItem>
+            ))}
+          </TextField>
+          <TextField 
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            size="small"
+            placeholder="Search by name, course, ID, year, or section..."
+            sx={{ 
+              width: 350,
+              '& .MuiOutlinedInput-root': {
+                '&:hover fieldset': {
+                  borderColor: '#1976d2',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#1976d2',
+                  borderWidth: 2,
+                },
+              }
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search sx={{ fontSize: 18, color: search.trim() ? '#1976d2' : 'text.secondary' }} />
+                </InputAdornment>
+              ),
+              endAdornment: search.trim() && (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => setSearch("")}
+                    sx={{ 
+                      color: 'text.secondary',
+                      '&:hover': { color: '#1976d2' }
+                    }}
+                  >
+                    ✕
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
+          />
+        </Stack>
       </Stack>
       
       {/* Instructions */}
@@ -2393,125 +2535,341 @@ School Administration
           fontWeight: 'medium', 
           mb: 1 
         }}>
-          📁 Course Organization
+          📋 Student Management
         </Typography>
         <Typography variant="body2" sx={{ 
           color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
         }}>
-          Students with assigned courses are organized by course programs. Click on any course folder below to view all students enrolled in that specific program. 
-          Each folder shows the total number of students enrolled in that course. Students without assigned courses are not displayed in this view.
+          All students are displayed in a unified table below. Use the course filter dropdown to view students from specific courses, 
+          or use the search bar to find students by name, course, ID, year, or section.
         </Typography>
         
-        {/* Search Tips */}
-        {search.trim() && (
-          <Box sx={{ 
-            mt: 2, 
-            p: 2, 
-            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f0f8ff', 
-            borderRadius: 1,
-            border: '1px solid #1976d2'
-          }}>
-            <Typography variant="body2" sx={{ 
-              color: '#1976d2', 
-              fontWeight: 600,
-              mb: 1
-            }}>
-              💡 Search Tips:
-            </Typography>
-            <Typography variant="caption" sx={{ 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary',
-              display: 'block'
-            }}>
-              • Search by <strong>name</strong> (e.g., "John Doe")<br/>
-              • Search by <strong>course</strong> (e.g., "BSIT", "BSBA")<br/>
-              • Search by <strong>student ID</strong> (e.g., "SCC-22-00012345")<br/>
-              • Search by <strong>year</strong> (e.g., "1st Year", "2nd Year")<br/>
-              • Search by <strong>section</strong> (e.g., "A", "B")<br/>
-              • Search by <strong>email</strong> (e.g., "student@email.com")
-        </Typography>
-          </Box>
-        )}
       </Box>
 
       {loading ? (
         <Box sx={{ p: 3, textAlign: 'center' }}>
-          <Typography>Loading students...</Typography>
+          <CircularProgress />
+          <Typography sx={{ mt: 2 }}>Loading students...</Typography>
         </Box>
-      ) : students.filter(s => s.course && s.course.trim() !== '').length === 0 ? (
+      ) : filteredStudents.length === 0 ? (
         <Box sx={{ p: 3, textAlign: 'center' }}>
-          <Typography>No students with assigned courses found.</Typography>
-        </Box>
-      ) : (
-        <Box>
-          {Object.keys(groupedStudents).length === 0 ? (
-            <Box sx={{ p: 3, textAlign: 'center' }}>
-              {search.trim() ? (
-                <Box>
-                  <Typography variant="h6" sx={{ mb: 2, color: 'text.secondary' }}>
-                    🔍 No students found for "{search}"
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-                    Try searching with different keywords or check your spelling.
-                  </Typography>
+          {search.trim() || courseFilter !== 'all' ? (
+            <Box>
+              <Typography variant="h6" sx={{ mb: 2, color: 'text.secondary' }}>
+                🔍 No students found
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+                {search.trim() ? `No students match "${search}"` : `No students found in ${courseFilter}`}
+              </Typography>
+              <Stack direction="row" spacing={2} justifyContent="center">
+                {search.trim() && (
                   <Button 
                     variant="outlined" 
                     onClick={() => setSearch("")}
-                    sx={{ mt: 1 }}
+                    sx={{ 
+                      mt: 1,
+                      bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#fff', 
+                      color: '#666666', 
+                      borderColor: '#666666', 
+                      '&:hover': { 
+                        bgcolor: '#800000', 
+                        color: '#fff', 
+                        borderColor: '#800000' 
+                      } 
+                    }}
                   >
                     Clear Search
                   </Button>
-                </Box>
-              ) : (
-                <Typography>No students found.</Typography>
-              )}
+                )}
+                {courseFilter !== 'all' && (
+                  <Button 
+                    variant="outlined" 
+                    onClick={() => setCourseFilter('all')}
+                    sx={{ 
+                      mt: 1,
+                      bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#fff', 
+                      color: '#666666', 
+                      borderColor: '#666666', 
+                      '&:hover': { 
+                        bgcolor: '#800000', 
+                        color: '#fff', 
+                        borderColor: '#800000' 
+                      } 
+                    }}
+                  >
+                    Show All Courses
+                  </Button>
+                )}
+              </Stack>
             </Box>
           ) : (
-            Object.entries(groupedStudents).map(([course, courseStudents]) => (
-              <Card 
-                key={course} 
-                sx={{ 
-                  mb: 1.5, 
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease-in-out',
-                  '&:hover': { 
-                    transform: 'translateY(-2px)',
-                    boxShadow: 3
-                  }
-                }}
-                onClick={() => setCurrentView(course)}
-              >
-                <CardActionArea>
-                  <CardContent sx={{ p: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Folder sx={{ 
-                          color: theme.palette.mode === 'dark' ? '#FFCF71' : '#800000', 
-                          fontSize: 28 
-                        }} />
-                        <Box>
-                          <Typography variant="h6" sx={{ 
-                            fontWeight: 'bold', 
-                            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
-                            mb: 0.5 
-                          }}>
-                            {course}
-                          </Typography>
-                          <Typography variant="body2" sx={{ 
-                            color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
-                          }}>
-                            Click to view all {course} students
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Box sx={{ textAlign: 'right' }}>
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            ))
+            <Typography>No students found.</Typography>
           )}
         </Box>
+      ) : (
+        <TableContainer component={Paper} sx={{ 
+          maxHeight: 600,
+          bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
+          overflowX: 'auto',
+          '&::-webkit-scrollbar': {
+            height: 8,
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: theme.palette.mode === 'dark' ? '#404040' : '#f1f1f1',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: theme.palette.mode === 'dark' ? '#666666' : '#c1c1c1',
+            borderRadius: 4,
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            backgroundColor: theme.palette.mode === 'dark' ? '#888888' : '#a8a8a8',
+          }
+        }}>
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  fontWeight: 'bold',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px',
+                  minWidth: '180px'
+                }}>
+                  Student
+                </TableCell>
+                <TableCell sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  fontWeight: 'bold',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px',
+                  minWidth: '130px'
+                }}>
+                  Student ID
+                </TableCell>
+                <TableCell sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  fontWeight: 'bold',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px'
+                }}>
+                  Course
+                </TableCell>
+                <TableCell sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  fontWeight: 'bold',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px'
+                }}>
+                  Year & Section
+                </TableCell>
+                <TableCell sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  fontWeight: 'bold',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px'
+                }}>
+                  Status
+                </TableCell>
+                <TableCell sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  fontWeight: 'bold',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px'
+                }}>
+                  Actions
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredStudents.map((student) => (
+                <TableRow 
+                  key={student.id} 
+                  hover
+                  sx={{ 
+                    '&:hover': { 
+                      bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5' 
+                    }
+                  }}
+                >
+                  <TableCell sx={{ padding: '12px 16px', minWidth: '180px' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Avatar 
+                        src={student.profilePic} 
+                        sx={{ 
+                          width: 36, 
+                          height: 36,
+                          bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#1976d2',
+                          fontSize: '0.875rem'
+                        }}
+                      >
+                        {student.firstName?.charAt(0)}{student.lastName?.charAt(0)}
+                      </Avatar>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography variant="body2" sx={{ 
+                          fontWeight: 'medium',
+                          fontSize: '0.875rem',
+                          lineHeight: 1.2,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {student.firstName} {student.lastName}
+                        </Typography>
+                        <Typography variant="caption" sx={{ 
+                          color: 'text.secondary',
+                          fontSize: '0.75rem',
+                          lineHeight: 1.2
+                        }}>
+                          {student.year} • {student.section}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ padding: '12px 16px', minWidth: '130px' }}>
+                    <Tooltip title={student.studentId || student.id || 'N/A'} arrow>
+                      <Typography variant="body2" sx={{ 
+                        fontSize: '0.875rem',
+                        lineHeight: 1.2,
+                        fontFamily: 'monospace',
+                        cursor: 'help'
+                      }}>
+                        {student.studentId || student.id ? 
+                          (student.studentId || student.id).length > 12 ? 
+                            `${(student.studentId || student.id).substring(0, 12)}...` : 
+                            (student.studentId || student.id) : 
+                          'N/A'}
+                      </Typography>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell sx={{ padding: '12px 16px', minWidth: '120px' }}>
+                    <Chip 
+                      label={student.course || 'Not Assigned'} 
+                      size="small"
+                      sx={{ 
+                        bgcolor: student.course ? '#e3f2fd' : '#ffebee',
+                        color: student.course ? '#1976d2' : '#d32f2f',
+                        fontWeight: 'medium',
+                        fontSize: '0.75rem',
+                        height: 24
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ padding: '12px 16px', minWidth: '140px' }}>
+                    <Typography variant="body2" sx={{ 
+                      fontSize: '0.875rem',
+                      lineHeight: 1.2
+                    }}>
+                      {student.year || 'N/A'} • {student.section || 'N/A'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ padding: '12px 16px', minWidth: '120px' }}>
+                    <Chip 
+                      label={student.isRegisteredUser ? 'Registered' : 'Unregistered'} 
+                      size="small"
+                      sx={{ 
+                        bgcolor: student.isRegisteredUser ? '#e8f5e8' : '#fff3e0',
+                        color: student.isRegisteredUser ? '#2e7d32' : '#f57c00',
+                        fontWeight: 'medium',
+                        fontSize: '0.75rem',
+                        height: 24
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ padding: '12px 16px', minWidth: '200px' }}>
+                    <Stack direction="row" spacing={0.5}>
+                      <Tooltip title="View Details">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleViewStudent(student)}
+                          sx={{ 
+                            color: '#666666',
+                            padding: '4px',
+                            '&:hover': { 
+                              color: '#1976d2',
+                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.1)' : 'rgba(25, 118, 210, 0.04)'
+                            }
+                          }}
+                        >
+                          <Visibility sx={{ fontSize: '1rem' }} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Edit Student">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleEditStudent(student)}
+                          sx={{ 
+                            color: '#666666',
+                            padding: '4px',
+                            '&:hover': { 
+                              color: '#f57c00',
+                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(245, 124, 0, 0.1)' : 'rgba(245, 124, 0, 0.04)'
+                            }
+                          }}
+                        >
+                          <Edit sx={{ fontSize: '1rem' }} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Add Violation">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleAddViolation(student)}
+                          sx={{ 
+                            color: '#666666',
+                            padding: '4px',
+                            '&:hover': { 
+                              color: '#d32f2f',
+                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(211, 47, 47, 0.1)' : 'rgba(211, 47, 47, 0.04)'
+                            }
+                          }}
+                        >
+                          <Assignment sx={{ fontSize: '1rem' }} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="View Violations">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleViewViolations(student)}
+                          sx={{ 
+                            color: '#666666',
+                            padding: '4px',
+                            '&:hover': { 
+                              color: '#7b1fa2',
+                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(123, 31, 162, 0.1)' : 'rgba(123, 31, 162, 0.04)'
+                            }
+                          }}
+                        >
+                          <ListAlt sx={{ fontSize: '1rem' }} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete Student">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleDeleteStudent(student)}
+                          sx={{ 
+                            color: '#666666',
+                            padding: '4px',
+                            '&:hover': { 
+                              color: '#d32f2f',
+                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(211, 47, 47, 0.1)' : 'rgba(211, 47, 47, 0.04)'
+                            }
+                          }}
+                        >
+                          <Delete sx={{ fontSize: '1rem' }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
       <Dialog open={openViolation} onClose={() => setOpenViolation(false)} maxWidth="md" fullWidth>
         <DialogTitle>Add Violation for {currentStudent && `${currentStudent.firstName} ${currentStudent.lastName}`}</DialogTitle>

@@ -11,7 +11,6 @@ import { collection, query, where, onSnapshot, doc, getDoc, getDocs } from 'fire
 
 const teacherMenu = [
   { text: "Dashboard", icon: <Dashboard sx={{ color: 'inherit' }} />, path: "/teacher-dashboard" },
-  { text: "My Classrooms", icon: <People sx={{ color: 'inherit' }} />, path: "/teacher-my-students" },
   { text: "Violation Records", icon: <Report sx={{ color: 'inherit' }} />, path: "/teacher-violation-records" },
   { text: "Activity Scheduler", icon: <Event sx={{ color: 'inherit' }} />, path: "/teacher-activity-scheduler" },
   { text: "Announcements", icon: <Announcement sx={{ color: 'inherit' }} />, path: "/teacher-announcements" },
@@ -127,10 +126,10 @@ export default function TeacherSidebar() {
     <Drawer
       variant="permanent"
       sx={{
-        width: 280,
+        width: 230,
         flexShrink: 0,
         '& .MuiDrawer-paper': {
-          width: 280,
+          width: 230,
           boxSizing: 'border-box',
           bgcolor: '#2d3436',
           color: '#fff',
@@ -142,7 +141,7 @@ export default function TeacherSidebar() {
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {/* Logo Section */}
         <Box sx={{ mb: 2 }}>
-          <img src="gt.jpg" alt="Logo" style={{ width: 200, height: 160, borderRadius: 10, boxShadow: '0 2px 8px #0002' }} />
+          <img src="gt.jpg" alt="Logo" style={{ width: 180, height: 144, borderRadius: 10, boxShadow: '0 2px 8px #0002' }} />
         </Box>
         <Divider sx={{ width: '100%', mb: 2, bgcolor: '#b2bec3' }} />
       </Box>

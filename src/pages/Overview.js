@@ -346,15 +346,11 @@ export default function Overview() {
                 boxShadow: 3, 
                 borderRadius: 2,
                 borderLeft: `4px solid ${stat.color}`,
-                background: stat.label === 'Students' ? '#80000020' :
-                            stat.label === 'Violations' ? '#d32f2f20' :
-                            stat.label === 'Activities' ? '#80000020' :
-                            stat.label === 'Announcements' ? '#80000020' : '#fff',
+                background: '#ffffff',
                 cursor: stat.to ? 'pointer' : 'default',
-                transition: 'box-shadow 0.2s, background 0.2s',
+                transition: 'box-shadow 0.2s',
                 '&:hover': {
                   boxShadow: 6,
-                  background: stat.to ? '#80000022' : undefined,
                 },
               }}
             >
@@ -364,7 +360,7 @@ export default function Overview() {
                   variant="h4" 
                   fontWeight={700} 
                   sx={{ 
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000'
+                    color: '#000000'
                   }}
                 >
                   {stat.value.toLocaleString()}
@@ -490,24 +486,79 @@ export default function Overview() {
         {/* Recent Activity Section */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, boxShadow: 2, height: '100%' }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, color: '#800000' }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                mb: 2, 
+                fontWeight: 700, 
+                color: isDark ? '#ffffff' : '#000000'
+              }}
+            >
               Recent Activity
             </Typography>
             {activityLoading ? (
-              <Typography variant="body2" color="text.secondary">Loading...</Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: isDark ? '#ffffff' : '#000000',
+                  fontWeight: 500
+                }}
+              >
+                Loading...
+              </Typography>
             ) : recentActivity.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">No recent activity.</Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: isDark ? '#ffffff' : '#000000',
+                  fontWeight: 500
+                }}
+              >
+                No recent activity.
+              </Typography>
             ) : (
-              <List sx={{ maxHeight: 400, overflow: 'auto' }}>
+              <List sx={{ 
+                maxHeight: 400, 
+                overflow: 'auto',
+                '& .MuiListItem-root': {
+                  color: isDark ? '#ffffff' : '#000000',
+                  padding: '8px 0'
+                }
+              }}>
                 {recentActivity.map((item, idx) => (
                   <React.Fragment key={idx}>
-                    <ListItem>
+                    <ListItem sx={{ 
+                      color: isDark ? '#ffffff' : '#000000',
+                      '&:hover': {
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)'
+                      }
+                    }}>
                       <ListItemText
                         primary={item.message || item.type || 'Activity'}
                         secondary={item.timestamp ? new Date(item.timestamp).toLocaleString() : ''}
+                        primaryTypographyProps={{
+                          sx: { 
+                            color: isDark ? '#ffffff' : '#000000',
+                            fontWeight: 500,
+                            fontSize: '0.875rem'
+                          }
+                        }}
+                        secondaryTypographyProps={{
+                          sx: { 
+                            color: isDark ? '#cccccc' : '#666666',
+                            fontSize: '0.75rem',
+                            fontWeight: 400
+                          }
+                        }}
                       />
                     </ListItem>
-                    <Divider component="li" />
+                    <Divider 
+                      component="li" 
+                      sx={{ 
+                        borderColor: isDark ? '#404040' : '#e0e0e0',
+                        margin: '4px 0'
+                      }} 
+                    />
                   </React.Fragment>
                 ))}
               </List>

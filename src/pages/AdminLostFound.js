@@ -80,6 +80,27 @@ export default function AdminLostFound() {
   });
   const [students, setStudents] = useState([]);
   const [imagePreview, setImagePreview] = useState({ open: false, image: null, title: '' });
+  const [showFoundModal, setShowFoundModal] = useState(false);
+  const [showLostModal, setShowLostModal] = useState(false);
+  const [allItems, setAllItems] = useState([]);
+  const [feedSearch, setFeedSearch] = useState('');
+
+  // Combine all items for feed display
+  useEffect(() => {
+    const combinedItems = [
+      ...lostItems.map(item => ({ ...item, type: 'lost' })),
+      ...foundItems.map(item => ({ ...item, type: 'found' }))
+    ].sort((a, b) => new Date(b.createdAt?.toDate?.() || b.createdAt) - new Date(a.createdAt?.toDate?.() || a.createdAt));
+    setAllItems(combinedItems);
+  }, [lostItems, foundItems]);
+
+  // Filter items based on search
+  const filteredItems = allItems.filter(item => 
+    item.name.toLowerCase().includes(feedSearch.toLowerCase()) ||
+    item.description?.toLowerCase().includes(feedSearch.toLowerCase()) ||
+    item.location?.toLowerCase().includes(feedSearch.toLowerCase()) ||
+    item[item.type === 'found' ? 'foundBy' : 'lostBy']?.toLowerCase().includes(feedSearch.toLowerCase())
+  );
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -287,6 +308,7 @@ export default function AdminLostFound() {
       setSnackbar({ open: true, message: 'Lost item submitted successfully!', severity: 'success' });
       setLostForm({ name: '', description: '', location: '', image: null, timeLost: '', lostBy: '' });
       setLostImageFile(null);
+      setShowLostModal(false);
     } catch (err) {
       setSnackbar({ open: true, message: 'Failed to submit lost item: ' + err.message, severity: 'error' });
     } finally {
@@ -337,6 +359,7 @@ export default function AdminLostFound() {
       setSnackbar({ open: true, message: 'Found item submitted successfully!', severity: 'success' });
       setFoundForm({ name: '', description: '', location: '', image: null, timeFound: '', foundBy: '' });
       setFoundImageFile(null);
+      setShowFoundModal(false);
     } catch (err) {
       setSnackbar({ open: true, message: 'Failed to submit found item: ' + err.message, severity: 'error' });
     } finally {
@@ -423,47 +446,107 @@ export default function AdminLostFound() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#800000', mb: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#ffffff', mb: 3 }}>
         Lost & Found Management
       </Typography>
 
       {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} md={6}>
-          <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
+          <Card sx={{ 
+            bgcolor: 'rgba(255, 255, 255, 0.1)', 
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: 2,
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
+          }}>
             <CardContent>
-              <Typography variant="h6" fontWeight={700} sx={{ color: '#800000' }} gutterBottom>
+              <Typography variant="h6" fontWeight={700} sx={{ color: '#ffffff' }} gutterBottom>
                 Lost Items Summary
               </Typography>
               <Grid container spacing={2}>
                 <Grid item>
-                  <Chip label={`Total: ${lostTotal}`} sx={{ bgcolor: '#800000', color: '#fff' }} />
+                  <Chip 
+                    label={`Total: ${lostTotal}`} 
+                    sx={{ 
+                      bgcolor: 'rgba(255, 255, 255, 0.2)', 
+                      color: '#ffffff',
+                      backdropFilter: 'blur(5px)',
+                      border: '1px solid rgba(255, 255, 255, 0.3)'
+                    }} 
+                  />
                 </Grid>
                 <Grid item>
-                  <Chip label={`Completed: ${lostCompleted}`} sx={{ bgcolor: '#800000', color: '#fff' }} />
+                  <Chip 
+                    label={`Completed: ${lostCompleted}`} 
+                    sx={{ 
+                      bgcolor: 'rgba(255, 255, 255, 0.2)', 
+                      color: '#ffffff',
+                      backdropFilter: 'blur(5px)',
+                      border: '1px solid rgba(255, 255, 255, 0.3)'
+                    }} 
+                  />
                 </Grid>
                 <Grid item>
-                  <Chip label={`Pending: ${lostPending}`} sx={{ bgcolor: '#800000', color: '#fff' }} />
+                  <Chip 
+                    label={`Pending: ${lostPending}`} 
+                    sx={{ 
+                      bgcolor: 'rgba(255, 255, 255, 0.2)', 
+                      color: '#ffffff',
+                      backdropFilter: 'blur(5px)',
+                      border: '1px solid rgba(255, 255, 255, 0.3)'
+                    }} 
+                  />
                 </Grid>
               </Grid>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
+          <Card sx={{ 
+            bgcolor: 'rgba(255, 255, 255, 0.1)', 
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: 2,
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
+          }}>
             <CardContent>
-              <Typography variant="h6" fontWeight={700} sx={{ color: '#800000' }} gutterBottom>
+              <Typography variant="h6" fontWeight={700} sx={{ color: '#ffffff' }} gutterBottom>
                 Found Items Summary
               </Typography>
               <Grid container spacing={2}>
                 <Grid item>
-                  <Chip label={`Total: ${foundTotal}`} sx={{ bgcolor: '#800000', color: '#fff' }} />
+                  <Chip 
+                    label={`Total: ${foundTotal}`} 
+                    sx={{ 
+                      bgcolor: 'rgba(255, 255, 255, 0.2)', 
+                      color: '#ffffff',
+                      backdropFilter: 'blur(5px)',
+                      border: '1px solid rgba(255, 255, 255, 0.3)'
+                    }} 
+                  />
                 </Grid>
                 <Grid item>
-                  <Chip label={`Completed: ${foundCompleted}`} sx={{ bgcolor: '#800000', color: '#fff' }} />
+                  <Chip 
+                    label={`Completed: ${foundCompleted}`} 
+                    sx={{ 
+                      bgcolor: 'rgba(255, 255, 255, 0.2)', 
+                      color: '#ffffff',
+                      backdropFilter: 'blur(5px)',
+                      border: '1px solid rgba(255, 255, 255, 0.3)'
+                    }} 
+                  />
                 </Grid>
                 <Grid item>
-                  <Chip label={`Pending: ${foundPending}`} sx={{ bgcolor: '#800000', color: '#fff' }} />
+                  <Chip 
+                    label={`Pending: ${foundPending}`} 
+                    sx={{ 
+                      bgcolor: 'rgba(255, 255, 255, 0.2)', 
+                      color: '#ffffff',
+                      backdropFilter: 'blur(5px)',
+                      border: '1px solid rgba(255, 255, 255, 0.3)'
+                    }} 
+                  />
                 </Grid>
               </Grid>
             </CardContent>
@@ -471,52 +554,297 @@ export default function AdminLostFound() {
         </Grid>
       </Grid>
 
-      <Grid container spacing={3}>
-                 {/* Found Items Section */}
-         <Grid item xs={12} md={6}>
-           <Paper sx={{ p: 3, mb: 2, border: '1px solid #e0e0e0', minHeight: '600px' }}>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#2e7d32' }}>
-              <Add sx={{ mr: 1, verticalAlign: 'middle' }} />
-              Found Item Entry
+      {/* Action Buttons */}
+      <Box sx={{ mb: 4, display: 'flex', gap: 1, justifyContent: 'flex-start' }}>
+        <Button
+          variant="contained"
+          size="small"
+          onClick={() => setShowFoundModal(true)}
+          sx={{
+            bgcolor: '#2e7d32',
+            color: '#ffffff',
+            px: 2,
+            py: 1,
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            borderRadius: 1,
+            '&:hover': {
+              bgcolor: '#1b5e20',
+              transform: 'translateY(-1px)',
+              boxShadow: '0 2px 8px rgba(46, 125, 50, 0.3)'
+            },
+            transition: 'all 0.3s ease'
+          }}
+          startIcon={<Add sx={{ fontSize: '0.875rem' }} />}
+        >
+          Found Item
+        </Button>
+        <Button
+          variant="contained"
+          size="small"
+          onClick={() => setShowLostModal(true)}
+          sx={{
+            bgcolor: '#e65100',
+            color: '#ffffff',
+            px: 2,
+            py: 1,
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            borderRadius: 1,
+            '&:hover': {
+              bgcolor: '#bf360c',
+              transform: 'translateY(-1px)',
+              boxShadow: '0 2px 8px rgba(230, 81, 0, 0.3)'
+            },
+            transition: 'all 0.3s ease'
+          }}
+          startIcon={<Add sx={{ fontSize: '0.875rem' }} />}
+        >
+          Lost Item
+        </Button>
+      </Box>
+
+      {/* Feed Layout */}
+      <Box sx={{ maxWidth: 600, mx: 'auto' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: '#ffffff' }}>
+            Lost & Found Feed
+          </Typography>
+          <TextField
+            size="small"
+            placeholder="Search items..."
+            value={feedSearch}
+            onChange={(e) => setFeedSearch(e.target.value)}
+            sx={{
+              width: 200,
+              '& .MuiOutlinedInput-root': {
+                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: 2,
+                color: '#ffffff',
+                '& fieldset': {
+                  border: 'none'
+                },
+                '&:hover fieldset': {
+                  border: 'none'
+                },
+                '&.Mui-focused fieldset': {
+                  border: '1px solid rgba(255, 255, 255, 0.4)'
+                }
+              },
+              '& .MuiInputBase-input': {
+                color: '#ffffff',
+                fontSize: '0.875rem',
+                '&::placeholder': {
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  opacity: 1
+                }
+              }
+            }}
+            InputProps={{
+              startAdornment: (
+                <Search sx={{ 
+                  color: 'rgba(255, 255, 255, 0.7)', 
+                  fontSize: '1rem',
+                  mr: 1 
+                }} />
+              )
+            }}
+          />
+        </Box>
+        
+        {filteredItems.length === 0 ? (
+          <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
+            <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+              {feedSearch ? 'No items found matching your search' : 'No items posted yet'}
             </Typography>
-            <form onSubmit={handleFoundSubmit}>
+            <Typography variant="body2" color="text.secondary">
+              {feedSearch ? 'Try adjusting your search terms' : 'Click "Found Item" or "Lost Item" to create your first post'}
+            </Typography>
+          </Paper>
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {filteredItems.map((item) => (
+              <Paper 
+                key={item.id} 
+                sx={{ 
+                  p: 3, 
+                  bgcolor: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: 2,
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 255, 255, 0.08)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
+                  },
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                {/* Admin Profile Header */}
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Avatar 
+                    sx={{ 
+                      bgcolor: item.type === 'found' ? '#2e7d32' : '#e65100',
+                      width: 40,
+                      height: 40,
+                      mr: 2
+                    }}
+                  >
+                    A
+                  </Avatar>
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#ffffff' }}>
+                      Admin
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(item.createdAt?.toDate?.() || item.createdAt).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
+                    <Tooltip title="Edit">
+                      <IconButton 
+                        size="small" 
+                        onClick={() => setEditModal({ open: true, type: item.type, item })}
+                        sx={{ color: '#666666', '&:hover': { color: '#1976d2' } }}
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                      <IconButton 
+                        size="small" 
+                        onClick={() => handleDelete(item.id, item.type)}
+                        sx={{ color: '#666666', '&:hover': { color: '#d32f2f' } }}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Box>
+
+                {/* Item Image */}
+                {item.image && (
+                  <Box sx={{ mb: 2, textAlign: 'center' }}>
+                    <img 
+                      src={item.image} 
+                      alt={item.name}
+                      style={{ 
+                        width: '100%',
+                        maxHeight: '300px', 
+                        objectFit: 'cover', 
+                        borderRadius: '12px',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => handleImagePreview(item.image, item.name)}
+                    />
+                  </Box>
+                )}
+
+                {/* Item Details */}
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#ffffff', mb: 1 }}>
+                    {item.name}
+                  </Typography>
+                  {item.description && (
+                    <Typography variant="body1" sx={{ color: '#ffffff', mb: 2, lineHeight: 1.6 }}>
+                      {item.description}
+                    </Typography>
+                  )}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>{item.type === 'found' ? 'Found by:' : 'Lost by:'}</strong> {item[item.type === 'found' ? 'foundBy' : 'lostBy'] || 'Unknown'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Location:</strong> {item.location || 'Unknown'}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Action Buttons */}
+                <Box sx={{ display: 'flex', gap: 1, pt: 2, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                  <Button
+                    size="small"
+                    startIcon={<Visibility />}
+                    onClick={() => handleImagePreview(item.image, item.name)}
+                    sx={{ 
+                      color: '#666666', 
+                      '&:hover': { color: '#1976d2' },
+                      fontSize: '0.75rem'
+                    }}
+                  >
+                    View
+                  </Button>
+                  <Button
+                    size="small"
+                    startIcon={<CheckCircle />}
+                    onClick={() => handleResolve(item.id, item.type)}
+                    sx={{ 
+                      color: '#666666', 
+                      '&:hover': { color: '#2e7d32' },
+                      fontSize: '0.75rem'
+                    }}
+                  >
+                    Resolve
+                  </Button>
+                </Box>
+              </Paper>
+            ))}
+          </Box>
+        )}
+      </Box>
+
+      {/* Found Item Modal */}
+      <Dialog open={showFoundModal} onClose={() => setShowFoundModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ color: '#ffffff', bgcolor: '#2e7d32' }}>
+          <Add sx={{ mr: 1, verticalAlign: 'middle' }} />
+          Found Item Entry
+        </DialogTitle>
+        <DialogContent sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
+          <form onSubmit={handleFoundSubmit}>
+            <TextField 
+              fullWidth 
+              size="small"
+              label="Item Name" 
+              value={foundForm.name} 
+              onChange={e => setFoundForm(f => ({ ...f, name: e.target.value }))} 
+              sx={{ mb: 1.5, mt: 2 }} 
+              required
+            />
               <TextField 
                 fullWidth 
-                label="Item Name" 
-                value={foundForm.name} 
-                onChange={e => setFoundForm(f => ({ ...f, name: e.target.value }))} 
-                sx={{ mb: 2 }} 
-                required
-              />
-              <TextField 
-                fullWidth 
+                size="small"
                 label="Description" 
                 multiline 
                 minRows={2} 
                 value={foundForm.description} 
                 onChange={e => setFoundForm(f => ({ ...f, description: e.target.value }))} 
-                sx={{ mb: 2 }} 
+                sx={{ mb: 1.5 }} 
               />
               <TextField 
                 fullWidth 
+                size="small"
                 label="Location Found" 
                 value={foundForm.location} 
                 onChange={e => setFoundForm(f => ({ ...f, location: e.target.value }))} 
-                sx={{ mb: 2 }} 
+                sx={{ mb: 1.5 }} 
               />
               <TextField 
                 fullWidth 
+                size="small"
                 label="Person Who Found" 
                 value={foundForm.foundBy || ""} 
                 onChange={e => setFoundForm(f => ({ ...f, foundBy: e.target.value }))} 
-                sx={{ mb: 2 }} 
+                sx={{ mb: 1.5 }} 
                 placeholder="Enter the name of the person who found the item"
               />
                              <Button 
                  variant="outlined" 
+                 size="small"
                  component="label" 
                  sx={{ 
-                   mb: 2,
+                   mb: 1.5,
+                   fontSize: '0.75rem',
                    color: foundForm.image ? '#1976d2' : '#000000',
                    borderColor: foundForm.image ? '#1976d2' : '#000000',
                    '&:hover': {
@@ -538,6 +866,7 @@ export default function AdminLostFound() {
                      variant="outlined" 
                      color="error" 
                      size="small"
+                     sx={{ fontSize: '0.75rem' }}
                      onClick={() => {
                        setFoundForm(f => ({ ...f, image: null }));
                        setFoundImageFile(null);
@@ -563,341 +892,141 @@ export default function AdminLostFound() {
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                 <Button 
                   variant="contained" 
+                  size="small"
                   type="submit" 
                   disabled={loading}
-                  sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}
+                  sx={{ 
+                    bgcolor: '#800000', 
+                    fontSize: '0.75rem',
+                    '&:hover': { bgcolor: '#6b0000' } 
+                  }}
                 >
                   Submit Found Item
                 </Button>
               </Box>
             </form>
-          </Paper>
+          </DialogContent>
+          <DialogActions sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
+            <Button onClick={() => setShowFoundModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={handleFoundSubmit}
+              disabled={loading}
+              sx={{ 
+                bgcolor: '#2e7d32', 
+                fontSize: '0.75rem',
+                '&:hover': { bgcolor: '#1b5e20' } 
+              }}
+            >
+              Submit Found Item
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-          <Paper sx={{ p: 3, mb: 2, border: '1px solid #e0e0e0' }}>
+      {/* Lost Item Modal */}
+      <Dialog open={showLostModal} onClose={() => setShowLostModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ color: '#ffffff', bgcolor: '#e65100' }}>
+          <Add sx={{ mr: 1, verticalAlign: 'middle' }} />
+          Lost Item Entry
+        </DialogTitle>
+        <DialogContent sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
+          <form onSubmit={handleLostSubmit}>
             <TextField 
               fullWidth 
-              placeholder="Search found items..." 
-              value={foundSearch} 
-              onChange={e => setFoundSearch(e.target.value)} 
-              sx={{ mb: 2 }}
-              InputProps={{
-                startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />
-              }}
+              size="small"
+              label="Item Name" 
+              value={lostForm.name} 
+              onChange={e => setLostForm(f => ({ ...f, name: e.target.value }))} 
+              sx={{ mb: 1.5, mt: 2 }} 
+              required
             />
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#2e7d32' }}>
-              Found Items ({filteredFound.length})
-            </Typography>
-            {filteredFound.length === 0 ? (
-              <Typography color="text.secondary">No found items yet.</Typography>
-            ) : (
-              filteredFound.map(item => (
-                <Card key={item.id} sx={{ 
-                  mb: 2, 
-                  bgcolor: '#ffffff', 
-                  border: '1px solid #2e7d32',
-                  position: 'relative',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  '&:hover': {
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                  }
-                }}>
-                  <CardContent>
-                    <Grid container spacing={2} alignItems="center">
-                      <Grid item>
-                        {item.image && (
-                          <Avatar 
-                            src={item.image} 
-                            variant="rounded" 
-                            sx={{ width: 56, height: 56, cursor: 'pointer' }}
-                            onClick={() => handleImagePreview(item.image, item.name)}
-                          />
-                        )}
-                      </Grid>
-                      <Grid item xs>
-                        <Typography fontWeight={700} sx={item.resolved ? { textDecoration: 'line-through', color: 'gray' } : {}}>
-                          {item.name}
-                        </Typography>
-                        <Typography variant="body2" sx={item.resolved ? { textDecoration: 'line-through', color: 'gray' } : {}}>
-                          {item.description}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Location: {item.location}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
-                          {new Date(item.createdAt).toLocaleString()}
-                        </Typography>
-                      </Grid>
-                      <Grid item>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Tooltip title="Edit">
-                            <IconButton 
-                              size="small" 
-                              sx={{ 
-                                color: '#666666',
-                                '&:hover': { color: '#1976d2' }
-                              }}
-                              onClick={() => handleEditOpen('found_items', item)}
-                            >
-                              <Edit />
-                            </IconButton>
-                          </Tooltip>
-                          {!item.resolved && (
-                            <Tooltip title="Mark as Resolved">
-                              <IconButton 
-                                size="small" 
-                                sx={{ 
-                                  color: '#666666',
-                                  '&:hover': { color: '#2e7d32' }
-                                }}
-                                onClick={() => handleResolve('found_items', item.id)}
-                              >
-                                <CheckCircle />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          <Tooltip title="Delete">
-                            <IconButton 
-                              size="small" 
-                              sx={{ 
-                                color: '#666666',
-                                '&:hover': { color: '#d32f2f' }
-                              }}
-                              onClick={() => handleDelete('found_items', item.id)}
-                            >
-                              <Delete />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </Grid>
-                    </Grid>
-                    {item.resolved && (
-                      <Chip 
-                        label="Resolved" 
-                        color="success" 
-                        size="small" 
-                        sx={{ position: 'absolute', top: 8, right: 16 }} 
-                      />
-                    )}
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </Paper>
-        </Grid>
-
-                 {/* Lost Items Section */}
-         <Grid item xs={12} md={6}>
-           <Paper sx={{ p: 3, mb: 2, border: '1px solid #e0e0e0', minHeight: '600px' }}>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#e65100' }}>
-              <Add sx={{ mr: 1, verticalAlign: 'middle' }} />
-              Lost Item Entry
-            </Typography>
-            <form onSubmit={handleLostSubmit}>
-              <TextField 
-                fullWidth 
-                label="Item Name" 
-                value={lostForm.name} 
-                onChange={e => setLostForm(f => ({ ...f, name: e.target.value }))} 
-                sx={{ mb: 2 }} 
-                required
-              />
-              <TextField 
-                fullWidth 
-                label="Description" 
-                multiline 
-                minRows={2} 
-                value={lostForm.description} 
-                onChange={e => setLostForm(f => ({ ...f, description: e.target.value }))} 
-                sx={{ mb: 2 }} 
-              />
-              <TextField 
-                fullWidth 
-                label="Location Lost" 
-                value={lostForm.location} 
-                onChange={e => setLostForm(f => ({ ...f, location: e.target.value }))} 
-                sx={{ mb: 2 }} 
-              />
-              <TextField 
-                fullWidth 
-                label="Person Who Lost" 
-                value={lostForm.lostBy || ""} 
-                onChange={e => setLostForm(f => ({ ...f, lostBy: e.target.value }))} 
-                sx={{ mb: 2 }} 
-                placeholder="Enter the name of the person who lost the item"
-              />
-                             <Button 
-                 variant="outlined" 
-                 component="label" 
-                 sx={{ 
-                   mb: 2,
-                   color: lostForm.image ? '#1976d2' : '#000000',
-                   borderColor: lostForm.image ? '#1976d2' : '#000000',
-                   '&:hover': {
-                     borderColor: lostForm.image ? '#1976d2' : '#000000',
-                     backgroundColor: lostForm.image ? '#1976d210' : '#00000010'
-                   }
-                 }}
-                 startIcon={<Upload />}
-               >
-                 Upload Image
-                 <input type="file" accept="image/*" hidden onChange={handleLostImage} />
-               </Button>
-               {lostImageFile && (
-                 <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                   <Typography variant="caption" sx={{ flex: 1 }}>
-                     Selected: {lostImageFile.name}
-                   </Typography>
-                   <Button 
-                     variant="outlined" 
-                     color="error" 
-                     size="small"
-                     onClick={() => {
-                       setLostForm(f => ({ ...f, image: null }));
-                       setLostImageFile(null);
-                     }}
-                   >
-                     Remove
-                   </Button>
-                 </Box>
-               )}
-               {lostForm.image && (
-                 <Box sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1, bgcolor: '#fafafa', minHeight: '160px' }}>
-                   <Typography variant="subtitle2" sx={{ mb: 1 }}>Image Preview:</Typography>
-                   <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                     <Avatar 
-                       src={lostForm.image} 
-                       variant="rounded" 
-                       sx={{ width: 120, height: 120, cursor: 'pointer' }}
-                       onClick={() => handleImagePreview(lostForm.image, lostForm.name || 'Lost Item')}
-                     />
-                   </Box>
-                 </Box>
-               )}
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+            <TextField 
+              fullWidth 
+              size="small"
+              label="Description" 
+              multiline 
+              minRows={2} 
+              value={lostForm.description} 
+              onChange={e => setLostForm(f => ({ ...f, description: e.target.value }))} 
+              sx={{ mb: 1.5 }} 
+            />
+            <TextField 
+              fullWidth 
+              size="small"
+              label="Location Lost" 
+              value={lostForm.location} 
+              onChange={e => setLostForm(f => ({ ...f, location: e.target.value }))} 
+              sx={{ mb: 1.5 }} 
+            />
+            <TextField 
+              fullWidth 
+              size="small"
+              label="Person Who Lost" 
+              value={lostForm.lostBy || ""} 
+              onChange={e => setLostForm(f => ({ ...f, lostBy: e.target.value }))} 
+              sx={{ mb: 1.5 }} 
+              placeholder="Enter the name of the person who lost the item"
+            />
+            <Button 
+              variant="outlined" 
+              size="small"
+              component="label" 
+              sx={{ 
+                mb: 1.5,
+                fontSize: '0.75rem',
+                color: lostForm.image ? '#1976d2' : '#000000',
+                borderColor: lostForm.image ? '#1976d2' : '#000000',
+                '&:hover': {
+                  borderColor: lostForm.image ? '#1976d2' : '#000000',
+                  backgroundColor: lostForm.image ? '#1976d210' : '#00000010'
+                }
+              }}
+              startIcon={<Upload />}
+            >
+              Upload Image
+              <input type="file" accept="image/*" hidden onChange={handleLostImage} />
+            </Button>
+            {lostImageFile && (
+              <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="caption" sx={{ flex: 1 }}>
+                  Selected: {lostImageFile.name}
+                </Typography>
                 <Button 
-                  variant="contained" 
-                  type="submit" 
-                  disabled={loading}
-                  sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}
+                  variant="outlined" 
+                  color="error" 
+                  size="small"
+                  sx={{ fontSize: '0.75rem' }}
+                  onClick={() => {
+                    setLostForm(f => ({ ...f, image: null }));
+                    setLostImageFile(null);
+                  }}
                 >
-                  Submit Lost Item
+                  Remove
                 </Button>
               </Box>
-            </form>
-          </Paper>
-
-          <Paper sx={{ p: 3, mb: 2, border: '1px solid #e0e0e0' }}>
-            <TextField 
-              fullWidth 
-              placeholder="Search lost items..." 
-              value={lostSearch} 
-              onChange={e => setLostSearch(e.target.value)} 
-              sx={{ mb: 2 }}
-              InputProps={{
-                startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />
-              }}
-            />
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#800000' }}>
-              Lost Items ({filteredLost.length})
-            </Typography>
-            {filteredLost.length === 0 ? (
-              <Typography color="text.secondary">No lost items yet.</Typography>
-            ) : (
-              filteredLost.map(item => (
-                <Card key={item.id} sx={{ 
-                  mb: 2, 
-                  bgcolor: '#ffffff', 
-                  border: '1px solid #800000',
-                  position: 'relative',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  '&:hover': {
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                  }
-                }}>
-                  <CardContent>
-                    <Grid container spacing={2} alignItems="center">
-                      <Grid item>
-                        {item.image && (
-                          <Avatar 
-                            src={item.image} 
-                            variant="rounded" 
-                            sx={{ width: 56, height: 56, cursor: 'pointer' }}
-                            onClick={() => handleImagePreview(item.image, item.name)}
-                          />
-                        )}
-                      </Grid>
-                      <Grid item xs>
-                        <Typography fontWeight={700} sx={item.resolved ? { textDecoration: 'line-through', color: 'gray' } : {}}>
-                          {item.name}
-                        </Typography>
-                        <Typography variant="body2" sx={item.resolved ? { textDecoration: 'line-through', color: 'gray' } : {}}>
-                          {item.description}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Location: {item.location}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
-                          {new Date(item.createdAt).toLocaleString()}
-                        </Typography>
-                      </Grid>
-                      <Grid item>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Tooltip title="Edit">
-                            <IconButton 
-                              size="small" 
-                              sx={{ 
-                                color: '#666666',
-                                '&:hover': { color: '#1976d2' }
-                              }}
-                              onClick={() => handleEditOpen('lost_items', item)}
-                            >
-                              <Edit />
-                            </IconButton>
-                          </Tooltip>
-                          {!item.resolved && (
-                            <Tooltip title="Mark as Resolved">
-                              <IconButton 
-                                size="small" 
-                                sx={{ 
-                                  color: '#666666',
-                                  '&:hover': { color: '#2e7d32' }
-                                }}
-                                onClick={() => handleResolve('lost_items', item.id)}
-                              >
-                                <CheckCircle />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          <Tooltip title="Delete">
-                            <IconButton 
-                              size="small" 
-                              sx={{ 
-                                color: '#666666',
-                                '&:hover': { color: '#d32f2f' }
-                              }}
-                              onClick={() => handleDelete('lost_items', item.id)}
-                            >
-                              <Delete />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </Grid>
-                    </Grid>
-                    {item.resolved && (
-                      <Chip 
-                        label="Resolved" 
-                        color="success" 
-                        size="small" 
-                        sx={{ position: 'absolute', top: 8, right: 16 }} 
-                      />
-                    )}
-                  </CardContent>
-                </Card>
-              ))
             )}
-          </Paper>
-        </Grid>
-      </Grid>
+          </form>
+        </DialogContent>
+        <DialogActions sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
+          <Button onClick={() => setShowLostModal(false)}>
+            Cancel
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={handleLostSubmit}
+            disabled={loading}
+            sx={{ 
+              bgcolor: '#e65100', 
+              fontSize: '0.75rem',
+              '&:hover': { bgcolor: '#bf360c' } 
+            }}
+          >
+            Submit Lost Item
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Edit Modal */}
       <Dialog open={editModal.open} onClose={() => setEditModal({ open: false, type: '', item: null })} maxWidth="sm" fullWidth>
@@ -927,36 +1056,30 @@ export default function AdminLostFound() {
             onChange={e => setEditForm(f => ({ ...f, location: e.target.value }))} 
             sx={{ mb: 2 }} 
           />
-                     <Button 
-             variant="outlined" 
-             component="label" 
-             sx={{ 
-               mb: 2,
-               color: editForm.image ? '#1976d2' : '#000000',
-               borderColor: editForm.image ? '#1976d2' : '#000000',
-               '&:hover': {
-                 borderColor: editForm.image ? '#1976d2' : '#000000',
-                 backgroundColor: editForm.image ? '#1976d210' : '#00000010'
-               }
-             }}
-             startIcon={<Upload />}
-           >
-             Update Image
-             <input type="file" accept="image/*" hidden onChange={handleEditImage} />
-           </Button>
-                       {editForm.image && (
-              <Box sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1, bgcolor: '#fafafa', minHeight: '160px' }}>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>Current Image:</Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                  <Avatar 
-                    src={editForm.image} 
-                    variant="rounded" 
-                    sx={{ width: 120, height: 120, cursor: 'pointer' }}
-                    onClick={() => handleImagePreview(editForm.image, editForm.name)}
-                  />
-                </Box>
-              </Box>
-            )}
+          <Button 
+            variant="outlined" 
+            component="label" 
+            sx={{ mb: 2 }}
+            startIcon={<Upload />}
+          >
+            Upload New Image
+            <input type="file" accept="image/*" hidden onChange={handleEditImage} />
+          </Button>
+          {editForm.imageFile && (
+            <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="caption" sx={{ flex: 1 }}>
+                Selected: {editForm.imageFile.name}
+              </Typography>
+              <Button 
+                variant="outlined" 
+                color="error" 
+                size="small"
+                onClick={() => setEditForm(f => ({ ...f, imageFile: null }))}
+              >
+                Remove
+              </Button>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditModal({ open: false, type: '', item: null })}>

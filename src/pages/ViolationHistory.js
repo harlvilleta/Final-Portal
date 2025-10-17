@@ -187,16 +187,16 @@ export default function ViolationHistory() {
         <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
           <Table stickyHeader>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#e3f2fd' }}>
-                <TableCell>Date</TableCell>
-                <TableCell>Student ID</TableCell>
-                <TableCell>Student Name</TableCell>
-                <TableCell>Violation</TableCell>
-                <TableCell>Classification</TableCell>
-                <TableCell>Severity</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Location</TableCell>
-                <TableCell>Actions</TableCell>
+              <TableRow sx={{ bgcolor: '#800000 !important' }}>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Date</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Student ID</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Student Name</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Violation</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Classification</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Severity</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Status</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Location</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -252,15 +252,15 @@ export default function ViolationHistory() {
         <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
           <Table stickyHeader>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#f3e5f5' }}>
-                <TableCell>Date</TableCell>
-                <TableCell>Time</TableCell>
-                <TableCell>Student Name</TableCell>
-                <TableCell>Student ID</TableCell>
-                <TableCell>Purpose</TableCell>
-                <TableCell>Violation Type</TableCell>
-                <TableCell>Severity</TableCell>
-                <TableCell>Location</TableCell>
+              <TableRow sx={{ bgcolor: '#800000 !important' }}>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Date</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Time</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Student Name</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Student ID</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Purpose</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Violation Type</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Severity</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Location</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -301,11 +301,11 @@ export default function ViolationHistory() {
         <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
           <Table stickyHeader>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#e0f2f1' }}>
-                <TableCell>Timestamp</TableCell>
-                <TableCell>Activity Type</TableCell>
-                <TableCell>Message</TableCell>
-                <TableCell>User</TableCell>
+              <TableRow sx={{ bgcolor: '#800000 !important' }}>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Timestamp</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Activity Type</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Message</TableCell>
+                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>User</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

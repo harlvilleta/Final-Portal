@@ -257,18 +257,17 @@ export default function TeacherRequest() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
-        <Typography variant="h4" gutterBottom sx={{ 
-          fontWeight: 700, 
-          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
-          mb: 3 
-        }}>
-          🎓 Teacher Request Management
-        </Typography>
-        
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-          Review and approve teacher registration requests. Teachers cannot log in until their accounts are approved.
-        </Typography>
+      <Typography variant="h4" gutterBottom sx={{ 
+        fontWeight: 700, 
+        color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+        mb: 3 
+      }}>
+        🎓 Teacher Request Management
+      </Typography>
+      
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+        Review and approve teacher registration requests. Teachers cannot log in until their accounts are approved.
+      </Typography>
 
         {/* Summary Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -357,7 +356,7 @@ export default function TeacherRequest() {
           <TableContainer component={Paper} elevation={2}>
             <Table>
               <TableHead>
-                <TableRow sx={{ bgcolor: 'primary.main' }}>
+                <TableRow sx={{ bgcolor: '#800000' }}>
                   <TableCell sx={{ color: 'white', fontWeight: 600 }}>Teacher</TableCell>
                   <TableCell sx={{ color: 'white', fontWeight: 600 }}>Email</TableCell>
                   <TableCell sx={{ color: 'white', fontWeight: 600 }}>Request Date</TableCell>
@@ -522,7 +521,6 @@ export default function TeacherRequest() {
             </Table>
           </TableContainer>
         )}
-      </Paper>
 
       {/* View Details Dialog */}
       <Dialog 

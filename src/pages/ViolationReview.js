@@ -37,7 +37,8 @@ import {
   Warning,
   Schedule,
   CheckCircleOutline,
-  CancelOutlined
+  CancelOutlined,
+  Help
 } from '@mui/icons-material';
 import { collection, getDocs, query, orderBy, updateDoc, doc, addDoc, where } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -229,14 +230,14 @@ export default function ViolationReview() {
           <TableContainer component={Paper} elevation={2}>
             <Table>
               <TableHead>
-                <TableRow sx={{ bgcolor: 'primary.main' }}>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Date Reported</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Student</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Teacher</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Violation Type</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Severity</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Actions</TableCell>
+                <TableRow sx={{ bgcolor: '#800000 !important' }}>
+                  <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Date Reported</TableCell>
+                  <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Student</TableCell>
+                  <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Teacher</TableCell>
+                  <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Violation Type</TableCell>
+                  <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Severity</TableCell>
+                  <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Status</TableCell>
+                  <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -317,7 +318,28 @@ export default function ViolationReview() {
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Schedule sx={{ fontSize: 16 }} />
+                        <Box sx={{ 
+                          width: 20, 
+                          height: 20, 
+                          bgcolor: violation.status === 'Approved' ? '#4caf50' : 
+                                  violation.status === 'Denied' ? '#f44336' : 
+                                  violation.status === 'Pending' ? '#ff9800' : '#9e9e9e', 
+                          borderRadius: 1, 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          {violation.status === 'Approved' ? (
+                            <CheckCircle sx={{ fontSize: 14, color: 'white' }} />
+                          ) : violation.status === 'Denied' ? (
+                            <Cancel sx={{ fontSize: 14, color: 'white' }} />
+                          ) : violation.status === 'Pending' ? (
+                            <Schedule sx={{ fontSize: 14, color: 'white' }} />
+                          ) : (
+                            <Help sx={{ fontSize: 14, color: 'white' }} />
+                          )}
+                        </Box>
                         <Typography 
                           variant="body2" 
                           sx={{ 

@@ -271,16 +271,16 @@ export default function ViolationStatus() {
       <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
         <Table stickyHeader>
           <TableHead>
-            <TableRow sx={{ bgcolor: '#80000010' }}>
-              <TableCell>Date</TableCell>
-              <TableCell>Student ID</TableCell>
-              <TableCell>Student Name</TableCell>
-              <TableCell>Violation</TableCell>
-              <TableCell>Classification</TableCell>
-              <TableCell>Severity</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Progress</TableCell>
-              <TableCell>Actions</TableCell>
+            <TableRow sx={{ bgcolor: '#800000 !important' }}>
+              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Date</TableCell>
+              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Student ID</TableCell>
+              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Student Name</TableCell>
+              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Violation</TableCell>
+              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Classification</TableCell>
+              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Severity</TableCell>
+              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Status</TableCell>
+              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Progress</TableCell>
+              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
