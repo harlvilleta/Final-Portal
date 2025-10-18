@@ -9,7 +9,8 @@ export default function TeacherLostFound() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [lostItems, setLostItems] = useState([]);
   const [foundItems, setFoundItems] = useState([]);
-  const [search, setSearch] = useState('');
+  const [lostSearch, setLostSearch] = useState('');
+  const [foundSearch, setFoundSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -42,10 +43,16 @@ export default function TeacherLostFound() {
     }
   };
 
-  const filtered = (items) => items.filter(i =>
-    (i.name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (i.description || '').toLowerCase().includes(search.toLowerCase()) ||
-    (i.location || '').toLowerCase().includes(search.toLowerCase())
+  const filteredLost = lostItems.filter(i =>
+    (i.name || '').toLowerCase().includes(lostSearch.toLowerCase()) ||
+    (i.description || '').toLowerCase().includes(lostSearch.toLowerCase()) ||
+    (i.location || '').toLowerCase().includes(lostSearch.toLowerCase())
+  );
+
+  const filteredFound = foundItems.filter(i =>
+    (i.name || '').toLowerCase().includes(foundSearch.toLowerCase()) ||
+    (i.description || '').toLowerCase().includes(foundSearch.toLowerCase()) ||
+    (i.location || '').toLowerCase().includes(foundSearch.toLowerCase())
   );
 
   return (
@@ -83,26 +90,25 @@ export default function TeacherLostFound() {
         </Grid>
 
         <Grid item xs={12} md={7}>
-          <Paper sx={{ p: 3, mb: 2 }}>
-            <TextField
-              fullWidth
-              placeholder="Search items..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              InputProps={{ startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} /> }}
-            />
-          </Paper>
-
-          <Grid container spacing={2}>
-            {[{ title: 'Recent Lost Items', items: filtered(lostItems) }, { title: 'Recent Found Items', items: filtered(foundItems) }].map(section => (
-              <Grid item xs={12} key={section.title}>
+          <Grid container spacing={3}>
+            {/* Lost Items History Section */}
+            <Grid item xs={12}>
+              <Paper sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: 'primary.main' }}>
-                  {section.title} ({section.items.length})
+                  Lost Items History ({filteredLost.length})
                 </Typography>
-                {section.items.length === 0 ? (
-                  <Typography color="text.secondary">No items yet.</Typography>
+                <TextField
+                  fullWidth
+                  placeholder="Search lost items..."
+                  value={lostSearch}
+                  onChange={e => setLostSearch(e.target.value)}
+                  sx={{ mb: 2 }}
+                  InputProps={{ startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} /> }}
+                />
+                {filteredLost.length === 0 ? (
+                  <Typography color="text.secondary">No lost items found.</Typography>
                 ) : (
-                  section.items.slice(0, 10).map(item => (
+                  filteredLost.slice(0, 10).map(item => (
                     <Card key={item.id} sx={{ mb: 2, bgcolor: '#80000010', borderLeft: '4px solid #800000' }}>
                       <CardContent>
                         <Grid container spacing={2} alignItems="center">
@@ -115,15 +121,55 @@ export default function TeacherLostFound() {
                             <Typography variant="caption" color="text.secondary">Location: {item.location}</Typography>
                           </Grid>
                           <Grid item>
-                            <Chip label={section.title.includes('Lost') ? 'Lost' : 'Found'} color="primary" size="small" />
+                            <Chip label="Lost" color="primary" size="small" />
                           </Grid>
                         </Grid>
                       </CardContent>
                     </Card>
                   ))
                 )}
-              </Grid>
-            ))}
+              </Paper>
+            </Grid>
+
+            {/* Found Items Summary Section */}
+            <Grid item xs={12}>
+              <Paper sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: 'primary.main' }}>
+                  Found Items Summary ({filteredFound.length})
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="Search found items..."
+                  value={foundSearch}
+                  onChange={e => setFoundSearch(e.target.value)}
+                  sx={{ mb: 2 }}
+                  InputProps={{ startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} /> }}
+                />
+                {filteredFound.length === 0 ? (
+                  <Typography color="text.secondary">No found items found.</Typography>
+                ) : (
+                  filteredFound.slice(0, 10).map(item => (
+                    <Card key={item.id} sx={{ mb: 2, bgcolor: '#2e7d3210', borderLeft: '4px solid #2e7d32' }}>
+                      <CardContent>
+                        <Grid container spacing={2} alignItems="center">
+                          <Grid item>
+                            {item.image && (<Avatar src={item.image} variant="rounded" sx={{ width: 56, height: 56 }} />)}
+                          </Grid>
+                          <Grid item xs>
+                            <Typography fontWeight={700}>{item.name}</Typography>
+                            <Typography variant="body2" color="text.secondary">{item.description}</Typography>
+                            <Typography variant="caption" color="text.secondary">Location: {item.location}</Typography>
+                          </Grid>
+                          <Grid item>
+                            <Chip label="Found" color="success" size="small" />
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </Paper>
+            </Grid>
           </Grid>
         </Grid>
       </Grid>

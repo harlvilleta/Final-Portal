@@ -18,7 +18,6 @@ const menu = [
       { text: "Record", icon: <Assignment sx={{ color: 'inherit' }} />, path: "/violation-record" },
       { text: "Review Cases", icon: <Assessment sx={{ color: 'inherit' }} />, path: "/violation-review" },
       { text: "Create Meeting", icon: <MeetingRoom sx={{ color: 'inherit' }} />, path: "/violation-record/create-meeting" },
-      { text: "History", icon: <Timeline sx={{ color: 'inherit' }} />, path: "/violation-record/history" },
       { text: "Status", icon: <Assessment sx={{ color: 'inherit' }} />, path: "/violation-record/status" }
     ]
   },
@@ -32,7 +31,6 @@ const menu = [
     submenu: [
       { text: "Schedule Activity", icon: <Event sx={{ color: 'inherit' }} />, path: "/activity" },
       { text: "Activity Scheduler", icon: <Event sx={{ color: 'inherit' }} />, path: "/admin-activity-scheduler" },
-      { text: "History", icon: <History sx={{ color: 'inherit' }} />, path: "/activity/history" },
       { text: "Requests", icon: <History sx={{ color: 'inherit' }} />, path: "/activity/requests" }
     ]
   },
@@ -129,11 +127,12 @@ export default function Sidebar() {
                 mb: 1,
                 borderRadius: 2,
                 bgcolor: isItemSelected(item) ? '#636e72' : 'transparent',
-                color: isItemSelected(item) ? '#fff' : '#b2bec3',
+                color: isItemSelected(item) ? '#fff' : '#e8e8e8',
                 '&:hover': {
                   bgcolor: isItemSelected(item) ? '#636e72' : '#4a5568',
                   transform: 'translateX(4px)',
-                  boxShadow: 2
+                  boxShadow: 2,
+                  color: '#fff'
                 },
               }}
             >
@@ -163,11 +162,12 @@ export default function Sidebar() {
                         borderRadius: 2,
                         mb: 0.5,
                         bgcolor: isSubItemSelected(subItem) ? '#636e72' : 'transparent',
-                        color: isSubItemSelected(subItem) ? '#fff' : '#b2bec3',
+                        color: isSubItemSelected(subItem) ? '#fff' : '#e8e8e8',
                         '&:hover': {
                           bgcolor: isSubItemSelected(subItem) ? '#636e72' : '#4a5568',
                           transform: 'translateX(4px)',
-                          boxShadow: 2
+                          boxShadow: 2,
+                          color: '#fff'
                         }
                       }}
                     >

@@ -909,95 +909,11 @@ function LostFound() {
         </Grid>
       </Grid>
       <Grid container spacing={3}>
+        {/* Lost Items History Section */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, mb: 2 }}>
-            <Typography variant="h6" gutterBottom>Found Item Entry</Typography>
-            <form onSubmit={handleFoundSubmit}>
-              <TextField fullWidth label="Item Name" value={foundForm.name} onChange={e => setFoundForm(f => ({ ...f, name: e.target.value }))} sx={{ mb: 2 }} />
-              <TextField fullWidth label="Description" multiline minRows={2} value={foundForm.description} onChange={e => setFoundForm(f => ({ ...f, description: e.target.value }))} sx={{ mb: 2 }} />
-              <TextField fullWidth label="Location Found" value={foundForm.location} onChange={e => setFoundForm(f => ({ ...f, location: e.target.value }))} sx={{ mb: 2 }} />
-              {/* Student Who Found Dropdown */}
-              <TextField
-                select
-                fullWidth
-                label="Student Who Found"
-                value={foundForm.foundBy || ""}
-                onChange={e => setFoundForm(f => ({ ...f, foundBy: e.target.value }))}
-                sx={{ mb: 2 }}
-              >
-                {students.map(student => (
-                  <MenuItem key={student.id} value={student.id}>
-                    {student.id} - {student.firstName} {student.lastName}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <Button variant="outlined" component="label" sx={{ mb: 2 }}>
-                Upload Image
-                <input type="file" accept="image/*" hidden onChange={handleFoundImage} />
-              </Button>
-              {foundImageFile && <Typography variant="caption">{foundImageFile.name}</Typography>}
-              <Button variant="contained" type="submit" disabled={loading} sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}>Submit Found Item</Button>
-            </form>
-          </Paper>
-          <Paper sx={{ p: 3, mb: 2 }}>
-            <TextField fullWidth placeholder="Search found items..." value={foundSearch} onChange={e => setFoundSearch(e.target.value)} sx={{ mb: 2 }} />
-            <Typography variant="h6" gutterBottom>Found Items</Typography>
-            {filteredFound.length === 0 ? <Typography>No found items yet.</Typography> : filteredFound.map(item => (
-              <Box key={item.id} sx={{ mb: 2, p: 2, bgcolor: item.resolved ? '#c8e6c9' : '#e8f5e9', borderRadius: 2, position: 'relative' }}>
-                <Grid container spacing={1} alignItems="center">
-                  <Grid item>
-                    {item.image && <Avatar src={item.image} variant="rounded" sx={{ width: 56, height: 56, mr: 2 }} />}
-                  </Grid>
-                  <Grid item xs>
-                    <Typography fontWeight={700} sx={item.resolved ? { textDecoration: 'line-through', color: 'gray' } : {}}>{item.name}</Typography>
-                    <Typography variant="body2" sx={item.resolved ? { textDecoration: 'line-through', color: 'gray' } : {}}>{item.description}</Typography>
-                    <Typography variant="caption" color="text.secondary">Location: {item.location}</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>{new Date(item.createdAt).toLocaleString()}</Typography>
-                  </Grid>
-                  <Grid item>
-                    <Button size="small" color="info" onClick={() => handleEditOpen('found_items', item)}>Edit</Button>
-                    {!item.resolved && <Button size="small" color="success" onClick={() => handleResolve('found_items', item.id)}>Resolve</Button>}
-                    <Button size="small" color="error" onClick={() => handleDelete('found_items', item.id)}>Delete</Button>
-                  </Grid>
-                </Grid>
-                {item.resolved && <Typography variant="caption" color="success.main" sx={{ position: 'absolute', top: 8, right: 16 }}>Resolved</Typography>}
-              </Box>
-            ))}
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, mb: 2 }}>
-            <Typography variant="h6" gutterBottom>Lost Item Entry</Typography>
-            <form onSubmit={handleLostSubmit}>
-              <TextField fullWidth label="Item Name" value={lostForm.name} onChange={e => setLostForm(f => ({ ...f, name: e.target.value }))} sx={{ mb: 2 }} />
-              <TextField fullWidth label="Description" multiline minRows={2} value={lostForm.description} onChange={e => setLostForm(f => ({ ...f, description: e.target.value }))} sx={{ mb: 2 }} />
-              <TextField fullWidth label="Location Lost" value={lostForm.location} onChange={e => setLostForm(f => ({ ...f, location: e.target.value }))} sx={{ mb: 2 }} />
-              {/* Student Who Lost Dropdown */}
-              <TextField
-                select
-                fullWidth
-                label="Student Who Lost"
-                value={lostForm.lostBy || ""}
-                onChange={e => setLostForm(f => ({ ...f, lostBy: e.target.value }))}
-                sx={{ mb: 2 }}
-              >
-                {students.map(student => (
-                  <MenuItem key={student.id} value={student.id}>
-                    {student.id} - {student.firstName} {student.lastName}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <Button variant="outlined" component="label" sx={{ mb: 2 }}>
-                Upload Image
-                <input type="file" accept="image/*" hidden onChange={handleLostImage} />
-              </Button>
-              {lostImageFile && <Typography variant="caption">{lostImageFile.name}</Typography>}
-              <Button variant="contained" type="submit" disabled={loading} sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}>Submit Lost Item</Button>
-            </form>
-          </Paper>
-          <Paper sx={{ p: 3, mb: 2 }}>
+            <Typography variant="h6" gutterBottom>Lost Items History</Typography>
             <TextField fullWidth placeholder="Search lost items..." value={lostSearch} onChange={e => setLostSearch(e.target.value)} sx={{ mb: 2 }} />
-            <Typography variant="h6" gutterBottom>Lost Items</Typography>
             {filteredLost.length === 0 ? <Typography>No lost items yet.</Typography> : filteredLost.map(item => (
               <Box key={item.id} sx={{ mb: 2, p: 2, bgcolor: item.resolved ? '#ffe0b2' : '#fffde7', borderRadius: 2, position: 'relative' }}>
                 <Grid container spacing={1} alignItems="center">
@@ -1014,6 +930,35 @@ function LostFound() {
                     <Button size="small" color="info" onClick={() => handleEditOpen('lost_items', item)}>Edit</Button>
                     {!item.resolved && <Button size="small" color="success" onClick={() => handleResolve('lost_items', item.id)}>Resolve</Button>}
                     <Button size="small" color="error" onClick={() => handleDelete('lost_items', item.id)}>Delete</Button>
+                  </Grid>
+                </Grid>
+                {item.resolved && <Typography variant="caption" color="success.main" sx={{ position: 'absolute', top: 8, right: 16 }}>Resolved</Typography>}
+              </Box>
+            ))}
+          </Paper>
+        </Grid>
+
+        {/* Found Items Summary Section */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, mb: 2 }}>
+            <Typography variant="h6" gutterBottom>Found Items Summary</Typography>
+            <TextField fullWidth placeholder="Search found items..." value={foundSearch} onChange={e => setFoundSearch(e.target.value)} sx={{ mb: 2 }} />
+            {filteredFound.length === 0 ? <Typography>No found items yet.</Typography> : filteredFound.map(item => (
+              <Box key={item.id} sx={{ mb: 2, p: 2, bgcolor: item.resolved ? '#c8e6c9' : '#e8f5e9', borderRadius: 2, position: 'relative' }}>
+                <Grid container spacing={1} alignItems="center">
+                  <Grid item>
+                    {item.image && <Avatar src={item.image} variant="rounded" sx={{ width: 56, height: 56, mr: 2 }} />}
+                  </Grid>
+                  <Grid item xs>
+                    <Typography fontWeight={700} sx={item.resolved ? { textDecoration: 'line-through', color: 'gray' } : {}}>{item.name}</Typography>
+                    <Typography variant="body2" sx={item.resolved ? { textDecoration: 'line-through', color: 'gray' } : {}}>{item.description}</Typography>
+                    <Typography variant="caption" color="text.secondary">Location: {item.location}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>{new Date(item.createdAt).toLocaleString()}</Typography>
+                  </Grid>
+                  <Grid item>
+                    <Button size="small" color="info" onClick={() => handleEditOpen('found_items', item)}>Edit</Button>
+                    {!item.resolved && <Button size="small" color="success" onClick={() => handleResolve('found_items', item.id)}>Resolve</Button>}
+                    <Button size="small" color="error" onClick={() => handleDelete('found_items', item.id)}>Delete</Button>
                   </Grid>
                 </Grid>
                 {item.resolved && <Typography variant="caption" color="success.main" sx={{ position: 'absolute', top: 8, right: 16 }}>Resolved</Typography>}
@@ -1221,7 +1166,7 @@ function CourseDashboard({
         </IconButton>
         <Box>
           <Typography variant="h4" sx={{ 
-            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
             fontWeight: 'bold' 
           }}>
             {courseName} Students
@@ -1241,10 +1186,11 @@ function CourseDashboard({
             p: 2, 
             textAlign: 'center', 
             bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000'
           }}>
             <Typography variant="h4" sx={{ 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              color: '#000000', 
               fontWeight: 'bold' 
             }}>
               {students.length}
@@ -1261,10 +1207,11 @@ function CourseDashboard({
             p: 2, 
             textAlign: 'center', 
             bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000'
           }}>
             <Typography variant="h4" sx={{ 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              color: '#000000', 
               fontWeight: 'bold' 
             }}>
               {selectedYear === "All Years" ? new Set(students.map(s => s.year)).size : 1}
@@ -1281,10 +1228,11 @@ function CourseDashboard({
             p: 2, 
             textAlign: 'center', 
             bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000'
           }}>
             <Typography variant="h4" sx={{ 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              color: '#000000', 
               fontWeight: 'bold' 
             }}>
               {new Set(filteredStudents.map(s => s.section)).size}
@@ -1301,10 +1249,11 @@ function CourseDashboard({
             p: 2, 
             textAlign: 'center', 
             bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000'
           }}>
             <Typography variant="h4" sx={{ 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              color: '#000000', 
               fontWeight: 'bold' 
             }}>
               {filteredStudents.length}
@@ -1322,7 +1271,7 @@ function CourseDashboard({
       <Box sx={{ mb: 3 }}>
         <Typography variant="h6" sx={{ 
           mb: 2, 
-          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+          color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
           fontWeight: 'bold' 
         }}>
           Filter by Year Level
@@ -1333,10 +1282,10 @@ function CourseDashboard({
             onClick={() => setSelectedYear("All Years")}
             color={selectedYear === "All Years" ? "primary" : "default"}
             sx={{
-              bgcolor: selectedYear === "All Years" ? '#800000' : 'default',
+              bgcolor: selectedYear === "All Years" ? '#000000' : 'default',
               color: selectedYear === "All Years" ? 'white' : 'default',
               '&:hover': {
-                bgcolor: selectedYear === "All Years" ? '#6b0000' : '#f5f5f5'
+                bgcolor: selectedYear === "All Years" ? '#333333' : '#f5f5f5'
               }
             }}
           />
@@ -1350,10 +1299,10 @@ function CourseDashboard({
                 color={selectedYear === year ? "primary" : "default"}
                 disabled={yearStudents.length === 0}
                 sx={{
-                  bgcolor: selectedYear === year ? '#800000' : 'default',
+                  bgcolor: selectedYear === year ? '#000000' : 'default',
                   color: selectedYear === year ? 'white' : 'default',
                   '&:hover': {
-                    bgcolor: selectedYear === year ? '#6b0000' : '#f5f5f5'
+                    bgcolor: selectedYear === year ? '#333333' : '#f5f5f5'
                   },
                   opacity: yearStudents.length === 0 ? 0.5 : 1
                 }}
@@ -1385,7 +1334,7 @@ function CourseDashboard({
                 setSearch("");
                 setSelectedYear("All Years");
               }}
-              sx={{ bgcolor: '#fff', color: '#666', borderColor: '#666', '&:hover': { bgcolor: '#f5f5f5', color: '#333', borderColor: '#333' } }}
+              sx={{ bgcolor: '#fff', color: '#000', borderColor: '#000', '&:hover': { bgcolor: '#800000', color: '#fff', borderColor: '#800000' } }}
             >
               Clear Filters
             </Button>
@@ -1442,44 +1391,71 @@ function CourseDashboard({
                 bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#fafafa' 
               }}>
                 <TableCell sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
-                }}>Image</TableCell>
-                <TableCell sx={{ 
-                  fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
-                }}>Name</TableCell>
-                <TableCell sx={{ 
-                  fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px',
+                  minWidth: '140px',
+                  maxWidth: '140px'
                 }}>
-                  Year
-                  {selectedYear !== "All Years" && (
-                    <Chip 
-                      label={selectedYear} 
-                      size="small" 
-                      sx={{ 
-                        ml: 1, 
-                        bgcolor: '#800000', 
-                        color: 'white',
-                        fontSize: '0.7rem',
-                        height: 20
-                      }} 
-                    />
-                  )}
+                  Student
                 </TableCell>
                 <TableCell sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
-                }}>Section</TableCell>
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px',
+                  minWidth: '120px',
+                  maxWidth: '120px'
+                }}>
+                  Student ID
+                </TableCell>
                 <TableCell sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
-                }}>Email</TableCell>
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px',
+                  minWidth: '100px',
+                  maxWidth: '100px'
+                }}>
+                  Course
+                </TableCell>
                 <TableCell sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
-                }}>Actions</TableCell>
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px',
+                  minWidth: '120px',
+                  maxWidth: '120px'
+                }}>
+                  Year & Section
+                </TableCell>
+                <TableCell sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  fontWeight: 'bold',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px',
+                  minWidth: '100px',
+                  maxWidth: '100px'
+                }}>
+                  Status
+                </TableCell>
+                <TableCell sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  fontWeight: 'bold',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px',
+                  minWidth: '120px',
+                  maxWidth: '120px'
+                }}>
+                  Actions
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -1489,46 +1465,83 @@ function CourseDashboard({
                   hover
                   sx={{ '&:hover': { bgcolor: '#f9f9f9' } }}
                 >
-                  <TableCell>
-                    {student.image ? (
-                      <Avatar src={student.image} sx={{ width: 40, height: 40 }} />
-                    ) : (
-                      <Avatar sx={{ width: 40, height: 40, bgcolor: 'primary.main' }}>
-                        {student.firstName?.charAt(0)}{student.lastName?.charAt(0)}
-                      </Avatar>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                      {student.firstName} {student.lastName}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      ID: {student.id}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{student.year || 'N/A'}</TableCell>
-                  <TableCell>{student.section || 'N/A'}</TableCell>
-                  <TableCell>
-                    <Tooltip title={student.email || ''} placement="top">
-                      <Typography 
-                        variant="body2" 
+                  <TableCell sx={{ padding: '12px 16px', minWidth: '140px', maxWidth: '140px' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Avatar 
+                        src={student.profilePic || student.image} 
                         sx={{ 
-                          maxWidth: 140, 
-                          overflow: 'hidden', 
-                          textOverflow: 'ellipsis', 
-                          whiteSpace: 'nowrap' 
+                          width: 36, 
+                          height: 36,
+                          bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#1976d2',
+                          fontSize: '0.875rem'
                         }}
                       >
-                        {(student.email || '').length > 0 ? `${(student.email || '').slice(0, 15)}…` : 'N/A'}
-                      </Typography>
-                    </Tooltip>
+                        {student.firstName?.charAt(0)}{student.lastName?.charAt(0)}
+                      </Avatar>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography variant="body2" sx={{ 
+                          fontWeight: 'medium',
+                          fontSize: '0.875rem',
+                          lineHeight: 1.2,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {student.firstName} {student.lastName}
+                        </Typography>
+                        <Typography variant="caption" sx={{ 
+                          color: 'text.secondary',
+                          fontSize: '0.75rem',
+                          lineHeight: 1.2
+                        }}>
+                          {student.year} • {student.section}
+                        </Typography>
+                      </Box>
+                    </Box>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ padding: '12px 16px', minWidth: '120px', maxWidth: '120px' }}>
+                    <Typography variant="body2" sx={{ 
+                      fontSize: '0.875rem',
+                      fontWeight: 'medium',
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+                    }}>
+                      {student.studentId || student.id}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ padding: '12px 16px', minWidth: '100px', maxWidth: '100px' }}>
+                    <Typography variant="body2" sx={{ 
+                      fontSize: '0.875rem',
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+                    }}>
+                      {student.course || 'N/A'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ padding: '12px 16px', minWidth: '120px', maxWidth: '120px' }}>
+                    <Typography variant="body2" sx={{ 
+                      fontSize: '0.875rem',
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+                    }}>
+                      {student.year} • {student.section}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ padding: '12px 16px', minWidth: '100px', maxWidth: '100px' }}>
+                    <Chip 
+                      label={student.isRegisteredUser ? 'Registered' : 'Unregistered'} 
+                      size="small" 
+                      sx={{ 
+                        bgcolor: student.isRegisteredUser ? '#4caf50' : '#ff9800',
+                        color: 'white',
+                        fontSize: '0.75rem',
+                        height: 24
+                      }} 
+                    />
+                  </TableCell>
+                  <TableCell sx={{ padding: '12px 16px', minWidth: '120px', maxWidth: '120px' }}>
                     <Stack direction="row" spacing={1}>
                       <Tooltip title="View Details">
                         <IconButton 
                           size="small"
-                          sx={{ color: 'grey.600', '&:hover': { color: '#800000' } }}
+                          sx={{ color: 'grey.600', '&:hover': { color: '#000000' } }}
                           onClick={(e) => { e.stopPropagation(); handleViewStudent(student); }}
                         >
                           <Visibility sx={{ fontSize: 18 }} />
@@ -1537,7 +1550,7 @@ function CourseDashboard({
                       <Tooltip title="Edit Student">
                         <IconButton 
                           size="small"
-                          sx={{ color: 'grey.600', '&:hover': { color: '#800000' } }}
+                          sx={{ color: 'grey.600', '&:hover': { color: '#000000' } }}
                           onClick={(e) => { e.stopPropagation(); handleEditStudent(student); }}
                         >
                           <Edit sx={{ fontSize: 18 }} />
@@ -1606,6 +1619,11 @@ function StudentList({
   const [violationImageFile, setViolationImageFile] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
+  // Debug activeTab changes
+  useEffect(() => {
+    console.log('🎯 activeTab changed to:', activeTab);
+  }, [activeTab]);
+
   useEffect(() => {
     const fetchStudents = async () => {
       try {
@@ -1619,7 +1637,7 @@ function StudentList({
             id: doc.id,
             ...data,
             studentId: data.id, // Map the 'id' field to 'studentId' for consistency
-            isRegisteredUser: data.isRegistered || false // Check if student has registered
+            isRegisteredUser: Boolean(data.isRegistered) // Ensure boolean value
           };
         });
         
@@ -1759,10 +1777,30 @@ function StudentList({
     // Apply tab filter
     if (activeTab === 1) {
       // Unregistered students only
-      filtered = filtered.filter(student => !student.isRegisteredUser);
+      console.log('🔍 Filtering for UNREGISTERED students, activeTab:', activeTab);
+      console.log('📊 Students before unregistered filter:', filtered.length);
+      filtered = filtered.filter(student => {
+        // Ensure isRegisteredUser is properly defined (default to false if undefined)
+        const isRegistered = Boolean(student.isRegisteredUser);
+        const isUnregistered = !isRegistered;
+        console.log(`Student ${student.firstName} ${student.lastName}: isRegisteredUser=${student.isRegisteredUser}, isRegistered=${isRegistered}, isUnregistered=${isUnregistered}`);
+        return isUnregistered;
+      });
+      console.log('📊 Students after unregistered filter:', filtered.length);
     } else if (activeTab === 2) {
       // Registered students only
-      filtered = filtered.filter(student => student.isRegisteredUser);
+      console.log('🔍 Filtering for REGISTERED students, activeTab:', activeTab);
+      console.log('📊 Students before registered filter:', filtered.length);
+      filtered = filtered.filter(student => {
+        // Ensure isRegisteredUser is properly defined (default to false if undefined)
+        const isRegistered = Boolean(student.isRegisteredUser);
+        console.log(`Student ${student.firstName} ${student.lastName}: isRegisteredUser=${student.isRegisteredUser}, isRegistered=${isRegistered}`);
+        return isRegistered;
+      });
+      console.log('📊 Students after registered filter:', filtered.length);
+    } else {
+      console.log('🔍 Showing ALL students, activeTab:', activeTab);
+      console.log('📊 Total students:', filtered.length);
     }
     
     return filtered;
@@ -2232,34 +2270,44 @@ School Administration
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs 
           value={activeTab} 
-          onChange={(e, newValue) => setActiveTab(newValue)}
+          onChange={(e, newValue) => {
+            console.log('🔄 Tab changed from', activeTab, 'to', newValue);
+            setActiveTab(newValue);
+          }}
           sx={{
             '& .MuiTab-root': {
               color: theme.palette.mode === 'dark' ? '#ffffff' : '#666',
               fontWeight: 500,
               textTransform: 'none',
-              fontSize: '1rem'
+              fontSize: '1rem',
+              textAlign: 'left',
+              justifyContent: 'flex-start',
+              paddingLeft: '16px',
+              paddingRight: '16px'
             },
             '& .Mui-selected': {
-              color: '#800000 !important',
+              color: '#000000 !important',
               fontWeight: 'bold'
             },
             '& .MuiTabs-indicator': {
-              backgroundColor: '#800000'
+              backgroundColor: '#000000'
             }
           }}
         >
           <Tab 
             label={`All Students (${students.length})`} 
             value={0}
+            sx={{ textAlign: 'left', minWidth: 'auto' }}
           />
           <Tab 
             label={`Unregistered (${students.filter(s => !s.isRegisteredUser).length})`} 
             value={1}
+            sx={{ textAlign: 'left', minWidth: 'auto' }}
           />
           <Tab 
             label={`Registered (${students.filter(s => s.isRegisteredUser).length})`} 
             value={2}
+            sx={{ textAlign: 'left', minWidth: 'auto' }}
           />
         </Tabs>
       </Box>
@@ -2271,10 +2319,11 @@ School Administration
             p: 2, 
             textAlign: 'center', 
             bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000'
           }}>
             <Typography variant="h4" sx={{ 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              color: '#000000', 
               fontWeight: 'bold' 
             }}>
               {filteredStudents.filter(s => s.course && s.course.trim() !== '').length}
@@ -2293,10 +2342,11 @@ School Administration
             p: 2, 
             textAlign: 'center', 
             bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000'
           }}>
             <Typography variant="h4" sx={{ 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              color: '#000000', 
               fontWeight: 'bold' 
             }}>
               {availableCourses.length}
@@ -2313,10 +2363,11 @@ School Administration
             p: 2, 
             textAlign: 'center', 
             bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000'
           }}>
             <Typography variant="h4" sx={{ 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              color: '#000000', 
               fontWeight: 'bold' 
             }}>
               {courseFilter !== 'all' ? filteredStudents.length : students.length}
@@ -2333,10 +2384,11 @@ School Administration
             p: 2, 
             textAlign: 'center', 
             bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef' 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000'
           }}>
             <Typography variant="h4" sx={{ 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+              color: '#000000', 
               fontWeight: 'bold' 
             }}>
               {filteredStudents.length}
@@ -2356,12 +2408,12 @@ School Administration
       <Stack direction="row" spacing={2} sx={{ mb: 2, alignItems: 'center', justifyContent: 'space-between' }}>
         <Stack direction="row" spacing={2}>
           <Button 
-            variant="contained" 
+            variant="outlined" 
             onClick={() => setOpenAddStudent(true)}
             sx={{ 
-              bgcolor: '#666666', 
-              color: '#ffffff', 
-              borderColor: '#666666', 
+              bgcolor: '#ffffff', 
+              color: '#000000', 
+              borderColor: '#000000', 
               fontSize: '0.75rem',
               fontWeight: 400,
               textTransform: 'none',
@@ -2379,13 +2431,13 @@ School Administration
           Add Student
           </Button>
           <Button 
-            variant="contained" 
+            variant="outlined" 
             onClick={handleExport} 
             disabled={students.length === 0}
             sx={{ 
-              bgcolor: '#666666', 
-              color: '#ffffff', 
-              borderColor: '#666666', 
+              bgcolor: '#ffffff', 
+              color: '#000000', 
+              borderColor: '#000000', 
               fontSize: '0.75rem',
               fontWeight: 400,
               textTransform: 'none',
@@ -2408,12 +2460,12 @@ School Administration
           Export
           </Button>
           <Button 
-            variant="contained" 
+            variant="outlined" 
             onClick={handleRefresh}
             sx={{ 
-              bgcolor: '#666666', 
-              color: '#ffffff', 
-              borderColor: '#666666', 
+              bgcolor: '#ffffff', 
+              color: '#000000', 
+              borderColor: '#000000', 
               fontSize: '0.75rem',
               fontWeight: 400,
               textTransform: 'none',
@@ -2428,16 +2480,16 @@ School Administration
               } 
             }}
           >
-          Refresh
+            Refresh
           </Button>
           <Button 
-            variant="contained" 
+            variant="outlined" 
             onClick={handleExportToPDF}
             disabled={filteredStudents.length === 0}
             sx={{ 
-              bgcolor: '#666666', 
-              color: '#ffffff', 
-              borderColor: '#666666', 
+              bgcolor: '#ffffff', 
+              color: '#000000', 
+              borderColor: '#000000', 
               fontSize: '0.75rem',
               fontWeight: 400,
               textTransform: 'none',
@@ -2457,7 +2509,7 @@ School Administration
               }
             }}
           >
-            <PictureAsPdf sx={{ mr: 0.5, fontSize: '0.875rem', color: '#ffffff' }} />
+            <PictureAsPdf sx={{ mr: 0.5, fontSize: '0.875rem', color: 'inherit' }} />
             Export PDF
           </Button>
         </Stack>
@@ -2531,7 +2583,7 @@ School Administration
       {/* Instructions */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="body1" sx={{ 
-          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
+          color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
           fontWeight: 'medium', 
           mb: 1 
         }}>
@@ -2607,7 +2659,7 @@ School Administration
           )}
         </Box>
       ) : (
-        <TableContainer component={Paper} sx={{ 
+        <TableContainer component={Paper} key={`table-${activeTab}`} sx={{ 
           maxHeight: 600,
           bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
           overflowX: 'auto',
@@ -2631,62 +2683,81 @@ School Administration
                 <TableCell sx={{ 
                   bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
-                  minWidth: '180px'
+                  minWidth: '140px',
+                  maxWidth: '140px'
                 }}>
                   Student
                 </TableCell>
                 <TableCell sx={{ 
                   bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
-                  minWidth: '130px'
+                  minWidth: '120px',
+                  maxWidth: '120px'
                 }}>
                   Student ID
                 </TableCell>
                 <TableCell sx={{ 
                   bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                   fontSize: '0.875rem',
-                  padding: '12px 16px'
+                  padding: '12px 16px',
+                  minWidth: '100px',
+                  maxWidth: '100px'
                 }}>
                   Course
                 </TableCell>
                 <TableCell sx={{ 
                   bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                   fontSize: '0.875rem',
-                  padding: '12px 16px'
+                  padding: '12px 16px',
+                  minWidth: '120px',
+                  maxWidth: '120px'
                 }}>
                   Year & Section
                 </TableCell>
                 <TableCell sx={{ 
                   bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                   fontSize: '0.875rem',
-                  padding: '12px 16px'
+                  padding: '12px 16px',
+                  minWidth: '100px',
+                  maxWidth: '100px'
                 }}>
                   Status
                 </TableCell>
                 <TableCell sx={{ 
                   bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                   fontSize: '0.875rem',
-                  padding: '12px 16px'
+                  padding: '12px 16px',
+                  minWidth: '120px',
+                  maxWidth: '120px'
                 }}>
                   Actions
                 </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
+              {(() => {
+                console.log('🎯 RENDERING TABLE with activeTab:', activeTab);
+                console.log('📊 filteredStudents count:', filteredStudents.length);
+                console.log('📋 First few students:', filteredStudents.slice(0, 3).map(s => ({
+                  name: `${s.firstName} ${s.lastName}`,
+                  isRegisteredUser: s.isRegisteredUser
+                })));
+                return null;
+              })()}
               {filteredStudents.map((student) => (
                 <TableRow 
                   key={student.id} 
@@ -2697,15 +2768,15 @@ School Administration
                     }
                   }}
                 >
-                  <TableCell sx={{ padding: '12px 16px', minWidth: '180px' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <TableCell sx={{ padding: '8px 12px', minWidth: '140px', maxWidth: '140px' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Avatar 
                         src={student.profilePic} 
                         sx={{ 
-                          width: 36, 
-                          height: 36,
+                          width: 32, 
+                          height: 32,
                           bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#1976d2',
-                          fontSize: '0.875rem'
+                          fontSize: '0.75rem'
                         }}
                       >
                         {student.firstName?.charAt(0)}{student.lastName?.charAt(0)}
@@ -2713,7 +2784,7 @@ School Administration
                       <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Typography variant="body2" sx={{ 
                           fontWeight: 'medium',
-                          fontSize: '0.875rem',
+                          fontSize: '0.8rem',
                           lineHeight: 1.2,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -2723,7 +2794,7 @@ School Administration
                         </Typography>
                         <Typography variant="caption" sx={{ 
                           color: 'text.secondary',
-                          fontSize: '0.75rem',
+                          fontSize: '0.7rem',
                           lineHeight: 1.2
                         }}>
                           {student.year} • {student.section}
@@ -2731,23 +2802,23 @@ School Administration
                       </Box>
                     </Box>
                   </TableCell>
-                  <TableCell sx={{ padding: '12px 16px', minWidth: '130px' }}>
+                  <TableCell sx={{ padding: '8px 12px', minWidth: '120px', maxWidth: '120px' }}>
                     <Tooltip title={student.studentId || student.id || 'N/A'} arrow>
                       <Typography variant="body2" sx={{ 
-                        fontSize: '0.875rem',
+                        fontSize: '0.8rem',
                         lineHeight: 1.2,
                         fontFamily: 'monospace',
                         cursor: 'help'
                       }}>
                         {student.studentId || student.id ? 
-                          (student.studentId || student.id).length > 12 ? 
-                            `${(student.studentId || student.id).substring(0, 12)}...` : 
+                          (student.studentId || student.id).length > 10 ? 
+                            `${(student.studentId || student.id).substring(0, 10)}...` : 
                             (student.studentId || student.id) : 
                           'N/A'}
                       </Typography>
                     </Tooltip>
                   </TableCell>
-                  <TableCell sx={{ padding: '12px 16px', minWidth: '120px' }}>
+                  <TableCell sx={{ padding: '8px 12px', minWidth: '100px', maxWidth: '100px' }}>
                     <Chip 
                       label={student.course || 'Not Assigned'} 
                       size="small"
@@ -2755,20 +2826,20 @@ School Administration
                         bgcolor: student.course ? '#e3f2fd' : '#ffebee',
                         color: student.course ? '#1976d2' : '#d32f2f',
                         fontWeight: 'medium',
-                        fontSize: '0.75rem',
-                        height: 24
+                        fontSize: '0.7rem',
+                        height: 20
                       }}
                     />
                   </TableCell>
-                  <TableCell sx={{ padding: '12px 16px', minWidth: '140px' }}>
+                  <TableCell sx={{ padding: '8px 12px', minWidth: '120px', maxWidth: '120px' }}>
                     <Typography variant="body2" sx={{ 
-                      fontSize: '0.875rem',
+                      fontSize: '0.8rem',
                       lineHeight: 1.2
                     }}>
                       {student.year || 'N/A'} • {student.section || 'N/A'}
                     </Typography>
                   </TableCell>
-                  <TableCell sx={{ padding: '12px 16px', minWidth: '120px' }}>
+                  <TableCell sx={{ padding: '8px 12px', minWidth: '100px', maxWidth: '100px' }}>
                     <Chip 
                       label={student.isRegisteredUser ? 'Registered' : 'Unregistered'} 
                       size="small"
@@ -2776,12 +2847,12 @@ School Administration
                         bgcolor: student.isRegisteredUser ? '#e8f5e8' : '#fff3e0',
                         color: student.isRegisteredUser ? '#2e7d32' : '#f57c00',
                         fontWeight: 'medium',
-                        fontSize: '0.75rem',
-                        height: 24
+                        fontSize: '0.7rem',
+                        height: 20
                       }}
                     />
                   </TableCell>
-                  <TableCell sx={{ padding: '12px 16px', minWidth: '200px' }}>
+                  <TableCell sx={{ padding: '8px 12px', minWidth: '120px', maxWidth: '120px' }}>
                     <Stack direction="row" spacing={0.5}>
                       <Tooltip title="View Details">
                         <IconButton 

@@ -63,6 +63,13 @@ export default function ViolationRecord() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState({
+    name: '',
+    id: '',
+    violation: '',
+    location: ''
+  });
 
   const toggleAddForm = () => {
     setShowAddForm(!showAddForm);
@@ -488,100 +495,76 @@ School Administration
         Violation Records
       </Typography>
       {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card onClick={() => setStatusFilter('all')} sx={{ 
             cursor: 'pointer', 
-            bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5', 
+            boxShadow: 2, 
             borderLeft: '4px solid #800000',
-            border: '1px solid #ffffff',
-            transition: 'box-shadow 0.2s',
+            textAlign: 'center',
             '&:hover': {
-              boxShadow: 4
+              boxShadow: '0 4px 8px rgba(0,0,0,0.15)'
             }
           }}>
-            <CardContent>
-              <Typography variant="h6" fontWeight={700} sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
-              }} gutterBottom>
-                Total Violations
-              </Typography>
-              <Typography variant="h4" fontWeight={700} sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' 
-              }}>
-                {total}
-              </Typography>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="black" fontWeight={700}>{total}</Typography>
+              <Typography variant="body2" color="textSecondary">Total Violations</Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card onClick={() => setStatusFilter('pending')} sx={{ 
             cursor: 'pointer', 
-            bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5', 
-            borderLeft: '4px solid #ffc107',
-            border: '1px solid #ffffff',
-            transition: 'box-shadow 0.2s',
+            boxShadow: 2, 
+            borderLeft: '4px solid #800000',
+            textAlign: 'center',
             '&:hover': {
-              boxShadow: 4
+              boxShadow: '0 4px 8px rgba(0,0,0,0.15)'
             }
           }}>
-            <CardContent>
-              <Typography variant="h6" fontWeight={700} sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
-              }} gutterBottom>
-                Pending
-              </Typography>
-              <Typography variant="h4" fontWeight={700} sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#856404' 
-              }}>
-                {pending}
-              </Typography>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="black" fontWeight={700}>{pending}</Typography>
+              <Typography variant="body2" color="textSecondary">Pending</Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card onClick={() => setStatusFilter('solved')} sx={{ 
             cursor: 'pointer', 
-            bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5', 
-            borderLeft: '4px solid #28a745',
-            border: '1px solid #ffffff',
-            transition: 'box-shadow 0.2s',
+            boxShadow: 2, 
+            borderLeft: '4px solid #800000',
+            textAlign: 'center',
             '&:hover': {
-              boxShadow: 4
+              boxShadow: '0 4px 8px rgba(0,0,0,0.15)'
             }
           }}>
-            <CardContent>
-              <Typography variant="h6" fontWeight={700} sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
-              }} gutterBottom>
-                Solved
-              </Typography>
-              <Typography variant="h4" fontWeight={700} sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#155724' 
-              }}>
-                {solved}
-              </Typography>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="black" fontWeight={700}>{solved}</Typography>
+              <Typography variant="body2" color="textSecondary">Solved</Typography>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
-      {/* Add Violation Button */}
+      {/* Add Violation and History Buttons */}
       {!showAddForm && (
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-start' }}>
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-start', gap: 2 }}>
           <Button
-            variant="contained"
+            variant="outlined"
             size="small"
             onClick={() => setShowAddForm(true)}
             sx={{
-              bgcolor: '#800000',
-              color: '#ffffff',
+              bgcolor: '#ffffff',
+              color: '#000000',
+              borderColor: '#000000',
               px: 2,
               py: 1,
               fontSize: '0.75rem',
               fontWeight: 500,
               borderRadius: 1,
               '&:hover': {
-                bgcolor: '#6b0000',
+                bgcolor: '#800000',
+                color: '#ffffff',
+                borderColor: '#800000',
                 transform: 'translateY(-1px)',
                 boxShadow: '0 2px 8px rgba(128, 0, 0, 0.3)'
               },
@@ -589,6 +572,31 @@ School Administration
             }}
           >
             Add New Violation
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => setShowHistory(true)}
+            sx={{
+              bgcolor: '#ffffff',
+              color: '#000000',
+              borderColor: '#000000',
+              px: 2,
+              py: 1,
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              borderRadius: 1,
+              '&:hover': {
+                bgcolor: '#800000',
+                color: '#ffffff',
+                borderColor: '#800000',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 2px 8px rgba(128, 0, 0, 0.3)'
+              },
+              transition: 'all 0.3s ease'
+            }}
+          >
+            History
           </Button>
         </Box>
       )}
@@ -838,6 +846,303 @@ School Administration
           </form>
         </Paper>
       )}
+
+      {/* History Modal */}
+      <Dialog 
+        open={showHistory} 
+        onClose={() => setShowHistory(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            maxHeight: '85vh',
+            minHeight: '60vh'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          bgcolor: '#f8f9fa', 
+          borderBottom: '1px solid #e0e0e0',
+          p: 2,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <Typography variant="h6" fontWeight={600} sx={{ color: '#800000' }}>
+            Violation History
+          </Typography>
+          <IconButton 
+            onClick={() => setShowHistory(false)}
+            sx={{ 
+              color: '#666666',
+              '&:hover': { 
+                color: '#000000',
+                bgcolor: '#f0f0f0'
+              }
+            }}
+          >
+            ×
+          </IconButton>
+        </DialogTitle>
+        
+        <DialogContent sx={{ p: 0, overflow: 'hidden' }}>
+          {/* Search Bar Section */}
+          <Box sx={{ 
+            p: 2, 
+            bgcolor: '#fafafa', 
+            borderBottom: '1px solid #e0e0e0',
+            display: 'flex',
+            justifyContent: 'center'
+          }}>
+            <TextField
+              value={historyFilter.name}
+              onChange={(e) => setHistoryFilter({...historyFilter, name: e.target.value})}
+              placeholder="Search by name, ID, violation, or location..."
+              size="small"
+              sx={{ 
+                width: '300px',
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: '#ffffff',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#800000'
+                    }
+                  },
+                  '&.Mui-focused': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#800000'
+                    }
+                  }
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#800000' }} />
+                  </InputAdornment>
+                )
+              }}
+            />
+          </Box>
+
+          {/* Table Section */}
+          <Box sx={{ flex: 1, overflow: 'hidden' }}>
+            <TableContainer sx={{ 
+              height: 'calc(85vh - 140px)',
+              bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff'
+            }}>
+              <Table stickyHeader>
+                <TableHead>
+                  <TableRow sx={{ 
+                    bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#f5f5f5' 
+                  }}>
+                    <TableCell sx={{ 
+                      fontWeight: 600, 
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      borderBottom: '2px solid #e0e0e0'
+                    }}>Name</TableCell>
+                    <TableCell sx={{ 
+                      fontWeight: 600, 
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      borderBottom: '2px solid #e0e0e0'
+                    }}>Student ID</TableCell>
+                    <TableCell sx={{ 
+                      fontWeight: 600, 
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      borderBottom: '2px solid #e0e0e0'
+                    }}>Violation</TableCell>
+                    <TableCell sx={{ 
+                      fontWeight: 600, 
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      borderBottom: '2px solid #e0e0e0'
+                    }}>Date</TableCell>
+                    <TableCell sx={{ 
+                      fontWeight: 600, 
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      borderBottom: '2px solid #e0e0e0'
+                    }}>Location</TableCell>
+                    <TableCell sx={{ 
+                      fontWeight: 600, 
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      borderBottom: '2px solid #e0e0e0'
+                    }} align="center">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(() => {
+                    // Filter records based on search term
+                    const searchTerm = historyFilter.name.trim().toLowerCase();
+                    const filteredHistory = searchTerm ? records.filter(record => {
+                      const name = (record.studentName || '').toLowerCase();
+                      const id = (record.studentId || '').toLowerCase();
+                      const violation = (record.violation || '').toLowerCase();
+                      const location = (record.location || '').toLowerCase();
+                      
+                      return name.includes(searchTerm) || 
+                             id.includes(searchTerm) || 
+                             violation.includes(searchTerm) || 
+                             location.includes(searchTerm);
+                    }) : records;
+
+                    if (filteredHistory.length === 0) {
+                      return (
+                        <TableRow>
+                          <TableCell colSpan={6} sx={{ 
+                            textAlign: 'center', 
+                            py: 4,
+                            color: '#666666',
+                            fontStyle: 'italic'
+                          }}>
+                            {searchTerm ? 'No violation records found matching your search.' : 'No violation records found.'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+
+                    return filteredHistory.map((record, idx) => (
+                      <TableRow 
+                        key={record.id || idx} 
+                        hover 
+                        sx={{ 
+                          cursor: 'pointer',
+                          '&:nth-of-type(even)': {
+                            bgcolor: theme.palette.mode === 'dark' ? '#1a1a1a' : '#f9f9f9'
+                          },
+                          '&:hover': {
+                            bgcolor: theme.palette.mode === 'dark' ? '#333333' : '#f0f0f0'
+                          }
+                        }}
+                      >
+                        <TableCell sx={{ 
+                          fontWeight: 500,
+                          borderBottom: '1px solid #f0f0f0'
+                        }} onClick={() => setViewViolation(record)}>
+                          {record.studentName || 'N/A'}
+                        </TableCell>
+                        <TableCell sx={{ 
+                          fontWeight: 500,
+                          borderBottom: '1px solid #f0f0f0'
+                        }} onClick={() => setViewViolation(record)}>
+                          {record.studentId || 'N/A'}
+                        </TableCell>
+                        <TableCell sx={{ 
+                          fontWeight: 500,
+                          borderBottom: '1px solid #f0f0f0',
+                          maxWidth: 200,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }} onClick={() => setViewViolation(record)}>
+                          <Tooltip title={record.violation || ''}>
+                            <span>{record.violation || 'N/A'}</span>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell sx={{ 
+                          fontWeight: 500,
+                          borderBottom: '1px solid #f0f0f0'
+                        }} onClick={() => setViewViolation(record)}>
+                          {record.date || 'N/A'}
+                        </TableCell>
+                        <TableCell sx={{ 
+                          fontWeight: 500,
+                          borderBottom: '1px solid #f0f0f0'
+                        }} onClick={() => setViewViolation(record)}>
+                          {record.location || 'N/A'}
+                        </TableCell>
+                        <TableCell align="center" sx={{ borderBottom: '1px solid #f0f0f0' }}>
+                          <Stack direction="row" spacing={0.5} justifyContent="center">
+                            <Tooltip title="View record">
+                              <IconButton 
+                                size="small" 
+                                sx={{ 
+                                  color: '#666666', 
+                                  '&:hover': { 
+                                    color: '#1976d2',
+                                    bgcolor: '#e3f2fd'
+                                  } 
+                                }} 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setViewViolation(record);
+                                }}
+                              >
+                                <VisibilityIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Edit record">
+                              <IconButton 
+                                size="small" 
+                                sx={{ 
+                                  color: '#666666', 
+                                  '&:hover': { 
+                                    color: '#000000',
+                                    bgcolor: '#f0f0f0'
+                                  } 
+                                }} 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditViolation(record);
+                                }}
+                              >
+                                <EditIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete record">
+                              <IconButton 
+                                size="small" 
+                                sx={{ 
+                                  color: '#666666', 
+                                  '&:hover': { 
+                                    color: '#d32f2f',
+                                    bgcolor: '#ffebee'
+                                  } 
+                                }} 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteConfirm({ open: true, id: record.id });
+                                }}
+                              >
+                                <DeleteIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ));
+                  })()}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        </DialogContent>
+        
+        <DialogActions sx={{ 
+          p: 2, 
+          bgcolor: '#f8f9fa',
+          borderTop: '1px solid #e0e0e0',
+          justifyContent: 'center'
+        }}>
+          <Button 
+            onClick={() => setShowHistory(false)}
+            variant="outlined"
+            sx={{
+              minWidth: 100,
+              bgcolor: '#ffffff',
+              color: '#000000',
+              borderColor: '#d0d0d0',
+              '&:hover': {
+                bgcolor: '#800000',
+                color: '#ffffff',
+                borderColor: '#800000'
+              }
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Divider sx={{ mb: 3 }} />
       {/* Search and Table */}
       <Paper sx={{ p: 2, mb: 3, maxWidth: 1200, mx: 'auto', borderRadius: 3, boxShadow: 2 }}>
@@ -863,48 +1168,44 @@ School Administration
         }}>
           <Table size="small" stickyHeader sx={{ minWidth: 880 }}>
             <TableHead>
-                <TableRow sx={{ bgcolor: '#800000 !important' }}>
+                <TableRow sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#f5f5f5' 
+                }}>
                   <TableCell sx={{ 
                     minWidth: 160, 
                     fontSize: 16, 
                     fontWeight: 700, 
-                    color: '#ffffff !important' 
-                  }}>Student Name</TableCell>
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
+                  }}>Name</TableCell>
                   <TableCell sx={{ 
                     minWidth: 110, 
                     fontSize: 16, 
                     fontWeight: 700, 
-                    color: '#ffffff !important' 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
                   }}>Student ID</TableCell>
                   <TableCell sx={{ 
                     minWidth: 180, 
                     fontSize: 16, 
                     fontWeight: 700, 
-                    color: '#ffffff !important' 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
                   }}>Violation</TableCell>
                   <TableCell sx={{ 
                     minWidth: 110, 
                     fontSize: 16, 
                     fontWeight: 700, 
-                    color: '#ffffff !important' 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
                   }}>Date</TableCell>
                   <TableCell sx={{ 
-                    minWidth: 100, 
+                    minWidth: 120, 
                     fontSize: 16, 
                     fontWeight: 700, 
-                    color: '#ffffff !important' 
-                  }}>Time</TableCell>
-                  <TableCell sx={{ 
-                    minWidth: 60, 
-                    fontSize: 16, 
-                    fontWeight: 700, 
-                    color: '#ffffff !important' 
-                  }} align="right">Delete</TableCell>
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
+                  }} align="center">Actions</TableCell>
                 </TableRow>
             </TableHead>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={6} sx={{ fontSize: 14, fontWeight: 400, textAlign: 'center' }}>No violations found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} sx={{ fontSize: 14, fontWeight: 400, textAlign: 'center' }}>No violations found.</TableCell></TableRow>
               ) : filtered.map((v, idx) => (
                 <TableRow key={v.id || idx} hover sx={{ cursor: 'pointer' }}>
                   <TableCell sx={{ fontSize: 14, fontWeight: 400 }} onClick={() => setViewViolation(v)}>{v.studentName || 'N/A'}</TableCell>
@@ -913,13 +1214,45 @@ School Administration
                     <Tooltip title={v.violation || ''}><span>{v.violation || 'N/A'}</span></Tooltip>
                   </TableCell>
                   <TableCell sx={{ fontSize: 14, fontWeight: 400 }} onClick={() => setViewViolation(v)}>{v.date || 'N/A'}</TableCell>
-                  <TableCell sx={{ fontSize: 14, fontWeight: 400 }} onClick={() => setViewViolation(v)}>{v.time || 'N/A'}</TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Delete record">
-                      <IconButton size="small" sx={{ color: 'grey.600', '&:hover': { color: 'error.main' } }} onClick={() => setDeleteConfirm({ open: true, id: v.id })}>
-                        <DeleteIcon sx={{ fontSize: 18 }} />
-                      </IconButton>
-                    </Tooltip>
+                  <TableCell align="center">
+                    <Stack direction="row" spacing={1} justifyContent="center">
+                      <Tooltip title="View record">
+                        <IconButton 
+                          size="small" 
+                          sx={{ color: 'grey.600', '&:hover': { color: '#1976d2' } }} 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewViolation(v);
+                          }}
+                        >
+                          <VisibilityIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Edit record">
+                        <IconButton 
+                          size="small" 
+                          sx={{ color: 'grey.600', '&:hover': { color: '#000000' } }} 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditViolation(v);
+                          }}
+                        >
+                          <EditIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete record">
+                        <IconButton 
+                          size="small" 
+                          sx={{ color: 'grey.600', '&:hover': { color: 'error.main' } }} 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteConfirm({ open: true, id: v.id });
+                          }}
+                        >
+                          <DeleteIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
                   </TableCell>
                 </TableRow>
               ))}

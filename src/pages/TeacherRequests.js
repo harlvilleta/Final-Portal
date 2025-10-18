@@ -252,14 +252,30 @@ export default function TeacherRequests() {
       {/* Statistics Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: 'white', border: '1px solid #800000', minHeight: 'auto' }}>
+          <Card sx={{ 
+            bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5', 
+            borderLeft: '4px solid #800000',
+            border: '1px solid #ffffff',
+            minHeight: 'auto',
+            transition: 'box-shadow 0.2s',
+            '&:hover': {
+              boxShadow: 4
+            }
+          }}>
             <CardContent sx={{ py: 1.5, px: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'black', lineHeight: 1.2 }}>
+                  <Typography variant="h5" sx={{ 
+                    fontWeight: 700, 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    lineHeight: 1.2 
+                  }}>
                     {teacherRequests.filter(r => r.status === 'pending').length}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                  <Typography variant="caption" sx={{ 
+                    fontSize: '0.75rem',
+                    color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666'
+                  }}>
                     Pending
                   </Typography>
                 </Box>
@@ -272,14 +288,30 @@ export default function TeacherRequests() {
         </Grid>
         
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: 'white', border: '1px solid #800000', minHeight: 'auto' }}>
+          <Card sx={{ 
+            bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5', 
+            borderLeft: '4px solid #800000',
+            border: '1px solid #ffffff',
+            minHeight: 'auto',
+            transition: 'box-shadow 0.2s',
+            '&:hover': {
+              boxShadow: 4
+            }
+          }}>
             <CardContent sx={{ py: 1.5, px: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'black', lineHeight: 1.2 }}>
+                  <Typography variant="h5" sx={{ 
+                    fontWeight: 700, 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    lineHeight: 1.2 
+                  }}>
                     {teacherRequests.filter(r => r.status === 'approved').length}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                  <Typography variant="caption" sx={{ 
+                    fontSize: '0.75rem',
+                    color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666'
+                  }}>
                     Approved
                   </Typography>
                 </Box>
@@ -290,14 +322,30 @@ export default function TeacherRequests() {
         </Grid>
         
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: 'white', border: '1px solid #800000', minHeight: 'auto' }}>
+          <Card sx={{ 
+            bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5', 
+            borderLeft: '4px solid #800000',
+            border: '1px solid #ffffff',
+            minHeight: 'auto',
+            transition: 'box-shadow 0.2s',
+            '&:hover': {
+              boxShadow: 4
+            }
+          }}>
             <CardContent sx={{ py: 1.5, px: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'black', lineHeight: 1.2 }}>
+                  <Typography variant="h5" sx={{ 
+                    fontWeight: 700, 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    lineHeight: 1.2 
+                  }}>
                     {teacherRequests.filter(r => r.status === 'denied').length}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                  <Typography variant="caption" sx={{ 
+                    fontSize: '0.75rem',
+                    color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666'
+                  }}>
                     Denied
                   </Typography>
                 </Box>
@@ -308,14 +356,30 @@ export default function TeacherRequests() {
         </Grid>
         
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: 'white', border: '1px solid #800000', minHeight: 'auto' }}>
+          <Card sx={{ 
+            bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5', 
+            borderLeft: '4px solid #800000',
+            border: '1px solid #ffffff',
+            minHeight: 'auto',
+            transition: 'box-shadow 0.2s',
+            '&:hover': {
+              boxShadow: 4
+            }
+          }}>
             <CardContent sx={{ py: 1.5, px: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'black', lineHeight: 1.2 }}>
+                  <Typography variant="h5" sx={{ 
+                    fontWeight: 700, 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    lineHeight: 1.2 
+                  }}>
                     {teacherRequests.length}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                  <Typography variant="caption" sx={{ 
+                    fontSize: '0.75rem',
+                    color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666'
+                  }}>
                     Total
                   </Typography>
                 </Box>

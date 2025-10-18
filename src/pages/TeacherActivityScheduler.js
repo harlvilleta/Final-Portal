@@ -57,7 +57,8 @@ export default function TeacherActivityScheduler() {
     activity: '',
     resource: '',
     date: '',
-    time: '',
+    startTime: '',
+    endTime: '',
     notes: ''
   });
   const [conflictCheck, setConflictCheck] = useState(null);
@@ -278,7 +279,7 @@ export default function TeacherActivityScheduler() {
   };
 
   const checkConflict = (formData) => {
-    const { resource, date, time } = formData;
+    const { resource, date, startTime, endTime } = formData;
     
     // Check if date is in the past (not including today)
     if (date && isPastDate(date)) {
@@ -288,32 +289,55 @@ export default function TeacherActivityScheduler() {
       };
     }
     
+    // Validate time range
+    if (startTime && endTime) {
+      const start = new Date(`2000-01-01 ${startTime}`);
+      const end = new Date(`2000-01-01 ${endTime}`);
+      if (start >= end) {
+        return {
+          hasConflict: true,
+          message: 'End time must be after start time.'
+        };
+      }
+    }
+    
     // Check for conflicting bookings (exclude rejected bookings)
-    const conflictingBooking = bookings.find(booking => 
+    const conflictingBookings = bookings.filter(booking => 
       booking.resource === resource && 
       booking.date === date && 
-      booking.time === time &&
       booking.status !== 'rejected'
     );
 
-    if (conflictingBooking) {
-      const statusText = conflictingBooking.status === 'pending' ? 'pending approval' : 'approved';
-      return {
-        hasConflict: true,
-        message: `Conflict detected: ${resource} is already ${statusText} by ${conflictingBooking.department} on ${new Date(date).toLocaleDateString()} at ${time}. Please choose another time slot.`
-      };
+    // Check for time overlap with existing bookings
+    for (const booking of conflictingBookings) {
+      const bookingStart = booking.startTime || booking.time; // Support both old and new format
+      const bookingEnd = booking.endTime || booking.time;
+      
+      // Convert times to comparable format
+      const newStart = new Date(`2000-01-01 ${startTime}`);
+      const newEnd = new Date(`2000-01-01 ${endTime}`);
+      const existingStart = new Date(`2000-01-01 ${bookingStart}`);
+      const existingEnd = new Date(`2000-01-01 ${bookingEnd}`);
+      
+      // Check for time overlap
+      if ((newStart < existingEnd && newEnd > existingStart)) {
+        const statusText = booking.status === 'pending' ? 'pending approval' : 'approved';
+        return {
+          hasConflict: true,
+          message: `Conflict detected: ${resource} is already ${statusText} by ${booking.department} on ${new Date(date).toLocaleDateString()} from ${bookingStart} to ${bookingEnd}. Please choose another time slot.`
+        };
+      }
     }
 
     // Check if there are any rejected bookings for this slot (for informational purposes)
-    const rejectedBooking = bookings.find(booking => 
+    const rejectedBookings = bookings.filter(booking => 
       booking.resource === resource && 
       booking.date === date && 
-      booking.time === time &&
       booking.status === 'rejected'
     );
 
-    let message = 'This time slot is available. Submit your booking request for admin approval.';
-    if (rejectedBooking) {
+    let message = `This time slot (${startTime} - ${endTime}) is available. Submit your booking request for admin approval.`;
+    if (rejectedBookings.length > 0) {
       message += ' (Note: This slot was previously rejected and is now available again.)';
     }
 
@@ -347,7 +371,7 @@ export default function TeacherActivityScheduler() {
 
       // Validate required fields
       if (!bookingForm.teacherName || !bookingForm.department || !bookingForm.activity || 
-          !bookingForm.resource || !bookingForm.date || !bookingForm.time) {
+          !bookingForm.resource || !bookingForm.date || !bookingForm.startTime || !bookingForm.endTime) {
         setSnackbar({
           open: true,
           message: 'Please fill in all required fields.',
@@ -372,7 +396,9 @@ export default function TeacherActivityScheduler() {
         activity: bookingForm.activity,
         resource: bookingForm.resource,
         date: bookingForm.date,
-        time: bookingForm.time,
+        startTime: bookingForm.startTime,
+        endTime: bookingForm.endTime,
+        time: `${bookingForm.startTime} - ${bookingForm.endTime}`, // Keep for backward compatibility
         notes: bookingForm.notes || '',
         teacherId: currentUser.uid,
         teacherEmail: currentUser.email,
@@ -421,7 +447,8 @@ export default function TeacherActivityScheduler() {
         activity: '',
         resource: '',
         date: '',
-        time: '',
+        startTime: '',
+        endTime: '',
         notes: ''
       });
       setConflictCheck(null);
@@ -584,14 +611,21 @@ export default function TeacherActivityScheduler() {
       <Grid container spacing={3}>
         {/* Calendar Section */}
         <Grid item xs={12} lg={8}>
-          <Card sx={{ 
+          <Paper 
+            onClick={() => console.log('Calendar clicked')}
+            sx={{ 
             mb: 3,
-            bgcolor: '#D1D3D4',
+            p: 2,
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
             '&:hover': {
-              bgcolor: '#D1D3D4'
-            }
+              transform: 'translateY(-2px)',
+              boxShadow: 4,
+            },
           }}>
-            <CardContent>
               <Box sx={{ 
                 display: 'flex', 
                 justifyContent: 'space-between', 
@@ -749,27 +783,44 @@ export default function TeacherActivityScheduler() {
                   <Typography variant="caption" sx={{ color: '#666', fontSize: '11px' }}>Past Date</Typography>
                 </Box>
               </Box>
-            </CardContent>
-          </Card>
+          </Paper>
         </Grid>
 
         {/* Quick Stats */}
         <Grid item xs={12} lg={4}>
-          <Card sx={{ 
+          <Paper 
+            onClick={() => console.log('My Bookings clicked')}
+            sx={{ 
             mb: 3,
-            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ECDCBF',
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none'
+            p: 2,
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: 4,
+            },
           }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ 
-                color: theme.palette.mode === 'dark' ? '#000000' : 'black',
-                fontWeight: 600
-              }} gutterBottom>
-                My Bookings
-              </Typography>
+            <Typography variant="h4" sx={{ 
+              color: '#000000', 
+              fontWeight: 'bold',
+              textAlign: 'center',
+              mb: 1
+            }}>
+              {myBookings.length}
+            </Typography>
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary',
+              textAlign: 'center',
+              mb: 2
+            }}>
+              My Bookings
+            </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>Pending:</Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>Pending:</Typography>
                   <Chip 
                     label={myBookings.filter(b => b.status === 'pending').length} 
                     sx={{ 
@@ -783,7 +834,7 @@ export default function TeacherActivityScheduler() {
                   />
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>Approved:</Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>Approved:</Typography>
                   <Chip 
                     label={myBookings.filter(b => b.status === 'approved').length} 
                     sx={{ 
@@ -797,7 +848,7 @@ export default function TeacherActivityScheduler() {
                   />
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>Rejected:</Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>Rejected:</Typography>
                   <Chip 
                     label={myBookings.filter(b => b.status === 'rejected').length} 
                     sx={{ 
@@ -811,20 +862,26 @@ export default function TeacherActivityScheduler() {
                   />
                 </Box>
               </Box>
-            </CardContent>
-          </Card>
+          </Paper>
 
           {/* Filters */}
-          <Card sx={{ 
-            bgcolor: '#DCDCDC',
+          <Paper 
+            onClick={() => console.log('Filters clicked')}
+            sx={{ 
+            p: 2,
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
             '&:hover': {
-              bgcolor: '#DCDCDC'
-            }
+              transform: 'translateY(-2px)',
+              boxShadow: 4,
+            },
           }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ 
-                color: 'black' 
-              }} gutterBottom>
+            <Typography variant="h6" sx={{ 
+              color: 'black' 
+            }} gutterBottom>
                 <FilterList sx={{ mr: 1, verticalAlign: 'middle' }} />
                 Filters
               </Typography>
@@ -856,22 +913,30 @@ export default function TeacherActivityScheduler() {
                   ))}
                 </Select>
               </FormControl>
-            </CardContent>
-          </Card>
+          </Paper>
         </Grid>
       </Grid>
 
       {/* My Bookings Table */}
-      <Card sx={{ 
+      <Paper 
+        onClick={() => console.log('My Bookings Table clicked')}
+        sx={{ 
         mt: 3,
-        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
-        border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none'
+        p: 2,
+        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+        border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+        borderLeft: '4px solid #800000',
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: 4,
+        },
       }}>
-        <CardContent>
-          <Typography variant="h6" sx={{ 
-            color: theme.palette.mode === 'dark' ? '#ffffff' : 'black',
-            fontWeight: 600
-          }} gutterBottom>
+        <Typography variant="h6" sx={{ 
+          color: theme.palette.mode === 'dark' ? '#ffffff' : 'black',
+          fontWeight: 600
+        }} gutterBottom>
             My Booking Requests
           </Typography>
           <TableContainer>
@@ -893,7 +958,7 @@ export default function TeacherActivityScheduler() {
                   <TableCell sx={{ 
                     color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit',
                     fontWeight: 600
-                  }}>Time</TableCell>
+                  }}>Time Range</TableCell>
                   <TableCell sx={{ 
                     color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit',
                     fontWeight: 600
@@ -931,7 +996,12 @@ export default function TeacherActivityScheduler() {
                       }}>{new Date(booking.date).toLocaleDateString()}</TableCell>
                       <TableCell sx={{ 
                         color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
-                      }}>{booking.time}</TableCell>
+                      }}>
+                        {booking.startTime && booking.endTime 
+                          ? `${booking.startTime} - ${booking.endTime}`
+                          : booking.time || 'N/A'
+                        }
+                      </TableCell>
                       <TableCell>
                         <Chip
                           icon={getStatusIcon(booking.status)}
@@ -966,8 +1036,7 @@ export default function TeacherActivityScheduler() {
               </TableBody>
             </Table>
           </TableContainer>
-        </CardContent>
-      </Card>
+      </Paper>
 
       {/* Booking Dialog */}
       <Dialog open={bookingDialogOpen} onClose={() => setBookingDialogOpen(false)} maxWidth="md" fullWidth>
@@ -1025,17 +1094,49 @@ export default function TeacherActivityScheduler() {
             </Grid>
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth required>
-                <InputLabel>Time</InputLabel>
+                <InputLabel>Start Time</InputLabel>
                 <Select
-                  value={bookingForm.time}
-                  onChange={(e) => handleFormChange('time', e.target.value)}
-                  label="Time"
+                  value={bookingForm.startTime}
+                  onChange={(e) => handleFormChange('startTime', e.target.value)}
+                  label="Start Time"
                 >
                   {timeSlots.map(time => (
                     <MenuItem key={time} value={time}>{time}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth required>
+                <InputLabel>End Time</InputLabel>
+                <Select
+                  value={bookingForm.endTime}
+                  onChange={(e) => handleFormChange('endTime', e.target.value)}
+                  label="End Time"
+                >
+                  {timeSlots.map(time => (
+                    <MenuItem key={time} value={time}>{time}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <Button
+                variant="outlined"
+                onClick={() => setConflictCheck(checkConflict(bookingForm))}
+                disabled={!bookingForm.resource || !bookingForm.date || !bookingForm.startTime || !bookingForm.endTime}
+                sx={{ mb: 2 }}
+              >
+                Check Availability
+              </Button>
+              {conflictCheck && (
+                <Alert 
+                  severity={conflictCheck.hasConflict ? 'error' : 'success'}
+                  sx={{ mb: 2 }}
+                >
+                  {conflictCheck.message}
+                </Alert>
+              )}
             </Grid>
             <Grid item xs={12}>
               <TextField
@@ -1058,7 +1159,8 @@ export default function TeacherActivityScheduler() {
             variant="contained"
             disabled={!bookingForm.teacherName || !bookingForm.department || 
                      !bookingForm.activity || !bookingForm.resource || 
-                     !bookingForm.date || !bookingForm.time}
+                     !bookingForm.date || !bookingForm.startTime || !bookingForm.endTime ||
+                     (conflictCheck && conflictCheck.hasConflict)}
           >
             Submit Request
           </Button>

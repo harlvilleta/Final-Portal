@@ -7,26 +7,10 @@ import {
   Card,
   CardContent,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
   Alert,
   Snackbar,
-  Tooltip,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
+  Tooltip,
   useTheme
 } from '@mui/material';
 import {
@@ -34,15 +18,10 @@ import {
   Event,
   CheckCircle,
   Cancel,
-  Warning,
-  FilterList,
-  Visibility,
-  Edit,
-  AccessTime,
-  Help
+  Warning
 } from '@mui/icons-material';
 import { auth, db } from '../firebase';
-import { collection, getDocs, query, where, orderBy, onSnapshot, updateDoc, doc, addDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 
 export default function AdminActivityScheduler() {
   const theme = useTheme();
@@ -50,13 +29,7 @@ export default function AdminActivityScheduler() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [bookings, setBookings] = useState([]);
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterResource, setFilterResource] = useState('');
-  const [filterDepartment, setFilterDepartment] = useState('');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
-  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState(null);
-  const [adminNotes, setAdminNotes] = useState('');
 
   // Available resources and departments
   const resources = [
@@ -185,91 +158,6 @@ export default function AdminActivityScheduler() {
     setSelectedDate(date);
   };
 
-  const handleApproveBooking = async (bookingId, status) => {
-    try {
-      console.log(`Admin ${status} booking:`, { bookingId, status, adminNotes });
-      
-      // Update the booking status
-      await updateDoc(doc(db, 'activity_bookings', bookingId), {
-        status: status,
-        adminNotes: adminNotes,
-        reviewedBy: currentUser.uid,
-        reviewDate: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
-
-      console.log(`✅ Booking ${status} successfully`);
-
-      // Create notification for the teacher
-      if (selectedBooking) {
-        const notificationData = {
-          title: `Booking Request ${status === 'approved' ? 'Approved' : 'Rejected'}`,
-          message: `Your booking request for "${selectedBooking.activity}" on ${new Date(selectedBooking.date).toLocaleDateString()} at ${selectedBooking.time} has been ${status}.${adminNotes ? ` Admin notes: ${adminNotes}` : ''}`,
-          type: 'booking_approval',
-          recipientId: selectedBooking.teacherId,
-          recipientEmail: selectedBooking.teacherEmail,
-          read: false,
-          createdAt: new Date().toISOString(),
-          bookingId: bookingId,
-          status: status,
-          adminNotes: adminNotes || null
-        };
-
-        await addDoc(collection(db, 'notifications'), notificationData);
-        console.log(`✅ Notification sent to teacher: ${selectedBooking.teacherEmail}`);
-      }
-
-      // Log the admin action
-      try {
-        await addDoc(collection(db, 'activity_log'), {
-          message: `Admin ${status} booking request: ${selectedBooking?.activity} on ${selectedBooking?.date} at ${selectedBooking?.time}`,
-          type: 'booking_approval',
-          user: currentUser.uid,
-          userEmail: currentUser.email,
-          userRole: 'Admin',
-          timestamp: new Date().toISOString(),
-          details: {
-            bookingId: bookingId,
-            status: status,
-            teacherEmail: selectedBooking?.teacherEmail,
-            resource: selectedBooking?.resource,
-            adminNotes: adminNotes || null
-          }
-        });
-        console.log('✅ Activity logged');
-      } catch (logError) {
-        console.warn('⚠️ Failed to log activity:', logError);
-      }
-
-      let successMessage = `Booking ${status} successfully! Teacher has been notified.`;
-      if (status === 'rejected') {
-        successMessage += ' The time slot is now available for other teachers to book.';
-      }
-
-      setSnackbar({
-        open: true,
-        message: successMessage,
-        severity: 'success'
-      });
-
-      setApprovalDialogOpen(false);
-      setSelectedBooking(null);
-      setAdminNotes('');
-    } catch (error) {
-      console.error('❌ Error updating booking:', error);
-      setSnackbar({
-        open: true,
-        message: 'Error updating booking',
-        severity: 'error'
-      });
-    }
-  };
-
-  const openApprovalDialog = (booking) => {
-    setSelectedBooking(booking);
-    setAdminNotes(booking.adminNotes || '');
-    setApprovalDialogOpen(true);
-  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -289,12 +177,7 @@ export default function AdminActivityScheduler() {
     }
   };
 
-  const filteredBookings = bookings.filter(booking => {
-    const statusMatch = !filterStatus || booking.status === filterStatus;
-    const resourceMatch = !filterResource || booking.resource === filterResource;
-    const departmentMatch = !filterDepartment || booking.department === filterDepartment;
-    return statusMatch && resourceMatch && departmentMatch;
-  });
+  const filteredBookings = bookings;
 
   const navigateMonth = (direction) => {
     setCurrentDate(prev => {
@@ -348,110 +231,138 @@ export default function AdminActivityScheduler() {
       {/* Statistics Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            bgcolor: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit',
-            border: '1px solid transparent',
+          <Paper 
+            onClick={() => console.log('Total Bookings clicked')}
+            sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
             '&:hover': {
-              border: '1px solid #800000',
-              bgcolor: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
-            }
+              transform: 'translateY(-2px)',
+              boxShadow: 4,
+            },
           }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ 
-                color: theme.palette.mode === 'dark' ? '#000000' : 'black' 
-              }}>
-                Total Bookings
-              </Typography>
               <Typography variant="h4" sx={{ 
-                color: theme.palette.mode === 'dark' ? '#000000' : 'primary' 
+              color: '#000000', 
+              fontWeight: 'bold' 
               }}>
                 {stats.total}
               </Typography>
-            </CardContent>
-          </Card>
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
+              Total Bookings
+            </Typography>
+          </Paper>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            bgcolor: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit',
-            border: '1px solid transparent',
+          <Paper 
+            onClick={() => console.log('Pending Requests clicked')}
+            sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
             '&:hover': {
-              border: '1px solid #800000',
-              bgcolor: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
-            }
+              transform: 'translateY(-2px)',
+              boxShadow: 4,
+            },
           }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ 
-                color: theme.palette.mode === 'dark' ? '#000000' : 'black' 
-              }}>
-                Pending
-              </Typography>
               <Typography variant="h4" sx={{ 
-                color: theme.palette.mode === 'dark' ? '#000000' : 'warning.main' 
+              color: '#000000', 
+              fontWeight: 'bold' 
               }}>
                 {stats.pending}
               </Typography>
-            </CardContent>
-          </Card>
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
+              Pending Requests
+            </Typography>
+          </Paper>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            bgcolor: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit',
-            border: '1px solid transparent',
+          <Paper 
+            onClick={() => console.log('Approved Requests clicked')}
+            sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
             '&:hover': {
-              border: '1px solid #800000',
-              bgcolor: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
-            }
+              transform: 'translateY(-2px)',
+              boxShadow: 4,
+            },
           }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ 
-                color: theme.palette.mode === 'dark' ? '#000000' : 'black' 
-              }}>
-                Approved
-              </Typography>
               <Typography variant="h4" sx={{ 
-                color: theme.palette.mode === 'dark' ? '#000000' : 'success.main' 
+              color: '#000000', 
+              fontWeight: 'bold' 
               }}>
                 {stats.approved}
               </Typography>
-            </CardContent>
-          </Card>
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
+              Approved Requests
+            </Typography>
+          </Paper>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            bgcolor: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit',
-            border: '1px solid transparent',
+          <Paper 
+            onClick={() => console.log('Rejected Requests clicked')}
+            sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
             '&:hover': {
-              border: '1px solid #800000',
-              bgcolor: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
-            }
+              transform: 'translateY(-2px)',
+              boxShadow: 4,
+            },
           }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ 
-                color: theme.palette.mode === 'dark' ? '#000000' : 'black' 
-              }}>
-                Rejected
-              </Typography>
               <Typography variant="h4" sx={{ 
-                color: theme.palette.mode === 'dark' ? '#000000' : 'error.main' 
+              color: '#000000', 
+              fontWeight: 'bold' 
               }}>
                 {stats.rejected}
               </Typography>
-            </CardContent>
-          </Card>
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
+              Rejected Requests
+            </Typography>
+          </Paper>
         </Grid>
       </Grid>
 
       <Grid container spacing={3}>
         {/* Calendar Section */}
-        <Grid item xs={12} lg={8}>
-          <Card sx={{ 
+        <Grid item xs={12}>
+          <Paper sx={{ 
             mb: 3,
-            bgcolor: '#D1D3D4',
+            p: 2,
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000',
+            transition: 'all 0.2s',
             '&:hover': {
-              bgcolor: '#D1D3D4'
-            }
+              transform: 'translateY(-2px)',
+              boxShadow: 4,
+            },
           }}>
-            <CardContent>
               <Box sx={{ 
                 display: 'flex', 
                 justifyContent: 'space-between', 
@@ -609,326 +520,12 @@ export default function AdminActivityScheduler() {
                   <Typography variant="caption" sx={{ color: '#666', fontSize: '11px' }}>Past Date</Typography>
                 </Box>
               </Box>
-            </CardContent>
-          </Card>
+          </Paper>
         </Grid>
 
-        {/* Filters */}
-        <Grid item xs={12} lg={4}>
-          <Card sx={{ 
-            bgcolor: '#DCDCDC',
-            '&:hover': {
-              bgcolor: '#DCDCDC'
-            }
-          }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ 
-                color: 'black' 
-              }} gutterBottom>
-                <FilterList sx={{ mr: 1, verticalAlign: 'middle' }} />
-                Filters
-              </Typography>
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel sx={{ color: 'black' }}>Status</InputLabel>
-                <Select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  label="Status"
-                  sx={{ color: 'black' }}
-                >
-                  <MenuItem value="">All Status</MenuItem>
-                  <MenuItem value="pending">Pending</MenuItem>
-                  <MenuItem value="approved">Approved</MenuItem>
-                  <MenuItem value="rejected">Rejected</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel sx={{ color: 'black' }}>Resource</InputLabel>
-                <Select
-                  value={filterResource}
-                  onChange={(e) => setFilterResource(e.target.value)}
-                  label="Resource"
-                  sx={{ color: 'black' }}
-                >
-                  <MenuItem value="">All Resources</MenuItem>
-                  {resources.map(resource => (
-                    <MenuItem key={resource} value={resource}>{resource}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl fullWidth>
-                <InputLabel sx={{ color: 'black' }}>Department</InputLabel>
-                <Select
-                  value={filterDepartment}
-                  onChange={(e) => setFilterDepartment(e.target.value)}
-                  label="Department"
-                  sx={{ color: 'black' }}
-                >
-                  <MenuItem value="">All Departments</MenuItem>
-                  {departments.map(department => (
-                    <MenuItem key={department} value={department}>{department}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </CardContent>
-          </Card>
-        </Grid>
       </Grid>
 
-      {/* Bookings Table */}
-      <Card sx={{ 
-        mt: 3,
-        bgcolor: '#D1D3D4',
-        '&:hover': {
-          bgcolor: '#D1D3D4'
-        }
-      }}>
-        <CardContent>
-          <Typography variant="h6" sx={{ 
-            color: 'black' 
-          }} gutterBottom>
-            All Booking Requests
-          </Typography>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#800000' }}>
-                  <TableCell sx={{ 
-                    color: 'white',
-                    fontWeight: 'bold',
-                    borderBottom: '2px solid rgba(255,255,255,0.3)',
-                    bgcolor: '#800000'
-                  }}>Teacher</TableCell>
-                  <TableCell sx={{ 
-                    color: 'white',
-                    fontWeight: 'bold',
-                    borderBottom: '2px solid rgba(255,255,255,0.3)',
-                    bgcolor: '#800000'
-                  }}>Department</TableCell>
-                  <TableCell sx={{ 
-                    color: 'white',
-                    fontWeight: 'bold',
-                    borderBottom: '2px solid rgba(255,255,255,0.3)',
-                    bgcolor: '#800000'
-                  }}>Activity</TableCell>
-                  <TableCell sx={{ 
-                    color: 'white',
-                    fontWeight: 'bold',
-                    borderBottom: '2px solid rgba(255,255,255,0.3)',
-                    bgcolor: '#800000'
-                  }}>Resource</TableCell>
-                  <TableCell sx={{ 
-                    color: 'white',
-                    fontWeight: 'bold',
-                    borderBottom: '2px solid rgba(255,255,255,0.3)',
-                    bgcolor: '#800000'
-                  }}>Date</TableCell>
-                  <TableCell sx={{ 
-                    color: 'white',
-                    fontWeight: 'bold',
-                    borderBottom: '2px solid rgba(255,255,255,0.3)',
-                    bgcolor: '#800000'
-                  }}>Time</TableCell>
-                  <TableCell sx={{ 
-                    color: 'white',
-                    fontWeight: 'bold',
-                    borderBottom: '2px solid rgba(255,255,255,0.3)',
-                    bgcolor: '#800000'
-                  }}>Status</TableCell>
-                  <TableCell sx={{ 
-                    color: 'white',
-                    fontWeight: 'bold',
-                    borderBottom: '2px solid rgba(255,255,255,0.3)',
-                    bgcolor: '#800000'
-                  }}>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredBookings.length === 0 ? (
-                  <TableRow>
-                    <TableCell 
-                      colSpan={8} 
-                      align="center"
-                      sx={{
-                        color: 'black',
-                        borderBottom: '1px solid rgba(255,255,255,0.2)',
-                        backgroundColor: 'rgba(255,255,255,0.05)'
-                      }}
-                    >
-                      No booking requests found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredBookings.map((booking) => (
-                    <TableRow 
-                      key={booking.id}
-                      sx={{
-                        '&:hover': {
-                          backgroundColor: 'rgba(255,255,255,0.1)'
-                        }
-                      }}
-                    >
-                      <TableCell sx={{
-                        color: 'black',
-                        borderBottom: '1px solid rgba(255,255,255,0.2)',
-                        backgroundColor: 'rgba(255,255,255,0.05)'
-                      }}>{booking.teacherName}</TableCell>
-                      <TableCell sx={{
-                        color: 'black',
-                        borderBottom: '1px solid rgba(255,255,255,0.2)',
-                        backgroundColor: 'rgba(255,255,255,0.05)'
-                      }}>{booking.department}</TableCell>
-                      <TableCell sx={{
-                        color: 'black',
-                        borderBottom: '1px solid rgba(255,255,255,0.2)',
-                        backgroundColor: 'rgba(255,255,255,0.05)'
-                      }}>{booking.activity}</TableCell>
-                      <TableCell sx={{
-                        color: 'black',
-                        borderBottom: '1px solid rgba(255,255,255,0.2)',
-                        backgroundColor: 'rgba(255,255,255,0.05)'
-                      }}>{booking.resource}</TableCell>
-                      <TableCell sx={{
-                        color: 'black',
-                        borderBottom: '1px solid rgba(255,255,255,0.2)',
-                        backgroundColor: 'rgba(255,255,255,0.05)'
-                      }}>{new Date(booking.date).toLocaleDateString()}</TableCell>
-                      <TableCell sx={{
-                        color: 'black',
-                        borderBottom: '1px solid rgba(255,255,255,0.2)',
-                        backgroundColor: 'rgba(255,255,255,0.05)'
-                      }}>{booking.time}</TableCell>
-                      <TableCell sx={{
-                        borderBottom: '1px solid rgba(255,255,255,0.2)',
-                        backgroundColor: 'rgba(255,255,255,0.05)'
-                      }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Box sx={{ 
-                            width: 20, 
-                            height: 20, 
-                            bgcolor: booking.status === 'approved' ? '#4caf50' : 
-                                    booking.status === 'rejected' ? '#f44336' : 
-                                    booking.status === 'pending' ? '#ff9800' : '#9e9e9e', 
-                            borderRadius: 1, 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center',
-                            flexShrink: 0
-                          }}>
-                            {booking.status === 'approved' ? (
-                              <CheckCircle sx={{ fontSize: 14, color: 'white' }} />
-                            ) : booking.status === 'rejected' ? (
-                              <Cancel sx={{ fontSize: 14, color: 'white' }} />
-                            ) : booking.status === 'pending' ? (
-                              <AccessTime sx={{ fontSize: 14, color: 'white' }} />
-                            ) : (
-                              <Help sx={{ fontSize: 14, color: 'white' }} />
-                            )}
-                          </Box>
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
-                              color: booking.status === 'approved' ? '#4caf50' : 
-                                     booking.status === 'rejected' ? '#f44336' : 
-                                     booking.status === 'pending' ? '#ff9800' : 'black',
-                              fontWeight: 500,
-                              textTransform: 'capitalize'
-                            }}
-                          >
-                            {booking.status}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{
-                        borderBottom: '1px solid rgba(255,255,255,0.2)',
-                        backgroundColor: 'rgba(255,255,255,0.05)'
-                      }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => openApprovalDialog(booking)}
-                          sx={{ color: 'gray' }}
-                        >
-                          <Edit />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
 
-      {/* Approval Dialog */}
-      <Dialog open={approvalDialogOpen} onClose={() => setApprovalDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
-          <Event sx={{ mr: 1, verticalAlign: 'middle' }} />
-          Review Booking Request
-        </DialogTitle>
-        <DialogContent>
-          {selectedBooking && (
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="text.secondary">Teacher Name</Typography>
-                <Typography variant="body1">{selectedBooking.teacherName}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="text.secondary">Department</Typography>
-                <Typography variant="body1">{selectedBooking.department}</Typography>
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="text.secondary">Activity/Event</Typography>
-                <Typography variant="body1">{selectedBooking.activity}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="text.secondary">Resource/Place</Typography>
-                <Typography variant="body1">{selectedBooking.resource}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="text.secondary">Time</Typography>
-                <Typography variant="body1">{selectedBooking.time}</Typography>
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="text.secondary">Date</Typography>
-                <Typography variant="body1">{new Date(selectedBooking.date).toLocaleDateString()}</Typography>
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="text.secondary">Notes</Typography>
-                <Typography variant="body1">{selectedBooking.notes || 'No additional notes'}</Typography>
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Admin Notes"
-                  multiline
-                  rows={3}
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder="Add your review notes here..."
-                />
-              </Grid>
-            </Grid>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setApprovalDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={() => handleApproveBooking(selectedBooking.id, 'rejected')}
-            color="error"
-            variant="outlined"
-          >
-            Reject
-          </Button>
-          <Button
-            onClick={() => handleApproveBooking(selectedBooking.id, 'approved')}
-            color="success"
-            variant="contained"
-          >
-            Approve
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Snackbar */}
       <Snackbar

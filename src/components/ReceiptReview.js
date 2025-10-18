@@ -229,7 +229,6 @@ export default function ReceiptReview() {
     <Box sx={{ p: 3 }}>
       <Paper sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Receipt sx={{ fontSize: 32, color: 'primary.main', mr: 2 }} />
           <Typography variant="h4" color="primary">
             Receipt Review
           </Typography>
@@ -250,11 +249,11 @@ export default function ReceiptReview() {
         {/* Status Summary */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={3}>
-            <Card sx={{ borderLeft: '4px solid #800000', color: '#800000' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
+            <Card sx={{ borderLeft: '4px solid #800000', minHeight: '80px' }}>
+              <CardContent sx={{ textAlign: 'center', p: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Button onClick={() => { setError(''); setStatusFilter('pending'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>
-                    <Typography variant="h4">{getStatusCount('pending')}</Typography>
+                    <Typography variant="h4" sx={{ color: '#000' }}>{getStatusCount('pending')}</Typography>
                     <Typography variant="body2">Pending Review</Typography>
                   </Box>
                 </Button>
@@ -262,11 +261,11 @@ export default function ReceiptReview() {
             </Card>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Card sx={{ borderLeft: '4px solid #800000', color: '#800000' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
+            <Card sx={{ borderLeft: '4px solid #800000', minHeight: '80px' }}>
+              <CardContent sx={{ textAlign: 'center', p: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Button onClick={() => { setError(''); setStatusFilter('approved'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>
-                    <Typography variant="h4">{getStatusCount('approved')}</Typography>
+                    <Typography variant="h4" sx={{ color: '#000' }}>{getStatusCount('approved')}</Typography>
                     <Typography variant="body2">Approved</Typography>
                   </Box>
                 </Button>
@@ -274,11 +273,11 @@ export default function ReceiptReview() {
             </Card>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Card sx={{ borderLeft: '4px solid #800000', color: '#800000' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
+            <Card sx={{ borderLeft: '4px solid #800000', minHeight: '80px' }}>
+              <CardContent sx={{ textAlign: 'center', p: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Button onClick={() => { setError(''); setStatusFilter('rejected'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>
-                    <Typography variant="h4">{getStatusCount('rejected')}</Typography>
+                    <Typography variant="h4" sx={{ color: '#000' }}>{getStatusCount('rejected')}</Typography>
                     <Typography variant="body2">Rejected</Typography>
                   </Box>
                 </Button>
@@ -286,11 +285,11 @@ export default function ReceiptReview() {
             </Card>
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Card sx={{ borderLeft: '4px solid #800000', color: '#800000' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
+            <Card sx={{ borderLeft: '4px solid #800000', minHeight: '80px' }}>
+              <CardContent sx={{ textAlign: 'center', p: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Button onClick={() => { setError(''); setStatusFilter('all'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>
-                    <Typography variant="h4">{submissions.length}</Typography>
+                    <Typography variant="h4" sx={{ color: '#000' }}>{submissions.length}</Typography>
                     <Typography variant="body2">Total Submissions</Typography>
                   </Box>
                 </Button>
@@ -319,7 +318,7 @@ export default function ReceiptReview() {
             label="Search by Student ID or Name"
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }}
-            sx={{ minWidth: 260, flex: 1 }}
+            sx={{ minWidth: 200, maxWidth: 300 }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">

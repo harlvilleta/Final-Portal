@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Chip, Snackbar, Alert } from '@mui/material';
+import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Chip, Snackbar, Alert, useTheme } from '@mui/material';
 import { Visibility, CheckCircle, Cancel, Schedule, Warning } from '@mui/icons-material';
 import { collection, getDocs, updateDoc, addDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
 export default function ActivityRequestsAdmin() {
+  const theme = useTheme();
   const [requests, setRequests] = useState([]);
   const [selected, setSelected] = useState(null);
   const [remarks, setRemarks] = useState('');
@@ -12,12 +13,12 @@ export default function ActivityRequestsAdmin() {
 
   const load = async () => {
     try {
-      const q = query(collection(db, 'activity_requests'), orderBy('requestedAt', 'desc'));
+      const q = query(collection(db, 'activity_bookings'), orderBy('createdAt', 'desc'));
       const snap = await getDocs(q);
       setRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (e) {
       setRequests([]);
-      setSnackbar({ open: true, message: 'Failed to load activity requests', severity: 'error' });
+      setSnackbar({ open: true, message: 'Failed to load booking requests', severity: 'error' });
     }
   };
 
@@ -25,59 +26,143 @@ export default function ActivityRequestsAdmin() {
 
   const updateStatus = async (req, status) => {
     try {
-      await updateDoc(doc(db, 'activity_requests', req.id), { status, adminRemarks: remarks || '', reviewedAt: new Date().toISOString(), reviewedBy: auth.currentUser?.email || 'Admin' });
+      await updateDoc(doc(db, 'activity_bookings', req.id), { 
+        status, 
+        adminNotes: remarks || '', 
+        updatedAt: new Date().toISOString(),
+        reviewedBy: auth.currentUser?.email || 'Admin' 
+      });
       // notify teacher (store a notification)
       try {
         await addDoc(collection(db, 'notifications'), {
-          recipientId: req.requestedBy || null,
-          recipientEmail: req.requestedByEmail || null,
-          recipientName: null,
-          title: 'Activity Request ' + (status === 'approved' ? 'Approved' : 'Rejected'),
-          message: `Your activity request "${req.title}" was ${status}. ${remarks ? `Remarks: ${remarks}` : ''}`,
-          type: 'activity_request',
+          recipientId: req.teacherId || null,
+          recipientEmail: req.teacherEmail || null,
+          recipientName: req.teacherName || null,
+          title: 'Activity Booking ' + (status === 'approved' ? 'Approved' : 'Rejected'),
+          message: `Your activity booking "${req.activity}" for ${req.resource} on ${new Date(req.date).toLocaleDateString()} was ${status}. ${remarks ? `Remarks: ${remarks}` : ''}`,
+          type: 'activity_booking',
           read: false,
           createdAt: new Date().toISOString(),
           priority: 'normal'
         });
       } catch {}
-      setSnackbar({ open: true, message: `Request ${status}`, severity: 'success' });
+      setSnackbar({ open: true, message: `Booking request ${status}`, severity: 'success' });
       setSelected(null);
       setRemarks('');
       load();
     } catch (e) {
-      setSnackbar({ open: true, message: 'Failed to update request', severity: 'error' });
+      setSnackbar({ open: true, message: 'Failed to update booking request', severity: 'error' });
     }
   };
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>Activity Requests</Typography>
+      <Typography variant="h4" gutterBottom>All Booking Requests</Typography>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Title</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Location</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Requested By</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell sx={{ 
+                color: 'black',
+                fontWeight: 'bold',
+                borderBottom: '1px solid #e0e0e0',
+                bgcolor: 'white'
+              }}>Teacher</TableCell>
+              <TableCell sx={{ 
+                color: 'black',
+                fontWeight: 'bold',
+                borderBottom: '1px solid #e0e0e0',
+                bgcolor: 'white'
+              }}>Department</TableCell>
+              <TableCell sx={{ 
+                color: 'black',
+                fontWeight: 'bold',
+                borderBottom: '1px solid #e0e0e0',
+                bgcolor: 'white'
+              }}>Activity</TableCell>
+              <TableCell sx={{ 
+                color: 'black',
+                fontWeight: 'bold',
+                borderBottom: '1px solid #e0e0e0',
+                bgcolor: 'white'
+              }}>Resource</TableCell>
+              <TableCell sx={{ 
+                color: 'black',
+                fontWeight: 'bold',
+                borderBottom: '1px solid #e0e0e0',
+                bgcolor: 'white'
+              }}>Date</TableCell>
+              <TableCell sx={{ 
+                color: 'black',
+                fontWeight: 'bold',
+                borderBottom: '1px solid #e0e0e0',
+                bgcolor: 'white'
+              }}>Time Range</TableCell>
+              <TableCell sx={{ 
+                color: 'black',
+                fontWeight: 'bold',
+                borderBottom: '1px solid #e0e0e0',
+                bgcolor: 'white'
+              }}>Status</TableCell>
+              <TableCell sx={{ 
+                color: 'black',
+                fontWeight: 'bold',
+                borderBottom: '1px solid #e0e0e0',
+                bgcolor: 'white'
+              }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {requests.map(r => (
-              <TableRow key={r.id}>
-                <TableCell>{r.title}</TableCell>
-                <TableCell>{r.date}</TableCell>
-                <TableCell>{r.location}</TableCell>
-                <TableCell>
+              <TableRow key={r.id} sx={{ 
+                '&:hover': {
+                  backgroundColor: '#f5f5f5'
+                }
+              }}>
+                <TableCell sx={{
+                  color: 'black',
+                  borderBottom: '1px solid #e0e0e0',
+                  backgroundColor: 'white'
+                }}>{r.teacherName}</TableCell>
+                <TableCell sx={{
+                  color: 'black',
+                  borderBottom: '1px solid #e0e0e0',
+                  backgroundColor: 'white'
+                }}>{r.department}</TableCell>
+                <TableCell sx={{
+                  color: 'black',
+                  borderBottom: '1px solid #e0e0e0',
+                  backgroundColor: 'white'
+                }}>{r.activity}</TableCell>
+                <TableCell sx={{
+                  color: 'black',
+                  borderBottom: '1px solid #e0e0e0',
+                  backgroundColor: 'white'
+                }}>{r.resource}</TableCell>
+                <TableCell sx={{
+                  color: 'black',
+                  borderBottom: '1px solid #e0e0e0',
+                  backgroundColor: 'white'
+                }}>{new Date(r.date).toLocaleDateString()}</TableCell>
+                <TableCell sx={{
+                  color: 'black',
+                  borderBottom: '1px solid #e0e0e0',
+                  backgroundColor: 'white'
+                }}>
+                  {r.startTime && r.endTime 
+                    ? `${r.startTime} - ${r.endTime}`
+                    : r.time || 'N/A'
+                  }
+                </TableCell>
+                <TableCell sx={{
+                  borderBottom: '1px solid #e0e0e0',
+                  backgroundColor: 'white'
+                }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Box sx={{ 
                       width: 20, 
                       height: 20, 
-                      bgcolor: r.status === 'approved' ? '#4caf50' : 
-                              r.status === 'rejected' ? '#f44336' : 
-                              r.status === 'pending' ? '#ff9800' : '#9e9e9e', 
+                      bgcolor: 'transparent', 
                       borderRadius: 1, 
                       display: 'flex', 
                       alignItems: 'center', 
@@ -85,13 +170,13 @@ export default function ActivityRequestsAdmin() {
                       flexShrink: 0
                     }}>
                       {r.status === 'approved' ? (
-                        <CheckCircle sx={{ fontSize: 14, color: 'white' }} />
+                        <CheckCircle sx={{ fontSize: 14, color: 'inherit' }} />
                       ) : r.status === 'rejected' ? (
-                        <Cancel sx={{ fontSize: 14, color: 'white' }} />
+                        <Cancel sx={{ fontSize: 14, color: 'inherit' }} />
                       ) : r.status === 'pending' ? (
-                        <Schedule sx={{ fontSize: 14, color: 'white' }} />
+                        <Schedule sx={{ fontSize: 14, color: 'inherit' }} />
                       ) : (
-                        <Warning sx={{ fontSize: 14, color: 'white' }} />
+                        <Warning sx={{ fontSize: 14, color: 'inherit' }} />
                       )}
                     </Box>
                     <Typography 
@@ -108,8 +193,10 @@ export default function ActivityRequestsAdmin() {
                     </Typography>
                   </Box>
                 </TableCell>
-                <TableCell>{r.requestedByEmail || r.requestedBy}</TableCell>
-                <TableCell>
+                <TableCell sx={{
+                  borderBottom: '1px solid #e0e0e0',
+                  backgroundColor: 'white'
+                }}>
                   <IconButton onClick={() => setSelected(r)} size="small"><Visibility /></IconButton>
                 </TableCell>
               </TableRow>
@@ -118,17 +205,41 @@ export default function ActivityRequestsAdmin() {
         </Table>
       </TableContainer>
 
-      <Dialog open={!!selected} onClose={() => setSelected(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Request Details</DialogTitle>
+      <Dialog open={!!selected} onClose={() => setSelected(null)} maxWidth="md" fullWidth>
+        <DialogTitle>Booking Request Details</DialogTitle>
         <DialogContent>
           {selected && (
-            <Box>
-              <Typography variant="h6">{selected.title}</Typography>
-              <Typography>Description: {selected.description}</Typography>
-              <Typography>Date: {selected.date}</Typography>
-              <Typography>Location: {selected.location}</Typography>
-              <Typography>Status: {selected.status}</Typography>
-              <TextField label="Admin Remarks" value={remarks} onChange={e => setRemarks(e.target.value)} fullWidth multiline minRows={2} sx={{ mt: 2 }} />
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="h6" gutterBottom>{selected.activity}</Typography>
+              <Typography variant="subtitle2" color="text.secondary">Teacher Name</Typography>
+              <Typography variant="body1" gutterBottom>{selected.teacherName}</Typography>
+              <Typography variant="subtitle2" color="text.secondary">Department</Typography>
+              <Typography variant="body1" gutterBottom>{selected.department}</Typography>
+              <Typography variant="subtitle2" color="text.secondary">Resource/Place</Typography>
+              <Typography variant="body1" gutterBottom>{selected.resource}</Typography>
+              <Typography variant="subtitle2" color="text.secondary">Date</Typography>
+              <Typography variant="body1" gutterBottom>{new Date(selected.date).toLocaleDateString()}</Typography>
+              <Typography variant="subtitle2" color="text.secondary">Time Range</Typography>
+              <Typography variant="body1" gutterBottom>
+                {selected.startTime && selected.endTime 
+                  ? `${selected.startTime} - ${selected.endTime}`
+                  : selected.time || 'N/A'
+                }
+              </Typography>
+              <Typography variant="subtitle2" color="text.secondary">Status</Typography>
+              <Typography variant="body1" gutterBottom sx={{ textTransform: 'capitalize' }}>{selected.status}</Typography>
+              <Typography variant="subtitle2" color="text.secondary">Notes</Typography>
+              <Typography variant="body1" gutterBottom>{selected.notes || 'No additional notes'}</Typography>
+              <TextField 
+                label="Admin Remarks" 
+                value={remarks} 
+                onChange={e => setRemarks(e.target.value)} 
+                fullWidth 
+                multiline 
+                minRows={2} 
+                sx={{ mt: 2 }} 
+                placeholder="Add your review notes here..."
+              />
             </Box>
           )}
         </DialogContent>

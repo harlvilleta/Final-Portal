@@ -47,7 +47,7 @@ export default function SMSTester() {
 
   return (
     <Paper sx={{ p: 3, maxWidth: 600, mx: 'auto', mt: 3 }}>
-      <Typography variant="h5" gutterBottom color="primary">
+      <Typography variant="h5" gutterBottom sx={{ color: '#000000' }}>
         SMS Testing Tool
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>

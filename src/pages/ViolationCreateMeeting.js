@@ -10,7 +10,6 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import { logActivity } from '../firebase';
 import emailjs from 'emailjs-com';
 import { sendSMS, formatPhilippineNumber } from '../utils/smsService';
-import SMSTester from '../components/SMSTester';
 
 const EMAILJS_SERVICE_ID = 'service_7pgle82';
 const EMAILJS_TEMPLATE_ID = 'template_f5q7j6q';
@@ -337,13 +336,13 @@ export default function ViolationCreateMeeting() {
       </Typography>
       
       {/* Summary Card */}
-      <Card sx={{ bgcolor: '#80000015', boxShadow: 2, mb: 3, borderLeft: '4px solid #800000' }}>
+      <Card sx={{ boxShadow: 2, mb: 3, borderLeft: '4px solid #800000' }}>
         <CardHeader 
-          avatar={<MeetingRoomIcon sx={{ color: '#800000' }} />} 
+          avatar={<MeetingRoomIcon />} 
           title={<Typography variant="subtitle2">Meetings</Typography>} 
         />
         <CardContent>
-          <Typography variant="h4" sx={{ color: '#800000' }} fontWeight={700}>
+          <Typography variant="h4" sx={{ color: '#000000' }} fontWeight={700}>
             {meetings.filter(m => m.type === 'meeting').length}
           </Typography>
           <Typography variant="body2" color="textSecondary">
@@ -354,7 +353,7 @@ export default function ViolationCreateMeeting() {
 
       {/* Create Meeting Form */}
       <Paper sx={{ p: { xs: 1, sm: 3 }, mb: 3, maxWidth: 1200, mx: 'auto', borderRadius: 3, boxShadow: 3 }}>
-        <Typography variant="h6" fontWeight={600} gutterBottom color="primary">Schedule New Meeting</Typography>
+        <Typography variant="h6" fontWeight={600} gutterBottom sx={{ color: '#000000' }}>Schedule New Meeting</Typography>
         <Divider sx={{ mb: 2 }} />
         <form onSubmit={handleMeetingSubmit}>
           <Grid container spacing={2}>
@@ -476,32 +475,45 @@ export default function ViolationCreateMeeting() {
             <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
               <Button 
                 type="submit" 
-                variant="contained" 
+                variant="outlined" 
                 size="large"
                 disabled={meetingSubmitting || !meetingForm.studentName || !meetingForm.cellphoneNumber || !meetingForm.purpose || !meetingForm.date || !!phoneValidationError}
                 sx={{ 
                   minWidth: 200,
-                  bgcolor: '#800000',
-                  color: '#ffffff',
-                  '&:hover': { bgcolor: '#6b0000' },
-                  '&:disabled': { bgcolor: '#cccccc', color: '#666666' }
+                  bgcolor: '#ffffff',
+                  color: '#000000',
+                  borderColor: '#000000',
+                  '&:hover': { 
+                    bgcolor: '#800000',
+                    color: '#ffffff',
+                    borderColor: '#800000'
+                  },
+                  '&:disabled': { bgcolor: '#cccccc', color: '#666666', borderColor: '#999999' }
                 }}
               >
                 {meetingSubmitting ? "Creating..." : "Create Meeting"}
               </Button>
               <Button 
                 variant="outlined" 
-                color="info" 
                 onClick={() => setOpenMeetingsModal(true)} 
                 size="large"
-                sx={{ minWidth: 200 }}
+                sx={{ 
+                  minWidth: 200,
+                  bgcolor: '#ffffff',
+                  color: '#000000',
+                  borderColor: '#000000',
+                  '&:hover': { 
+                    bgcolor: '#800000',
+                    color: '#ffffff',
+                    borderColor: '#800000'
+                  }
+                }}
               >
                 View All Meetings
               </Button>
               {meetingForm.cellphoneNumber && (
                 <Button 
                   variant="outlined" 
-                  color="success" 
                   onClick={async () => {
                     const testMessage = "Test SMS from Student Affairs System. If you receive this, SMS is working!";
                     const result = await sendSMSMessage(meetingForm.cellphoneNumber, testMessage);
@@ -512,7 +524,17 @@ export default function ViolationCreateMeeting() {
                     }
                   }}
                   size="large"
-                  sx={{ minWidth: 150 }}
+                  sx={{ 
+                    minWidth: 150,
+                    bgcolor: '#ffffff',
+                    color: '#000000',
+                    borderColor: '#000000',
+                    '&:hover': { 
+                      bgcolor: '#800000',
+                      color: '#ffffff',
+                      borderColor: '#800000'
+                    }
+                  }}
                 >
                   Test SMS
                 </Button>
@@ -521,9 +543,6 @@ export default function ViolationCreateMeeting() {
           </Grid>
         </form>
       </Paper>
-
-      {/* SMS Testing Tool */}
-      <SMSTester />
 
       {/* View Meetings Modal */}
       <Dialog open={openMeetingsModal} onClose={() => setOpenMeetingsModal(false)} maxWidth="lg" fullWidth>

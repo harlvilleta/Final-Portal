@@ -237,11 +237,64 @@ export default function Overview() {
   const fetchRecentActivity = async () => {
     setActivityLoading(true);
     try {
-      const q = query(collection(db, "activity_log"), orderBy("timestamp", "desc"), limit(8));
-      const snap = await getDocs(q);
-      setRecentActivity(snap.docs.map(doc => doc.data()));
+      // Fetch all recent activities from various collections
+      const activities = [];
+      
+      // Fetch from activity_log collection
+      try {
+        const activityLogQuery = query(collection(db, "activity_log"), orderBy("timestamp", "desc"), limit(10));
+        const activityLogSnap = await getDocs(activityLogQuery);
+        const activityLogData = activityLogSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          type: 'activity_log'
+        }));
+        activities.push(...activityLogData);
+      } catch (e) {
+        console.log("Activity log not found");
+      }
+
+      // Fetch from notifications collection (admin notifications)
+      try {
+        const notificationsQuery = query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(10));
+        const notificationsSnap = await getDocs(notificationsQuery);
+        const notificationsData = notificationsSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          type: 'notification',
+          message: doc.data().title || doc.data().message,
+          timestamp: doc.data().createdAt
+        }));
+        activities.push(...notificationsData);
+      } catch (e) {
+        console.log("Notifications not found");
+      }
+
+      // Fetch from violations collection
+      try {
+        const violationsQuery = query(collection(db, "violations"), orderBy("createdAt", "desc"), limit(10));
+        const violationsSnap = await getDocs(violationsQuery);
+        const violationsData = violationsSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          type: 'violation',
+          message: `Violation reported: ${doc.data().violation}`,
+          timestamp: doc.data().createdAt
+        }));
+        activities.push(...violationsData);
+      } catch (e) {
+        console.log("Violations not found");
+      }
+
+      // Sort all activities by timestamp and take the most recent 15
+      const sortedActivities = activities
+        .filter(activity => activity.timestamp)
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .slice(0, 15);
+
+      setRecentActivity(sortedActivities);
     } catch (e) {
-      console.log("Activity log not found, using empty array");
+      console.log("Error fetching recent activity:", e);
       setRecentActivity([]);
     } finally {
       setActivityLoading(false);
@@ -251,33 +304,34 @@ export default function Overview() {
 
 
 
+
   const statCards = [
     { 
       label: 'Students', 
       value: stats.students, 
-      icon: <PeopleIcon fontSize="large" color="primary" />,
-      color: '#1976d2',
+      icon: <PeopleIcon fontSize="large" />,
+      color: '#800000',
       to: '/students'
     },
     { 
       label: 'Violations', 
       value: stats.violations, 
-      icon: <ReportIcon fontSize="large" color="error" />,
-      color: '#d32f2f',
+      icon: <ReportIcon fontSize="large" />,
+      color: '#800000',
       to: '/violation-record'
     },
     { 
       label: 'Activities', 
       value: stats.activities, 
-      icon: <EventIcon fontSize="large" color="success" />,
-      color: '#2e7d32',
+      icon: <EventIcon fontSize="large" />,
+      color: '#800000',
       to: '/activity'
     },
     { 
       label: 'Announcements', 
       value: stats.announcements, 
-      icon: <CampaignIcon fontSize="large" color="warning" />,
-      color: '#ed6c02',
+      icon: <CampaignIcon fontSize="large" />,
+      color: '#800000',
       to: '/announcements'
     },
   ];
@@ -329,7 +383,7 @@ export default function Overview() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" gutterBottom sx={{ color: isDark ? '#ffffff' : '#800000' }}>
         Dashboard Overview
       </Typography>
       
@@ -360,12 +414,12 @@ export default function Overview() {
                   variant="h4" 
                   fontWeight={700} 
                   sx={{ 
-                    color: '#000000'
+                    color: isDark ? '#ffffff' : '#000000'
                   }}
                 >
                   {stat.value.toLocaleString()}
                 </Typography>
-                <Typography color="text.secondary" variant="body2">
+                <Typography variant="body2" sx={{ color: isDark ? '#cccccc' : '#666666' }}>
                   {stat.label}
                 </Typography>
               </CardContent>
@@ -391,7 +445,7 @@ export default function Overview() {
             }}
             onClick={() => navigate('/students-chart')}
           >
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{ color: isDark ? '#ffffff' : '#000000' }}>
               Students Registration (Last 6 Months)
             </Typography>
             <ResponsiveContainer width="100%" height="100%">
@@ -445,7 +499,7 @@ export default function Overview() {
             }}
             onClick={() => navigate('/violations-chart')}
           >
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{ color: isDark ? '#ffffff' : '#000000' }}>
               Violations Reported (Last 6 Months)
             </Typography>
             <ResponsiveContainer width="100%" height="100%">
@@ -481,15 +535,14 @@ export default function Overview() {
         </Grid>
       </Grid>
 
-      {/* Activity and Teacher Requests Section */}
-      <Grid container spacing={3} sx={{ mt: 4 }}>
-        {/* Recent Activity Section */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, boxShadow: 2, height: '100%' }}>
+      {/* Recent Activity Section */}
+      <Grid container spacing={3} sx={{ mt: 4, justifyContent: 'center' }}>
+        <Grid item xs={12} md={11} lg={10}>
+          <Paper sx={{ p: 3, boxShadow: 2 }}>
             <Typography 
               variant="h6" 
               sx={{ 
-                mb: 2, 
+                mb: 3, 
                 fontWeight: 700, 
                 color: isDark ? '#ffffff' : '#000000'
               }}
@@ -497,77 +550,98 @@ export default function Overview() {
               Recent Activity
             </Typography>
             {activityLoading ? (
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: isDark ? '#ffffff' : '#000000',
-                  fontWeight: 500
-                }}
-              >
-                Loading...
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+                <CircularProgress size={24} sx={{ mr: 2 }} />
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: isDark ? '#ffffff' : '#333333',
+                    fontWeight: 500
+                  }}
+                >
+                  Loading recent activity...
+                </Typography>
+              </Box>
             ) : recentActivity.length === 0 ? (
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: isDark ? '#ffffff' : '#000000',
-                  fontWeight: 500
-                }}
-              >
-                No recent activity.
-              </Typography>
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: isDark ? '#ffffff' : '#333333',
+                    fontWeight: 500
+                  }}
+                >
+                  No recent activity found.
+                </Typography>
+              </Box>
             ) : (
               <List sx={{ 
-                maxHeight: 400, 
+                maxHeight: 500, 
                 overflow: 'auto',
                 '& .MuiListItem-root': {
                   color: isDark ? '#ffffff' : '#000000',
-                  padding: '8px 0'
+                  padding: '12px 0',
+                  borderBottom: `1px solid ${isDark ? '#404040' : '#e0e0e0'}`
                 }
               }}>
                 {recentActivity.map((item, idx) => (
-                  <React.Fragment key={idx}>
-                    <ListItem sx={{ 
+                  <ListItem 
+                    key={`${item.type}-${item.id}-${idx}`}
+                    sx={{ 
                       color: isDark ? '#ffffff' : '#000000',
                       '&:hover': {
                         backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)'
                       }
-                    }}>
-                      <ListItemText
-                        primary={item.message || item.type || 'Activity'}
-                        secondary={item.timestamp ? new Date(item.timestamp).toLocaleString() : ''}
-                        primaryTypographyProps={{
-                          sx: { 
-                            color: isDark ? '#ffffff' : '#000000',
-                            fontWeight: 500,
-                            fontSize: '0.875rem'
-                          }
-                        }}
-                        secondaryTypographyProps={{
-                          sx: { 
-                            color: isDark ? '#cccccc' : '#666666',
-                            fontSize: '0.75rem',
-                            fontWeight: 400
-                          }
-                        }}
-                      />
-                    </ListItem>
-                    <Divider 
-                      component="li" 
-                      sx={{ 
-                        borderColor: isDark ? '#404040' : '#e0e0e0',
-                        margin: '4px 0'
-                      }} 
+                    }}
+                  >
+                    <ListItemText
+                      primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography
+                            variant="body1"
+                            sx={{ 
+                              color: isDark ? '#ffffff' : '#000000',
+                              fontWeight: 500,
+                              fontSize: '0.9rem'
+                            }}
+                          >
+                            {item.message || item.type || 'Activity'}
+                          </Typography>
+                          <Chip 
+                            label={item.type?.replace('_', ' ').toUpperCase() || 'ACTIVITY'} 
+                            size="small" 
+                            sx={{ 
+                              fontSize: '0.7rem',
+                              height: 20,
+                              bgcolor: item.type === 'violation' ? '#ffebee' : 
+                                       item.type === 'notification' ? '#e3f2fd' : '#f3e5f5',
+                              color: item.type === 'violation' ? '#d32f2f' : 
+                                     item.type === 'notification' ? '#1976d2' : '#7b1fa2'
+                            }}
+                          />
+                        </Box>
+                      }
+                      secondary={
+                        <Typography
+                          variant="body2"
+                          sx={{ 
+                            color: isDark ? '#cccccc' : '#333333',
+                            fontSize: '0.8rem',
+                            fontWeight: 400,
+                            mt: 0.5
+                          }}
+                        >
+                          {item.timestamp ? new Date(item.timestamp).toLocaleString() : 'No timestamp'}
+                        </Typography>
+                      }
                     />
-                  </React.Fragment>
+                  </ListItem>
                 ))}
               </List>
             )}
           </Paper>
         </Grid>
-
       </Grid>
-      
 
       {/* Snackbar for notifications */}
       <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>

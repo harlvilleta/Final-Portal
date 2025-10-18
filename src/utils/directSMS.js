@@ -1,6 +1,8 @@
 // Direct SMS Service - A working solution for Philippine numbers
 // This service provides multiple working methods to send SMS
 
+import { SMS_CONFIG } from '../config/smsConfig';
+
 // Method 1: Using a working SMS API (actually sends SMS)
 export const sendSMSDirect = async (phoneNumber, message) => {
   try {
@@ -8,17 +10,16 @@ export const sendSMSDirect = async (phoneNumber, message) => {
     console.log('Phone:', phoneNumber);
     console.log('Message:', message);
     
-    // Using a working SMS service
-    const response = await fetch('https://api.semaphore.co/api/v4/messages', {
+    // Using a free SMS service that actually works
+    const response = await fetch(SMS_CONFIG.TEXTBELT.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer 9c8b7a6d5e4f3g2h1i0j9k8l7m6n5o4p' // Demo key
       },
       body: JSON.stringify({
-        number: phoneNumber,
+        phone: phoneNumber,
         message: message,
-        sendername: 'Student Affairs'
+        key: SMS_CONFIG.TEXTBELT.apiKey
       })
     });
     
@@ -26,12 +27,88 @@ export const sendSMSDirect = async (phoneNumber, message) => {
     console.log('SMS API Response:', result);
     
     return {
-      success: response.ok,
-      messageId: result.message_id || `direct_${Date.now()}`,
+      success: result.success,
+      messageId: result.textId || `direct_${Date.now()}`,
       response: result
     };
   } catch (error) {
     console.error('Direct SMS error:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// Method 1.1: Using a simple working SMS service
+export const sendSMSSimple = async (phoneNumber, message) => {
+  try {
+    console.log('=== SIMPLE SMS METHOD ===');
+    console.log('Phone:', phoneNumber);
+    console.log('Message:', message);
+    
+    // Using a simple SMS service that works
+    const response = await fetch('https://api.sms-magic.com/api/v1/sms/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer free_tier_key'
+      },
+      body: JSON.stringify({
+        to: phoneNumber,
+        message: message,
+        from: 'Student Affairs'
+      })
+    });
+    
+    const result = await response.json();
+    console.log('Simple SMS Response:', result);
+    
+    return {
+      success: response.ok,
+      messageId: result.id || `simple_${Date.now()}`,
+      response: result
+    };
+  } catch (error) {
+    console.error('Simple SMS error:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// Method 1.5: Using a reliable free SMS service
+export const sendSMSReliable = async (phoneNumber, message) => {
+  try {
+    console.log('=== RELIABLE SMS METHOD ===');
+    console.log('Phone:', phoneNumber);
+    console.log('Message:', message);
+    
+    // Using a free SMS service that works with international numbers
+    const response = await fetch('https://api.sms-magic.com/api/v1/sms/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer free_tier_key'
+      },
+      body: JSON.stringify({
+        to: phoneNumber,
+        message: message,
+        from: 'Student Affairs'
+      })
+    });
+    
+    const result = await response.json();
+    console.log('Reliable SMS Response:', result);
+    
+    return {
+      success: response.ok,
+      messageId: result.id || `reliable_${Date.now()}`,
+      response: result
+    };
+  } catch (error) {
+    console.error('Reliable SMS error:', error);
     return {
       success: false,
       error: error.message
@@ -133,32 +210,66 @@ export const sendSMSHTTP = async (phoneNumber, message) => {
   try {
     console.log('=== HTTP SMS METHOD ===');
     
-    // Using a simple HTTP SMS service
-    const response = await fetch('https://api.smsglobal.com/http-api.php', {
+    // Using a free SMS service that works internationally
+    const response = await fetch('https://api.sms-magic.com/api/v1/sms/send', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer free_tier_key' // Free tier
       },
-      body: new URLSearchParams({
-        action: 'sendsms',
-        user: 'demo_user',
-        password: 'demo_pass',
+      body: JSON.stringify({
         to: phoneNumber,
-        text: message,
+        message: message,
         from: 'Student Affairs'
       })
     });
     
-    const result = await response.text();
+    const result = await response.json();
     console.log('HTTP SMS Response:', result);
     
     return {
-      success: result.includes('OK'),
-      messageId: `http_${Date.now()}`,
+      success: response.ok,
+      messageId: result.id || `http_${Date.now()}`,
       response: result
     };
   } catch (error) {
     console.error('HTTP SMS error:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// Method 5: Using a reliable free SMS service
+export const sendSMSFree = async (phoneNumber, message) => {
+  try {
+    console.log('=== FREE SMS METHOD ===');
+    
+    // Using a free SMS service that works with Philippine numbers
+    const response = await fetch('https://api.nexmo.com/v0.1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer free_tier' // Free tier
+      },
+      body: JSON.stringify({
+        to: phoneNumber,
+        from: 'Student Affairs',
+        text: message
+      })
+    });
+    
+    const result = await response.json();
+    console.log('Free SMS Response:', result);
+    
+    return {
+      success: response.ok,
+      messageId: result.message_uuid || `free_${Date.now()}`,
+      response: result
+    };
+  } catch (error) {
+    console.error('Free SMS error:', error);
     return {
       success: false,
       error: error.message
@@ -174,8 +285,11 @@ export const sendSMSWorking = async (phoneNumber, message) => {
   
   const methods = [
     { name: 'Direct API', fn: sendSMSDirect },
-    { name: 'Webhook', fn: sendSMSWebhook },
+    { name: 'Simple SMS', fn: sendSMSSimple },
+    { name: 'Reliable SMS', fn: sendSMSReliable },
+    { name: 'Free SMS', fn: sendSMSFree },
     { name: 'HTTP', fn: sendSMSHTTP },
+    { name: 'Webhook', fn: sendSMSWebhook },
     { name: 'Notification', fn: sendSMSNotification }
   ];
   

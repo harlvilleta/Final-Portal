@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   Box, Grid, Card, CardContent, Typography, TextField, Button, Paper, Avatar, Snackbar, Alert, 
-  Tabs, Tab, Chip, Divider, Badge, IconButton, Tooltip
+  Tabs, Tab, Chip, Divider, Badge, IconButton, Tooltip, useTheme
 } from "@mui/material";
 import { 
   Search, Add, CloudUpload, AdminPanelSettings, Person, Visibility, 
@@ -11,6 +11,7 @@ import { db } from "../firebase";
 import { collection, addDoc, query, orderBy, onSnapshot } from "firebase/firestore";
 
 export default function UserLostFound({ currentUser }) {
+  const theme = useTheme();
   const [lostForm, setLostForm] = useState({ 
     name: '', 
     description: '', 
@@ -330,38 +331,12 @@ export default function UserLostFound({ currentUser }) {
 
       {activeTab === 2 && (
         <Box>
-          {/* View Mode Filter */}
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Typography variant="h6" gutterBottom>Filter Items</Typography>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <Chip 
-                label="All Items" 
-                color={viewMode === 'all' ? 'primary' : 'default'}
-                onClick={() => setViewMode('all')}
-                clickable
-              />
-              <Chip 
-                label="Student Posts" 
-                color={viewMode === 'student' ? 'primary' : 'default'}
-                onClick={() => setViewMode('student')}
-                clickable
-                icon={<Person />}
-              />
-              <Chip 
-                label="Admin Posts" 
-                color={viewMode === 'admin' ? 'primary' : 'default'}
-                onClick={() => setViewMode('admin')}
-                clickable
-                icon={<AdminPanelSettings />}
-              />
-            </Box>
-          </Paper>
-
           <Grid container spacing={3}>
+            {/* Lost Items History Section */}
             <Grid item xs={12} md={6}>
               <Paper sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">Lost Items</Typography>
+                  <Typography variant="h6">Lost Items History</Typography>
                   <Badge badgeContent={filteredLost.length} color="primary">
                     <Search />
                   </Badge>
@@ -457,10 +432,11 @@ export default function UserLostFound({ currentUser }) {
               </Paper>
             </Grid>
             
+            {/* Found Items Summary Section */}
             <Grid item xs={12} md={6}>
               <Paper sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">Found Items</Typography>
+                  <Typography variant="h6">Found Items Summary</Typography>
                   <Badge badgeContent={filteredFound.length} color="primary">
                     <Search />
                   </Badge>

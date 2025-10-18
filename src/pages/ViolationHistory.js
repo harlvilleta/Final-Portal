@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Typography, Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, InputAdornment, Card, CardContent, CardHeader, Grid, Chip, Avatar, Tooltip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Divider, Tabs, Tab, Button } from "@mui/material";
+import { Typography, Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, InputAdornment, Card, CardContent, CardHeader, Grid, Chip, Avatar, Tooltip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Divider, Tabs, Tab, Button, useTheme } from "@mui/material";
 import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
 import { db } from "../firebase";
 import SearchIcon from '@mui/icons-material/Search';
@@ -11,6 +11,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import { format } from 'date-fns';
 
 export default function ViolationHistory() {
+  const theme = useTheme();
   const [violations, setViolations] = useState([]);
   const [meetings, setMeetings] = useState([]);
   const [activities, setActivities] = useState([]);
@@ -113,43 +114,27 @@ export default function ViolationHistory() {
 
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={4} md={2}>
-          <Card sx={{ bgcolor: '#80000015', boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardHeader avatar={<AssignmentTurnedInIcon sx={{ color: '#800000' }} />} title={<Typography variant="subtitle2">Total Violations</Typography>} />
-            <CardContent>
-              <Typography variant="h4" sx={{ color: '#800000' }} fontWeight={700}>{stats.totalViolations}</Typography>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000', minHeight: '120px' }}>
+            <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+              <Typography variant="h4" sx={{ color: '#000000', mb: 1 }} fontWeight={700}>{stats.totalViolations}</Typography>
+              <Typography variant="subtitle2" sx={{ color: '#666666' }}>Total Violations</Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={4} md={2}>
-          <Card sx={{ bgcolor: '#80000015', boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardHeader avatar={<PendingActionsIcon sx={{ color: '#800000' }} />} title={<Typography variant="subtitle2">Pending</Typography>} />
-            <CardContent>
-              <Typography variant="h4" sx={{ color: '#800000' }} fontWeight={700}>{stats.pendingViolations}</Typography>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000', minHeight: '120px' }}>
+            <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+              <Typography variant="h4" sx={{ color: '#000000', mb: 1 }} fontWeight={700}>{stats.pendingViolations}</Typography>
+              <Typography variant="subtitle2" sx={{ color: '#666666' }}>Pending</Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={4} md={2}>
-          <Card sx={{ bgcolor: '#80000015', boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardHeader avatar={<DoneAllIcon sx={{ color: '#800000' }} />} title={<Typography variant="subtitle2">Solved</Typography>} />
-            <CardContent>
-              <Typography variant="h4" sx={{ color: '#800000' }} fontWeight={700}>{stats.solvedViolations}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={4} md={2}>
-          <Card sx={{ bgcolor: '#80000015', boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardHeader avatar={<TimelineIcon sx={{ color: '#800000' }} />} title={<Typography variant="subtitle2">Meetings</Typography>} />
-            <CardContent>
-              <Typography variant="h4" sx={{ color: '#800000' }} fontWeight={700}>{stats.totalMeetings}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={4} md={2}>
-          <Card sx={{ bgcolor: '#80000015', boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardHeader avatar={<TimelineIcon sx={{ color: '#800000' }} />} title={<Typography variant="subtitle2">Activities</Typography>} />
-            <CardContent>
-              <Typography variant="h4" sx={{ color: '#800000' }} fontWeight={700}>{stats.recentActivities}</Typography>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000', minHeight: '120px' }}>
+            <CardContent sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+              <Typography variant="h4" sx={{ color: '#000000', mb: 1 }} fontWeight={700}>{stats.solvedViolations}</Typography>
+              <Typography variant="subtitle2" sx={{ color: '#666666' }}>Solved</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -177,8 +162,6 @@ export default function ViolationHistory() {
       <Paper sx={{ mb: 3 }}>
         <Tabs value={selectedTab} onChange={handleTabChange} sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tab label={`Violations (${filteredViolations.length})`} />
-          <Tab label={`Meetings (${filteredMeetings.length})`} />
-          <Tab label={`Activities (${filteredActivities.length})`} />
         </Tabs>
       </Paper>
 
@@ -187,21 +170,42 @@ export default function ViolationHistory() {
         <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
           <Table stickyHeader>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#800000 !important' }}>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Date</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Student ID</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Student Name</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Violation</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Classification</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Severity</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Location</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Actions</TableCell>
+              <TableRow sx={{ 
+                bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#f5f5f5' 
+              }}>
+                <TableCell sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  fontWeight: 600 
+                }}>Date</TableCell>
+                <TableCell sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  fontWeight: 600 
+                }}>Student ID</TableCell>
+                <TableCell sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  fontWeight: 600 
+                }}>Name</TableCell>
+                <TableCell sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  fontWeight: 600 
+                }}>Violation</TableCell>
+                <TableCell sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  fontWeight: 600 
+                }}>Status</TableCell>
+                <TableCell sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  fontWeight: 600 
+                }}>Location</TableCell>
+                <TableCell sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  fontWeight: 600 
+                }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredViolations.length === 0 ? (
-                <TableRow><TableCell colSpan={9} align="center">No violations found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} align="center">No violations found.</TableCell></TableRow>
               ) : filteredViolations.map((violation, idx) => (
                 <TableRow key={violation.id || idx} hover>
                   <TableCell>{formatDate(violation.timestamp)}</TableCell>
@@ -215,22 +219,16 @@ export default function ViolationHistory() {
                       </Typography>
                     )}
                   </TableCell>
-                  <TableCell>{violation.classification}</TableCell>
                   <TableCell>
-                    <Chip 
-                      label={violation.severity} 
-                      variant="outlined"
-                      sx={{ borderColor: '#800000', color: '#800000' }} 
-                      size="small" 
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={violation.status} 
-                      variant="outlined"
-                      sx={{ borderColor: '#800000', color: '#800000' }} 
-                      size="small" 
-                    />
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: violation.status === 'Solved' || violation.status === 'Completed' ? '#4caf50' : '#800000',
+                        fontWeight: 500
+                      }}
+                    >
+                      {violation.status}
+                    </Typography>
                   </TableCell>
                   <TableCell>{violation.location}</TableCell>
                   <TableCell>
@@ -247,90 +245,7 @@ export default function ViolationHistory() {
         </TableContainer>
       )}
 
-      {/* Meetings Tab */}
-      {selectedTab === 1 && (
-        <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow sx={{ bgcolor: '#800000 !important' }}>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Date</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Time</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Student Name</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Student ID</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Purpose</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Violation Type</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Severity</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Location</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredMeetings.length === 0 ? (
-                <TableRow><TableCell colSpan={8} align="center">No meetings found.</TableCell></TableRow>
-              ) : filteredMeetings.map((meeting, idx) => (
-                <TableRow key={meeting.id || idx} hover>
-                  <TableCell>{meeting.date}</TableCell>
-                  <TableCell>{meeting.time}</TableCell>
-                  <TableCell>{meeting.studentName}</TableCell>
-                  <TableCell>{meeting.studentId}</TableCell>
-                  <TableCell>
-                    <Typography variant="body2">{meeting.purpose}</Typography>
-                    {meeting.description && (
-                      <Typography variant="caption" color="textSecondary" display="block">
-                        {meeting.description.substring(0, 50)}...
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>{meeting.violationType}</TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={meeting.severity} 
-                      color={getSeverityColor(meeting.severity)} 
-                      size="small" 
-                    />
-                  </TableCell>
-                  <TableCell>{meeting.location}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
 
-      {/* Activities Tab */}
-      {selectedTab === 2 && (
-        <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow sx={{ bgcolor: '#800000 !important' }}>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Timestamp</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Activity Type</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Message</TableCell>
-                <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>User</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredActivities.length === 0 ? (
-                <TableRow><TableCell colSpan={4} align="center">No activities found.</TableCell></TableRow>
-              ) : filteredActivities.map((activity, idx) => (
-                <TableRow key={activity.id || idx} hover>
-                  <TableCell>{formatDate(activity.timestamp)}</TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={activity.type || 'Unknown'} 
-                      color="primary" 
-                      size="small" 
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">{activity.message}</Typography>
-                  </TableCell>
-                  <TableCell>{activity.user || 'System'}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
 
       {/* View Violation Details Dialog */}
       <Dialog open={!!viewViolation} onClose={() => setViewViolation(null)} maxWidth="md" fullWidth>

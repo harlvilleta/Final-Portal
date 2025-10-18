@@ -18,7 +18,9 @@ import {
   CardContent,
   Chip,
   IconButton,
-  Tooltip
+  Tooltip,
+  Badge,
+  useTheme
 } from '@mui/material';
 import {
   Search,
@@ -44,6 +46,7 @@ import {
 import { db } from '../firebase';
 
 export default function AdminLostFound() {
+  const theme = useTheme();
   const [lostForm, setLostForm] = useState({ 
     name: '', 
     description: '', 
@@ -84,6 +87,8 @@ export default function AdminLostFound() {
   const [showLostModal, setShowLostModal] = useState(false);
   const [allItems, setAllItems] = useState([]);
   const [feedSearch, setFeedSearch] = useState('');
+  const [activeFilter, setActiveFilter] = useState({ type: null, status: null });
+  const [itemTypeFilter, setItemTypeFilter] = useState('all'); // 'all', 'lost', 'found'
 
   // Combine all items for feed display
   useEffect(() => {
@@ -94,13 +99,26 @@ export default function AdminLostFound() {
     setAllItems(combinedItems);
   }, [lostItems, foundItems]);
 
-  // Filter items based on search
-  const filteredItems = allItems.filter(item => 
-    item.name.toLowerCase().includes(feedSearch.toLowerCase()) ||
-    item.description?.toLowerCase().includes(feedSearch.toLowerCase()) ||
-    item.location?.toLowerCase().includes(feedSearch.toLowerCase()) ||
-    item[item.type === 'found' ? 'foundBy' : 'lostBy']?.toLowerCase().includes(feedSearch.toLowerCase())
-  );
+  // Filter items based on search, active filter, and item type filter
+  const filteredItems = allItems.filter(item => {
+    // Search filter
+    const matchesSearch = item.name.toLowerCase().includes(feedSearch.toLowerCase()) ||
+      item.description?.toLowerCase().includes(feedSearch.toLowerCase()) ||
+      item.location?.toLowerCase().includes(feedSearch.toLowerCase()) ||
+      item[item.type === 'found' ? 'foundBy' : 'lostBy']?.toLowerCase().includes(feedSearch.toLowerCase());
+    
+    // Active filter (from summary chips)
+    const matchesType = !activeFilter.type || item.type === activeFilter.type;
+    const matchesStatus = !activeFilter.status || 
+      (activeFilter.status === 'resolved' && item.resolved) ||
+      (activeFilter.status === 'pending' && !item.resolved);
+    
+    // Item type filter (from filter buttons)
+    const matchesItemType = itemTypeFilter === 'all' || item.type === itemTypeFilter;
+    
+    return matchesSearch && matchesType && matchesStatus && matchesItemType;
+  });
+
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -444,9 +462,17 @@ export default function AdminLostFound() {
     setImagePreview({ open: true, image, title });
   };
 
+  const handleFilterClick = (type, status) => {
+    setActiveFilter({ type, status });
+  };
+
+  const clearFilter = () => {
+    setActiveFilter({ type: null, status: null });
+  };
+
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#ffffff', mb: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#800000', mb: 3 }}>
         Lost & Found Management
       </Typography>
 
@@ -461,40 +487,61 @@ export default function AdminLostFound() {
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
           }}>
             <CardContent>
-              <Typography variant="h6" fontWeight={700} sx={{ color: '#ffffff' }} gutterBottom>
+              <Typography variant="h6" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} gutterBottom>
                 Lost Items Summary
               </Typography>
               <Grid container spacing={2}>
                 <Grid item>
                   <Chip 
                     label={`Total: ${lostTotal}`} 
+                    onClick={() => handleFilterClick('lost', null)}
                     sx={{ 
-                      bgcolor: 'rgba(255, 255, 255, 0.2)', 
-                      color: '#ffffff',
-                      backdropFilter: 'blur(5px)',
-                      border: '1px solid rgba(255, 255, 255, 0.3)'
+                      bgcolor: 'transparent',
+                      color: '#000000',
+                      border: '2px solid #000000',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        bgcolor: '#800000',
+                        color: '#ffffff',
+                        border: '2px solid #800000'
+                      },
+                      transition: 'all 0.3s ease'
                     }} 
                   />
                 </Grid>
                 <Grid item>
                   <Chip 
                     label={`Completed: ${lostCompleted}`} 
+                    onClick={() => handleFilterClick('lost', 'resolved')}
                     sx={{ 
-                      bgcolor: 'rgba(255, 255, 255, 0.2)', 
-                      color: '#ffffff',
-                      backdropFilter: 'blur(5px)',
-                      border: '1px solid rgba(255, 255, 255, 0.3)'
+                      bgcolor: 'transparent',
+                      color: '#000000',
+                      border: '2px solid #000000',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        bgcolor: '#800000',
+                        color: '#ffffff',
+                        border: '2px solid #800000'
+                      },
+                      transition: 'all 0.3s ease'
                     }} 
                   />
                 </Grid>
                 <Grid item>
                   <Chip 
                     label={`Pending: ${lostPending}`} 
+                    onClick={() => handleFilterClick('lost', 'pending')}
                     sx={{ 
-                      bgcolor: 'rgba(255, 255, 255, 0.2)', 
-                      color: '#ffffff',
-                      backdropFilter: 'blur(5px)',
-                      border: '1px solid rgba(255, 255, 255, 0.3)'
+                      bgcolor: 'transparent',
+                      color: '#000000',
+                      border: '2px solid #000000',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        bgcolor: '#800000',
+                        color: '#ffffff',
+                        border: '2px solid #800000'
+                      },
+                      transition: 'all 0.3s ease'
                     }} 
                   />
                 </Grid>
@@ -511,40 +558,61 @@ export default function AdminLostFound() {
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
           }}>
             <CardContent>
-              <Typography variant="h6" fontWeight={700} sx={{ color: '#ffffff' }} gutterBottom>
+              <Typography variant="h6" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} gutterBottom>
                 Found Items Summary
               </Typography>
               <Grid container spacing={2}>
                 <Grid item>
                   <Chip 
                     label={`Total: ${foundTotal}`} 
+                    onClick={() => handleFilterClick('found', null)}
                     sx={{ 
-                      bgcolor: 'rgba(255, 255, 255, 0.2)', 
-                      color: '#ffffff',
-                      backdropFilter: 'blur(5px)',
-                      border: '1px solid rgba(255, 255, 255, 0.3)'
+                      bgcolor: 'transparent',
+                      color: '#000000',
+                      border: '2px solid #000000',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        bgcolor: '#800000',
+                        color: '#ffffff',
+                        border: '2px solid #800000'
+                      },
+                      transition: 'all 0.3s ease'
                     }} 
                   />
                 </Grid>
                 <Grid item>
                   <Chip 
                     label={`Completed: ${foundCompleted}`} 
+                    onClick={() => handleFilterClick('found', 'resolved')}
                     sx={{ 
-                      bgcolor: 'rgba(255, 255, 255, 0.2)', 
-                      color: '#ffffff',
-                      backdropFilter: 'blur(5px)',
-                      border: '1px solid rgba(255, 255, 255, 0.3)'
+                      bgcolor: 'transparent',
+                      color: '#000000',
+                      border: '2px solid #000000',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        bgcolor: '#800000',
+                        color: '#ffffff',
+                        border: '2px solid #800000'
+                      },
+                      transition: 'all 0.3s ease'
                     }} 
                   />
                 </Grid>
                 <Grid item>
                   <Chip 
                     label={`Pending: ${foundPending}`} 
+                    onClick={() => handleFilterClick('found', 'pending')}
                     sx={{ 
-                      bgcolor: 'rgba(255, 255, 255, 0.2)', 
-                      color: '#ffffff',
-                      backdropFilter: 'blur(5px)',
-                      border: '1px solid rgba(255, 255, 255, 0.3)'
+                      bgcolor: 'transparent',
+                      color: '#000000',
+                      border: '2px solid #000000',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        bgcolor: '#800000',
+                        color: '#ffffff',
+                        border: '2px solid #800000'
+                      },
+                      transition: 'all 0.3s ease'
                     }} 
                   />
                 </Grid>
@@ -557,21 +625,24 @@ export default function AdminLostFound() {
       {/* Action Buttons */}
       <Box sx={{ mb: 4, display: 'flex', gap: 1, justifyContent: 'flex-start' }}>
         <Button
-          variant="contained"
+          variant="outlined"
           size="small"
           onClick={() => setShowFoundModal(true)}
           sx={{
-            bgcolor: '#2e7d32',
-            color: '#ffffff',
+            bgcolor: 'transparent',
+            color: '#000000',
+            border: '1px solid #000000',
             px: 2,
             py: 1,
             fontSize: '0.75rem',
             fontWeight: 500,
             borderRadius: 1,
             '&:hover': {
-              bgcolor: '#1b5e20',
+              bgcolor: '#800000',
+              color: '#ffffff',
+              border: '1px solid #800000',
               transform: 'translateY(-1px)',
-              boxShadow: '0 2px 8px rgba(46, 125, 50, 0.3)'
+              boxShadow: '0 2px 8px rgba(128, 0, 0, 0.3)'
             },
             transition: 'all 0.3s ease'
           }}
@@ -580,21 +651,24 @@ export default function AdminLostFound() {
           Found Item
         </Button>
         <Button
-          variant="contained"
+          variant="outlined"
           size="small"
           onClick={() => setShowLostModal(true)}
           sx={{
-            bgcolor: '#e65100',
-            color: '#ffffff',
+            bgcolor: 'transparent',
+            color: '#000000',
+            border: '1px solid #000000',
             px: 2,
             py: 1,
             fontSize: '0.75rem',
             fontWeight: 500,
             borderRadius: 1,
             '&:hover': {
-              bgcolor: '#bf360c',
+              bgcolor: '#800000',
+              color: '#ffffff',
+              border: '1px solid #800000',
               transform: 'translateY(-1px)',
-              boxShadow: '0 2px 8px rgba(230, 81, 0, 0.3)'
+              boxShadow: '0 2px 8px rgba(128, 0, 0, 0.3)'
             },
             transition: 'all 0.3s ease'
           }}
@@ -604,199 +678,356 @@ export default function AdminLostFound() {
         </Button>
       </Box>
 
-      {/* Feed Layout */}
-      <Box sx={{ maxWidth: 600, mx: 'auto' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700, color: '#ffffff' }}>
-            Lost & Found Feed
-          </Typography>
-          <TextField
-            size="small"
-            placeholder="Search items..."
-            value={feedSearch}
-            onChange={(e) => setFeedSearch(e.target.value)}
-            sx={{
-              width: 200,
-              '& .MuiOutlinedInput-root': {
-                bgcolor: 'rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: 2,
-                color: '#ffffff',
-                '& fieldset': {
-                  border: 'none'
-                },
-                '&:hover fieldset': {
-                  border: 'none'
-                },
-                '&.Mui-focused fieldset': {
-                  border: '1px solid rgba(255, 255, 255, 0.4)'
-                }
-              },
-              '& .MuiInputBase-input': {
-                color: '#ffffff',
-                fontSize: '0.875rem',
-                '&::placeholder': {
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  opacity: 1
-                }
-              }
-            }}
-            InputProps={{
-              startAdornment: (
-                <Search sx={{ 
-                  color: 'rgba(255, 255, 255, 0.7)', 
-                  fontSize: '1rem',
-                  mr: 1 
-                }} />
-              )
-            }}
-          />
-        </Box>
-        
-        {filteredItems.length === 0 ? (
-          <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
-            <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
-              {feedSearch ? 'No items found matching your search' : 'No items posted yet'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {feedSearch ? 'Try adjusting your search terms' : 'Click "Found Item" or "Lost Item" to create your first post'}
-            </Typography>
-          </Paper>
-        ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {filteredItems.map((item) => (
-              <Paper 
-                key={item.id} 
-                sx={{ 
-                  p: 3, 
-                  bgcolor: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+      {/* Lost Items History and Found Items Summary Layout */}
+      <Grid container spacing={3}>
+        {/* Lost Items History Section */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ 
+            p: 3, 
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.9)',
+            border: theme.palette.mode === 'dark' ? '0.5px solid rgba(255, 255, 255, 0.2)' : '0.5px solid rgba(0, 0, 0, 0.1)',
+            borderRadius: 2,
+            boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+          }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#000000' }}>
+                Lost Items History
+              </Typography>
+            </Box>
+            <TextField
+              size="small"
+              placeholder="Search lost items..."
+              value={lostSearch}
+              onChange={(e) => setLostSearch(e.target.value)}
+              sx={{
+                mb: 2,
+                width: '60%',
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                  backdropFilter: 'blur(10px)',
+                  border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.2)',
                   borderRadius: 2,
-                  '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.08)',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  '& fieldset': {
+                    border: 'none'
                   },
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                {/* Admin Profile Header */}
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Avatar 
-                    sx={{ 
-                      bgcolor: item.type === 'found' ? '#2e7d32' : '#e65100',
-                      width: 40,
-                      height: 40,
-                      mr: 2
-                    }}
-                  >
-                    A
-                  </Avatar>
-                  <Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#ffffff' }}>
-                      Admin
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {new Date(item.createdAt?.toDate?.() || item.createdAt).toLocaleDateString()}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
-                    <Tooltip title="Edit">
-                      <IconButton 
-                        size="small" 
-                        onClick={() => setEditModal({ open: true, type: item.type, item })}
-                        sx={{ color: '#666666', '&:hover': { color: '#1976d2' } }}
-                      >
-                        <Edit fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleDelete(item.id, item.type)}
-                        sx={{ color: '#666666', '&:hover': { color: '#d32f2f' } }}
-                      >
-                        <Delete fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                </Box>
-
-                {/* Item Image */}
-                {item.image && (
-                  <Box sx={{ mb: 2, textAlign: 'center' }}>
-                    <img 
-                      src={item.image} 
-                      alt={item.name}
-                      style={{ 
-                        width: '100%',
-                        maxHeight: '300px', 
-                        objectFit: 'cover', 
-                        borderRadius: '12px',
-                        cursor: 'pointer'
-                      }}
-                      onClick={() => handleImagePreview(item.image, item.name)}
-                    />
-                  </Box>
-                )}
-
-                {/* Item Details */}
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#ffffff', mb: 1 }}>
-                    {item.name}
-                  </Typography>
-                  {item.description && (
-                    <Typography variant="body1" sx={{ color: '#ffffff', mb: 2, lineHeight: 1.6 }}>
-                      {item.description}
-                    </Typography>
-                  )}
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      <strong>{item.type === 'found' ? 'Found by:' : 'Lost by:'}</strong> {item[item.type === 'found' ? 'foundBy' : 'lostBy'] || 'Unknown'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      <strong>Location:</strong> {item.location || 'Unknown'}
-                    </Typography>
-                  </Box>
-                </Box>
-
-                {/* Action Buttons */}
-                <Box sx={{ display: 'flex', gap: 1, pt: 2, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                  <Button
-                    size="small"
-                    startIcon={<Visibility />}
-                    onClick={() => handleImagePreview(item.image, item.name)}
-                    sx={{ 
-                      color: '#666666', 
-                      '&:hover': { color: '#1976d2' },
-                      fontSize: '0.75rem'
-                    }}
-                  >
-                    View
-                  </Button>
-                  <Button
-                    size="small"
-                    startIcon={<CheckCircle />}
-                    onClick={() => handleResolve(item.id, item.type)}
-                    sx={{ 
-                      color: '#666666', 
-                      '&:hover': { color: '#2e7d32' },
-                      fontSize: '0.75rem'
-                    }}
-                  >
-                    Resolve
-                  </Button>
-                </Box>
+                  '&:hover fieldset': {
+                    border: 'none'
+                  },
+                  '&.Mui-focused fieldset': {
+                    border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.4)' : '1px solid rgba(0, 0, 0, 0.4)'
+                  }
+                },
+                '& .MuiInputBase-input': {
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  fontSize: '0.875rem',
+                  '&::placeholder': {
+                    color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                    opacity: 1
+                  }
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <Search sx={{ 
+                    color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)', 
+                    fontSize: '1rem',
+                    mr: 1 
+                  }} />
+                )
+              }}
+            />
+            {filteredLost.length === 0 ? (
+              <Paper sx={{ 
+                p: 3, 
+                textAlign: 'center', 
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+                border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
+                borderRadius: 2
+              }}>
+                <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333' }}>
+                  No lost items found.
+                </Typography>
               </Paper>
-            ))}
-          </Box>
-        )}
-      </Box>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {filteredLost.map((item) => (
+                  <Paper 
+                    key={item.id} 
+                    sx={{ 
+                      p: 2, 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+                      border: theme.palette.mode === 'dark' ? '0.5px solid rgba(255, 255, 255, 0.1)' : '0.5px solid rgba(0, 0, 0, 0.1)',
+                      borderRadius: 2,
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 1)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.15)'
+                      },
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <Avatar 
+                        sx={{ 
+                          bgcolor: '#e65100',
+                          width: 32,
+                          height: 32,
+                          mr: 2
+                        }}
+                      >
+                        L
+                      </Avatar>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                          {item.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333' }}>
+                          {new Date(item.createdAt?.toDate?.() || item.createdAt).toLocaleDateString()}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Tooltip title="View">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleImagePreview(item.image, item.name)}
+                            sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333', '&:hover': { color: '#1976d2' } }}
+                          >
+                            <Visibility fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleEditOpen('lost_items', item)}
+                            sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333', '&:hover': { color: '#1976d2' } }}
+                          >
+                            <Edit fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleDelete('lost_items', item.id)}
+                            sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333', '&:hover': { color: '#d32f2f' } }}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </Box>
+                    {item.description && (
+                      <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', mb: 1 }}>
+                        {item.description}
+                      </Typography>
+                    )}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333' }}>
+                        <strong>Lost by:</strong> {item.lostBy || 'Unknown'} | <strong>Location:</strong> {item.location || 'Unknown'}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        {item.resolved ? (
+                          <Chip label="Resolved" color="success" size="small" />
+                        ) : (
+                          <Chip label="Active" color="warning" size="small" />
+                        )}
+                        <Button
+                          size="small"
+                          startIcon={<CheckCircle />}
+                          onClick={() => handleResolve('lost_items', item.id)}
+                          sx={{ 
+                            color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333', 
+                            '&:hover': { color: '#2e7d32' },
+                            fontSize: '0.75rem'
+                          }}
+                        >
+                          Resolve
+                        </Button>
+                      </Box>
+                    </Box>
+                  </Paper>
+                ))}
+              </Box>
+            )}
+          </Paper>
+        </Grid>
+
+        {/* Found Items Summary Section */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ 
+            p: 3, 
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.9)',
+            border: theme.palette.mode === 'dark' ? '0.5px solid rgba(255, 255, 255, 0.2)' : '0.5px solid rgba(0, 0, 0, 0.1)',
+            borderRadius: 2,
+            boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+          }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#000000' }}>
+                Found Items Summary
+              </Typography>
+            </Box>
+            <TextField
+              size="small"
+              placeholder="Search found items..."
+              value={foundSearch}
+              onChange={(e) => setFoundSearch(e.target.value)}
+              sx={{
+                mb: 2,
+                width: '60%',
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                  backdropFilter: 'blur(10px)',
+                  border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.2)',
+                  borderRadius: 2,
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  '& fieldset': {
+                    border: 'none'
+                  },
+                  '&:hover fieldset': {
+                    border: 'none'
+                  },
+                  '&.Mui-focused fieldset': {
+                    border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.4)' : '1px solid rgba(0, 0, 0, 0.4)'
+                  }
+                },
+                '& .MuiInputBase-input': {
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  fontSize: '0.875rem',
+                  '&::placeholder': {
+                    color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                    opacity: 1
+                  }
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <Search sx={{ 
+                    color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)', 
+                    fontSize: '1rem',
+                    mr: 1 
+                  }} />
+                )
+              }}
+            />
+            {filteredFound.length === 0 ? (
+              <Paper sx={{ 
+                p: 3, 
+                textAlign: 'center', 
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+                border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
+                borderRadius: 2
+              }}>
+                <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333' }}>
+                  No found items found.
+                </Typography>
+              </Paper>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {filteredFound.map((item) => (
+                  <Paper 
+                    key={item.id} 
+                    sx={{ 
+                      p: 2, 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+                      border: theme.palette.mode === 'dark' ? '0.5px solid rgba(255, 255, 255, 0.1)' : '0.5px solid rgba(0, 0, 0, 0.1)',
+                      borderRadius: 2,
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 1)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.15)'
+                      },
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <Avatar 
+                        sx={{ 
+                          bgcolor: '#2e7d32',
+                          width: 32,
+                          height: 32,
+                          mr: 2
+                        }}
+                      >
+                        F
+                      </Avatar>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                          {item.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333' }}>
+                          {new Date(item.createdAt?.toDate?.() || item.createdAt).toLocaleDateString()}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Tooltip title="View">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleImagePreview(item.image, item.name)}
+                            sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333', '&:hover': { color: '#1976d2' } }}
+                          >
+                            <Visibility fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleEditOpen('found_items', item)}
+                            sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333', '&:hover': { color: '#1976d2' } }}
+                          >
+                            <Edit fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleDelete('found_items', item.id)}
+                            sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333', '&:hover': { color: '#d32f2f' } }}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </Box>
+                    {item.description && (
+                      <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', mb: 1 }}>
+                        {item.description}
+                      </Typography>
+                    )}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333' }}>
+                        <strong>Found by:</strong> {item.foundBy || 'Unknown'} | <strong>Location:</strong> {item.location || 'Unknown'}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        {item.resolved ? (
+                          <Chip label="Resolved" color="success" size="small" />
+                        ) : (
+                          <Chip label="Active" color="warning" size="small" />
+                        )}
+                        <Button
+                          size="small"
+                          startIcon={<CheckCircle />}
+                          onClick={() => handleResolve('found_items', item.id)}
+                          sx={{ 
+                            color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333', 
+                            '&:hover': { color: '#2e7d32' },
+                            fontSize: '0.75rem'
+                          }}
+                        >
+                          Resolve
+                        </Button>
+                      </Box>
+                    </Box>
+                  </Paper>
+                ))}
+              </Box>
+            )}
+          </Paper>
+        </Grid>
+      </Grid>
 
       {/* Found Item Modal */}
       <Dialog open={showFoundModal} onClose={() => setShowFoundModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ color: '#ffffff', bgcolor: '#2e7d32' }}>
+        <DialogTitle sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', bgcolor: '#2e7d32' }}>
           <Add sx={{ mr: 1, verticalAlign: 'middle' }} />
           Found Item Entry
         </DialogTitle>
@@ -927,7 +1158,7 @@ export default function AdminLostFound() {
 
       {/* Lost Item Modal */}
       <Dialog open={showLostModal} onClose={() => setShowLostModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ color: '#ffffff', bgcolor: '#e65100' }}>
+        <DialogTitle sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', bgcolor: '#e65100' }}>
           <Add sx={{ mr: 1, verticalAlign: 'middle' }} />
           Lost Item Entry
         </DialogTitle>

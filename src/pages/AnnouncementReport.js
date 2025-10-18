@@ -55,12 +55,6 @@ import {
 
 
 
-const statusColors = {
-  'Pending': 'warning',
-  'Approved': 'success',
-  'Denied': 'error',
-  'Draft': 'default'
-};
 
 const priorityColors = {
   'Normal': 'default',
@@ -79,12 +73,9 @@ export default function AnnouncementReport() {
   const [approvalAction, setApprovalAction] = useState('');
   const [approvalReason, setApprovalReason] = useState('');
   const [processing, setProcessing] = useState(false);
-  const [activities, setActivities] = useState([]);
-  const [activitiesLoading, setActivitiesLoading] = useState(true);
 
   useEffect(() => {
     fetchAnnouncements();
-    fetchActivities();
   }, []);
 
   const fetchAnnouncements = async () => {
@@ -102,18 +93,6 @@ export default function AnnouncementReport() {
     setLoading(false);
   };
 
-  const fetchActivities = async () => {
-    setActivitiesLoading(true);
-    try {
-      const qSnap = await getDocs(query(collection(db, "activities"), orderBy("createdAt", "desc")));
-      const activitiesData = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setActivities(activitiesData);
-    } catch (e) {
-      console.error('Error fetching activities:', e);
-      setActivities([]);
-    }
-    setActivitiesLoading(false);
-  };
 
   const handleViewDetails = (announcement) => {
     setSelectedAnnouncement(announcement);
@@ -214,24 +193,20 @@ export default function AnnouncementReport() {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'Approved':
-        return <CheckCircleOutline color="success" />;
+        return <CheckCircleOutline />;
       case 'Denied':
-        return <CancelOutlined color="error" />;
+        return <CancelOutlined />;
       case 'Pending':
-        return <Schedule color="warning" />;
+        return <Schedule />;
       default:
-        return <Warning color="default" />;
+        return <Warning />;
     }
   };
 
   return (
     <Box>
       <Typography variant="h4" gutterBottom fontWeight={700} color="primary.main">
-        📋 Announcement Report & Teacher Submissions
-      </Typography>
-      
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        Review and manage teacher-submitted announcements. Approve or deny submissions and notify teachers via email.
+        Announcement Report
       </Typography>
 
       {loading ? (
@@ -245,14 +220,14 @@ export default function AnnouncementReport() {
         <TableContainer component={Paper} elevation={3}>
           <Table>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#800000' }}>
-                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Date Submitted</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Title</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Teacher</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Category</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Priority</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 600 }}>Actions</TableCell>
+              <TableRow >
+                <TableCell sx={{ fontWeight: 600 }}>Date Submitted</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Teacher</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Category</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Priority</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -284,33 +259,19 @@ export default function AnnouncementReport() {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Avatar 
-                          sx={{ 
-                            width: 32, 
-                            height: 32, 
-                            mr: 1,
-                            bgcolor: 'primary.main'
-                          }}
-                        >
-                          <Person />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body2" fontWeight={500}>
-                            {teacherInfo.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {teacherInfo.email}
-                          </Typography>
-                        </Box>
+                      <Box>
+                        <Typography variant="body2" fontWeight={500}>
+                          {teacherInfo.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {teacherInfo.email}
+                        </Typography>
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={announcement.category || 'General'} 
-                        size="small" 
-                        variant="outlined"
-                      />
+                      <Typography variant="body2" fontWeight={500}>
+                        {announcement.category || 'General'}
+                      </Typography>
                     </TableCell>
                     <TableCell>
                       <Chip 
@@ -324,9 +285,6 @@ export default function AnnouncementReport() {
                         <Box sx={{ 
                           width: 20, 
                           height: 20, 
-                          bgcolor: status === 'Approved' ? '#4caf50' : 
-                                  status === 'Denied' ? '#f44336' : 
-                                  status === 'Pending' ? '#ff9800' : '#9e9e9e', 
                           borderRadius: 1, 
                           display: 'flex', 
                           alignItems: 'center', 
@@ -334,13 +292,13 @@ export default function AnnouncementReport() {
                           flexShrink: 0
                         }}>
                           {status === 'Approved' ? (
-                            <CheckCircle sx={{ fontSize: 14, color: 'white' }} />
+                            <CheckCircle sx={{ fontSize: 14 }} />
                           ) : status === 'Denied' ? (
-                            <Cancel sx={{ fontSize: 14, color: 'white' }} />
+                            <Cancel sx={{ fontSize: 14 }} />
                           ) : status === 'Pending' ? (
-                            <Schedule sx={{ fontSize: 14, color: 'white' }} />
+                            <Schedule sx={{ fontSize: 14 }} />
                           ) : (
-                            <Warning sx={{ fontSize: 14, color: 'white' }} />
+                            <Warning sx={{ fontSize: 14 }} />
                           )}
                         </Box>
                         <Typography 
@@ -400,67 +358,6 @@ export default function AnnouncementReport() {
         </TableContainer>
       )}
 
-      {/* Activities Section */}
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="h5" gutterBottom fontWeight={700} color="primary.main">
-          📅 Activities
-        </Typography>
-
-        {activitiesLoading ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', py: 4 }}>
-            <CircularProgress size={32} />
-            <Typography sx={{ ml: 2 }}>Loading activities...</Typography>
-          </Box>
-        ) : (
-          <TableContainer component={Paper} elevation={1}>
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#800000' }}>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Date</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Title</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Category</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Label</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {activities.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
-                      <Typography variant="body2" color="text.secondary">No activities found.</Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : activities.map((activity) => (
-                  <TableRow key={activity.id} hover>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={500}>
-                        {activity.date ? new Date(activity.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={600}>{activity.title}</Typography>
-                      <Typography variant="caption" color="text.secondary">{activity.organizer}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip label={activity.category || 'General'} size="small" variant="outlined" />
-                    </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={activity.completed ? 'Completed' : 'Scheduled'} 
-                        size="small" 
-                        color={activity.completed ? 'success' : 'warning'}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip label="Activity" size="small" color="info" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Box>
 
       {/* View Details Dialog */}
       <Dialog 
@@ -517,7 +414,9 @@ export default function AnnouncementReport() {
                       </Typography>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                         <Typography variant="body2">Category:</Typography>
-                        <Chip label={selectedAnnouncement.category || 'General'} size="small" />
+                        <Typography variant="body2" fontWeight={500}>
+                          {selectedAnnouncement.category || 'General'}
+                        </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                         <Typography variant="body2">Priority:</Typography>
@@ -532,7 +431,6 @@ export default function AnnouncementReport() {
                         <Chip 
                           label={selectedAnnouncement.status || 'Pending'} 
                           size="small" 
-                          color={statusColors[selectedAnnouncement.status || 'Pending']}
                         />
                       </Box>
                     </CardContent>
@@ -600,9 +498,9 @@ export default function AnnouncementReport() {
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             {approvalAction === 'approve' ? (
-              <CheckCircle sx={{ mr: 1, color: 'success.main' }} />
+              <CheckCircle sx={{ mr: 1 }} />
             ) : (
-              <Cancel sx={{ mr: 1, color: 'error.main' }} />
+              <Cancel sx={{ mr: 1 }} />
             )}
             <Typography variant="h6">
               {approvalAction === 'approve' ? 'Approve' : 'Deny'} Announcement

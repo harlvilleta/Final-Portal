@@ -57,6 +57,7 @@ export default function TeacherRequest() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState('all');
 
   useEffect(() => {
     fetchTeacherRequests();
@@ -93,6 +94,10 @@ export default function TeacherRequest() {
     setSelectedRequest(request);
     setDeleteReason('');
     setDeleteDialog(true);
+  };
+
+  const handleCardClick = (filter) => {
+    setSelectedFilter(filter);
   };
 
   const handleSubmitApproval = async () => {
@@ -254,6 +259,10 @@ export default function TeacherRequest() {
   const pendingRequests = teacherRequests.filter(req => req.status === 'pending');
   const approvedRequests = teacherRequests.filter(req => req.status === 'approved');
   const deniedRequests = teacherRequests.filter(req => req.status === 'denied');
+  
+  const filteredRequests = selectedFilter === 'all' 
+    ? teacherRequests 
+    : teacherRequests.filter(req => req.status === selectedFilter);
 
   return (
     <Box sx={{ p: 3 }}>
@@ -262,7 +271,7 @@ export default function TeacherRequest() {
         color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
         mb: 3 
       }}>
-        🎓 Teacher Request Management
+        Teacher Request Management
       </Typography>
       
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
@@ -270,80 +279,129 @@ export default function TeacherRequest() {
       </Typography>
 
         {/* Summary Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={4}>
-            <Card sx={{ 
-              bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5', 
-              borderLeft: '4px solid #ffc107', 
-              border: '1px solid #ffffff',
-              transition: 'box-shadow 0.2s',
-              '&:hover': {
-                boxShadow: 4
-              }
-            }}>
-              <CardContent>
-                <Typography variant="h6" fontWeight={700} sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
-                }} gutterBottom>
-                  Pending Requests
-                </Typography>
-                <Typography variant="h4" fontWeight={700} sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#856404' 
-                }}>
-                  {pendingRequests.length}
-                </Typography>
-              </CardContent>
-            </Card>
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Paper 
+              onClick={() => handleCardClick('all')}
+              sx={{ 
+                p: 2, 
+                textAlign: 'center', 
+                bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+                border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+                borderLeft: '4px solid #800000',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 4,
+                },
+              }}
+            >
+              <Typography variant="h4" sx={{ 
+                color: '#000000', 
+                fontWeight: 'bold' 
+              }}>
+                {teacherRequests.length}
+              </Typography>
+              <Typography variant="body2" sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+              }}>
+                All Requests
+              </Typography>
+            </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
-            <Card sx={{ 
-              bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5', 
-              borderLeft: '4px solid #28a745', 
-              border: '1px solid #ffffff',
-              transition: 'box-shadow 0.2s',
-              '&:hover': {
-                boxShadow: 4
-              }
-            }}>
-              <CardContent>
-                <Typography variant="h6" fontWeight={700} sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
-                }} gutterBottom>
-                  Approved
-                </Typography>
-                <Typography variant="h4" fontWeight={700} sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#155724' 
-                }}>
-                  {approvedRequests.length}
-                </Typography>
-              </CardContent>
-            </Card>
+          <Grid item xs={12} sm={6} md={3}>
+            <Paper 
+              onClick={() => handleCardClick('pending')}
+              sx={{ 
+                p: 2, 
+                textAlign: 'center', 
+                bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+                border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+                borderLeft: '4px solid #800000',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 4,
+                },
+              }}
+            >
+              <Typography variant="h4" sx={{ 
+                color: '#000000', 
+                fontWeight: 'bold' 
+              }}>
+                {pendingRequests.length}
+              </Typography>
+              <Typography variant="body2" sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+              }}>
+                Pending Requests
+              </Typography>
+            </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
-            <Card sx={{ 
-              bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5', 
-              borderLeft: '4px solid #dc3545', 
-              border: '1px solid #ffffff',
-              transition: 'box-shadow 0.2s',
-              '&:hover': {
-                boxShadow: 4
-              }
-            }}>
-              <CardContent>
-                <Typography variant="h6" fontWeight={700} sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
-                }} gutterBottom>
-                  Denied
-                </Typography>
-                <Typography variant="h4" fontWeight={700} sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#721c24' 
-                }}>
-                  {deniedRequests.length}
-                </Typography>
-              </CardContent>
-            </Card>
+          <Grid item xs={12} sm={6} md={3}>
+            <Paper 
+              onClick={() => handleCardClick('approved')}
+              sx={{ 
+                p: 2, 
+                textAlign: 'center', 
+                bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+                border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+                borderLeft: '4px solid #800000',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 4,
+                },
+              }}
+            >
+              <Typography variant="h4" sx={{ 
+                color: '#000000', 
+                fontWeight: 'bold' 
+              }}>
+                {approvedRequests.length}
+              </Typography>
+              <Typography variant="body2" sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+              }}>
+                Approved
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Paper 
+              onClick={() => handleCardClick('denied')}
+              sx={{ 
+                p: 2, 
+                textAlign: 'center', 
+                bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+                border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+                borderLeft: '4px solid #800000',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 4,
+                },
+              }}
+            >
+              <Typography variant="h4" sx={{ 
+                color: '#000000', 
+                fontWeight: 'bold' 
+              }}>
+                {deniedRequests.length}
+              </Typography>
+              <Typography variant="body2" sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+              }}>
+                Denied
+              </Typography>
+            </Paper>
           </Grid>
         </Grid>
+
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
@@ -356,63 +414,63 @@ export default function TeacherRequest() {
           <TableContainer component={Paper} elevation={2}>
             <Table>
               <TableHead>
-                <TableRow sx={{ bgcolor: '#800000' }}>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Teacher</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Email</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Request Date</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Actions</TableCell>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>Teacher</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Request Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {teacherRequests.length === 0 ? (
+                {filteredRequests.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                       <Typography variant="h6" color="text.secondary">
-                        No teacher requests found.
+                        {selectedFilter === 'all' 
+                          ? 'No teacher requests found.' 
+                          : `No ${selectedFilter} teacher requests found.`
+                        }
                       </Typography>
                     </TableCell>
                   </TableRow>
-                ) : teacherRequests.map((request) => (
-                  <TableRow key={request.id} hover>
+                ) : filteredRequests.map((request) => (
+                  <TableRow key={request.id} hover sx={{ '& .MuiTableCell-root': { padding: '8px 16px' } }}>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Avatar 
                           src={request.profilePic} 
                           sx={{ 
-                            width: 40, 
-                            height: 40, 
-                            mr: 2,
-                            bgcolor: 'primary.main'
+                            width: 32, 
+                            height: 32, 
+                            mr: 1.5,
+                            bgcolor: '#1976d2'
                           }}
                         >
                           <Person />
                         </Avatar>
                         <Box>
-                          <Typography variant="body2" fontWeight={500}>
+                          <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.875rem', lineHeight: 1.2 }}>
                             {request.fullName}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}>
                             ID: {request.userId?.substring(0, 8)}...
                           </Typography>
                         </Box>
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Email sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                        <Typography variant="body2">
-                          {request.email}
-                        </Typography>
-                      </Box>
+                      <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                        {request.email}
+                      </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" fontWeight={500}>
+                      <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.875rem' }}>
                         {formatDate(request.requestDate)}
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         {getStatusIcon(request.status)}
                         {request.status === 'approved' ? (
                           <Typography 
@@ -420,7 +478,8 @@ export default function TeacherRequest() {
                             sx={{ 
                               color: '#4caf50', 
                               fontWeight: 500,
-                              textTransform: 'capitalize'
+                              textTransform: 'capitalize',
+                              fontSize: '0.875rem'
                             }}
                           >
                             {request.status}
@@ -431,7 +490,8 @@ export default function TeacherRequest() {
                             sx={{ 
                               color: '#f44336', 
                               fontWeight: 500,
-                              textTransform: 'capitalize'
+                              textTransform: 'capitalize',
+                              fontSize: '0.875rem'
                             }}
                           >
                             {request.status}
@@ -440,13 +500,14 @@ export default function TeacherRequest() {
                           <Chip 
                             label={request.status.charAt(0).toUpperCase() + request.status.slice(1)} 
                             color={getStatusColor(request.status)} 
-                            size="small" 
+                            size="small"
+                            sx={{ height: 20, fontSize: '0.75rem' }}
                           />
                         )}
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
                         <Tooltip title="View Details">
                           <IconButton 
                             size="small" 
@@ -550,7 +611,7 @@ export default function TeacherRequest() {
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                         <Avatar 
                           src={selectedRequest.profilePic} 
-                          sx={{ width: 60, height: 60, mr: 2 }}
+                          sx={{ width: 60, height: 60, mr: 2, bgcolor: '#1976d2' }}
                         >
                           <Person />
                         </Avatar>

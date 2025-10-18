@@ -403,19 +403,135 @@ export default function Announcements() {
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h4" fontWeight={700}>Announcements</Typography>
         {userRole === 'Admin' && (
-          <Button variant="contained" color="primary" onClick={() => setFormModalOpen(true)}>
+          <Button 
+            variant="outlined" 
+            onClick={() => setFormModalOpen(true)}
+            sx={{
+              color: '#000000',
+              backgroundColor: '#ffffff',
+              borderColor: '#000000',
+              borderWidth: '1px',
+              fontWeight: 400,
+              fontSize: '0.875rem',
+              textTransform: 'none',
+              fontFamily: 'inherit',
+              '&:hover': {
+                backgroundColor: '#800000',
+                color: '#ffffff',
+                borderColor: '#800000',
+                borderWidth: '1px'
+              }
+            }}
+          >
             + Create Announcement
           </Button>
         )}
       </Stack>
-      <Tabs value={tab} onChange={(_, v) => { setTab(v); setSelected([]); }} sx={{ mb: 2 }}>
+      <Tabs 
+        value={tab} 
+        onChange={(_, v) => { setTab(v); setSelected([]); }} 
+        sx={{ 
+          mb: 2,
+          '& .MuiTab-root': {
+            color: '#000000',
+            fontWeight: 500,
+            '&.Mui-selected': {
+              color: '#000000',
+              fontWeight: 600
+            }
+          },
+          '& .MuiTabs-indicator': {
+            backgroundColor: '#000000'
+          }
+        }}
+      >
         <Tab label="Active" />
         {userRole === 'Admin' && (
           <>
-            <Tab label={<Badge color="secondary" badgeContent={recycleBin.length}>Recycle Bin</Badge>} />
-            <Tab label={<Badge color="success" badgeContent={completedAnnouncements.length}>Completed</Badge>} />
-            <Tab label={<Badge color="info" badgeContent={scheduledList.length}>Scheduled</Badge>} />
-            <Tab label={<Badge color="warning" badgeContent={expiredList.length}>Expired</Badge>} />
+            <Tab 
+              label={
+                <Badge 
+                  badgeContent={recycleBin.length}
+                  sx={{ 
+                    cursor: 'pointer',
+                    '& .MuiBadge-badge': {
+                      backgroundColor: '#6c757d',
+                      color: '#ffffff'
+                    }
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTab(1);
+                    setSelected([]);
+                  }}
+                >
+                  Recycle Bin
+                </Badge>
+              } 
+            />
+            <Tab 
+              label={
+                <Badge 
+                  badgeContent={completedAnnouncements.length}
+                  sx={{ 
+                    cursor: 'pointer',
+                    '& .MuiBadge-badge': {
+                      backgroundColor: '#28a745',
+                      color: '#ffffff'
+                    }
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTab(2);
+                    setSelected([]);
+                  }}
+                >
+                  Completed
+                </Badge>
+              } 
+            />
+            <Tab 
+              label={
+                <Badge 
+                  badgeContent={scheduledList.length}
+                  sx={{ 
+                    cursor: 'pointer',
+                    '& .MuiBadge-badge': {
+                      backgroundColor: '#17a2b8',
+                      color: '#ffffff'
+                    }
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTab(3);
+                    setSelected([]);
+                  }}
+                >
+                  Scheduled
+                </Badge>
+              } 
+            />
+            <Tab 
+              label={
+                <Badge 
+                  badgeContent={expiredList.length}
+                  sx={{ 
+                    cursor: 'pointer',
+                    '& .MuiBadge-badge': {
+                      backgroundColor: '#ffc107',
+                      color: '#000000'
+                    }
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTab(4);
+                    setSelected([]);
+                  }}
+                >
+                  Expired
+                </Badge>
+              } 
+            />
           </>
         )}
       </Tabs>
@@ -458,15 +574,15 @@ export default function Announcements() {
                   subheader={a.date ? new Date(a.date).toLocaleDateString() : ''}
                   action={
                     <Stack direction="row" spacing={1}>
-                      {userRole === 'Admin' && (
-                        <>
-                          <Tooltip title={a.pinned ? "Unpin" : "Pin"}><IconButton onClick={() => handlePin(a, !a.pinned)} disabled={isSubmitting}>{a.pinned ? <PushPinIcon color="info" /> : <PushPinOutlinedIcon />}</IconButton></Tooltip>
-                          <Tooltip title="Edit"><IconButton onClick={() => setEditAnnouncement(a)}><EditIcon color="info" /></IconButton></Tooltip>
-                          <Tooltip title="Delete"><IconButton onClick={() => handleDelete(a)} disabled={isSubmitting}><DeleteIcon color="error" /></IconButton></Tooltip>
-                          {!a.completed && <Tooltip title="Mark as Completed"><IconButton onClick={() => handleMarkCompleted(a)} disabled={isSubmitting}><Chip label="Complete" color="success" size="small" /></IconButton></Tooltip>}
-                        </>
-                      )}
-                      <Tooltip title="View"><IconButton onClick={() => setViewAnnouncement(a)}><VisibilityIcon color="primary" /></IconButton></Tooltip>
+                        {userRole === 'Admin' && (
+                          <>
+                            <Tooltip title={a.pinned ? "Unpin" : "Pin"}><IconButton onClick={() => handlePin(a, !a.pinned)} disabled={isSubmitting}>{a.pinned ? <PushPinIcon /> : <PushPinOutlinedIcon />}</IconButton></Tooltip>
+                            <Tooltip title="Edit"><IconButton onClick={() => setEditAnnouncement(a)}><EditIcon /></IconButton></Tooltip>
+                            <Tooltip title="Delete"><IconButton onClick={() => handleDelete(a)} disabled={isSubmitting}><DeleteIcon /></IconButton></Tooltip>
+                            {!a.completed && <Tooltip title="Mark as Completed"><IconButton onClick={() => handleMarkCompleted(a)} disabled={isSubmitting}><Chip label="Complete" color="success" size="small" /></IconButton></Tooltip>}
+                          </>
+                        )}
+                        <Tooltip title="View"><IconButton onClick={() => setViewAnnouncement(a)}><VisibilityIcon /></IconButton></Tooltip>
                       <Tooltip title="Print"><IconButton onClick={() => handlePrint(a)}><PrintIcon /></IconButton></Tooltip>
                     </Stack>
                   }
@@ -517,13 +633,13 @@ export default function Announcements() {
                       <Stack direction="row" spacing={1}>
                         {userRole === 'Admin' && (
                           <>
-                            <Tooltip title={a.pinned ? "Unpin" : "Pin"}><IconButton onClick={() => handlePin(a, !a.pinned)} disabled={isSubmitting}>{a.pinned ? <PushPinIcon color="info" /> : <PushPinOutlinedIcon />}</IconButton></Tooltip>
-                            <Tooltip title="Edit"><IconButton onClick={() => setEditAnnouncement(a)}><EditIcon color="info" /></IconButton></Tooltip>
-                            <Tooltip title="Delete"><IconButton onClick={() => handleDelete(a)} disabled={isSubmitting}><DeleteIcon color="error" /></IconButton></Tooltip>
+                            <Tooltip title={a.pinned ? "Unpin" : "Pin"}><IconButton onClick={() => handlePin(a, !a.pinned)} disabled={isSubmitting}>{a.pinned ? <PushPinIcon /> : <PushPinOutlinedIcon />}</IconButton></Tooltip>
+                            <Tooltip title="Edit"><IconButton onClick={() => setEditAnnouncement(a)}><EditIcon /></IconButton></Tooltip>
+                            <Tooltip title="Delete"><IconButton onClick={() => handleDelete(a)} disabled={isSubmitting}><DeleteIcon /></IconButton></Tooltip>
                             {!a.completed && <Tooltip title="Mark as Completed"><IconButton onClick={() => handleMarkCompleted(a)} disabled={isSubmitting}><Chip label="Complete" color="success" size="small" /></IconButton></Tooltip>}
                           </>
                         )}
-                        <Tooltip title="View"><IconButton onClick={() => setViewAnnouncement(a)}><VisibilityIcon color="primary" /></IconButton></Tooltip>
+                        <Tooltip title="View"><IconButton onClick={() => setViewAnnouncement(a)}><VisibilityIcon /></IconButton></Tooltip>
                         <Tooltip title="Print"><IconButton onClick={() => handlePrint(a)}><PrintIcon /></IconButton></Tooltip>
                       </Stack>
                     }
@@ -557,7 +673,7 @@ export default function Announcements() {
                 subheader={a.completedAt ? new Date(a.completedAt).toLocaleDateString() : a.date ? new Date(a.date).toLocaleDateString() : ''}
                 action={
                   <Stack direction="row" spacing={1}>
-                    <Tooltip title="View"><IconButton onClick={() => setViewAnnouncement(a)}><VisibilityIcon color="primary" /></IconButton></Tooltip>
+                    <Tooltip title="View"><IconButton onClick={() => setViewAnnouncement(a)}><VisibilityIcon /></IconButton></Tooltip>
                     <Tooltip title="Print"><IconButton onClick={() => handlePrint(a)}><PrintIcon /></IconButton></Tooltip>
                   </Stack>
                 }
@@ -581,7 +697,7 @@ export default function Announcements() {
                 subheader={a.date ? new Date(a.date).toLocaleDateString() : ''}
                 action={
                   <Stack direction="row" spacing={1}>
-                    <Tooltip title="View"><IconButton onClick={() => setViewAnnouncement(a)}><VisibilityIcon color="primary" /></IconButton></Tooltip>
+                    <Tooltip title="View"><IconButton onClick={() => setViewAnnouncement(a)}><VisibilityIcon /></IconButton></Tooltip>
                     <Tooltip title="Print"><IconButton onClick={() => handlePrint(a)}><PrintIcon /></IconButton></Tooltip>
                   </Stack>
                 }
@@ -605,7 +721,7 @@ export default function Announcements() {
                 subheader={a.date ? new Date(a.date).toLocaleDateString() : ''}
                 action={
                   <Stack direction="row" spacing={1}>
-                    <Tooltip title="View"><IconButton onClick={() => setViewAnnouncement(a)}><VisibilityIcon color="primary" /></IconButton></Tooltip>
+                    <Tooltip title="View"><IconButton onClick={() => setViewAnnouncement(a)}><VisibilityIcon /></IconButton></Tooltip>
                     <Tooltip title="Print"><IconButton onClick={() => handlePrint(a)}><PrintIcon /></IconButton></Tooltip>
                   </Stack>
                 }
@@ -629,8 +745,8 @@ export default function Announcements() {
                 subheader={a.date ? new Date(a.date).toLocaleDateString() : ''}
                 action={
                   <Stack direction="row" spacing={1}>
-                    <Tooltip title="Restore"><IconButton onClick={() => handleRestore(a)} disabled={isSubmitting}><EditIcon color="success" /></IconButton></Tooltip>
-                    <Tooltip title="Delete Permanently"><IconButton onClick={() => handlePermanentDelete(a)} disabled={isSubmitting}><DeleteIcon color="error" /></IconButton></Tooltip>
+                    <Tooltip title="Restore"><IconButton onClick={() => handleRestore(a)} disabled={isSubmitting}><EditIcon /></IconButton></Tooltip>
+                    <Tooltip title="Delete Permanently"><IconButton onClick={() => handlePermanentDelete(a)} disabled={isSubmitting}><DeleteIcon /></IconButton></Tooltip>
                   </Stack>
                 }
               />

@@ -29,7 +29,14 @@ import {
   useTheme,
   Divider,
   Chip,
-  Paper
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Stack
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -64,6 +71,9 @@ export default function ClassroomManager({ currentUser }) {
   // Filter states
   const [selectedCourse, setSelectedCourse] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
+  
+  // View mode state
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'table'
 
   // Student Form State - Now includes course, year, section
   const [studentForm, setStudentForm] = useState({
@@ -377,6 +387,36 @@ export default function ClassroomManager({ currentUser }) {
     return classroom.students || [];
   };
 
+  // Handle edit student
+  const handleEditStudent = (student) => {
+    console.log('Editing student:', student);
+    // TODO: Implement edit functionality
+    setSnackbar({ open: true, message: 'Edit functionality coming soon!', severity: 'info' });
+  };
+
+  // Handle delete student
+  const handleDeleteStudent = async (student) => {
+    if (window.confirm(`Are you sure you want to delete ${student.name}?`)) {
+      try {
+        await deleteDoc(doc(db, "students", student.id));
+        setSnackbar({ 
+          open: true, 
+          message: `Student ${student.name} deleted successfully!`, 
+          severity: 'success' 
+        });
+        // Refresh the data
+        await refreshClassroomData();
+      } catch (error) {
+        console.error('Error deleting student:', error);
+        setSnackbar({ 
+          open: true, 
+          message: 'Error deleting student. Please try again.', 
+          severity: 'error' 
+        });
+      }
+    }
+  };
+
   if (loading || !currentUser) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
@@ -457,6 +497,44 @@ export default function ClassroomManager({ currentUser }) {
         )}
       </Box>
 
+      {/* View Toggle */}
+      <Box sx={{ display: 'flex', gap: 1, mb: 3, justifyContent: 'flex-end' }}>
+        <Button
+          variant={viewMode === 'cards' ? 'contained' : 'outlined'}
+          size="small"
+          onClick={() => setViewMode('cards')}
+          sx={{
+            bgcolor: viewMode === 'cards' ? '#800000' : 'transparent',
+            color: viewMode === 'cards' ? '#ffffff' : '#000000',
+            borderColor: '#000000',
+            '&:hover': {
+              bgcolor: viewMode === 'cards' ? '#6b0000' : '#800000',
+              color: '#ffffff',
+              borderColor: '#800000'
+            }
+          }}
+        >
+          Cards
+        </Button>
+        <Button
+          variant={viewMode === 'table' ? 'contained' : 'outlined'}
+          size="small"
+          onClick={() => setViewMode('table')}
+          sx={{
+            bgcolor: viewMode === 'table' ? '#800000' : 'transparent',
+            color: viewMode === 'table' ? '#ffffff' : '#000000',
+            borderColor: '#000000',
+            '&:hover': {
+              bgcolor: viewMode === 'table' ? '#6b0000' : '#800000',
+              color: '#ffffff',
+              borderColor: '#800000'
+            }
+          }}
+        >
+          Table
+        </Button>
+      </Box>
+
       {/* Summary Section */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h6" sx={{ mb: 1 }}>
@@ -472,8 +550,8 @@ export default function ClassroomManager({ currentUser }) {
         )}
       </Box>
 
-      {/* Classrooms Grid */}
-      {classroomBoxes.length === 0 ? (
+      {/* Content Display */}
+      {filteredStudents.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 4 }}>
           <Typography variant="body1" color="text.secondary">
             {selectedCourse || selectedYear ? 
@@ -482,7 +560,8 @@ export default function ClassroomManager({ currentUser }) {
             }
           </Typography>
         </Box>
-      ) : (
+      ) : viewMode === 'cards' ? (
+        /* Cards View */
         <Grid container spacing={3}>
           {classroomBoxes.map((classroom) => {
             const classroomStudents = classroom.students;
@@ -491,28 +570,33 @@ export default function ClassroomManager({ currentUser }) {
                 <Card
                   sx={{
                     border: '1px solid #e0e0e0',
-                    borderRadius: 2,
+                    borderLeft: '4px solid',
+                    borderImage: 'linear-gradient(135deg, #800000, #A00000, #C00000) 1',
+                    borderRadius: 1.5,
                     bgcolor: '#B6CEB4',
                     cursor: 'pointer',
+                    minHeight: '80px',
                     '&:hover': {
-                      bgcolor: '#B6CEB4', // Keep the same color on hover
-                      transform: 'none', // Prevent any transform effects
-                      boxShadow: 'none' // Prevent shadow changes
+                      bgcolor: '#B6CEB4',
+                      transform: 'none',
+                      boxShadow: 'none',
+                      borderLeft: '4px solid',
+                      borderImage: 'linear-gradient(135deg, #A00000, #C00000, #E00000) 1'
                     }
                   }}
                   onClick={() => openClassroomView(classroom)}
                 >
-                  <CardContent sx={{ pb: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Avatar sx={{ bgcolor: '#800000', width: 40, height: 40 }}>
-                          <Class />
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Avatar sx={{ bgcolor: '#800000', width: 24, height: 24 }}>
+                          <Class sx={{ fontSize: 14 }} />
                         </Avatar>
                         <Box>
-                          <Typography variant="h6" fontWeight={600} color="#2c3e2c">
+                          <Typography variant="body2" fontWeight={600} color="#2c3e2c" sx={{ fontSize: '0.8rem' }}>
                             {classroom.course}
                           </Typography>
-                          <Typography variant="body2" color="#3d4f3d">
+                          <Typography variant="caption" color="#3d4f3d" sx={{ fontSize: '0.65rem' }}>
                             {classroom.yearLevel} - {classroom.section}
                           </Typography>
                         </Box>
@@ -522,90 +606,114 @@ export default function ClassroomManager({ currentUser }) {
                           size="small"
                           onClick={(e) => handleDeleteClassroom(classroom, e)}
                           sx={{
-                            color: '#d32f2f'
+                            color: '#d32f2f',
+                            width: 20,
+                            height: 20
                           }}
                         >
-                          <DeleteOutline fontSize="small" />
+                          <DeleteOutline sx={{ fontSize: 14 }} />
                         </IconButton>
                       </Tooltip>
                     </Box>
                     
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Typography variant="h4" fontWeight={700} color="#2c3e2c">
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 0.5 }}>
+                      <Typography variant="h6" fontWeight={700} color="#000000" sx={{ fontSize: '1.1rem' }}>
                         {classroomStudents.length}
                       </Typography>
-                      <Typography variant="body2" color="#3d4f3d">
+                      <Typography variant="caption" color="#3d4f3d" sx={{ fontSize: '0.65rem' }}>
                         {classroomStudents.length === 1 ? 'Student' : 'Students'}
                       </Typography>
                     </Box>
-
-                    <Divider sx={{ my: 2 }} />
-
-                    {/* Students List Preview */}
-                    <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
-                      {classroomStudents.length === 0 ? (
-                        <Box sx={{ textAlign: 'center', py: 2 }}>
-                          <Person sx={{ fontSize: 32, color: '#3d4f3d', mb: 1 }} />
-                          <Typography variant="body2" color="#3d4f3d">
-                            No students yet
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <List dense>
-                          {classroomStudents.slice(0, 5).map((student, index) => (
-                            <React.Fragment key={student.id}>
-                              <ListItem sx={{ px: 0, py: 0.5 }}>
-                                <ListItemAvatar>
-                                  <Avatar sx={{ bgcolor: '#800000', width: 24, height: 24 }}>
-                                    <Person sx={{ fontSize: 16 }} />
-                                  </Avatar>
-                                </ListItemAvatar>
-                                <ListItemText
-                                  primary={
-                                    <Typography variant="body2" fontWeight={500} color="#2c3e2c">
-                                      {student.name}
-                                    </Typography>
-                                  }
-                                  secondary={
-                                    <Typography variant="caption" color="#3d4f3d">
-                                      ID: {student.studentId}
-                                    </Typography>
-                                  }
-                                />
-                              </ListItem>
-                              {index < Math.min(classroomStudents.length, 5) - 1 && <Divider />}
-                            </React.Fragment>
-                          ))}
-                          {classroomStudents.length > 5 && (
-                            <ListItem sx={{ px: 0, py: 0.5 }}>
-                              <Typography variant="caption" color="#3d4f3d" sx={{ ml: 4 }}>
-                                +{classroomStudents.length - 5} more students
-                              </Typography>
-                            </ListItem>
-                          )}
-                        </List>
-                      )}
-                    </Box>
                   </CardContent>
-
-                  <CardActions sx={{ p: 2, pt: 0 }}>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      startIcon={<Visibility />}
-                      sx={{
-                        borderColor: '#800000',
-                        color: '#800000'
-                      }}
-                    >
-                      View Classroom
-                    </Button>
-                  </CardActions>
                 </Card>
               </Grid>
             );
           })}
         </Grid>
+      ) : (
+        /* Table View */
+        <TableContainer component={Paper} sx={{ 
+          maxHeight: 600, 
+          width: '100%', 
+          overflowX: 'auto',
+          bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : 'inherit'
+        }}>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow sx={{ 
+                bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#f5f5f5' 
+              }}>
+                <TableCell sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  fontWeight: 600 
+                }}>Name</TableCell>
+                <TableCell sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  fontWeight: 600 
+                }}>Student ID</TableCell>
+                <TableCell sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  fontWeight: 600 
+                }}>Course</TableCell>
+                <TableCell sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  fontWeight: 600 
+                }}>Year Level</TableCell>
+                <TableCell sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  fontWeight: 600 
+                }}>Section</TableCell>
+                <TableCell sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  fontWeight: 600 
+                }} align="center">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredStudents.map((student) => (
+                <TableRow key={student.id} hover>
+                  <TableCell sx={{ fontSize: 14, fontWeight: 400 }}>
+                    {student.name}
+                  </TableCell>
+                  <TableCell sx={{ fontSize: 14, fontWeight: 400 }}>
+                    {student.studentId}
+                  </TableCell>
+                  <TableCell sx={{ fontSize: 14, fontWeight: 400 }}>
+                    {student.course}
+                  </TableCell>
+                  <TableCell sx={{ fontSize: 14, fontWeight: 400 }}>
+                    {student.yearLevel}
+                  </TableCell>
+                  <TableCell sx={{ fontSize: 14, fontWeight: 400 }}>
+                    {student.section}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Stack direction="row" spacing={1} justifyContent="center">
+                      <Tooltip title="Edit Student">
+                        <IconButton 
+                          size="small"
+                          sx={{ color: 'grey.600', '&:hover': { color: '#000000' } }}
+                          onClick={() => handleEditStudent(student)}
+                        >
+                          <Edit sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete Student">
+                        <IconButton 
+                          size="small"
+                          sx={{ color: 'grey.600', '&:hover': { color: '#d32f2f' } }}
+                          onClick={() => handleDeleteStudent(student)}
+                        >
+                          <Delete sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       {/* Add Student Dialog */}

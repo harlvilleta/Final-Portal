@@ -25,7 +25,8 @@ import {
   Tooltip,
   CircularProgress,
   Snackbar,
-  Alert
+  Alert,
+  useTheme
 } from '@mui/material';
 import {
   CheckCircle,
@@ -57,6 +58,7 @@ const severityColors = {
 };
 
 export default function ViolationReview() {
+  const theme = useTheme();
   const [violations, setViolations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedViolation, setSelectedViolation] = useState(null);
@@ -90,6 +92,7 @@ export default function ViolationReview() {
     setSelectedViolation(violation);
     setViewDialog(true);
   };
+
 
   const handleApprovalAction = (violation, action) => {
     setSelectedViolation(violation);
@@ -212,7 +215,7 @@ export default function ViolationReview() {
     <Box sx={{ p: 3 }}>
       <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
         <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, color: '#800000' }}>
-          🚨 Violation Review & Approval
+          Violation Review & Approval
         </Typography>
         
         <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
@@ -230,14 +233,37 @@ export default function ViolationReview() {
           <TableContainer component={Paper} elevation={2}>
             <Table>
               <TableHead>
-                <TableRow sx={{ bgcolor: '#800000 !important' }}>
-                  <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Date Reported</TableCell>
-                  <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Student</TableCell>
-                  <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Teacher</TableCell>
-                  <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Violation Type</TableCell>
-                  <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Severity</TableCell>
-                  <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Actions</TableCell>
+                <TableRow sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#fafafa' 
+                }}>
+                  <TableCell sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    fontWeight: 600 
+                  }}>Date Reported</TableCell>
+                  <TableCell sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    fontWeight: 600 
+                  }}>Student</TableCell>
+                  <TableCell sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    fontWeight: 600 
+                  }}>Teacher</TableCell>
+                  <TableCell sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    fontWeight: 600 
+                  }}>Violation Type</TableCell>
+                  <TableCell sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    fontWeight: 600 
+                  }}>Severity</TableCell>
+                  <TableCell sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    fontWeight: 600 
+                  }}>Status</TableCell>
+                  <TableCell sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    fontWeight: 600 
+                  }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -263,7 +289,7 @@ export default function ViolationReview() {
                             width: 32, 
                             height: 32, 
                             mr: 1,
-                            bgcolor: 'primary.main'
+                            bgcolor: '#1976d2'
                           }}
                         >
                           <Person />
@@ -279,23 +305,9 @@ export default function ViolationReview() {
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Avatar 
-                          sx={{ 
-                            width: 32, 
-                            height: 32, 
-                            mr: 1,
-                            bgcolor: 'secondary.main'
-                          }}
-                        >
-                          <School />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body2" fontWeight={500}>
-                            {violation.reportedByName || violation.reportedBy || 'Unknown Teacher'}
-                          </Typography>
-                        </Box>
-                      </Box>
+                      <Typography variant="body2" fontWeight={500}>
+                        {violation.reportedByName || violation.reportedBy || 'Unknown Teacher'}
+                      </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" fontWeight={500}>
@@ -354,49 +366,18 @@ export default function ViolationReview() {
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', gap: 0.5 }}>
-                        <Tooltip title="View Details">
-                          <IconButton 
-                            size="small" 
-                            onClick={() => handleViewDetails(violation)}
-                            sx={{ 
-                              color: '#666',
-                              '&:hover': { color: '#1976d2' }
-                            }}
-                          >
-                            <Visibility sx={{ fontSize: 18 }} />
-                          </IconButton>
-                        </Tooltip>
-                        
-                        {violation.status === 'Pending' && (
-                          <>
-                            <Tooltip title="Approve">
-                              <IconButton 
-                                size="small" 
-                                onClick={() => handleApprovalAction(violation, 'approve')}
-                                sx={{ 
-                                  color: '#666',
-                                  '&:hover': { color: '#4caf50' }
-                                }}
-                              >
-                                <CheckCircle sx={{ fontSize: 18 }} />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Deny">
-                              <IconButton 
-                                size="small" 
-                                onClick={() => handleApprovalAction(violation, 'deny')}
-                                sx={{ 
-                                  color: '#666',
-                                  '&:hover': { color: '#f44336' }
-                                }}
-                              >
-                                <Cancel sx={{ fontSize: 18 }} />
-                              </IconButton>
-                            </Tooltip>
-                          </>
-                        )}
-                      </Box>
+                      <Tooltip title="View Details">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleViewDetails(violation)}
+                          sx={{ 
+                            color: '#666',
+                            '&:hover': { color: '#1976d2' }
+                          }}
+                        >
+                          <Visibility sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -438,19 +419,19 @@ export default function ViolationReview() {
                         Student Information
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <Person sx={{ mr: 1, color: 'primary.main' }} />
+                        <Person sx={{ mr: 1, color: '#1976d2' }} />
                         <Typography variant="body1" fontWeight={500}>
                           {selectedViolation.studentName}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <School sx={{ mr: 1, color: 'primary.main' }} />
+                        <School sx={{ mr: 1, color: '#1976d2' }} />
                         <Typography variant="body2" color="text.secondary">
                           ID: {selectedViolation.studentIdNumber}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Email sx={{ mr: 1, color: 'primary.main' }} />
+                        <Email sx={{ mr: 1, color: '#1976d2' }} />
                         <Typography variant="body2" color="text.secondary">
                           {selectedViolation.studentEmail}
                         </Typography>
@@ -551,9 +532,66 @@ export default function ViolationReview() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setViewDialog(false)}>
+          <Button 
+            size="small"
+            onClick={() => setViewDialog(false)}
+            sx={{
+              color: '#000000',
+              backgroundColor: '#ffffff',
+              border: '1px solid #000000',
+              '&:hover': {
+                backgroundColor: '#800000',
+                color: '#ffffff',
+                borderColor: '#800000'
+              }
+            }}
+          >
             Close
           </Button>
+          {selectedViolation && selectedViolation.status === 'Pending' && (
+            <>
+              <Button
+                size="small"
+                startIcon={<CheckCircle />}
+                onClick={() => {
+                  setViewDialog(false);
+                  handleApprovalAction(selectedViolation, 'approve');
+                }}
+                sx={{
+                  color: '#000000',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #000000',
+                  '&:hover': {
+                    backgroundColor: '#800000',
+                    color: '#ffffff',
+                    borderColor: '#800000'
+                  }
+                }}
+              >
+                Approve
+              </Button>
+              <Button
+                size="small"
+                startIcon={<Cancel />}
+                onClick={() => {
+                  setViewDialog(false);
+                  handleApprovalAction(selectedViolation, 'deny');
+                }}
+                sx={{
+                  color: '#000000',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #000000',
+                  '&:hover': {
+                    backgroundColor: '#800000',
+                    color: '#ffffff',
+                    borderColor: '#800000'
+                  }
+                }}
+              >
+                Reject
+              </Button>
+            </>
+          )}
         </DialogActions>
       </Dialog>
 

@@ -1,20 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Typography, Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, InputAdornment, Card, CardContent, CardHeader, Grid, Chip, Avatar, Tooltip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Divider, Tabs, Tab, LinearProgress, CircularProgress, Button } from "@mui/material";
+import { Typography, Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, InputAdornment, Card, CardContent, CardHeader, Grid, Chip, Avatar, Tooltip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Divider, Tabs, Tab, LinearProgress, CircularProgress, Button, useTheme } from "@mui/material";
 import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
 import { db } from "../firebase";
 import SearchIcon from '@mui/icons-material/Search';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
-import PendingActionsIcon from '@mui/icons-material/PendingActions';
-import DoneAllIcon from '@mui/icons-material/DoneAll';
-import WarningIcon from '@mui/icons-material/Warning';
-import ErrorIcon from '@mui/icons-material/Error';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { format } from 'date-fns';
 
 export default function ViolationStatus() {
+  const theme = useTheme();
   const [violations, setViolations] = useState([]);
-  const [meetings, setMeetings] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedTab, setSelectedTab] = useState(0);
   const [viewViolation, setViewViolation] = useState(null);
@@ -28,11 +22,6 @@ export default function ViolationStatus() {
         const violationsSnap = await getDocs(query(collection(db, "violations"), orderBy("timestamp", "desc")));
         const violationsData = violationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setViolations(violationsData);
-
-        // Fetch violation meetings
-        const meetingsSnap = await getDocs(query(collection(db, "meetings"), where("type", "==", "violation_meeting"), orderBy("createdAt", "desc")));
-        const meetingsData = meetingsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setMeetings(meetingsData);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -84,10 +73,7 @@ export default function ViolationStatus() {
   const stats = {
     totalViolations: violations.length,
     pendingViolations: violations.filter(v => v.status === 'Pending').length,
-    solvedViolations: violations.filter(v => v.status === 'Solved').length,
-    totalMeetings: meetings.length,
-    pendingMeetings: meetings.filter(m => new Date(m.date) >= new Date()).length,
-    completedMeetings: meetings.filter(m => new Date(m.date) < new Date()).length
+    solvedViolations: violations.filter(v => v.status === 'Solved').length
   };
 
   // Calculate percentages
@@ -108,12 +94,6 @@ export default function ViolationStatus() {
     return acc;
   }, {});
 
-  // Group violations by month
-  const monthlyStats = violations.reduce((acc, violation) => {
-    const month = formatDate(violation.timestamp).substring(0, 7); // YYYY-MM
-    acc[month] = (acc[month] || 0) + 1;
-    return acc;
-  }, {});
 
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
@@ -128,58 +108,28 @@ export default function ViolationStatus() {
       </Typography>
 
       {/* Summary Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#80000010', boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardHeader avatar={<AssignmentTurnedInIcon color="primary" />} title={<Typography variant="subtitle2">Total Violations</Typography>} />
-            <CardContent>
-              <Typography variant="h4" color="primary.main" fontWeight={700}>{stats.totalViolations}</Typography>
-              <Typography variant="body2" color="textSecondary">All time violations</Typography>
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="black" fontWeight={700}>{stats.totalViolations}</Typography>
+              <Typography variant="body2" color="textSecondary">Total Violations</Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#80000010', boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardHeader avatar={<PendingActionsIcon color="primary" />} title={<Typography variant="subtitle2">Pending</Typography>} />
-            <CardContent>
-              <Typography variant="h4" color="primary.main" fontWeight={700}>{stats.pendingViolations}</Typography>
-              <Typography variant="body2" color="textSecondary">
-                {pendingPercentage.toFixed(1)}% of total
-              </Typography>
-              <LinearProgress 
-                variant="determinate" 
-                value={pendingPercentage} 
-                color="primary" 
-                sx={{ mt: 1 }}
-              />
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="black" fontWeight={700}>{stats.pendingViolations}</Typography>
+              <Typography variant="body2" color="textSecondary">Pending</Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#80000010', boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardHeader avatar={<DoneAllIcon color="primary" />} title={<Typography variant="subtitle2">Solved</Typography>} />
-            <CardContent>
-              <Typography variant="h4" color="primary.main" fontWeight={700}>{stats.solvedViolations}</Typography>
-              <Typography variant="body2" color="textSecondary">
-                {solvedPercentage.toFixed(1)}% of total
-              </Typography>
-              <LinearProgress 
-                variant="determinate" 
-                value={solvedPercentage} 
-                color="primary" 
-                sx={{ mt: 1 }}
-              />
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#80000010', boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardHeader avatar={<AssessmentIcon color="primary" />} title={<Typography variant="subtitle2">Meetings</Typography>} />
-            <CardContent>
-              <Typography variant="h4" color="primary.main" fontWeight={700}>{stats.totalMeetings}</Typography>
-              <Typography variant="body2" color="textSecondary">
-                {stats.pendingMeetings} pending, {stats.completedMeetings} completed
-              </Typography>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="black" fontWeight={700}>{stats.solvedViolations}</Typography>
+              <Typography variant="body2" color="textSecondary">Solved</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -244,9 +194,9 @@ export default function ViolationStatus() {
         <TextField
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Search violations by student, violation type, or classification..."
+          placeholder="Search violations..."
           size="small"
-          fullWidth
+          sx={{ width: '400px' }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -271,21 +221,38 @@ export default function ViolationStatus() {
       <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
         <Table stickyHeader>
           <TableHead>
-            <TableRow sx={{ bgcolor: '#800000 !important' }}>
-              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Date</TableCell>
-              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Student ID</TableCell>
-              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Student Name</TableCell>
-              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Violation</TableCell>
-              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Classification</TableCell>
-              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Severity</TableCell>
-              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Status</TableCell>
-              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Progress</TableCell>
-              <TableCell sx={{ color: '#ffffff !important', fontWeight: 600 }}>Actions</TableCell>
+            <TableRow sx={{ 
+              bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#f5f5f5' 
+            }}>
+              <TableCell sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                fontWeight: 600 
+              }}>Date</TableCell>
+              <TableCell sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                fontWeight: 600 
+              }}>Student ID</TableCell>
+              <TableCell sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                fontWeight: 600 
+              }}>Name</TableCell>
+              <TableCell sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                fontWeight: 600 
+              }}>Violation</TableCell>
+              <TableCell sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                fontWeight: 600 
+              }}>Status</TableCell>
+              <TableCell sx={{ 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                fontWeight: 600 
+              }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredViolations.length === 0 ? (
-              <TableRow><TableCell colSpan={9} align="center">No violations found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} align="center">No violations found.</TableCell></TableRow>
             ) : filteredViolations
                 .filter(v => {
                   if (selectedTab === 1) return v.status === 'Pending';
@@ -297,7 +264,11 @@ export default function ViolationStatus() {
                   <TableRow key={violation.id || idx} hover>
                     <TableCell>{formatDate(violation.timestamp)}</TableCell>
                     <TableCell>{violation.studentId}</TableCell>
-                    <TableCell>{violation.studentName}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={500}>
+                        {violation.studentName || 'N/A'}
+                      </Typography>
+                    </TableCell>
                     <TableCell>
                       <Typography variant="body2">{violation.violation}</Typography>
                       {violation.description && (
@@ -307,25 +278,15 @@ export default function ViolationStatus() {
                       )}
                     </TableCell>
                     <TableCell>
-                    <Chip label={violation.classification} variant="outlined" sx={{ borderColor: '#800000', color: '#800000' }} size="small" />
-                    </TableCell>
-                    <TableCell>
-                    <Chip label={violation.severity} variant="outlined" sx={{ borderColor: '#800000', color: '#800000' }} size="small" />
-                    </TableCell>
-                    <TableCell>
-                    <Chip label={violation.status} variant="outlined" sx={{ borderColor: '#800000', color: '#800000' }} size="small" />
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Box sx={{ width: '100%', mr: 1 }}>
-                          <LinearProgress variant="determinate" value={violation.status === 'Solved' ? 100 : 0} color="primary" sx={{ height: 6, borderRadius: 3 }} />
-                        </Box>
-                        <Box sx={{ minWidth: 35 }}>
-                          <Typography variant="body2" color="textSecondary">
-                            {violation.status === 'Solved' ? '100%' : '0%'}
-                          </Typography>
-                        </Box>
-                      </Box>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: violation.status === 'Solved' || violation.status === 'Completed' ? '#4caf50' : '#800000',
+                          fontWeight: 500
+                        }}
+                      >
+                        {violation.status}
+                      </Typography>
                     </TableCell>
                     <TableCell>
                       <Tooltip title="View Details">
@@ -340,26 +301,6 @@ export default function ViolationStatus() {
         </Table>
       </TableContainer>
 
-      {/* Monthly Trends */}
-      <Paper sx={{ p: 3, mt: 3 }}>
-        <Typography variant="h6" gutterBottom>Monthly Violation Trends</Typography>
-        <Grid container spacing={2}>
-          {Object.entries(monthlyStats)
-            .sort(([a], [b]) => b.localeCompare(a))
-            .slice(0, 6)
-            .map(([month, count]) => (
-              <Grid item xs={12} sm={6} md={4} key={month}>
-                <Card sx={{ bgcolor: '#f5f5f5' }}>
-                  <CardContent>
-                    <Typography variant="h6" color="primary">{month}</Typography>
-                    <Typography variant="h4" fontWeight={700}>{count}</Typography>
-                    <Typography variant="body2" color="textSecondary">violations</Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-        </Grid>
-      </Paper>
 
       {/* View Violation Details Dialog */}
       <Dialog open={!!viewViolation} onClose={() => setViewViolation(null)} maxWidth="md" fullWidth>

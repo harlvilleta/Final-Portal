@@ -3,7 +3,7 @@ import { Box, Paper, Typography, TextField, Button, Snackbar, Alert, InputAdornm
 import { Visibility, VisibilityOff, PersonAddAlt1 } from '@mui/icons-material';
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification, signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import { setDoc, doc, query, collection, getDocs, updateDoc, where } from 'firebase/firestore';
+import { setDoc, doc, query, collection, getDocs, updateDoc, where, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import Link from '@mui/material/Link';
@@ -186,7 +186,13 @@ export default function Register() {
           fullName: fullName,
           phone: phone,
           address: address,
-          displayName: fullName
+          displayName: fullName,
+          teacherInfo: {
+            isApproved: false,
+            approvalStatus: 'pending',
+            approvedBy: null,
+            approvedDate: null
+          }
         };
       } else if (role === 'Admin') {
         userData = {
@@ -202,6 +208,21 @@ export default function Register() {
 
       // Save user data to Firestore
       await setDoc(doc(db, 'users', user.uid), userData);
+
+      // If teacher registered, create a teacher request for admin approval
+      if (role === 'Teacher') {
+        await addDoc(collection(db, 'teacher_requests'), {
+          userId: user.uid,
+          email: email,
+          fullName: fullName,
+          phone: phone,
+          address: address,
+          status: 'pending',
+          requestDate: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      }
 
       // If student registered, update the student record to mark as registered
       if (role === 'Student' && studentId) {
@@ -233,7 +254,9 @@ export default function Register() {
 
       setSnackbar({ 
         open: true, 
-        message: `Registration successful! Please check your email to verify your account.`, 
+        message: role === 'Teacher' 
+          ? 'Registration successful! Your teacher account is pending admin approval. Please check your email to verify your account.' 
+          : 'Registration successful! Please check your email to verify your account.', 
         severity: 'success' 
       });
 

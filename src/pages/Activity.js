@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Typography, Grid, Card, CardContent, CardHeader, TextField, Button, MenuItem, Paper, List, ListItem, ListItemText, Divider, Stack, Snackbar, Alert, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Chip, InputAdornment } from "@mui/material";
+import { Box, Typography, Grid, Card, CardContent, CardHeader, TextField, Button, MenuItem, Paper, List, ListItem, ListItemText, Divider, Stack, Snackbar, Alert, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Chip, InputAdornment, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import { EventNote, History, CheckCircle, Edit, Delete, Visibility } from "@mui/icons-material";
 import { collection, addDoc, getDocs, updateDoc, doc, orderBy, query, deleteDoc } from "firebase/firestore";
 import { db, logActivity } from "../firebase";
@@ -95,7 +95,21 @@ function ActivityForm({ onActivityAdded }) {
             <TextField fullWidth multiline minRows={3} label="Description" name="description" value={form.description} onChange={handleChange} required />
           </Grid>
           <Grid item xs={12}>
-            <Button type="submit" variant="contained" color="primary" disabled={isSubmitting}>
+            <Button 
+              type="submit" 
+              variant="outlined" 
+              disabled={isSubmitting}
+              sx={{ 
+                bgcolor: 'white',
+                color: 'black',
+                borderColor: 'black',
+                '&:hover': {
+                  bgcolor: '#800000',
+                  color: 'white',
+                  borderColor: '#800000'
+                }
+              }}
+            >
               {isSubmitting ? "Saving..." : "Save Activity"}
             </Button>
           </Grid>
@@ -112,27 +126,45 @@ function ActivityForm({ onActivityAdded }) {
 
 function SummaryCard({ stats }) {
   return (
-    <Paper sx={{ p: 2, mb: 2, bgcolor: '#f5f6fa', boxShadow: 1 }}>
-      <Typography variant="h6" gutterBottom>Activity Summary</Typography>
-      <Stack direction="row" spacing={2}>
-        <Box>
-          <Typography variant="body2">Total</Typography>
-          <Typography variant="h5" color="primary.main">{stats.total}</Typography>
+    <Box sx={{ mb: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#800000' }}>
+        Activity Summary
+      </Typography>
+      <Grid container spacing={3}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="black" fontWeight={700}>{stats.total}</Typography>
+              <Typography variant="body2" color="textSecondary">Total</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="black" fontWeight={700}>{stats.scheduled}</Typography>
+              <Typography variant="body2" color="textSecondary">Scheduled</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="black" fontWeight={700}>{stats.completed}</Typography>
+              <Typography variant="body2" color="textSecondary">Completed</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" color="black" fontWeight={700}>{stats.categories}</Typography>
+              <Typography variant="body2" color="textSecondary">Categories</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
         </Box>
-        <Box>
-          <Typography variant="body2">Scheduled</Typography>
-          <Typography variant="h5" color="warning.main">{stats.scheduled}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="body2">Completed</Typography>
-          <Typography variant="h5" color="success.main">{stats.completed}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="body2">Categories</Typography>
-          <Typography variant="h5">{stats.categories}</Typography>
-        </Box>
-      </Stack>
-    </Paper>
   );
 }
 
@@ -150,7 +182,195 @@ function ExportButton({ activities }) {
     link.download = "activities.csv";
     link.click();
   };
-  return <Button variant="outlined" color="info" onClick={handleExport} sx={{ mb: 2 }}>Export to CSV</Button>;
+  return (
+    <Button 
+      variant="outlined" 
+      onClick={handleExport} 
+      sx={{ 
+        mb: 2,
+        mr: 2,
+        bgcolor: 'white',
+        color: 'black',
+        borderColor: 'black',
+        '&:hover': {
+          bgcolor: '#800000',
+          color: 'white',
+          borderColor: '#800000'
+        }
+      }}
+    >
+      Export to CSV
+    </Button>
+  );
+}
+
+function HistoryButton({ onClick }) {
+  return (
+    <Button 
+      variant="outlined" 
+      onClick={onClick}
+      sx={{ 
+        mb: 2,
+        bgcolor: 'white',
+        color: 'black',
+        borderColor: 'black',
+        '&:hover': {
+          bgcolor: '#800000',
+          color: 'white',
+          borderColor: '#800000'
+        }
+      }}
+    >
+      History
+    </Button>
+  );
+}
+
+function HistoryModal({ activities, onView, onEdit, onDelete, search, onSearch, open, onClose }) {
+  const filteredActivities = activities.filter(activity => 
+    activity.title.toLowerCase().includes(search.toLowerCase()) ||
+    activity.category.toLowerCase().includes(search.toLowerCase()) ||
+    (activity.completed ? 'completed' : 'scheduled').includes(search.toLowerCase())
+  );
+
+  return (
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="md" 
+      fullWidth
+      PaperProps={{
+        sx: {
+          maxHeight: '70vh',
+          height: '70vh'
+        }
+      }}
+    >
+      <DialogTitle sx={{ 
+        fontWeight: 700, 
+        color: '#800000',
+        borderBottom: '1px solid #e0e0e0',
+        pb: 2
+      }}>
+        Activity History
+      </DialogTitle>
+      <DialogContent sx={{ p: 3, overflow: 'hidden' }}>
+        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start' }}>
+          <Box sx={{ width: '300px' }}>
+            <SearchBar value={search} onChange={onSearch} placeholder="Search activities..." />
+          </Box>
+        </Box>
+        <TableContainer sx={{ maxHeight: 'calc(70vh - 200px)', overflow: 'auto' }}>
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                <TableCell sx={{ fontWeight: 600, color: '#800000' }}>Title</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#800000' }}>Date</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#800000' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#800000' }}>Category</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#800000' }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredActivities.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {search ? 'No activities found matching your search.' : 'No activities found.'}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredActivities.map((activity) => (
+                  <TableRow 
+                    key={activity.id} 
+                    hover
+                    sx={{ 
+                      '&:hover': { 
+                        backgroundColor: 'rgba(128, 0, 0, 0.04)' 
+                      } 
+                    }}
+                  >
+                    <TableCell sx={{ fontWeight: 500 }}>{activity.title}</TableCell>
+                    <TableCell>
+                      {activity.date ? new Date(activity.date).toLocaleDateString() : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={activity.completed ? 'Completed' : 'Scheduled'} 
+                        color={activity.completed ? 'success' : 'warning'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={activity.category} size="small" variant="outlined" />
+                    </TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <IconButton
+                          size="small"
+                          onClick={() => onView(activity)}
+                          sx={{
+                            color: 'grey.600',
+                            '&:hover': {
+                              color: '#800000'
+                            }
+                          }}
+                        >
+                          <Visibility sx={{ fontSize: 18 }} />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => onEdit(activity)}
+                          sx={{
+                            color: 'grey.600',
+                            '&:hover': {
+                              color: '#800000'
+                            }
+                          }}
+                        >
+                          <Edit sx={{ fontSize: 18 }} />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => onDelete(activity)}
+                          sx={{
+                            color: 'grey.600',
+                            '&:hover': {
+                              color: '#d32f2f'
+                            }
+                          }}
+                        >
+                          <Delete sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </DialogContent>
+      <DialogActions sx={{ p: 3, borderTop: '1px solid #e0e0e0' }}>
+        <Button 
+          onClick={onClose}
+          variant="outlined"
+          sx={{
+            color: 'black',
+            borderColor: 'black',
+            '&:hover': {
+              bgcolor: '#800000',
+              color: 'white',
+              borderColor: '#800000'
+            }
+          }}
+        >
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 }
 
 function SearchBar({ value, onChange, placeholder }) {
@@ -232,6 +452,8 @@ export default function Activity() {
   const [eventForm, setEventForm] = useState({ title: '', description: '', proposedBy: '', date: '', time: '', location: '' });
   const [eventSubmitting, setEventSubmitting] = useState(false);
   const [eventSnackbar, setEventSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [showHistory, setShowHistory] = useState(false);
+  const [searchHistory, setSearchHistory] = useState("");
 
   // Summary stats
   const stats = {
@@ -336,7 +558,10 @@ export default function Activity() {
         </Grid>
         <Grid item xs={12}>
           <SummaryCard stats={stats} />
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
           <ExportButton activities={activities} />
+            <HistoryButton onClick={() => setShowHistory(true)} />
+          </Box>
         </Grid>
         <Grid item xs={12}>
           <ActivityForm onActivityAdded={handleActivityAdded} />
@@ -345,6 +570,19 @@ export default function Activity() {
           <ScheduledActivities activities={activities} onMarkCompleted={handleMarkCompleted} search={searchScheduled} onSearch={setSearchScheduled} />
         </Grid>
       </Grid>
+      
+      {/* History Modal */}
+      <HistoryModal
+        activities={activities}
+        onView={handleView}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        search={searchHistory}
+        onSearch={setSearchHistory}
+        open={showHistory}
+        onClose={() => setShowHistory(false)}
+      />
+      
       {/* Schedule Event Modal removed */}
       <Snackbar open={eventSnackbar.open} autoHideDuration={4000} onClose={() => setEventSnackbar({ ...eventSnackbar, open: false })}>
         <Alert onClose={() => setEventSnackbar({ ...eventSnackbar, open: false })} severity={eventSnackbar.severity} sx={{ width: '100%' }}>
