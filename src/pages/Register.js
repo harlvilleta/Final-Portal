@@ -9,7 +9,7 @@ import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import Link from '@mui/material/Link';
 import { validateStudentIdForRegistration, testStudentIdValidation } from '../utils/studentValidation';
 
-const roles = ['Student', 'Teacher', 'Admin'];
+const roles = ['Student', 'Teacher'];
 
 // Email validation function
 function validateEmail(email) {
@@ -33,8 +33,6 @@ export default function Register() {
   
   // Teacher-specific fields
   const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
   
   const navigate = useNavigate();
 
@@ -96,12 +94,6 @@ export default function Register() {
       case 'fullName':
         setFullName(value);
         break;
-      case 'phone':
-        setPhone(value);
-        break;
-      case 'address':
-        setAddress(value);
-        break;
       case 'studentId':
         handleStudentIdChange(e);
         break;
@@ -154,8 +146,8 @@ export default function Register() {
     }
 
     if (role === 'Teacher') {
-      if (!fullName || !phone || !address) {
-        setSnackbar({ open: true, message: 'Please fill in all teacher information', severity: 'error' });
+      if (!fullName) {
+        setSnackbar({ open: true, message: 'Please fill in your full name', severity: 'error' });
         setLoading(false);
         return;
       }
@@ -184,8 +176,6 @@ export default function Register() {
         userData = {
           ...userData,
           fullName: fullName,
-          phone: phone,
-          address: address,
           displayName: fullName,
           teacherInfo: {
             isApproved: false,
@@ -193,11 +183,6 @@ export default function Register() {
             approvedBy: null,
             approvedDate: null
           }
-        };
-      } else if (role === 'Admin') {
-        userData = {
-          ...userData,
-          displayName: email.split('@')[0] // Use email prefix as display name
         };
       }
 
@@ -215,8 +200,6 @@ export default function Register() {
           userId: user.uid,
           email: email,
           fullName: fullName,
-          phone: phone,
-          address: address,
           status: 'pending',
           requestDate: new Date().toISOString(),
           createdAt: new Date().toISOString(),
@@ -326,7 +309,7 @@ export default function Register() {
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
-          flex: '0 0 50%',
+          flex: 1,
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -376,44 +359,56 @@ export default function Register() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          padding: { xs: 2, sm: 3, md: 4 },
+          justifyContent: 'flex-start',
+          padding: { xs: '20px', sm: '30px', md: '40px' },
+          paddingTop: { xs: '30px', sm: '40px', md: '50px' },
           position: 'relative',
-          overflow: 'hidden',
-          flex: '0 0 50%'
+          overflow: 'auto',
+          flex: 1
         }}>
           <Avatar sx={{ 
             bgcolor: '#800000', 
-            width: 50, 
-            height: 50, 
-            mb: 0.8, 
+            width: 60, 
+            height: 60, 
+            mb: 0.3, 
             boxShadow: '0 8px 32px rgba(128,0,0,0.3)'
           }}>
-            <PersonAddAlt1 sx={{ fontSize: 24, color: '#fff' }} />
+            <PersonAddAlt1 sx={{ fontSize: 30 }} />
           </Avatar>
-          <Typography variant="h5" fontWeight={600} gutterBottom sx={{ 
-            mb: 0.5, 
+          <Typography variant="h6" fontWeight={600} gutterBottom sx={{ 
+            mb: 0.2, 
             color: '#333',
             textAlign: 'center',
-            letterSpacing: '-0.02em',
-            fontSize: { xs: '1.1rem', sm: '1.3rem', md: '1.4rem' }
+            letterSpacing: '-0.01em',
+            fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' }
           }}>
             Create Account
           </Typography>
           <Typography variant="body2" sx={{ 
-            mb: 1, 
+            mb: 1.5, 
             color: '#666',
             textAlign: 'center',
             fontWeight: 400,
             letterSpacing: '0.01em',
-            fontSize: '0.85rem'
+            fontSize: '0.8rem'
           }}>
             Join our platform and get started
           </Typography>
 
-        <Box component="form" onSubmit={handleRegister} sx={{ width: '100%', maxWidth: '260px', minWidth: '220px' }}>
+        <Box component="form" onSubmit={handleRegister} sx={{ 
+          width: '100%', 
+          maxWidth: '280px', 
+          minWidth: '250px',
+          margin: '0 auto',
+          marginLeft: 'auto',
+          marginRight: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
             {/* Role Selection */}
-            <FormControl fullWidth sx={{ mb: 0.8 }}>
+            <FormControl fullWidth sx={{ mb: 1.5 }}>
               <InputLabel sx={{ color: '#666', fontWeight: 500, fontSize: '0.8rem' }}>Role</InputLabel>
               <Select
                 name="role"
@@ -464,14 +459,15 @@ export default function Register() {
               onChange={handleChange}
               fullWidth
               required
+              size="small"
               sx={{ 
-                mb: 1.2,
+                mb: 1.5,
                 '& .MuiOutlinedInput-root': {
                   bgcolor: '#fafafa',
                   color: '#333',
-                  borderRadius: 12,
-                  height: 44,
-                  fontSize: 15,
+                  borderRadius: 8,
+                  height: 40,
+                  fontSize: 14,
                   '& fieldset': { 
                     borderColor: '#e0e0e0',
                     borderWidth: 1
@@ -491,7 +487,11 @@ export default function Register() {
                 '& .MuiInputLabel-root': { 
                   color: '#666',
                   fontWeight: 500,
-                  fontSize: '0.95rem'
+                  fontSize: '0.75rem',
+                  transform: 'translate(14px, 9px) scale(1)',
+                  '&.MuiInputLabel-shrink': {
+                    transform: 'translate(14px, -9px) scale(0.75)'
+                  }
                 }
               }}
               placeholder="Enter your email"
@@ -509,14 +509,15 @@ export default function Register() {
                 error={!!studentIdError}
                 helperText={studentIdError || "Enter your Student ID"}
                 placeholder="SCC-22-00000000"
+                size="small"
                 sx={{ 
                   mb: 0.8,
                   '& .MuiOutlinedInput-root': {
                     bgcolor: '#fafafa',
                     color: '#333',
-                    borderRadius: 12,
-                    height: 32,
-                    fontSize: 12,
+                    borderRadius: 8,
+                    height: 36,
+                    fontSize: 13,
                     '& fieldset': { 
                       borderColor: '#e0e0e0',
                       borderWidth: 1
@@ -536,7 +537,15 @@ export default function Register() {
                   '& .MuiInputLabel-root': { 
                     color: '#666',
                     fontWeight: 500,
-                    fontSize: '0.95rem'
+                    fontSize: '0.75rem',
+                    transform: 'translate(14px, 9px) scale(1)',
+                    '&.MuiInputLabel-shrink': {
+                      transform: 'translate(14px, -9px) scale(0.75)'
+                    }
+                  },
+                  '& .MuiFormHelperText-root': {
+                    fontSize: '0.7rem',
+                    marginTop: 0.5
                   }
                 }}
               />
@@ -553,14 +562,15 @@ export default function Register() {
                   fullWidth
                   required
                   placeholder="Enter your full name"
+                  size="small"
                   sx={{ 
                     mb: 1.2,
                     '& .MuiOutlinedInput-root': {
                       bgcolor: '#fafafa',
                       color: '#333',
-                      borderRadius: 12,
-                      height: 32,
-                      fontSize: 12,
+                      borderRadius: 8,
+                      height: 36,
+                      fontSize: 13,
                       '& fieldset': { 
                         borderColor: '#e0e0e0',
                         borderWidth: 1
@@ -580,85 +590,11 @@ export default function Register() {
                   '& .MuiInputLabel-root': { 
                     color: '#666',
                     fontWeight: 500,
-                    fontSize: '0.8rem'
-                  }
-                  }}
-                />
-                <TextField
-                  name="phone"
-                  label="Phone Number"
-                  value={phone}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                  placeholder="09XXXXXXXXX"
-                  sx={{ 
-                    mb: 1.2,
-                    '& .MuiOutlinedInput-root': {
-                      bgcolor: '#fafafa',
-                      color: '#333',
-                      borderRadius: 12,
-                      height: 32,
-                      fontSize: 12,
-                      '& fieldset': { 
-                        borderColor: '#e0e0e0',
-                        borderWidth: 1
-                      },
-                      '&:hover fieldset': { 
-                        borderColor: '#800000',
-                        borderWidth: 1
-                      },
-                      '&.Mui-focused fieldset': { 
-                        borderColor: '#800000',
-                        borderWidth: 2
-                      },
-                      '&.Mui-focused': { 
-                        boxShadow: '0 0 0 3px rgba(128,0,0,0.1)'
-                      }
-                    },
-                  '& .MuiInputLabel-root': { 
-                    color: '#666',
-                    fontWeight: 500,
-                    fontSize: '0.8rem'
-                  }
-                  }}
-                />
-                <TextField
-                  name="address"
-                  label="Address"
-                  value={address}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                  placeholder="Enter your address"
-                  sx={{ 
-                    mb: 1.2,
-                    '& .MuiOutlinedInput-root': {
-                      bgcolor: '#fafafa',
-                      color: '#333',
-                      borderRadius: 12,
-                      height: 32,
-                      fontSize: 12,
-                      '& fieldset': { 
-                        borderColor: '#e0e0e0',
-                        borderWidth: 1
-                      },
-                      '&:hover fieldset': { 
-                        borderColor: '#800000',
-                        borderWidth: 1
-                      },
-                      '&.Mui-focused fieldset': { 
-                        borderColor: '#800000',
-                        borderWidth: 2
-                      },
-                      '&.Mui-focused': { 
-                        boxShadow: '0 0 0 3px rgba(128,0,0,0.1)'
-                      }
-                    },
-                  '& .MuiInputLabel-root': { 
-                    color: '#666',
-                    fontWeight: 500,
-                    fontSize: '0.8rem'
+                    fontSize: '0.75rem',
+                    transform: 'translate(14px, 9px) scale(1)',
+                    '&.MuiInputLabel-shrink': {
+                      transform: 'translate(14px, -9px) scale(0.75)'
+                    }
                   }
                   }}
                 />
@@ -674,14 +610,15 @@ export default function Register() {
               onChange={handleChange}
               fullWidth
               required
+              size="small"
               sx={{ 
                 mb: 1.2,
                 '& .MuiOutlinedInput-root': {
                   bgcolor: '#fafafa',
                   color: '#333',
-                  borderRadius: 12,
-                  height: 44,
-                  fontSize: 15,
+                  borderRadius: 8,
+                  height: 40,
+                  fontSize: 14,
                   '& fieldset': { 
                     borderColor: '#e0e0e0',
                     borderWidth: 1
@@ -701,10 +638,14 @@ export default function Register() {
                 '& .MuiInputLabel-root': { 
                   color: '#666',
                   fontWeight: 500,
-                  fontSize: '0.95rem'
+                  fontSize: '0.75rem',
+                  transform: 'translate(14px, 9px) scale(1)',
+                  '&.MuiInputLabel-shrink': {
+                    transform: 'translate(14px, -9px) scale(0.75)'
+                  }
                 },
                 '& .MuiInputAdornment-root .MuiSvgIcon-root': { 
-                  color: '#800000' 
+                  color: 'inherit' 
                 }
               }}
               InputProps={{
@@ -732,14 +673,15 @@ export default function Register() {
               fullWidth
               required
               placeholder="Confirm your password"
+              size="small"
               sx={{ 
                 mb: 1.2,
                 '& .MuiOutlinedInput-root': {
                   bgcolor: '#fafafa',
                   color: '#333',
-                  borderRadius: 12,
-                  height: 44,
-                  fontSize: 15,
+                  borderRadius: 8,
+                  height: 40,
+                  fontSize: 14,
                   '& fieldset': { 
                     borderColor: '#e0e0e0',
                     borderWidth: 1
@@ -759,7 +701,11 @@ export default function Register() {
                 '& .MuiInputLabel-root': { 
                   color: '#666',
                   fontWeight: 500,
-                  fontSize: '0.95rem'
+                  fontSize: '0.75rem',
+                  transform: 'translate(14px, 9px) scale(1)',
+                  '&.MuiInputLabel-shrink': {
+                    transform: 'translate(14px, -9px) scale(0.75)'
+                  }
                 }
               }}
             />

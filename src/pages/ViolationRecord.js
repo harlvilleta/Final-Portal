@@ -204,11 +204,21 @@ export default function ViolationRecord() {
     e.preventDefault();
     
     // Validate that the student ID is registered in the system
-    const validationResult = await validateStudentId(form.studentId);
-    if (!validationResult.isValid) {
+    try {
+      const validationResult = await validateStudentId(form.studentId);
+      if (!validationResult.isValid) {
+        setSnackbar({ 
+          open: true, 
+          message: `Error: ${validationResult.error}. Please ensure the student is properly registered before adding violations.`, 
+          severity: "error" 
+        });
+        return;
+      }
+    } catch (validationError) {
+      console.error("Student validation error:", validationError);
       setSnackbar({ 
         open: true, 
-        message: `Error: ${validationResult.error}. Please ensure the student is properly registered before adding violations.`, 
+        message: "Student validation failed. Please try again or contact support.", 
         severity: "error" 
       });
       return;
@@ -614,7 +624,14 @@ School Administration
                     return false;
                   }
                   
-                  const fullName = `${student.firstName} ${student.lastName}`.toLowerCase();
+                  // Add null/undefined checks for all properties
+                  const firstName = student.firstName || '';
+                  const lastName = student.lastName || '';
+                  const studentId = student.id || '';
+                  const course = student.course || '';
+                  const year = student.year || '';
+                  
+                  const fullName = `${firstName} ${lastName}`.toLowerCase();
                   const input = studentInputValue.toLowerCase();
                   
                   // Check for exact match first (both first and last names)
@@ -622,12 +639,13 @@ School Administration
                     return true;
                   }
                   
-                  // Check if input matches first name, last name, or full name
-                  return student.firstName.toLowerCase().includes(input) ||
-                         student.lastName.toLowerCase().includes(input) ||
-                         fullName.includes(input);
-                }).slice(0, 3)} // Limit to 3 suggestions
-                getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
+                  // Check if input matches first name, last name, full name, or student ID
+                  return firstName.toLowerCase().includes(input) ||
+                         lastName.toLowerCase().includes(input) ||
+                         fullName.includes(input) ||
+                         studentId.toLowerCase().includes(input);
+                }).slice(0, 5)} // Limit to 5 suggestions
+                getOptionLabel={(option) => `${option.firstName || ''} ${option.lastName || ''}`}
                 value={selectedStudent}
                 onChange={(event, newValue) => {
                   setSelectedStudent(newValue);
@@ -663,11 +681,11 @@ School Administration
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="Student Name"
+                    label="Student Name or ID"
                     required
                     fullWidth
-                    helperText="Type to search for a student"
-                    placeholder="Start typing student name..."
+                    helperText="Type to search by student name or ID"
+                    placeholder="Start typing student name or ID..."
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         backgroundColor: theme.palette.mode === 'dark' ? '#404040' : '#ffffff',
@@ -697,22 +715,36 @@ School Administration
                   <Box component="li" {...props}>
                     <Box>
                       <Typography variant="body2" fontWeight={500} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>
-                        {option.firstName} {option.lastName}
+                        {option.firstName || ''} {option.lastName || ''}
                       </Typography>
                       <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#b0b0b0' : 'text.secondary' }}>
-                        ID: {option.id}
+                        ID: {option.id || 'N/A'} | {option.course || 'N/A'} - {option.year || 'N/A'}
                       </Typography>
                     </Box>
                   </Box>
                 )}
                 filterOptions={(options, { inputValue }) => {
                   const filtered = options.filter(option => {
-                    const fullName = `${option.firstName} ${option.lastName}`.toLowerCase();
-                    const studentId = option.id.toLowerCase();
+                    // Add null/undefined checks for all properties
+                    const firstName = option.firstName || '';
+                    const lastName = option.lastName || '';
+                    const studentId = option.id || '';
+                    
+                    const fullName = `${firstName} ${lastName}`.toLowerCase();
                     const searchTerm = inputValue.toLowerCase();
-                    return fullName.includes(searchTerm) || studentId.includes(searchTerm);
+                    
+                    // Check for exact match first
+                    if (fullName === searchTerm) {
+                      return true;
+                    }
+                    
+                    // Check if input matches first name, last name, full name, or student ID
+                    return firstName.toLowerCase().includes(searchTerm) ||
+                           lastName.toLowerCase().includes(searchTerm) ||
+                           fullName.includes(searchTerm) ||
+                           studentId.toLowerCase().includes(searchTerm);
                   });
-                  return filtered;
+                  return filtered.slice(0, 5); // Limit to 5 suggestions
                 }}
                 noOptionsText="No students found"
                 clearOnEscape
@@ -1163,7 +1195,6 @@ School Administration
         <TableContainer component={Paper} sx={{ 
           maxHeight: 500, 
           width: '100%', 
-          overflowX: 'auto',
           bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : 'inherit'
         }}>
           <Table size="small" stickyHeader sx={{ minWidth: 880 }}>

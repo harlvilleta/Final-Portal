@@ -635,7 +635,6 @@ export default function ClassroomManager({ currentUser }) {
         <TableContainer component={Paper} sx={{ 
           maxHeight: 600, 
           width: '100%', 
-          overflowX: 'auto',
           bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : 'inherit'
         }}>
           <Table size="small" stickyHeader>

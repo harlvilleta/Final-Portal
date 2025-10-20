@@ -63,48 +63,44 @@ export default function TeacherHeader({ currentUser, userProfile }) {
 
   return (
     <AppBar position="static" sx={{ bgcolor: 'background.paper', color: 'text.primary', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-      <Toolbar sx={{ justifyContent: 'space-between' }}>
-        <Box sx={{ flex: 0.5 }}></Box>
+      <Toolbar sx={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', width: '100%' }}>
+        <Box></Box>
         <Typography variant="h4" component="div" sx={{ 
           fontWeight: 700, 
           color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
-          flex: 1, 
           textAlign: 'center',
-          fontSize: '1.75rem',
           lineHeight: 1.2
         }}>
           Student Affairs Management System
         </Typography>
-        <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton
-              size="large"
-              aria-label="mail to admin"
-              onClick={() => setComposeOpen(true)}
-              color="inherit"
-            >
-              <Mail />
-            </IconButton>
-            <IconButton
-              size="large"
-              aria-label="notifications"
-              onClick={handleNotificationClick}
-              color="inherit"
-              sx={{ 
-                bgcolor: unreadCount > 0 ? '#ffebee' : 'transparent',
-                '&:hover': { bgcolor: unreadCount > 0 ? '#ffcdd2' : '#f5f5f5' }
-              }}
-            >
-              <Badge badgeContent={unreadCount} color="error">
-                <Notifications />
-              </Badge>
-            </IconButton>
-            <ProfileDropdown 
-              currentUser={currentUser} 
-              userProfile={userProfile}
-              profileRoute="/teacher-profile"
-            />
-          </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>
+          <IconButton
+            size="large"
+            aria-label="mail to admin"
+            onClick={() => setComposeOpen(true)}
+            color="inherit"
+          >
+            <Mail />
+          </IconButton>
+          <IconButton
+            size="large"
+            aria-label="notifications"
+            onClick={handleNotificationClick}
+            color="inherit"
+            sx={{ 
+              bgcolor: unreadCount > 0 ? '#ffebee' : 'transparent',
+              '&:hover': { bgcolor: unreadCount > 0 ? '#ffcdd2' : '#f5f5f5' }
+            }}
+          >
+            <Badge badgeContent={unreadCount} color="error">
+              <Notifications />
+            </Badge>
+          </IconButton>
+          <ProfileDropdown 
+            currentUser={currentUser} 
+            userProfile={userProfile}
+            profileRoute="/teacher-profile"
+          />
         </Box>
       </Toolbar>
 

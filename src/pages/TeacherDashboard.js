@@ -16,7 +16,11 @@ import {
   Divider,
   Paper,
   IconButton,
-  Badge
+  Badge,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import { 
   Dashboard, 
@@ -39,7 +43,7 @@ import {
   People
 } from '@mui/icons-material';
 import { auth, db } from '../firebase';
-import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot, orderBy } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 
 export default function TeacherDashboard() {
@@ -47,9 +51,11 @@ export default function TeacherDashboard() {
   const [userProfile, setUserProfile] = useState(null);
   const [violations, setViolations] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
+  const [mySchedulesCount, setMySchedulesCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
   const [meetingsCount, setMeetingsCount] = useState(0);
+  const [reportsModalOpen, setReportsModalOpen] = useState(false);
   
 
   
@@ -88,9 +94,15 @@ export default function TeacherDashboard() {
     });
 
     // Fetch announcements
-    const announcementsQuery = query(collection(db, 'announcements'));
+    const announcementsQuery = query(collection(db, 'announcements'), orderBy('createdAt', 'desc'));
     const announcementsUnsubscribe = onSnapshot(announcementsQuery, (snapshot) => {
       const announcementsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Fallback sort by whichever date field is present
+      announcementsData.sort((a, b) => {
+        const ad = new Date(a.timestamp || a.createdAt || 0).getTime();
+        const bd = new Date(b.timestamp || b.createdAt || 0).getTime();
+        return bd - ad;
+      });
       setAnnouncements(announcementsData);
     }, (error) => {
       console.error('Error fetching announcements:', error);
@@ -112,6 +124,7 @@ export default function TeacherDashboard() {
     const idSet = new Set();
     let unsubMeetingsA = null;
     let unsubMeetingsB = null;
+    let unsubMySchedules = null;
     try {
       const participantsValues = [currentUser.email, currentUser.uid].filter(Boolean);
       if (participantsValues.length > 0) {
@@ -142,6 +155,40 @@ export default function TeacherDashboard() {
           setMeetingsCount(idSet.size);
         });
       }
+      // My schedules/bookings created by this teacher
+      try {
+        if (currentUser?.uid) {
+          const qMySchedules = query(
+            collection(db, 'activity_bookings'),
+            where('teacherId', '==', currentUser.uid)
+          );
+          unsubMySchedules = onSnapshot(qMySchedules, (snapshot) => {
+            const countById = snapshot.size;
+            if (countById > 0) {
+              setMySchedulesCount(countById);
+              return;
+            }
+            // Fallback by email if legacy data
+            if (currentUser?.email) {
+              const qByEmail = query(
+                collection(db, 'activity_bookings'),
+                where('teacherEmail', '==', currentUser.email)
+              );
+              getDocs(qByEmail)
+                .then((s) => setMySchedulesCount(s.size))
+                .catch(() => setMySchedulesCount(0));
+            } else {
+              setMySchedulesCount(0);
+            }
+          });
+        } else {
+          setMySchedulesCount(0);
+        }
+      } catch (err) {
+        console.error('Error setting up my schedules listener:', err);
+        setMySchedulesCount(0);
+      }
+
     } catch (e) {
       console.error('Error setting up meetings listeners:', e);
     }
@@ -154,8 +201,11 @@ export default function TeacherDashboard() {
       notificationsUnsubscribe();
       if (unsubMeetingsA) unsubMeetingsA();
       if (unsubMeetingsB) unsubMeetingsB();
+      if (unsubMySchedules) unsubMySchedules();
     };
   }, [currentUser]);
+
+  // No additional computation required for total announcements (use announcements.length)
 
 
 
@@ -185,6 +235,12 @@ export default function TeacherDashboard() {
   const myReportsCount = violations.filter(v => (
     v.reportedBy === currentUser?.uid || v.reportedByEmail === currentUser?.email
   )).length;
+
+  const getMyReports = () => {
+    return violations.filter(v => (
+      v.reportedBy === currentUser?.uid || v.reportedByEmail === currentUser?.email
+    ));
+  };
 
   const getRecentViolations = () => {
     return violations.slice(0, 5);
@@ -232,29 +288,29 @@ export default function TeacherDashboard() {
         </Typography>
       </Box>
 
-      {/* Statistics Cards */}
+      {/* Statistics Cards - styled to match Admin Students list cards */}
       <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            p: 2, 
-            boxShadow: 3, 
-            borderRadius: 2,
-            borderLeft: '4px solid #d32f2f',
-            background: '#d32f2f20',
-            cursor: 'pointer',
-            transition: 'box-shadow 0.2s, background 0.2s',
-            '&:hover': {
-              boxShadow: 6,
-              background: '#d32f2f22',
-            },
-          }}>
-            <Box sx={{ mr: 2 }}>
-              <Report fontSize="large" sx={{ color: '#d32f2f' }} />
-            </Box>
-            <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} color="#d32f2f">
+          <Card
+            onClick={() => setReportsModalOpen(true)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              p: 2,
+              boxShadow: 3,
+              borderRadius: 2,
+              borderLeft: '4px solid #800000',
+              background: 'transparent',
+              cursor: 'pointer',
+              transition: 'box-shadow 0.2s, background 0.2s',
+              '&:hover': {
+                boxShadow: 6,
+                background: 'transparent',
+              },
+            }}
+          >
+            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
                 {myReportsCount.toLocaleString()}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -265,26 +321,26 @@ export default function TeacherDashboard() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            p: 2, 
-            boxShadow: 3, 
-            borderRadius: 2,
-            borderLeft: '4px solid #ed6c02',
-            background: '#ed6c0220',
-            cursor: 'pointer',
-            transition: 'box-shadow 0.2s, background 0.2s',
-            '&:hover': {
-              boxShadow: 6,
-              background: '#ed6c0222',
-            },
-          }}>
-            <Box sx={{ mr: 2 }}>
-              <Warning fontSize="large" sx={{ color: '#ed6c02' }} />
-            </Box>
-            <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} color="#ed6c02">
+          <Card
+            onClick={() => navigate('/teacher-violation-records')}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              p: 2,
+              boxShadow: 3,
+              borderRadius: 2,
+              borderLeft: '4px solid #800000',
+              background: 'transparent',
+              cursor: 'pointer',
+              transition: 'box-shadow 0.2s, background 0.2s',
+              '&:hover': {
+                boxShadow: 6,
+                background: 'transparent',
+              },
+            }}
+          >
+            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
                 {meetingsCount.toLocaleString()}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -294,27 +350,59 @@ export default function TeacherDashboard() {
           </Card>
         </Grid>
 
+        
+
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            p: 2, 
-            boxShadow: 3, 
-            borderRadius: 2,
-            borderLeft: '4px solid #2e7d32',
-            background: '#2e7d3220',
-            cursor: 'pointer',
-            transition: 'box-shadow 0.2s, background 0.2s',
-            '&:hover': {
-              boxShadow: 6,
-              background: '#2e7d3222',
-            },
-          }}>
-            <Box sx={{ mr: 2 }}>
-              <Campaign fontSize="large" sx={{ color: '#2e7d32' }} />
-            </Box>
-            <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} color="#2e7d32">
+          <Card
+            onClick={() => navigate('/teacher-activity-scheduler')}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              p: 2,
+              boxShadow: 3,
+              borderRadius: 2,
+              borderLeft: '4px solid #800000',
+              background: 'transparent',
+              cursor: 'pointer',
+              transition: 'box-shadow 0.2s, background 0.2s',
+              '&:hover': {
+                boxShadow: 6,
+                background: 'transparent',
+              },
+            }}
+          >
+            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
+                {mySchedulesCount.toLocaleString()}
+              </Typography>
+              <Typography color="text.secondary" variant="body2">
+                My Schedules
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card
+            onClick={() => navigate('/teacher-announcements')}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              p: 2,
+              boxShadow: 3,
+              borderRadius: 2,
+              borderLeft: '4px solid #800000',
+              background: 'transparent',
+              cursor: 'pointer',
+              transition: 'box-shadow 0.2s, background 0.2s',
+              '&:hover': {
+                boxShadow: 6,
+                background: 'transparent',
+              },
+            }}
+          >
+            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
                 {announcements.length.toLocaleString()}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -324,35 +412,7 @@ export default function TeacherDashboard() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            p: 2, 
-            boxShadow: 3, 
-            borderRadius: 2,
-            borderLeft: '4px solid #800000',
-            background: '#80000020',
-            cursor: 'pointer',
-            transition: 'box-shadow 0.2s, background 0.2s',
-            '&:hover': {
-              boxShadow: 6,
-              background: '#80000022',
-            },
-          }}>
-            <Box sx={{ mr: 2 }}>
-              <Notifications fontSize="large" sx={{ color: '#800000' }} />
-            </Box>
-            <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} color="#800000">
-                {getUnreadNotificationsCount().toLocaleString()}
-              </Typography>
-              <Typography color="text.secondary" variant="body2">
-                Unread Notifications
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+        
       </Grid>
 
       
@@ -362,43 +422,44 @@ export default function TeacherDashboard() {
         {/* Recent Violations */}
         <Grid item xs={12} lg={6}>
           <Card sx={{ 
-            border: '1px solid #800000',
-            borderLeft: '4px solid #800000',
+            border: 'none',
             boxShadow: 3,
-            bgcolor: '#80000015',
+            bgcolor: 'transparent',
             borderRadius: 2,
             height: 'fit-content'
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={700} color="#800000">
+                <Typography variant="h6" fontWeight={700} color="#000000">
                   Recent Violations
                 </Typography>
                 <Button 
                   size="small" 
-                  sx={{ 
-                    textTransform: 'none',
-                    color: '#800000',
-                    borderColor: '#800000',
-                    '&:hover': {
-                      borderColor: '#6b0000',
-                      backgroundColor: '#80000010'
-                    }
-                  }}
                   variant="outlined"
                   onClick={() => navigate('/teacher-reports')}
+                  sx={{ 
+                    textTransform: 'none',
+                    bgcolor: '#fff', 
+                    color: '#000', 
+                    borderColor: '#000', 
+                    '&:hover': { 
+                      bgcolor: '#800000', 
+                      color: '#fff', 
+                      borderColor: '#800000' 
+                    }
+                  }}
                 >
                   View All
                 </Button>
               </Box>
               
               {getRecentViolations().length > 0 ? (
-                <List sx={{ maxHeight: 300, overflow: 'auto' }}>
+                <List>
                   {getRecentViolations().map((violation, index) => (
                     <React.Fragment key={violation.id}>
                       <ListItem sx={{ px: 0, py: 1 }}>
                         <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: '#ff9800', width: 40, height: 40 }}>
+                          <Avatar sx={{ width: 40, height: 40 }}>
                             <Warning sx={{ fontSize: 20 }} />
                           </Avatar>
                         </ListItemAvatar>
@@ -422,8 +483,7 @@ export default function TeacherDashboard() {
                         <Chip 
                           label={violation.status || 'Pending'} 
                           size="small"
-                          color={violation.status === 'Approved' ? 'success' : 
-                                 violation.status === 'Denied' ? 'error' : 'warning'}
+                          color="default"
                           sx={{ fontWeight: 500 }}
                         />
                       </ListItem>
@@ -446,8 +506,10 @@ export default function TeacherDashboard() {
         {/* Recent Announcements */}
         <Grid item xs={12} lg={6}>
           <Card sx={{ 
+            border: 'none',
             borderRadius: 3, 
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            bgcolor: 'transparent',
             height: 'fit-content'
           }}>
             <CardContent>
@@ -457,21 +519,31 @@ export default function TeacherDashboard() {
                 </Typography>
                 <Button 
                   size="small" 
-                  color="primary" 
                   onClick={() => navigate('/teacher-announcements')}
-                  sx={{ textTransform: 'none' }}
+                  variant="outlined"
+                  sx={{ 
+                    textTransform: 'none',
+                    bgcolor: '#fff', 
+                    color: '#000', 
+                    borderColor: '#000', 
+                    '&:hover': { 
+                      bgcolor: '#800000', 
+                      color: '#fff', 
+                      borderColor: '#800000' 
+                    }
+                  }}
                 >
                   View All
                 </Button>
               </Box>
               
               {getRecentAnnouncements().length > 0 ? (
-                <List sx={{ maxHeight: 300, overflow: 'auto' }}>
+                <List>
                   {getRecentAnnouncements().map((announcement, index) => (
                     <React.Fragment key={announcement.id}>
                       <ListItem sx={{ px: 0, py: 1 }}>
                         <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: '#1976d2', width: 40, height: 40 }}>
+                          <Avatar sx={{ width: 40, height: 40 }}>
                             <Info sx={{ fontSize: 20 }} />
                           </Avatar>
                         </ListItemAvatar>
@@ -495,8 +567,7 @@ export default function TeacherDashboard() {
                         <Chip 
                           label={announcement.status || 'Pending'} 
                           size="small"
-                          color={announcement.status === 'Approved' ? 'success' : 
-                                 announcement.status === 'Denied' ? 'error' : 'warning'}
+                          color="default"
                           sx={{ fontWeight: 500 }}
                         />
                       </ListItem>
@@ -518,6 +589,146 @@ export default function TeacherDashboard() {
       </Grid>
 
       
+      {/* My Reports Modal */}
+      <Dialog 
+        open={reportsModalOpen} 
+        onClose={() => setReportsModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            maxHeight: '80vh'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <Report />
+          My Reports ({myReportsCount})
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          {getMyReports().length > 0 ? (
+            <List sx={{ maxHeight: '60vh', overflow: 'auto' }}>
+              {getMyReports().map((report, index) => (
+                <React.Fragment key={report.id}>
+                  <ListItem sx={{ px: 3, py: 2 }}>
+                    <ListItemAvatar>
+                      <Avatar sx={{ bgcolor: '#ff9800', width: 40, height: 40 }}>
+                        <Warning sx={{ fontSize: 20 }} />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={
+                        <Typography variant="subtitle1" fontWeight={600}>
+                          {report.studentName || report.studentId || 'Unknown Student'}
+                        </Typography>
+                      }
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                            <strong>Violation:</strong> {report.violationType || report.violation || 'Not specified'}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                            <strong>Description:</strong> {report.description || report.details || 'No description provided'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            <strong>Date:</strong> {new Date(report.date || report.createdAt).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+                      <Chip 
+                        label={report.status || 'Pending'} 
+                        size="small"
+                        color={report.status === 'Approved' ? 'success' : 
+                               report.status === 'Denied' ? 'error' : 'warning'}
+                        sx={{ fontWeight: 500 }}
+                      />
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => {
+                          setReportsModalOpen(false);
+                          navigate('/teacher-reports');
+                        }}
+                        sx={{ 
+                          textTransform: 'none',
+                          bgcolor: '#fff', 
+                          color: '#000', 
+                          borderColor: '#000', 
+                          '&:hover': { 
+                            bgcolor: '#800000', 
+                            color: '#fff', 
+                            borderColor: '#800000' 
+                          }
+                        }}
+                      >
+                        View Details
+                      </Button>
+                    </Box>
+                  </ListItem>
+                  {index < getMyReports().length - 1 && <Divider />}
+                </React.Fragment>
+              ))}
+            </List>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Warning sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+              <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                No Reports Found
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                You haven't submitted any violation reports yet.
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, bgcolor: '#f5f5f5' }}>
+          <Button 
+            onClick={() => setReportsModalOpen(false)}
+            variant="outlined"
+            sx={{ 
+              textTransform: 'none',
+              bgcolor: '#fff', 
+              color: '#000', 
+              borderColor: '#000', 
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000' 
+              }
+            }}
+          >
+            Close
+          </Button>
+          <Button 
+            onClick={() => {
+              setReportsModalOpen(false);
+              navigate('/teacher-reports');
+            }}
+            variant="outlined"
+            sx={{ 
+              textTransform: 'none',
+              bgcolor: '#fff', 
+              color: '#000', 
+              borderColor: '#000', 
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000' 
+              }
+            }}
+          >
+            View All Reports
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 } 

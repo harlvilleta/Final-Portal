@@ -395,7 +395,7 @@ function SearchBar({ value, onChange, placeholder }) {
 
 
 
-function ScheduledActivities({ activities, onMarkCompleted, search, onSearch }) {
+function ScheduledActivities({ activities, onMarkCompleted, onViewActivity, search, onSearch }) {
   const filtered = activities.filter(a => !a.completed && (
     a.title.toLowerCase().includes(search.toLowerCase()) ||
     a.organizer?.toLowerCase().includes(search.toLowerCase()) ||
@@ -410,26 +410,116 @@ function ScheduledActivities({ activities, onMarkCompleted, search, onSearch }) 
       ) : (
         <>
           {filtered.map((a) => (
-            <Card key={a.id} sx={{ mb: 2, borderLeft: '5px solid #ffb300', boxShadow: 2 }}>
+            <Card 
+              key={a.id} 
+              sx={{ 
+                mb: 2, 
+                borderLeft: '4px solid #ff9800', 
+                boxShadow: 3,
+                cursor: 'pointer',
+                transition: 'all 0.3s ease-in-out',
+                borderRadius: 2,
+                '&:hover': {
+                  boxShadow: 6,
+                  transform: 'translateY(-4px)',
+                  borderLeft: '4px solid #f57c00',
+                  '& .card-title': {
+                    color: 'primary.main'
+                  }
+                }
+              }}
+              onClick={() => onViewActivity(a)}
+            >
               <CardHeader
                 title={
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <Typography fontWeight={700}>{a.title}</Typography>
-                    <Chip label={a.category} color="default" size="small" />
-                    <Chip label="Scheduled" color="warning" size="small" />
+                  <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+                    <Typography 
+                      fontWeight={700} 
+                      className="card-title"
+                      sx={{ fontSize: '1.1rem', transition: 'color 0.3s ease' }}
+                    >
+                      {a.title}
+                    </Typography>
+                    <Chip 
+                      label={a.category} 
+                      color="primary" 
+                      size="small" 
+                      variant="outlined"
+                    />
+                    <Chip 
+                      label="Scheduled" 
+                      color="warning" 
+                      size="small" 
+                    />
                   </Stack>
                 }
                 subheader={a.date ? new Date(a.date).toLocaleDateString() : ''}
               />
-              <CardContent>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{a.description}</Typography>
-                <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-                  {a.organizer && <Chip label={`Organizer: ${a.organizer}`} size="small" variant="outlined" />}
-                  {a.location && <Chip label={`Location: ${a.location}`} size="small" variant="outlined" />}
+              <CardContent sx={{ pt: 0 }}>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary" 
+                  sx={{ 
+                    mb: 2,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {a.description || 'No description available'}
+                </Typography>
+                <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap">
+                  {a.organizer && (
+                    <Chip 
+                      label={`👤 ${a.organizer}`} 
+                      size="small" 
+                      variant="outlined" 
+                      sx={{ fontSize: '0.75rem' }}
+                    />
+                  )}
+                  {a.location && (
+                    <Chip 
+                      label={`📍 ${a.location}`} 
+                      size="small" 
+                      variant="outlined"
+                      sx={{ fontSize: '0.75rem' }}
+                    />
+                  )}
                 </Stack>
-                <Button variant="contained" color="success" size="small" onClick={() => onMarkCompleted(a)}>
-                  Mark as Completed
-                </Button>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Typography 
+                    variant="caption" 
+                    color="text.secondary" 
+                    sx={{ 
+                      fontWeight: 500,
+                      flexGrow: 1
+                    }}
+                  >
+                    📅 {a.date ? new Date(a.date).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric'
+                    }) : 'Date TBD'}
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    color="success" 
+                    size="small" 
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent card click when button is clicked
+                      onMarkCompleted(a);
+                    }}
+                    sx={{ 
+                      minWidth: 'auto',
+                      px: 2,
+                      py: 0.5,
+                      fontSize: '0.75rem'
+                    }}
+                  >
+                    ✓ Complete
+                  </Button>
+                </Stack>
               </CardContent>
             </Card>
           ))}
@@ -567,7 +657,7 @@ export default function Activity() {
           <ActivityForm onActivityAdded={handleActivityAdded} />
         </Grid>
         <Grid item xs={12}>
-          <ScheduledActivities activities={activities} onMarkCompleted={handleMarkCompleted} search={searchScheduled} onSearch={setSearchScheduled} />
+          <ScheduledActivities activities={activities} onMarkCompleted={handleMarkCompleted} onViewActivity={setViewActivity} search={searchScheduled} onSearch={setSearchScheduled} />
         </Grid>
       </Grid>
       
@@ -590,24 +680,140 @@ export default function Activity() {
         </Alert>
       </Snackbar>
       {/* View Activity Modal */}
-      <Dialog open={!!viewActivity} onClose={() => setViewActivity(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Activity Details</DialogTitle>
-        <DialogContent>
+      <Dialog open={!!viewActivity} onClose={() => setViewActivity(null)} maxWidth="md" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Typography variant="h5" fontWeight={700}>{viewActivity?.title}</Typography>
+            <Chip 
+              label={viewActivity?.category || 'General'} 
+              color="primary" 
+              size="small" 
+            />
+            <Chip 
+              label={viewActivity?.completed ? 'Completed' : 'Scheduled'} 
+              color={viewActivity?.completed ? 'success' : 'warning'} 
+              size="small" 
+            />
+          </Stack>
+        </DialogTitle>
+        <DialogContent dividers>
           {viewActivity && (
             <Box>
-              <Typography variant="h6">{viewActivity.title}</Typography>
-              <Typography>Date: {viewActivity.date ? new Date(viewActivity.date).toLocaleDateString() : ''}</Typography>
-              <Typography>Status: {viewActivity.completed ? 'Completed' : 'Scheduled'}</Typography>
-              <Typography>Organizer: {viewActivity.organizer}</Typography>
-              <Typography>Location: {viewActivity.location}</Typography>
-              <Typography>Category: {viewActivity.category}</Typography>
-              <Typography>Max Participants: {viewActivity.maxParticipants}</Typography>
-              <Typography>Description: {viewActivity.description}</Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <Stack spacing={2}>
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        📅 Date & Time
+                      </Typography>
+                      <Typography variant="body1" fontWeight={500}>
+                        {viewActivity.date ? new Date(viewActivity.date).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        }) : 'Not specified'}
+                      </Typography>
+                    </Box>
+                    
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        👤 Organizer
+                      </Typography>
+                      <Typography variant="body1" fontWeight={500}>
+                        {viewActivity.organizer || 'Not specified'}
+                      </Typography>
+                    </Box>
+                    
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        📍 Location
+                      </Typography>
+                      <Typography variant="body1" fontWeight={500}>
+                        {viewActivity.location || 'Not specified'}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <Stack spacing={2}>
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        🏷️ Category
+                      </Typography>
+                      <Typography variant="body1" fontWeight={500}>
+                        {viewActivity.category || 'General'}
+                      </Typography>
+                    </Box>
+                    
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        👥 Max Participants
+                      </Typography>
+                      <Typography variant="body1" fontWeight={500}>
+                        {viewActivity.maxParticipants || 'No limit'}
+                      </Typography>
+                    </Box>
+                    
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        📊 Status
+                      </Typography>
+                      <Chip 
+                        label={viewActivity.completed ? 'Completed' : 'Scheduled'} 
+                        color={viewActivity.completed ? 'success' : 'warning'} 
+                        size="small"
+                      />
+                    </Box>
+                  </Stack>
+                </Grid>
+                
+                <Grid item xs={12}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      📝 Description
+                    </Typography>
+                    <Paper 
+                      sx={{ 
+                        p: 2, 
+                        bgcolor: 'grey.50', 
+                        border: '1px solid',
+                        borderColor: 'grey.200',
+                        borderRadius: 1
+                      }}
+                    >
+                      <Typography variant="body1">
+                        {viewActivity.description || 'No description provided'}
+                      </Typography>
+                    </Paper>
+                  </Box>
+                </Grid>
+              </Grid>
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setViewActivity(null)}>Close</Button>
+        <DialogActions sx={{ p: 2 }}>
+          <Button 
+            onClick={() => setViewActivity(null)} 
+            variant="outlined"
+            size="large"
+          >
+            Close
+          </Button>
+          {!viewActivity?.completed && (
+            <Button 
+              onClick={() => {
+                handleMarkCompleted(viewActivity);
+                setViewActivity(null);
+              }}
+              variant="contained" 
+              color="success"
+              size="large"
+            >
+              Mark as Completed
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
       {/* Edit Activity Modal */}

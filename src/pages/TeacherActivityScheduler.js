@@ -70,15 +70,14 @@ export default function TeacherActivityScheduler() {
   const [bookingToDelete, setBookingToDelete] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Available resources and departments
+  // Available resources and departments/courses
   const resources = [
     'Auditorium', 'Gymnasium', 'Library', 'Computer Lab', 'Science Lab',
     'Art Room', 'Music Room', 'Conference Room', 'Cafeteria', 'Outdoor Field'
   ];
 
   const departments = [
-    'Mathematics', 'Science', 'English', 'History', 'Physical Education',
-    'Art', 'Music', 'Computer Science', 'Foreign Languages', 'Administration'
+    'BSIT', 'BSBA', 'BSCRIM', 'BSHTM', 'BEED', 'BSED', 'BSHM'
   ];
 
   const timeSlots = [
@@ -933,11 +932,11 @@ export default function TeacherActivityScheduler() {
           boxShadow: 4,
         },
       }}>
-        <Typography variant="h6" sx={{ 
+          <Typography variant="h6" sx={{ 
           color: theme.palette.mode === 'dark' ? '#ffffff' : 'black',
           fontWeight: 600
         }} gutterBottom>
-            My Booking Requests
+            Activity Booking History
           </Typography>
           <TableContainer>
             <Table>
@@ -1047,18 +1046,10 @@ export default function TeacherActivityScheduler() {
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Teacher Name"
-                value={bookingForm.teacherName}
-                onChange={(e) => handleFormChange('teacherName', e.target.value)}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Department</InputLabel>
+              <FormControl fullWidth required size="small">
+                <InputLabel sx={{ fontSize: '0.8rem' }}>Department</InputLabel>
                 <Select
+                  size="small"
                   value={bookingForm.department}
                   onChange={(e) => handleFormChange('department', e.target.value)}
                   label="Department"
@@ -1069,9 +1060,10 @@ export default function TeacherActivityScheduler() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
+                size="small"
                 label="Activity/Event"
                 value={bookingForm.activity}
                 onChange={(e) => handleFormChange('activity', e.target.value)}
@@ -1079,9 +1071,10 @@ export default function TeacherActivityScheduler() {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Resource/Place</InputLabel>
+              <FormControl fullWidth required size="small">
+                <InputLabel sx={{ fontSize: '0.8rem' }}>Resource/Place</InputLabel>
                 <Select
+                  size="small"
                   value={bookingForm.resource}
                   onChange={(e) => handleFormChange('resource', e.target.value)}
                   label="Resource/Place"
@@ -1093,9 +1086,22 @@ export default function TeacherActivityScheduler() {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Start Time</InputLabel>
+              <TextField
+                fullWidth
+                size="small"
+                label="Date"
+                type="date"
+                value={bookingForm.date}
+                onChange={(e) => handleFormChange('date', e.target.value)}
+                InputLabelProps={{ shrink: true, sx: { fontSize: '0.8rem' } }}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth required size="small">
+                <InputLabel sx={{ fontSize: '0.8rem' }}>Start Time</InputLabel>
                 <Select
+                  size="small"
                   value={bookingForm.startTime}
                   onChange={(e) => handleFormChange('startTime', e.target.value)}
                   label="Start Time"
@@ -1107,9 +1113,10 @@ export default function TeacherActivityScheduler() {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel>End Time</InputLabel>
+              <FormControl fullWidth required size="small">
+                <InputLabel sx={{ fontSize: '0.8rem' }}>End Time</InputLabel>
                 <Select
+                  size="small"
                   value={bookingForm.endTime}
                   onChange={(e) => handleFormChange('endTime', e.target.value)}
                   label="End Time"
@@ -1121,46 +1128,86 @@ export default function TeacherActivityScheduler() {
               </FormControl>
             </Grid>
             <Grid item xs={12}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Notes"
+                multiline
+                rows={2}
+                value={bookingForm.notes}
+                onChange={(e) => handleFormChange('notes', e.target.value)}
+                placeholder="Additional details about your booking..."
+              />
+            </Grid>
+            <Grid item xs={12}>
               <Button
                 variant="outlined"
+                size="small"
                 onClick={() => setConflictCheck(checkConflict(bookingForm))}
                 disabled={!bookingForm.resource || !bookingForm.date || !bookingForm.startTime || !bookingForm.endTime}
-                sx={{ mb: 2 }}
+                sx={{ 
+                  mt: 1,
+                  textTransform: 'none',
+                  bgcolor: '#fff', 
+                  color: '#000', 
+                  borderColor: '#000', 
+                  '&:hover': { 
+                    bgcolor: '#800000', 
+                    color: '#fff', 
+                    borderColor: '#800000' 
+                  }
+                }}
               >
                 Check Availability
               </Button>
               {conflictCheck && (
                 <Alert 
                   severity={conflictCheck.hasConflict ? 'error' : 'success'}
-                  sx={{ mb: 2 }}
+                  sx={{ mt: 1 }}
                 >
                   {conflictCheck.message}
                 </Alert>
               )}
             </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Notes"
-                multiline
-                rows={3}
-                value={bookingForm.notes}
-                onChange={(e) => handleFormChange('notes', e.target.value)}
-                placeholder="Additional details about your booking..."
-              />
-            </Grid>
           </Grid>
 
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setBookingDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={() => setBookingDialogOpen(false)}
+            variant="outlined"
+            sx={{ 
+              textTransform: 'none',
+              bgcolor: '#fff', 
+              color: '#000', 
+              borderColor: '#000', 
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000' 
+              }
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleSubmitBooking}
-            variant="contained"
-            disabled={!bookingForm.teacherName || !bookingForm.department || 
+            variant="outlined"
+            disabled={!bookingForm.department || 
                      !bookingForm.activity || !bookingForm.resource || 
                      !bookingForm.date || !bookingForm.startTime || !bookingForm.endTime ||
                      (conflictCheck && conflictCheck.hasConflict)}
+            sx={{ 
+              textTransform: 'none',
+              bgcolor: '#fff', 
+              color: '#000', 
+              borderColor: '#000', 
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000' 
+              }
+            }}
           >
             Submit Request
           </Button>

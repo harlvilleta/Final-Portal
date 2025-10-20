@@ -167,7 +167,7 @@ export default function TeacherSchedule() {
     <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={700} color="#2d3436" gutterBottom>
+        <Typography variant="h4" fontWeight={700} color="#800000" gutterBottom>
           My Schedule
         </Typography>
         <Typography variant="body1" color="text.secondary">
@@ -175,92 +175,76 @@ export default function TeacherSchedule() {
         </Typography>
       </Box>
 
-      {/* Statistics Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      {/* Statistics Cards (match dashboard cards) */}
+      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            bgcolor: '#e3f2fd', 
-            border: '1px solid #2196f3',
-            borderRadius: 3,
-            boxShadow: '0 4px 12px rgba(33, 150, 243, 0.15)'
+          <Card sx={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            p: 2, boxShadow: 3, borderRadius: 2, background: 'transparent',
+            transition: 'box-shadow 0.2s, background 0.2s', cursor: 'default',
+            borderLeft: '4px solid #800000',
+            '&:hover': { boxShadow: 6, background: 'transparent' }
           }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Avatar sx={{ bgcolor: '#1976d2', width: 56, height: 56, mx: 'auto', mb: 2 }}>
-                <Schedule sx={{ fontSize: 28 }} />
-              </Avatar>
-              <Typography variant="h4" fontWeight={700} color="#1976d2">
+            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
                 {meetings.length}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Meetings
-              </Typography>
+              <Typography color="text.secondary" variant="body2">Total Meetings</Typography>
             </CardContent>
           </Card>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            bgcolor: '#e8f5e8', 
-            border: '1px solid #4caf50',
-            borderRadius: 3,
-            boxShadow: '0 4px 12px rgba(76, 175, 80, 0.15)'
+          <Card sx={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            p: 2, boxShadow: 3, borderRadius: 2, background: 'transparent',
+            transition: 'box-shadow 0.2s, background 0.2s', cursor: 'default',
+            borderLeft: '4px solid #800000',
+            '&:hover': { boxShadow: 6, background: 'transparent' }
           }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Avatar sx={{ bgcolor: '#4caf50', width: 56, height: 56, mx: 'auto', mb: 2 }}>
-                <Event sx={{ fontSize: 28 }} />
-              </Avatar>
-              <Typography variant="h4" fontWeight={700} color="#388e3c">
+            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
                 {upcomingMeetings.length}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Upcoming
-              </Typography>
+              <Typography color="text.secondary" variant="body2">Upcoming</Typography>
             </CardContent>
           </Card>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            bgcolor: '#fff3e0', 
-            border: '1px solid #ff9800',
-            borderRadius: 3,
-            boxShadow: '0 4px 12px rgba(255, 152, 0, 0.15)'
+          <Card sx={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            p: 2, boxShadow: 3, borderRadius: 2, background: 'transparent',
+            transition: 'box-shadow 0.2s, background 0.2s', cursor: 'default',
+            borderLeft: '4px solid #800000',
+            '&:hover': { boxShadow: 6, background: 'transparent' }
           }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Avatar sx={{ bgcolor: '#ff9800', width: 56, height: 56, mx: 'auto', mb: 2 }}>
-                <AccessTime sx={{ fontSize: 28 }} />
-              </Avatar>
-              <Typography variant="h4" fontWeight={700} color="#f57c00">
+            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
                 {meetings.filter(m => {
                   const now = new Date();
                   const meetingDate = new Date(m.date);
                   return meetingDate.getTime() - now.getTime() < 24 * 60 * 60 * 1000 && meetingDate > now;
                 }).length}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Today
-              </Typography>
+              <Typography color="text.secondary" variant="body2">Today</Typography>
             </CardContent>
           </Card>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            bgcolor: '#fce4ec', 
-            border: '1px solid #e91e63',
-            borderRadius: 3,
-            boxShadow: '0 4px 12px rgba(233, 25, 99, 0.15)'
+          <Card sx={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            p: 2, boxShadow: 3, borderRadius: 2, background: 'transparent',
+            transition: 'box-shadow 0.2s, background 0.2s', cursor: 'default',
+            borderLeft: '4px solid #800000',
+            '&:hover': { boxShadow: 6, background: 'transparent' }
           }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Avatar sx={{ bgcolor: '#e91e63', width: 56, height: 56, mx: 'auto', mb: 2 }}>
-                <CalendarToday sx={{ fontSize: 28 }} />
-              </Avatar>
-              <Typography variant="h4" fontWeight={700} color="#e91e63">
+            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
                 {pastMeetings.length}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Past
-              </Typography>
+              <Typography color="text.secondary" variant="body2">Past</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -277,10 +261,22 @@ export default function TeacherSchedule() {
               const status = getMeetingStatus(meeting);
               return (
                 <Grid item xs={12} md={6} key={meeting.id}>
-                  <Card sx={{ 
-                    borderLeft: `4px solid ${status.color === 'warning' ? '#ff9800' : '#4caf50'}`,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    '&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }
+                  <Card sx={{
+                    boxShadow: 2,
+                    borderRadius: 2,
+                    transition: 'box-shadow 0.2s, background 0.2s',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::after': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '6px',
+                      height: '100%',
+                      background: 'linear-gradient(180deg, rgba(128,0,0,0.9), rgba(128,0,0,0.5))'
+                    },
+                    '&:hover': { boxShadow: 6, background: 'white' }
                   }}>
                     <CardContent>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>

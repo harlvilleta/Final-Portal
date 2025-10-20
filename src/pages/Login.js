@@ -43,94 +43,12 @@ export default function Login({ onLoginSuccess }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Initialize form states on component mount - ALWAYS ENABLE FORM
+  // Initialize form states on component mount
   useEffect(() => {
-    // Force enable form immediately when component mounts
     setLoading(false);
     setLockout(false);
     setLockoutTime(0);
     setFormErrors({ email: '', password: '' });
-    console.log('✅ Login component mounted - form FORCE ENABLED');
-  }, []);
-
-  // Check if user is already authenticated and redirect automatically
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        // User is already authenticated, redirect them immediately
-        try {
-          // Fetch user role from Firestore
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          let userRole = 'Student'; // Default role
-          
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            userRole = userData.role || 'Student';
-            
-            // Check if teacher is approved
-            if (userRole === 'Teacher') {
-              const teacherInfo = userData.teacherInfo || {};
-              if (!teacherInfo.isApproved || teacherInfo.approvalStatus !== 'approved') {
-                // Sign out the user if not approved
-                await auth.signOut();
-                return;
-              }
-            }
-          }
-          
-          // Redirect based on role immediately
-          if (userRole === 'Admin') {
-            navigate('/overview', { replace: true });
-          } else if (userRole === 'Teacher') {
-            navigate('/teacher-dashboard', { replace: true });
-          } else {
-            navigate('/user-dashboard', { replace: true });
-          }
-        } catch (error) {
-          console.error('Error fetching user role:', error);
-          // Fallback to default redirect
-          navigate('/user-dashboard', { replace: true });
-        }
-      } else {
-        // User is not authenticated - FORCE ENABLE FORM
-        setLoading(false);
-        setLockout(false);
-        setLockoutTime(0);
-        console.log('✅ User not authenticated - form FORCE ENABLED');
-      }
-    });
-    return unsubscribe;
-  }, [navigate]);
-
-  // Additional safety: Force enable form every 2 seconds if it gets stuck
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (loading || lockout) {
-        console.log('⚠️ Form appears stuck, checking states...', { loading, lockout });
-        // Only reset if we're not actually in a legitimate loading state
-        if (!loading) {
-          setLockout(false);
-          setLockoutTime(0);
-          console.log('🔧 Auto-reset lockout state');
-        }
-      }
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [loading, lockout]);
-
-  // Keyboard shortcut to force enable form (Ctrl+Shift+E)
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.ctrlKey && event.shiftKey && event.key === 'E') {
-        event.preventDefault();
-        forceEnableForm();
-        console.log('🔧 Form force enabled via keyboard shortcut (Ctrl+Shift+E)');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Account lockout timer with countdown
@@ -150,13 +68,6 @@ export default function Login({ onLoginSuccess }) {
     return () => clearTimeout(timer);
   }, [lockout, lockoutTime]);
 
-  // Initialize component state on mount
-  useEffect(() => {
-    // Ensure all loading states are properly initialized
-    setLoading(false);
-    setLockout(false);
-    setLockoutTime(0);
-  }, []);
 
   // Auto-fill email from location state (if redirected from register)
   useEffect(() => {
@@ -278,12 +189,6 @@ export default function Login({ onLoginSuccess }) {
         }
       }
       
-      setSnackbar({ 
-        open: true, 
-        message: `Welcome back! Redirecting to ${userRole} dashboard...`, 
-        severity: 'success' 
-      });
-      
       // Call the onLoginSuccess callback if provided
       if (onLoginSuccess) {
         onLoginSuccess();
@@ -295,7 +200,7 @@ export default function Login({ onLoginSuccess }) {
       setFailedAttempts(0);
       setFormErrors({ email: '', password: '' });
       
-      // Redirect based on role immediately
+      // Redirect based on role immediately without showing snackbar
       if (userRole === 'Admin') {
         navigate('/overview', { replace: true });
       } else if (userRole === 'Teacher') {
@@ -400,41 +305,8 @@ export default function Login({ onLoginSuccess }) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // PERMANENT FIX: Always enable form unless actively loading
-  const isFormDisabled = loading; // Removed lockout from disabled logic
-  
-  // Force enable function for debugging
-  const forceEnableForm = () => {
-    setLoading(false);
-    setLockout(false);
-    setLockoutTime(0);
-    setFormErrors({ email: '', password: '' });
-    console.log('🔧 Form force enabled manually');
-  };
-
-  // Complete form reset function
-  const resetFormCompletely = () => {
-    setEmail('');
-    setPassword('');
-    setLoading(false);
-    setLockout(false);
-    setLockoutTime(0);
-    setFormErrors({ email: '', password: '' });
-    setShowPassword(false);
-    setRememberMe(true);
-    setFailedAttempts(0);
-    console.log('🔄 Form completely reset');
-  };
-  
-  // Debug logging with more detail
-  console.log('🔍 Login form state:', { 
-    loading, 
-    lockout, 
-    isFormDisabled,
-    email: email.length > 0 ? 'has value' : 'empty',
-    password: password.length > 0 ? 'has value' : 'empty',
-    timestamp: new Date().toISOString()
-  });
+  // Form is disabled only when actively loading
+  const isFormDisabled = loading;
 
   return (
     <Box sx={{ 
@@ -475,7 +347,7 @@ export default function Login({ onLoginSuccess }) {
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
-          flex: '0 0 50%',
+          flex: 1,
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -501,7 +373,8 @@ export default function Login({ onLoginSuccess }) {
               textShadow: '0 4px 8px rgba(0,0,0,0.5)',
               letterSpacing: '-0.02em',
               fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
-              lineHeight: 1.2
+              lineHeight: 1.2,
+              color: '#fff'
             }}>
               Welcome Back to CeciServe
             </Typography>
@@ -525,23 +398,24 @@ export default function Login({ onLoginSuccess }) {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          padding: { xs: 2, sm: 3, md: 4 },
+          justifyContent: 'flex-start',
+          padding: { xs: '20px', sm: '30px', md: '40px' },
+          paddingTop: { xs: '30px', sm: '40px', md: '50px' },
           position: 'relative',
           overflow: 'hidden',
-          flex: '0 0 50%'
+          flex: 1
         }}>
         <Avatar sx={{ 
           bgcolor: '#800000', 
           width: 60, 
           height: 60, 
-          mb: 1.5, 
+          mb: 1, 
           boxShadow: '0 8px 32px rgba(128,0,0,0.3)'
         }}>
-          <LockOutlined sx={{ fontSize: 30, color: '#fff' }} />
+          <LockOutlined sx={{ fontSize: 30 }} />
         </Avatar>
         <Typography variant="h5" fontWeight={600} gutterBottom sx={{ 
-          mb: 1, 
+          mb: 0.5, 
           color: '#333',
           textAlign: 'center',
           letterSpacing: '-0.02em',
@@ -550,7 +424,7 @@ export default function Login({ onLoginSuccess }) {
           Welcome Back
         </Typography>
         <Typography variant="body2" sx={{ 
-          mb: 2, 
+          mb: 1.5, 
           color: '#666',
           textAlign: 'center',
           fontWeight: 400,
@@ -573,7 +447,7 @@ export default function Login({ onLoginSuccess }) {
             border: '1px solid',
             borderColor: 'error.main'
           }}>
-            <Security sx={{ color: 'error.main', mr: 1 }} />
+            <Security sx={{ mr: 1 }} />
             <Typography variant="body2" color="error.dark" fontWeight={600}>
               Account locked for {formatTime(lockoutTime)}
             </Typography>
@@ -582,7 +456,16 @@ export default function Login({ onLoginSuccess }) {
         
 
 
-        <form onSubmit={handleLogin} style={{ width: '100%', maxWidth: '300px', minWidth: '260px' }}>
+        <form onSubmit={handleLogin} style={{ 
+          width: '100%', 
+          maxWidth: '280px', 
+          minWidth: '250px',
+          margin: '0 auto',
+          marginTop: '10px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center'
+        }}>
           <TextField 
             label="Email" 
             type="email" 
@@ -595,9 +478,9 @@ export default function Login({ onLoginSuccess }) {
               '& .MuiOutlinedInput-root': {
                 bgcolor: '#fafafa',
                 color: '#333',
-                borderRadius: 12,
-                height: 44,
-                fontSize: 15,
+                borderRadius: 8,
+                height: 40,
+                fontSize: 14,
                 '& fieldset': { 
                   borderColor: '#e0e0e0',
                   borderWidth: 1
@@ -617,13 +500,17 @@ export default function Login({ onLoginSuccess }) {
               '& .MuiInputLabel-root': { 
                 color: '#666',
                 fontWeight: 500,
-                fontSize: '0.95rem'
+                fontSize: '0.75rem',
+                transform: 'translate(14px, 9px) scale(1)',
+                '&.MuiInputLabel-shrink': {
+                  transform: 'translate(14px, -9px) scale(0.75)'
+                }
               },
               '& .MuiInputAdornment-root .MuiSvgIcon-root': { 
-                color: '#800000' 
+                color: 'inherit' 
               }
             }} 
-            size="medium" 
+            size="small" 
             InputProps={{ 
               startAdornment: (
                 <InputAdornment position="start">
@@ -649,9 +536,9 @@ export default function Login({ onLoginSuccess }) {
               '& .MuiOutlinedInput-root': {
                 bgcolor: '#fafafa',
                 color: '#333',
-                borderRadius: 12,
-                height: 44,
-                fontSize: 15,
+                borderRadius: 8,
+                height: 40,
+                fontSize: 14,
                 '& fieldset': { 
                   borderColor: '#e0e0e0',
                   borderWidth: 1
@@ -671,13 +558,17 @@ export default function Login({ onLoginSuccess }) {
               '& .MuiInputLabel-root': { 
                 color: '#666',
                 fontWeight: 500,
-                fontSize: '0.95rem'
+                fontSize: '0.75rem',
+                transform: 'translate(14px, 9px) scale(1)',
+                '&.MuiInputLabel-shrink': {
+                  transform: 'translate(14px, -9px) scale(0.75)'
+                }
               },
               '& .MuiInputAdornment-root .MuiSvgIcon-root': { 
-                color: '#800000' 
+                color: 'inherit' 
               }
             }}
-            size="medium"
+            size="small"
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">

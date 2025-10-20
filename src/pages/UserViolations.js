@@ -163,53 +163,41 @@ export default function UserViolations({ currentUser }) {
       {/* Statistics Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#e3f2fd', boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Assignment color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6" color="primary.main" fontWeight={700}>
-                  {stats.total}
-                </Typography>
-              </Box>
+          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000', background: 'transparent', borderRadius: 2 }}>
+            <CardContent sx={{ textAlign: 'center', p: 2 }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
+                {stats.total}
+              </Typography>
               <Typography variant="body2" color="textSecondary">Total Violations</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#fff3e0', boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <PendingActions color="warning" sx={{ mr: 1 }} />
-                <Typography variant="h6" color="warning.main" fontWeight={700}>
-                  {stats.pending}
-                </Typography>
-              </Box>
+          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000', background: 'transparent', borderRadius: 2 }}>
+            <CardContent sx={{ textAlign: 'center', p: 2 }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
+                {stats.pending}
+              </Typography>
               <Typography variant="body2" color="textSecondary">Pending</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#e8f5e8', boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <DoneAll color="success" sx={{ mr: 1 }} />
-                <Typography variant="h6" color="success.main" fontWeight={700}>
-                  {stats.solved}
-                </Typography>
-              </Box>
+          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000', background: 'transparent', borderRadius: 2 }}>
+            <CardContent sx={{ textAlign: 'center', p: 2 }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
+                {stats.solved}
+              </Typography>
               <Typography variant="body2" color="textSecondary">Resolved</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#ffebee', boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <PriorityHigh color="error" sx={{ mr: 1 }} />
-                <Typography variant="h6" color="error.main" fontWeight={700}>
-                  {stats.critical}
-                </Typography>
-              </Box>
+          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000', background: 'transparent', borderRadius: 2 }}>
+            <CardContent sx={{ textAlign: 'center', p: 2 }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
+                {stats.critical}
+              </Typography>
               <Typography variant="body2" color="textSecondary">Critical</Typography>
             </CardContent>
           </Card>

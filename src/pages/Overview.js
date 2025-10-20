@@ -333,7 +333,7 @@ export default function Overview() {
       icon: <CampaignIcon fontSize="large" />,
       color: '#800000',
       to: '/announcements'
-    },
+    }
   ];
 
   const handleEventFormChange = (e) => {

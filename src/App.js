@@ -162,42 +162,38 @@ function AdminHeader({ currentUser, userProfile }) {
 
   return (
     <AppBar position="static" sx={{ bgcolor: '#fff', color: '#333', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-      <Toolbar sx={{ justifyContent: 'space-between' }}>
-        <Box sx={{ flex: 0.5 }}></Box>
+      <Toolbar sx={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', width: '100%' }}>
+        <Box></Box>
         <Typography variant="h4" component="div" sx={{ 
           fontWeight: 700, 
           color: '#800000', 
-          flex: 1, 
           textAlign: 'center',
-          fontSize: '1.75rem',
           lineHeight: 1.2
         }}>
           Student Affairs Management System
         </Typography>
-        <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Tooltip title={isOnNotificationsPage ? "Back to Dashboard" : "View Notifications"}>
-              <IconButton
-                size="large"
-                aria-label="notifications"
-                color="inherit"
-                onClick={handleNotificationClick}
-                sx={{ 
-                  bgcolor: unreadCount > 0 ? '#ffebee' : 'transparent',
-                  '&:hover': { bgcolor: unreadCount > 0 ? '#ffcdd2' : '#f5f5f5' }
-                }}
-              >
-                <Badge badgeContent={unreadCount} color="error">
-                  <Notifications />
-                </Badge>
-              </IconButton>
-            </Tooltip>
-            <ProfileDropdown 
-              currentUser={currentUser} 
-              userProfile={userProfile}
-              profileRoute="/profile"
-            />
-          </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>
+          <Tooltip title={isOnNotificationsPage ? "Back to Dashboard" : "View Notifications"}>
+            <IconButton
+              size="large"
+              aria-label="notifications"
+              color="inherit"
+              onClick={handleNotificationClick}
+              sx={{ 
+                bgcolor: unreadCount > 0 ? '#ffebee' : 'transparent',
+                '&:hover': { bgcolor: unreadCount > 0 ? '#ffcdd2' : '#f5f5f5' }
+              }}
+            >
+              <Badge badgeContent={unreadCount} color="error">
+                <Notifications />
+              </Badge>
+            </IconButton>
+          </Tooltip>
+          <ProfileDropdown 
+            currentUser={currentUser} 
+            userProfile={userProfile}
+            profileRoute="/profile"
+          />
         </Box>
       </Toolbar>
     </AppBar>
@@ -332,42 +328,38 @@ function UserHeader({ currentUser, userProfile }) {
   return (
     <>
       <AppBar position="static" sx={{ bgcolor: 'background.paper', color: 'text.primary', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Box sx={{ flex: 0.5 }}></Box>
+        <Toolbar sx={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', width: '100%' }}>
+          <Box></Box>
           <Typography variant="h4" component="div" sx={{ 
             fontWeight: 700, 
             color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
-            flex: 1, 
             textAlign: 'center',
-            fontSize: '1.75rem',
             lineHeight: 1.2
           }}>
             Student Affairs Management System
           </Typography>
-          <Box sx={{ flex: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Tooltip title={isOnNotificationsPage ? "Back to Dashboard" : "View Notifications"}>
-                <IconButton
-                  size="large"
-                  aria-label="notifications"
-                  color="inherit"
-                  onClick={handleNotificationClick}
-                  sx={{ 
-                    bgcolor: studentNotifications.filter(n => !n.read).length > 0 ? '#ffebee' : 'transparent',
-                    '&:hover': { bgcolor: studentNotifications.filter(n => !n.read).length > 0 ? '#ffcdd2' : '#f5f5f5' }
-                  }}
-                >
-                  <Badge badgeContent={studentNotifications.filter(n => !n.read).length} color="error">
-                    <Notifications />
-                  </Badge>
-                </IconButton>
-              </Tooltip>
-              <ProfileDropdown 
-                currentUser={currentUser} 
-                userProfile={userProfile}
-                profileRoute="/profile"
-              />
-            </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>
+            <Tooltip title={isOnNotificationsPage ? "Back to Dashboard" : "View Notifications"}>
+              <IconButton
+                size="large"
+                aria-label="notifications"
+                color="inherit"
+                onClick={handleNotificationClick}
+                sx={{ 
+                  bgcolor: studentNotifications.filter(n => !n.read).length > 0 ? '#ffebee' : 'transparent',
+                  '&:hover': { bgcolor: studentNotifications.filter(n => !n.read).length > 0 ? '#ffcdd2' : '#f5f5f5' }
+                }}
+              >
+                <Badge badgeContent={studentNotifications.filter(n => !n.read).length} color="error">
+                  <Notifications />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+            <ProfileDropdown 
+              currentUser={currentUser} 
+              userProfile={userProfile}
+              profileRoute="/profile"
+            />
           </Box>
         </Toolbar>
       </AppBar>
@@ -383,64 +375,48 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [authError, setAuthError] = useState(null);
-  const [forceLogin, setForceLogin] = useState(() => {
-    // Check if user has logged in before (not first visit)
-    const hasLoggedInBefore = localStorage.getItem('hasLoggedInBefore');
-    return !hasLoggedInBefore; // Only force login on first visit
-  });
+  const [forceLogin, setForceLogin] = useState(false);
   const [authInitialized, setAuthInitialized] = useState(false);
 
   useEffect(() => {
-    console.log('App component mounted, starting auth check...');
-    
-    // Add a timeout to prevent infinite loading
+    // Add a shorter timeout to prevent infinite loading
     const loadingTimeout = setTimeout(() => {
-      console.log('Loading timeout reached, forcing app to load');
       setLoading(false);
       if (!userRole && user) {
-        console.log('No role set but user exists, defaulting to Student');
         setUserRole('Student'); // Default fallback
       }
-    }, 10000); // Increased timeout to 10 seconds
+    }, 3000); // Reduced timeout to 3 seconds
 
-    let isMounted = true; // Flag to prevent state updates after unmount
+    let isMounted = true;
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!isMounted) return; // Prevent state updates if component is unmounted
-      console.log('Auth state changed:', user ? `User logged in: ${user.email}` : 'User logged out');
+      if (!isMounted) return;
       
-      // Mark auth as initialized after first check
       if (!authInitialized) {
         setAuthInitialized(true);
       }
       
-      if (user && !forceLogin) { // Only process user if forceLogin is false
-        console.log('Setting user state...');
+      if (user) {
         setUser(user);
         setCurrentUser(user);
         setLoading(true);
         setAuthError(null);
+        setForceLogin(false);
         
         try {
-          console.log('Fetching user document from Firestore...');
-          // Fetch user profile and role with timeout
+          // Fetch user profile and role with shorter timeout
           const userDoc = await Promise.race([
             getDoc(doc(db, 'users', user.uid)),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
           ]);
           
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            console.log('User data found:', userData);
             setUserProfile(userData);
             setUserRole(userData.role || 'Student');
-            console.log('User profile and role loaded:', userData.role);
-            
-            // Clear loading immediately after role is determined
             setLoading(false);
             clearTimeout(loadingTimeout);
           } else {
-            console.log('User document not found, creating default...');
             // Create default user document
             const defaultUserData = {
               email: user.email,
@@ -456,7 +432,6 @@ function App() {
             
             try {
               await setDoc(doc(db, 'users', user.uid), defaultUserData);
-              console.log('✅ Created default user document');
               setUserProfile(defaultUserData);
               setUserRole('Student');
               setLoading(false);
@@ -478,69 +453,41 @@ function App() {
           setLoading(false);
           clearTimeout(loadingTimeout);
         }
-      } else if (user && forceLogin) {
-        // User is authenticated but forceLogin is true, so we don't set the user state
-        console.log('User authenticated but forceLogin is true, keeping login page');
-        setLoading(false);
-        clearTimeout(loadingTimeout);
       } else {
-        console.log('User logged out, clearing state...');
         // User logged out
         setUser(null);
         setCurrentUser(null);
         setUserProfile(null);
         setUserRole(null);
         setAuthError(null);
-        // Only force login if auth is initialized (prevents auto-logout on page refresh)
-        if (authInitialized) {
-          setForceLogin(true); // Force login page to show
-        }
+        setForceLogin(true);
         clearTimeout(loadingTimeout);
         setLoading(false);
       }
     });
 
     return () => {
-      isMounted = false; // Mark component as unmounted
+      isMounted = false;
       clearTimeout(loadingTimeout);
       unsubscribe();
     };
-  }, [forceLogin, authInitialized]); // Add forceLogin and authInitialized to dependency array
+  }, [authInitialized]);
 
-  console.log('Current state:', { user: !!user, userRole, loading, userEmail: user?.email, forceLogin });
 
-  // Show loading while checking authentication
+  // Show minimal loading while checking authentication
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
-        <CircularProgress size={60} sx={{ mb: 2 }} />
-        <Typography variant="h6" sx={{ mb: 1 }}>
+        <CircularProgress size={40} sx={{ mb: 1 }} />
+        <Typography variant="body2" color="text.secondary">
           Loading...
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Please wait while we set up your dashboard
-        </Typography>
-        <Button 
-          variant="outlined" 
-          onClick={() => {
-            console.log('Manual loading override');
-            setLoading(false);
-            if (!userRole && user) {
-              console.log('Setting default role to Student');
-              setUserRole('Student');
-            }
-          }}
-          sx={{ mt: 2 }}
-        >
-          Continue to App
-        </Button>
       </Box>
     );
   }
 
   // If user is not authenticated OR forceLogin is true, show login/register forms
   if (!user || forceLogin) {
-    console.log('No user detected or forceLogin is true, showing login/register forms');
     return (
       <Router>
         <Routes>
@@ -556,35 +503,20 @@ function App() {
     );
   }
 
-  console.log('User authenticated, role:', userRole, 'Rendering dashboard...');
-  console.log('User details:', { email: user.email, displayName: user.displayName, uid: user.uid });
 
-  // If user is authenticated but role is not determined yet, show loading
+  // If user is authenticated but role is not determined yet, show minimal loading
   if (!userRole) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
-        <CircularProgress size={60} sx={{ mb: 2 }} />
-        <Typography variant="h6" sx={{ mb: 1 }}>
-          Setting up your dashboard...
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Please wait a moment
+        <CircularProgress size={40} sx={{ mb: 1 }} />
+        <Typography variant="body2" color="text.secondary">
+          Setting up dashboard...
         </Typography>
         {authError && (
           <Alert severity="warning" sx={{ mb: 2, maxWidth: 400 }}>
             {authError}
           </Alert>
         )}
-        <Button 
-          variant="contained" 
-          onClick={() => {
-            console.log('Force setting role to Student');
-            setUserRole('Student');
-          }}
-          sx={{ mt: 2 }}
-        >
-          Continue as Student
-        </Button>
       </Box>
     );
   }
@@ -594,10 +526,28 @@ function App() {
   return (
     <CustomThemeProvider>
       <ThemeWrapper>
+        <style>
+          {`
+            /* Hide scrollbars globally */
+            * {
+              scrollbar-width: none; /* Firefox */
+              -ms-overflow-style: none; /* Internet Explorer 10+ */
+            }
+            
+            *::-webkit-scrollbar {
+              display: none; /* WebKit */
+            }
+            
+            /* Ensure content is still scrollable */
+            body {
+              overflow: auto;
+            }
+          `}
+        </style>
         <Router>
           <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Navigate to={userRole === 'Admin' ? '/overview' : userRole === 'Teacher' ? '/teacher-dashboard' : '/user-dashboard'} replace />} />
+            <Route path="/register" element={<Navigate to={userRole === 'Admin' ? '/overview' : userRole === 'Teacher' ? '/teacher-dashboard' : '/user-dashboard'} replace />} />
             
             {/* Admin/Teacher Routes - Only accessible to Admin/Teacher roles */}
             <Route path="/*" element={
@@ -607,7 +557,17 @@ function App() {
                     <AdminHeader currentUser={currentUser} userProfile={userProfile} />
                     <Box sx={{ display: "flex", flex: 1 }}>
                       <Sidebar />
-                      <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
+                      <Box sx={{ 
+                        flex: 1, 
+                        p: 3, 
+                        overflowY: "auto",
+                        height: "calc(100vh - 64px)",
+                        '&::-webkit-scrollbar': {
+                          display: 'none'
+                        },
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none'
+                      }}>
                         <Routes>
                           <Route path="/" element={<Navigate to="/overview" />} />
                           <Route path="/overview" element={<Overview />} />
@@ -617,6 +577,7 @@ function App() {
                           <Route path="/history" element={<History />} />
                           <Route path="/activity/requests" element={<ActivityRequestsAdmin />} />
                           <Route path="/profile" element={<Profile />} />
+                          <Route path="/edit-profile" element={<EditProfile />} />
                           <Route path="/violation-record" element={<ViolationRecord />} />
                           <Route path="/violation-record/create-meeting" element={<ViolationCreateMeeting />} />
                           <Route path="/violation-record/history" element={<ViolationHistory />} />
@@ -645,7 +606,17 @@ function App() {
                     <TeacherHeader currentUser={currentUser} userProfile={userProfile} />
                     <Box sx={{ display: "flex", flex: 1 }}>
                       <TeacherSidebar />
-                      <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
+                      <Box sx={{ 
+                        flex: 1, 
+                        p: 3, 
+                        overflowY: "auto",
+                        height: "calc(100vh - 64px)",
+                        '&::-webkit-scrollbar': {
+                          display: 'none'
+                        },
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none'
+                      }}>
                         <Routes>
                           <Route path="/" element={<Navigate to="/teacher-dashboard" />} />
                           <Route path="/teacher-dashboard" element={<TeacherDashboard currentUser={currentUser} userProfile={userProfile} />} />
@@ -655,10 +626,11 @@ function App() {
                           <Route path="/teacher-schedule" element={<TeacherSchedule />} />
                                                     <Route path="/teacher-notifications" element={<TeacherNotifications />} />
                           <Route path="/activity" element={<ActivitiesView />} />
-                          <Route path="/teacher-lost-found" element={<TeacherLostFound />} />
+                          <Route path="/teacher-lost-found" element={<AdminLostFound />} />
                           <Route path="/teacher-violation-records" element={<TeacherViolationRecords />} />
                           <Route path="/teacher-activity-scheduler" element={<TeacherActivityScheduler />} />
                           <Route path="/teacher-profile" element={<Profile />} />
+                          <Route path="/edit-profile" element={<EditProfile />} />
                           <Route path="/*" element={<Navigate to="/teacher-dashboard" />} />
                         </Routes>
                       </Box>
@@ -669,15 +641,21 @@ function App() {
                 <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "background.default" }}>
                   <UserHeader currentUser={currentUser} userProfile={userProfile} />
                   <Box sx={{ display: "flex", flex: 1 }}>
-                    <UserSidebar />
-                    <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
+                    <UserSidebar currentUser={currentUser} userProfile={userProfile} />
+                    <Box sx={{ 
+                      flex: 1, 
+                      p: 3, 
+                      overflowY: "auto",
+                      height: "calc(100vh - 64px)",
+                      minHeight: "calc(100vh - 64px)"
+                    }}>
                       <Routes>
-                        <Route path="/" element={<UserDashboard />} />
-                        <Route path="/user-dashboard" element={<UserDashboard />} />
+                        <Route path="/" element={<UserDashboard currentUser={currentUser} userProfile={userProfile} />} />
+                        <Route path="/user-dashboard" element={<UserDashboard currentUser={currentUser} userProfile={userProfile} />} />
                         <Route path="/violations" element={<UserViolations currentUser={currentUser} />} />
                         <Route path="/announcements" element={<UserAnnouncements />} />
                         <Route path="/activity" element={<ActivitiesView />} />
-                        <Route path="/lost-found" element={<UserLostFound currentUser={currentUser} />} />
+                        <Route path="/lost-found" element={<AdminLostFound />} />
                         <Route path="/receipt-submission" element={<ReceiptSubmission />} />
                         <Route path="/receipt-history" element={<ReceiptHistory />} />
                         <Route path="/profile" element={<Profile />} />

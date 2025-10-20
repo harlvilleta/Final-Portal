@@ -222,10 +222,10 @@ export const createAppTheme = (mode = 'light') => {
           root: {
             color: isDark ? '#ffffff' : '#ffffff', // White text for sidebar in both modes
             '&:hover': {
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: isDark ? 'rgba(74, 85, 104, 0.8)' : 'rgba(74, 85, 104, 0.8)',
             },
             '&.Mui-selected': {
-              backgroundColor: isDark ? 'rgba(128, 0, 0, 0.2)' : 'rgba(128, 0, 0, 0.2)',
+              backgroundColor: isDark ? 'rgba(99, 110, 114, 0.8)' : 'rgba(99, 110, 114, 0.8)',
               color: isDark ? '#ffffff' : '#ffffff',
             }
           }

@@ -29,7 +29,7 @@ const menu = [
     path: "/activity",
     hasSubmenu: true,
     submenu: [
-      { text: "Schedule Activity", icon: <Event sx={{ color: 'inherit' }} />, path: "/activity" },
+      { text: "View Activities", icon: <Event sx={{ color: 'inherit' }} />, path: "/activity" },
       { text: "Activity Scheduler", icon: <Event sx={{ color: 'inherit' }} />, path: "/admin-activity-scheduler" },
       { text: "Requests", icon: <History sx={{ color: 'inherit' }} />, path: "/activity/requests" }
     ]
@@ -139,6 +139,7 @@ export default function Sidebar() {
               <ListItemIcon sx={{ minWidth: 40, color: 'white' }}>{item.icon}</ListItemIcon>
               <ListItemText 
                 primary={item.text} 
+                primaryTypographyProps={{ noWrap: true }}
                 sx={{ 
                   '& .MuiListItemText-primary': { 
                     fontWeight: isItemSelected(item) ? 600 : 400 
@@ -176,6 +177,7 @@ export default function Sidebar() {
                       </ListItemIcon>
                       <ListItemText 
                         primary={subItem.text} 
+                        primaryTypographyProps={{ noWrap: true }}
                         sx={{ 
                           '& .MuiListItemText-primary': { 
                             fontWeight: isSubItemSelected(subItem) ? 600 : 400 

@@ -6,22 +6,40 @@ import {
   Grid,
   Card,
   CardContent,
+  CardHeader,
   Button,
   Alert,
   Snackbar,
   IconButton,
   Tooltip,
-  useTheme
+  useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Chip,
+  Stack,
+  Divider,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  InputAdornment
 } from '@mui/material';
 import {
   CalendarToday,
   Event,
   CheckCircle,
   Cancel,
-  Warning
+  Warning,
+  Search,
+  Visibility
 } from '@mui/icons-material';
 import { auth, db } from '../firebase';
-import { collection, getDocs, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, onSnapshot, updateDoc, doc } from 'firebase/firestore';
 
 export default function AdminActivityScheduler() {
   const theme = useTheme();
@@ -30,6 +48,10 @@ export default function AdminActivityScheduler() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const [viewBooking, setViewBooking] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [filteredModal, setFilteredModal] = useState({ open: false, filter: null, title: '' });
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Available resources and departments
   const resources = [
@@ -158,6 +180,104 @@ export default function AdminActivityScheduler() {
     setSelectedDate(date);
   };
 
+  const handleApproveBooking = async (bookingId) => {
+    setIsProcessing(true);
+    try {
+      await updateDoc(doc(db, 'activity_bookings', bookingId), {
+        status: 'approved',
+        reviewedBy: currentUser?.email || 'admin',
+        reviewedAt: new Date().toISOString()
+      });
+      setSnackbar({ open: true, message: 'Booking approved successfully!', severity: 'success' });
+      setViewBooking(null);
+      // Reopen the filtered modal if it was open before
+      if (filteredModal.filter) {
+        setFilteredModal({ open: true, filter: filteredModal.filter, title: filteredModal.title });
+      }
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Error approving booking', severity: 'error' });
+    }
+    setIsProcessing(false);
+  };
+
+  const handleRejectBooking = async (bookingId) => {
+    setIsProcessing(true);
+    try {
+      await updateDoc(doc(db, 'activity_bookings', bookingId), {
+        status: 'rejected',
+        reviewedBy: currentUser?.email || 'admin',
+        reviewedAt: new Date().toISOString()
+      });
+      setSnackbar({ open: true, message: 'Booking rejected', severity: 'info' });
+      setViewBooking(null);
+      // Reopen the filtered modal if it was open before
+      if (filteredModal.filter) {
+        setFilteredModal({ open: true, filter: filteredModal.filter, title: filteredModal.title });
+      }
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Error rejecting booking', severity: 'error' });
+    }
+    setIsProcessing(false);
+  };
+
+  const handleStatsCardClick = (filter) => {
+    let title = '';
+    switch (filter) {
+      case 'all':
+        title = 'All Booking Requests';
+        break;
+      case 'pending':
+        title = 'Pending Booking Requests';
+        break;
+      case 'approved':
+        title = 'Approved Booking Requests';
+        break;
+      case 'rejected':
+        title = 'Rejected Booking Requests';
+        break;
+      default:
+        title = 'Booking Requests';
+    }
+    setSearchTerm(''); // Reset search when opening modal
+    setFilteredModal({ open: true, filter, title });
+  };
+
+  const getFilteredBookings = () => {
+    if (!filteredModal.filter) return [];
+    
+    let filtered = [];
+    switch (filteredModal.filter) {
+      case 'all':
+        filtered = bookings;
+        break;
+      case 'pending':
+        filtered = bookings.filter(b => b.status === 'pending');
+        break;
+      case 'approved':
+        filtered = bookings.filter(b => b.status === 'approved');
+        break;
+      case 'rejected':
+        filtered = bookings.filter(b => b.status === 'rejected');
+        break;
+      default:
+        filtered = bookings;
+    }
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(booking =>
+        booking.activity?.toLowerCase().includes(search) ||
+        booking.teacherName?.toLowerCase().includes(search) ||
+        booking.department?.toLowerCase().includes(search) ||
+        booking.resource?.toLowerCase().includes(search) ||
+        booking.description?.toLowerCase().includes(search)
+      );
+    }
+
+    return filtered;
+  };
+
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -232,18 +352,19 @@ export default function AdminActivityScheduler() {
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Paper 
-            onClick={() => console.log('Total Bookings clicked')}
+            onClick={() => handleStatsCardClick('all')}
             sx={{ 
             p: 2, 
             textAlign: 'center', 
-            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            bgcolor: '#ffffff',
+            border: '1px solid #e0e0e0',
             borderLeft: '4px solid #800000',
+            borderRadius: 2,
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            transition: 'box-shadow 0.2s',
             cursor: 'pointer',
-            transition: 'all 0.2s',
             '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: 4,
+              boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
             },
           }}>
               <Typography variant="h4" sx={{ 
@@ -261,18 +382,19 @@ export default function AdminActivityScheduler() {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Paper 
-            onClick={() => console.log('Pending Requests clicked')}
+            onClick={() => handleStatsCardClick('pending')}
             sx={{ 
             p: 2, 
             textAlign: 'center', 
-            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            bgcolor: '#ffffff',
+            border: '1px solid #e0e0e0',
             borderLeft: '4px solid #800000',
+            borderRadius: 2,
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            transition: 'box-shadow 0.2s',
             cursor: 'pointer',
-            transition: 'all 0.2s',
             '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: 4,
+              boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
             },
           }}>
               <Typography variant="h4" sx={{ 
@@ -290,18 +412,19 @@ export default function AdminActivityScheduler() {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Paper 
-            onClick={() => console.log('Approved Requests clicked')}
+            onClick={() => handleStatsCardClick('approved')}
             sx={{ 
             p: 2, 
             textAlign: 'center', 
-            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            bgcolor: '#ffffff',
+            border: '1px solid #e0e0e0',
             borderLeft: '4px solid #800000',
+            borderRadius: 2,
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            transition: 'box-shadow 0.2s',
             cursor: 'pointer',
-            transition: 'all 0.2s',
             '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: 4,
+              boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
             },
           }}>
               <Typography variant="h4" sx={{ 
@@ -319,18 +442,19 @@ export default function AdminActivityScheduler() {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Paper 
-            onClick={() => console.log('Rejected Requests clicked')}
+            onClick={() => handleStatsCardClick('rejected')}
             sx={{ 
             p: 2, 
             textAlign: 'center', 
-            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            bgcolor: '#ffffff',
+            border: '1px solid #e0e0e0',
             borderLeft: '4px solid #800000',
+            borderRadius: 2,
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            transition: 'box-shadow 0.2s',
             cursor: 'pointer',
-            transition: 'all 0.2s',
             '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: 4,
+              boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
             },
           }}>
               <Typography variant="h4" sx={{ 
@@ -523,9 +647,455 @@ export default function AdminActivityScheduler() {
           </Paper>
         </Grid>
 
+        {/* Activity Bookings Cards Section */}
+        <Grid item xs={12}>
+          <Paper sx={{ 
+            p: 3,
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000',
+            transition: 'all 0.2s',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: 4,
+            },
+          }}>
+            <Typography variant="h5" gutterBottom sx={{ 
+              fontWeight: 700, 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+              mb: 3
+            }}>
+              📋 Activity Booking Requests
+            </Typography>
+            
+            {bookings.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="h6" color="text.secondary">
+                  No booking requests found
+                </Typography>
+              </Box>
+            ) : (
+              <Grid container spacing={2}>
+                {bookings.map((booking) => (
+                  <Grid item xs={12} sm={6} md={4} key={booking.id}>
+                    <Card 
+                      sx={{ 
+                        height: '100%',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease-in-out',
+                        borderLeft: '4px solid #9e9e9e',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: 6,
+                          borderLeft: '4px solid #757575'
+                        }
+                      }}
+                      onClick={() => setViewBooking(booking)}
+                    >
+                      <CardHeader
+                        title={
+                          <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+                            <Typography 
+                              fontWeight={700} 
+                              sx={{ fontSize: '1.1rem' }}
+                              className="card-title"
+                            >
+                              {booking.activity}
+                            </Typography>
+                          </Stack>
+                        }
+                        subheader={
+                          <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                            <Chip 
+                              label={booking.department || 'General'} 
+                              color="primary" 
+                              size="small" 
+                              variant="outlined"
+                            />
+                            <Chip 
+                              label={booking.status.charAt(0).toUpperCase() + booking.status.slice(1)} 
+                              color={getStatusColor(booking.status)} 
+                              size="small" 
+                              icon={getStatusIcon(booking.status)}
+                            />
+                          </Stack>
+                        }
+                      />
+                      <CardContent sx={{ pt: 0 }}>
+                        <Typography 
+                          variant="body2" 
+                          color="text.secondary" 
+                          sx={{ 
+                            mb: 2,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden'
+                          }}
+                        >
+                          {booking.description || 'No description provided'}
+                        </Typography>
+                        <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap">
+                          <Chip 
+                            label={`🏢 ${booking.resource}`} 
+                            size="small" 
+                            variant="outlined" 
+                            sx={{ fontSize: '0.75rem' }}
+                          />
+                          <Chip 
+                            label={`👤 ${booking.teacherName || 'Unknown'}`} 
+                            size="small" 
+                            variant="outlined"
+                            sx={{ fontSize: '0.75rem' }}
+                          />
+                        </Stack>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Typography 
+                            variant="caption" 
+                            color="text.secondary" 
+                            sx={{ 
+                              fontWeight: 500,
+                              flexGrow: 1
+                            }}
+                          >
+                            📅 {booking.date ? new Date(booking.date).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric'
+                            }) : 'Date TBD'}
+                          </Typography>
+                          <Typography 
+                            variant="caption" 
+                            color="text.secondary" 
+                            sx={{ fontWeight: 500 }}
+                          >
+                            🕐 {booking.startTime && booking.endTime 
+                              ? `${booking.startTime} - ${booking.endTime}`
+                              : booking.time || 'Time TBD'
+                            }
+                          </Typography>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </Paper>
+        </Grid>
+
       </Grid>
 
 
+
+      {/* Filtered Records Modal */}
+      <Dialog open={filteredModal.open} onClose={() => setFilteredModal({ open: false, filter: null, title: '' })} maxWidth="md" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Typography variant="h5" fontWeight={700}>{filteredModal.title}</Typography>
+            <Chip 
+              label={`${getFilteredBookings().length} records`} 
+              color="primary" 
+              size="small" 
+            />
+          </Stack>
+        </DialogTitle>
+        <DialogContent dividers>
+          {/* Search Bar */}
+          <Box sx={{ mb: 3 }}>
+            <TextField
+              fullWidth
+              placeholder="Search bookings..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderLeft: '4px solid #800000',
+                  '&:hover': {
+                    borderLeft: '4px solid #a00000',
+                  }
+                }
+              }}
+            />
+          </Box>
+
+          {getFilteredBookings().length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="h6" color="text.secondary">
+                {searchTerm ? 'No matching records found' : `No ${filteredModal.filter} booking requests found`}
+              </Typography>
+            </Box>
+          ) : (
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: 'grey.50' }}>
+                    <TableCell sx={{ fontWeight: 700 }}>Activity</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Teacher</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Department</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Resource</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Time</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {getFilteredBookings().map((booking) => (
+                    <TableRow 
+                      key={booking.id}
+                      sx={{ 
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => {
+                        setViewBooking(booking);
+                        setFilteredModal({ open: false, filter: null, title: '' });
+                      }}
+                    >
+                      <TableCell sx={{ fontWeight: 500 }}>
+                        {booking.activity}
+                      </TableCell>
+                      <TableCell>{booking.teacherName || 'Unknown'}</TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={booking.department || 'General'} 
+                          color="primary" 
+                          size="small" 
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell>{booking.resource}</TableCell>
+                      <TableCell>
+                        {booking.date ? new Date(booking.date).toLocaleDateString() : 'TBD'}
+                      </TableCell>
+                      <TableCell>
+                        {booking.startTime && booking.endTime 
+                          ? `${booking.startTime} - ${booking.endTime}`
+                          : booking.time || 'TBD'
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={getStatusIcon(booking.status)}
+                          label={booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                          color={getStatusColor(booking.status)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip title="View details">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewBooking(booking);
+                              setFilteredModal({ open: false, filter: null, title: '' });
+                            }}
+                          >
+                            <Visibility />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button 
+            onClick={() => setFilteredModal({ open: false, filter: null, title: '' })} 
+            variant="outlined"
+            size="large"
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Booking Details Modal */}
+      <Dialog open={!!viewBooking} onClose={() => setViewBooking(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Typography variant="h5" fontWeight={700}>{viewBooking?.activity}</Typography>
+            <Chip 
+              label={viewBooking?.department || 'General'} 
+              color="primary" 
+              size="small" 
+            />
+            <Chip 
+              label={viewBooking?.status.charAt(0).toUpperCase() + viewBooking?.status.slice(1)} 
+              color={getStatusColor(viewBooking?.status)} 
+              size="small" 
+              icon={getStatusIcon(viewBooking?.status)}
+            />
+          </Stack>
+        </DialogTitle>
+        <DialogContent dividers>
+          {viewBooking && (
+            <Box>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <Stack spacing={2}>
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        📅 Date & Time
+                      </Typography>
+                      <Typography variant="body1" fontWeight={500}>
+                        {viewBooking.date ? new Date(viewBooking.date).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        }) : 'Not specified'}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {viewBooking.startTime && viewBooking.endTime 
+                          ? `${viewBooking.startTime} - ${viewBooking.endTime}`
+                          : viewBooking.time || 'Time not specified'
+                        }
+                      </Typography>
+                    </Box>
+                    
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        👤 Requested By
+                      </Typography>
+                      <Typography variant="body1" fontWeight={500}>
+                        {viewBooking.teacherName || 'Unknown Teacher'}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {viewBooking.teacherEmail || 'Email not provided'}
+                      </Typography>
+                    </Box>
+                    
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        🏢 Resource/Location
+                      </Typography>
+                      <Typography variant="body1" fontWeight={500}>
+                        {viewBooking.resource || 'Not specified'}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <Stack spacing={2}>
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        🏷️ Department
+                      </Typography>
+                      <Typography variant="body1" fontWeight={500}>
+                        {viewBooking.department || 'General'}
+                      </Typography>
+                    </Box>
+                    
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        📊 Status
+                      </Typography>
+                      <Chip 
+                        label={viewBooking.status.charAt(0).toUpperCase() + viewBooking.status.slice(1)} 
+                        color={getStatusColor(viewBooking.status)} 
+                        size="small"
+                        icon={getStatusIcon(viewBooking.status)}
+                      />
+                    </Box>
+                    
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        📝 Request Details
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Requested on: {viewBooking.createdAt ? new Date(viewBooking.createdAt).toLocaleDateString() : 'Unknown'}
+                      </Typography>
+                      {viewBooking.reviewedBy && (
+                        <Typography variant="body2" color="text.secondary">
+                          Reviewed by: {viewBooking.reviewedBy}
+                        </Typography>
+                      )}
+                      {viewBooking.reviewedAt && (
+                        <Typography variant="body2" color="text.secondary">
+                          Reviewed on: {new Date(viewBooking.reviewedAt).toLocaleDateString()}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Stack>
+                </Grid>
+                
+                <Grid item xs={12}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      📝 Description
+                    </Typography>
+                    <Paper 
+                      sx={{ 
+                        p: 2, 
+                        bgcolor: 'grey.50', 
+                        border: '1px solid',
+                        borderColor: 'grey.200',
+                        borderRadius: 1
+                      }}
+                    >
+                      <Typography variant="body1">
+                        {viewBooking.description || 'No description provided'}
+                      </Typography>
+                    </Paper>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button 
+            onClick={() => {
+              setViewBooking(null);
+              // Reopen the filtered modal if it was open before
+              if (filteredModal.filter) {
+                setFilteredModal({ open: true, filter: filteredModal.filter, title: filteredModal.title });
+              }
+            }} 
+            variant="outlined"
+            size="large"
+          >
+            Close
+          </Button>
+          {viewBooking?.status === 'pending' && (
+            <>
+              <Button 
+                onClick={() => handleRejectBooking(viewBooking.id)}
+                variant="contained" 
+                color="error"
+                size="large"
+                disabled={isProcessing}
+                startIcon={<Cancel />}
+              >
+                {isProcessing ? 'Processing...' : 'Reject'}
+              </Button>
+              <Button 
+                onClick={() => handleApproveBooking(viewBooking.id)}
+                variant="contained" 
+                color="success"
+                size="large"
+                disabled={isProcessing}
+                startIcon={<CheckCircle />}
+              >
+                {isProcessing ? 'Processing...' : 'Approve'}
+              </Button>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar */}
       <Snackbar

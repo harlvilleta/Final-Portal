@@ -9,7 +9,7 @@ import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibi
 import { db, storage, logActivity } from "../firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, where, query, onSnapshot, orderBy, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-// Removed validateStudentId import for AddStudent function - admin can freely add students
+import { validateStudentId } from "../utils/studentValidation";
 
 const courses = ["BSIT", "BSBA", "BSCRIM", "BSHTM", "BEED", "BSED", "BSHM"];
 const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
@@ -2035,24 +2035,6 @@ function StudentList({
     }
   };
 
-  // Handle add violation for a specific student
-  const handleAddViolation = (student) => {
-    setCurrentStudent(student);
-    setViolation({ 
-      violation: "", 
-      classification: "", 
-      date: "",
-      time: "",
-      location: "",
-      description: "",
-      witnesses: "",
-      severity: "",
-      actionTaken: "",
-      reportedBy: ""
-    });
-    setViolationImageFile(null);
-    setOpenViolation(true);
-  };
 
   // --- StudentList: handleViolationImage ---
   const handleViolationImage = (e) => {
@@ -2089,44 +2071,6 @@ function StudentList({
     setOpenViolationImagePreview(true);
   };
 
-  // Handle view violations for a specific student
-  const handleViewViolations = async (student) => {
-    try {
-      setCurrentStudent(student);
-      console.log("Fetching violations for student:", student.id, student.firstName, student.lastName);
-      
-      // Use a query to filter violations at the database level for better performance
-      const violationsQuery = query(
-        collection(db, "violations"), 
-        where("studentId", "==", student.id)
-      );
-      
-      const querySnapshot = await getDocs(violationsQuery);
-      const studentViolations = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
-      console.log("Violations found for this student:", studentViolations.length);
-      console.log("Student ID being filtered:", student.id);
-      
-      setViolationRecords(studentViolations);
-    setOpenViolationRecord(true);
-      
-      if (studentViolations.length === 0) {
-        setSnackbar({ 
-          open: true, 
-          message: `No violations found for ${student.firstName} ${student.lastName}`, 
-          severity: "info" 
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching violations:", error);
-      setSnackbar({ 
-        open: true, 
-        message: "Error loading violations: " + error.message, 
-        severity: "error" 
-      });
-      setViolationRecords([]);
-    }
-  };
 
   // --- StudentList: handleSaveViolation ---
   const handleSaveViolation = async () => {
@@ -2136,11 +2080,21 @@ function StudentList({
     }
 
     // Validate that the student ID is registered in the system
-    const validationResult = await validateStudentId(currentStudent.id);
-    if (!validationResult.isValid) {
+    try {
+      const validationResult = await validateStudentId(currentStudent.id);
+      if (!validationResult.isValid) {
+        setSnackbar({ 
+          open: true, 
+          message: `Error: ${validationResult.error}. Please ensure the student is properly registered before adding violations.`, 
+          severity: "error" 
+        });
+        return;
+      }
+    } catch (validationError) {
+      console.error("Student validation error:", validationError);
       setSnackbar({ 
         open: true, 
-        message: `Error: ${validationResult.error}. Please ensure the student is properly registered before adding violations.`, 
+        message: "Student validation failed. Please try again or contact support.", 
         severity: "error" 
       });
       return;
@@ -2662,7 +2616,6 @@ School Administration
         <TableContainer component={Paper} key={`table-${activeTab}`} sx={{ 
           maxHeight: 600,
           bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
-          overflowX: 'auto',
           '&::-webkit-scrollbar': {
             height: 8,
           },
@@ -2884,38 +2837,6 @@ School Administration
                           }}
                         >
                           <Edit sx={{ fontSize: '1rem' }} />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Add Violation">
-                        <IconButton 
-                          size="small" 
-                          onClick={() => handleAddViolation(student)}
-                          sx={{ 
-                            color: '#666666',
-                            padding: '4px',
-                            '&:hover': { 
-                              color: '#d32f2f',
-                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(211, 47, 47, 0.1)' : 'rgba(211, 47, 47, 0.04)'
-                            }
-                          }}
-                        >
-                          <Assignment sx={{ fontSize: '1rem' }} />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="View Violations">
-                        <IconButton 
-                          size="small" 
-                          onClick={() => handleViewViolations(student)}
-                          sx={{ 
-                            color: '#666666',
-                            padding: '4px',
-                            '&:hover': { 
-                              color: '#7b1fa2',
-                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(123, 31, 162, 0.1)' : 'rgba(123, 31, 162, 0.04)'
-                            }
-                          }}
-                        >
-                          <ListAlt sx={{ fontSize: '1rem' }} />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Delete Student">
@@ -3310,9 +3231,19 @@ function EditStudentForm({ student, onClose, onSuccess }) {
     }
 
     // Double-check student ID validation before submission
-    const validation = await validateStudentId(profile.id.trim());
-    if (!validation.isValid) {
-      setSnackbar({ open: true, message: validation.error || 'Student ID is not registered in the system', severity: "error" });
+    try {
+      const validation = await validateStudentId(profile.id.trim());
+      if (!validation.isValid) {
+        setSnackbar({ open: true, message: validation.error || 'Student ID is not registered in the system', severity: "error" });
+        return;
+      }
+    } catch (validationError) {
+      console.error("Student validation error:", validationError);
+      setSnackbar({ 
+        open: true, 
+        message: "Student validation failed. Please try again or contact support.", 
+        severity: "error" 
+      });
       return;
     }
 
@@ -3661,100 +3592,246 @@ export default function Students() {
         </DialogActions>
       </Dialog>
       {/* View Student Details Modal */}
-      <Dialog open={openViewDetails} onClose={() => setOpenViewDetails(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
+      <Dialog 
+        open={openViewDetails} 
+        onClose={() => setOpenViewDetails(false)} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            maxHeight: '90vh',
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
           Student Details - {studentToView && `${studentToView.firstName} ${studentToView.lastName}`}
         </DialogTitle>
-        <DialogContent>
+        <DialogContent 
+          sx={{ 
+            overflow: 'hidden',
+            p: 2,
+            '&::-webkit-scrollbar': {
+              display: 'none'
+            },
+            msOverflowStyle: 'none',
+            scrollbarWidth: 'none'
+          }}
+        >
           {studentToView && (
-            <Box sx={{ mt: 2 }}>
-              <Grid container spacing={3}>
+            <Box>
+              <Grid container spacing={1.5}>
                 {/* Profile Image */}
-                <Grid item xs={12} sx={{ textAlign: 'center' }}>
+                <Grid item xs={12} sx={{ textAlign: 'center', mb: 1 }}>
                   {studentToView.image ? (
-                    <Avatar src={studentToView.image} sx={{ width: 120, height: 120, mx: 'auto' }} />
+                    <Avatar src={studentToView.image} sx={{ width: 70, height: 70, mx: 'auto' }} />
                   ) : (
-                    <Avatar sx={{ width: 120, height: 120, mx: 'auto', bgcolor: 'primary.main', fontSize: '2rem' }}>
+                    <Avatar sx={{ width: 70, height: 70, mx: 'auto', bgcolor: 'primary.main', fontSize: '1.3rem' }}>
                       {studentToView.firstName?.charAt(0)}{studentToView.lastName?.charAt(0)}
                     </Avatar>
                   )}
                 </Grid>
 
-                {/* Basic Information */}
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom sx={{ borderBottom: '2px solid #e0e0e0', pb: 1 }}>
-                    Basic Information
+                {/* Gmail */}
+                <Grid item xs={12} sx={{ textAlign: 'center', mb: 1.5 }}>
+                  <Typography variant="body2" sx={{ 
+                    fontWeight: 'bold',
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#1976d2',
+                    fontSize: '0.9rem'
+                  }}>
+                    {studentToView.email || 'N/A'}
                   </Typography>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">ID Number</Typography>
-                  <Typography variant="body1">{studentToView.id || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Scholarship</Typography>
-                  <Typography variant="body1">{studentToView.scholarship || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="subtitle2" color="textSecondary">First Name</Typography>
-                  <Typography variant="body1">{studentToView.firstName}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="subtitle2" color="textSecondary">Last Name</Typography>
-                  <Typography variant="body1">{studentToView.lastName}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="subtitle2" color="textSecondary">Middle Initial</Typography>
-                  <Typography variant="body1">{studentToView.middleInitial || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <Typography variant="subtitle2" color="textSecondary">Sex</Typography>
-                  <Typography variant="body1">{studentToView.sex || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <Typography variant="subtitle2" color="textSecondary">Age</Typography>
-                  <Typography variant="body1">{studentToView.age || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <Typography variant="subtitle2" color="textSecondary">Birthdate</Typography>
-                  <Typography variant="body1">{studentToView.birthdate || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <Typography variant="subtitle2" color="textSecondary">Contact</Typography>
-                  <Typography variant="body1">{studentToView.contact || 'N/A'}</Typography>
-                </Grid>
 
-                {/* Academic Information */}
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom sx={{ borderBottom: '2px solid #e0e0e0', pb: 1, mt: 2 }}>
-                    Academic Information
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="subtitle2" color="textSecondary">Course</Typography>
-                  <Typography variant="body1">{studentToView.course || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="subtitle2" color="textSecondary">Year</Typography>
-                  <Typography variant="body1">{studentToView.year || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="subtitle2" color="textSecondary">Section</Typography>
-                  <Typography variant="body1">{studentToView.section || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="subtitle2" color="textSecondary">Position</Typography>
-                  <Typography variant="body1">{studentToView.position || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="subtitle2" color="textSecondary">Major</Typography>
-                  <Typography variant="body1">{studentToView.major || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="subtitle2" color="textSecondary">Email</Typography>
-                  <Typography variant="body1">{studentToView.email || 'N/A'}</Typography>
-                </Grid>
+                {/* Information Grid */}
+                <Grid container spacing={1.5}>
+                  {/* Student ID */}
+                  <Grid item xs={6} sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" sx={{ fontSize: '0.7rem' }}>
+                      <Typography component="span" sx={{ 
+                        color: 'text.secondary', 
+                        fontSize: '0.6rem',
+                        display: 'block',
+                        textAlign: 'center',
+                        marginBottom: '2px'
+                      }}>
+                        Student ID
+                      </Typography>
+                      <Typography component="span" sx={{ 
+                        color: '#000000',
+                        fontFamily: 'monospace', 
+                        fontWeight: 'bold',
+                        fontSize: '0.7rem',
+                        display: 'block',
+                        textAlign: 'center'
+                      }}>
+                        {studentToView.studentId || studentToView.id || 'N/A'}
+                      </Typography>
+                    </Typography>
+                  </Grid>
+                  
+                  {/* First Name */}
+                  <Grid item xs={6} sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" sx={{ fontSize: '0.7rem' }}>
+                      <Typography component="span" sx={{ 
+                        color: 'text.secondary', 
+                        fontSize: '0.6rem',
+                        display: 'block',
+                        textAlign: 'center',
+                        marginBottom: '2px'
+                      }}>
+                        First Name
+                      </Typography>
+                      <Typography component="span" sx={{ 
+                        color: '#000000',
+                        fontSize: '0.7rem',
+                        display: 'block',
+                        textAlign: 'center'
+                      }}>
+                        {studentToView.firstName || 'N/A'}
+                      </Typography>
+                    </Typography>
+                  </Grid>
 
-                {/* Family Information removed per requirements */}
+                  {/* Last Name */}
+                  <Grid item xs={6} sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" sx={{ fontSize: '0.7rem' }}>
+                      <Typography component="span" sx={{ 
+                        color: 'text.secondary', 
+                        fontSize: '0.6rem',
+                        display: 'block',
+                        textAlign: 'center',
+                        marginBottom: '2px'
+                      }}>
+                        Last Name
+                      </Typography>
+                      <Typography component="span" sx={{ 
+                        color: '#000000',
+                        fontSize: '0.7rem',
+                        display: 'block',
+                        textAlign: 'center'
+                      }}>
+                        {studentToView.lastName || 'N/A'}
+                      </Typography>
+                    </Typography>
+                  </Grid>
+
+                  {/* Middle Initial */}
+                  <Grid item xs={6} sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" sx={{ fontSize: '0.7rem' }}>
+                      <Typography component="span" sx={{ 
+                        color: 'text.secondary', 
+                        fontSize: '0.6rem',
+                        display: 'block',
+                        textAlign: 'center',
+                        marginBottom: '2px'
+                      }}>
+                        Middle Initial
+                      </Typography>
+                      <Typography component="span" sx={{ 
+                        color: '#000000',
+                        fontSize: '0.7rem',
+                        display: 'block',
+                        textAlign: 'center'
+                      }}>
+                        {studentToView.middleInitial || 'N/A'}
+                      </Typography>
+                    </Typography>
+                  </Grid>
+
+                  {/* Sex */}
+                  <Grid item xs={6} sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" sx={{ fontSize: '0.7rem' }}>
+                      <Typography component="span" sx={{ 
+                        color: 'text.secondary', 
+                        fontSize: '0.6rem',
+                        display: 'block',
+                        textAlign: 'center',
+                        marginBottom: '2px'
+                      }}>
+                        Sex
+                      </Typography>
+                      <Typography component="span" sx={{ 
+                        color: '#000000',
+                        fontSize: '0.7rem',
+                        display: 'block',
+                        textAlign: 'center'
+                      }}>
+                        {studentToView.sex || 'N/A'}
+                      </Typography>
+                    </Typography>
+                  </Grid>
+
+                  {/* Age */}
+                  <Grid item xs={6} sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" sx={{ fontSize: '0.7rem' }}>
+                      <Typography component="span" sx={{ 
+                        color: 'text.secondary', 
+                        fontSize: '0.6rem',
+                        display: 'block',
+                        textAlign: 'center',
+                        marginBottom: '2px'
+                      }}>
+                        Age
+                      </Typography>
+                      <Typography component="span" sx={{ 
+                        color: '#000000',
+                        fontSize: '0.7rem',
+                        display: 'block',
+                        textAlign: 'center'
+                      }}>
+                        {studentToView.age || 'N/A'}
+                      </Typography>
+                    </Typography>
+                  </Grid>
+
+                  {/* Birthday */}
+                  <Grid item xs={6} sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" sx={{ fontSize: '0.7rem' }}>
+                      <Typography component="span" sx={{ 
+                        color: 'text.secondary', 
+                        fontSize: '0.6rem',
+                        display: 'block',
+                        textAlign: 'center',
+                        marginBottom: '2px'
+                      }}>
+                        Birthday
+                      </Typography>
+                      <Typography component="span" sx={{ 
+                        color: '#000000',
+                        fontSize: '0.7rem',
+                        display: 'block',
+                        textAlign: 'center'
+                      }}>
+                        {studentToView.birthdate ? new Date(studentToView.birthdate).toLocaleDateString() : 'N/A'}
+                      </Typography>
+                    </Typography>
+                  </Grid>
+
+                  {/* Contact Number */}
+                  <Grid item xs={6} sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" sx={{ fontSize: '0.7rem' }}>
+                      <Typography component="span" sx={{ 
+                        color: 'text.secondary', 
+                        fontSize: '0.6rem',
+                        display: 'block',
+                        textAlign: 'center',
+                        marginBottom: '2px'
+                      }}>
+                        Contact Number
+                      </Typography>
+                      <Typography component="span" sx={{ 
+                        color: '#000000',
+                        fontFamily: 'monospace',
+                        fontSize: '0.7rem',
+                        display: 'block',
+                        textAlign: 'center'
+                      }}>
+                        {studentToView.contact || 'N/A'}
+                      </Typography>
+                    </Typography>
+                  </Grid>
+                </Grid>
               </Grid>
             </Box>
           )}

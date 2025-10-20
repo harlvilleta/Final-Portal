@@ -25,7 +25,8 @@ import {
   Alert,
   IconButton,
   Tooltip,
-  CircularProgress
+  CircularProgress,
+  InputAdornment
 } from '@mui/material';
 import {
   Person,
@@ -39,7 +40,8 @@ import {
   AccessTime,
   Badge,
   Delete,
-  Edit
+  Edit,
+  Search
 } from '@mui/icons-material';
 import { collection, getDocs, updateDoc, doc, addDoc, query, orderBy, where, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -58,6 +60,7 @@ export default function TeacherRequest() {
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchTeacherRequests();
@@ -260,9 +263,17 @@ export default function TeacherRequest() {
   const approvedRequests = teacherRequests.filter(req => req.status === 'approved');
   const deniedRequests = teacherRequests.filter(req => req.status === 'denied');
   
-  const filteredRequests = selectedFilter === 'all' 
-    ? teacherRequests 
-    : teacherRequests.filter(req => req.status === selectedFilter);
+  const filteredRequests = teacherRequests.filter(request => {
+    // Filter by status
+    const statusMatch = selectedFilter === 'all' || request.status === selectedFilter;
+    
+    // Filter by search term (name or email)
+    const searchMatch = !searchTerm || 
+      (request.fullName && request.fullName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (request.email && request.email.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    return statusMatch && searchMatch;
+  });
 
   return (
     <Box sx={{ p: 3 }}>
@@ -402,6 +413,59 @@ export default function TeacherRequest() {
           </Grid>
         </Grid>
 
+        {/* Search Bar */}
+        <Paper sx={{ p: 2, mb: 3, mt: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <TextField
+              fullWidth
+              placeholder="Search by teacher name or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              size="small"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search color="action" />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: '#1976d2',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#1976d2',
+                  },
+                },
+              }}
+            />
+            {searchTerm && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => setSearchTerm('')}
+                sx={{
+                  minWidth: 'auto',
+                  px: 2,
+                  color: '#666',
+                  borderColor: '#ddd',
+                  '&:hover': {
+                    color: '#1976d2',
+                    borderColor: '#1976d2'
+                  }
+                }}
+              >
+                Clear
+              </Button>
+            )}
+          </Box>
+          {searchTerm && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Showing {filteredRequests.length} result(s) for "{searchTerm}"
+            </Typography>
+          )}
+        </Paper>
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
@@ -411,7 +475,10 @@ export default function TeacherRequest() {
             </Typography>
           </Box>
         ) : (
-          <TableContainer component={Paper} elevation={2}>
+          <TableContainer 
+            component={Paper} 
+            elevation={2}
+          >
             <Table>
               <TableHead>
                 <TableRow>

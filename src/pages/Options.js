@@ -1,23 +1,14 @@
 import React, { useState } from "react";
-import { Typography, Box, Grid, Card, CardActionArea, CardContent, Avatar, Drawer, List, ListItem, ListItemIcon, ListItemText, Divider, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert, Tabs, Tab, Paper, Stack } from "@mui/material";
+import { Typography, Box, Grid, Card, CardContent, Button, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert, TextField } from "@mui/material";
 import EmailIcon from '@mui/icons-material/Email';
 import SecurityIcon from '@mui/icons-material/Security';
-import SettingsIcon from '@mui/icons-material/Settings';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ListAlt from '@mui/icons-material/ListAlt';
 import { useNavigate } from "react-router-dom";
-import { getAuth, signOut, updatePassword, updateEmail } from 'firebase/auth';
-import Profile from './Profile';
+import { getAuth, signOut } from 'firebase/auth';
 import RecycleBin from './RecycleBin';
 import History from './History';
 import emailjs from 'emailjs-com';
-
-const options = [
-  { label: 'Send Email', icon: <EmailIcon color="primary" fontSize="large" /> },
-  { label: 'Security Settings', icon: <SecurityIcon color="error" fontSize="large" /> },
-  { label: 'Account Settings', icon: <SettingsIcon color="success" fontSize="large" /> },
-  { label: 'Recycle Bin', icon: <DeleteIcon color="warning" fontSize="large" /> },
-];
 
 const EMAILJS_SERVICE_ID = 'service_7pgle82';
 const EMAILJS_TEMPLATE_ID = 'template_f5q7j6q';
@@ -32,15 +23,9 @@ export default function Options() {
   const [openAccount, setOpenAccount] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [emailForm, setEmailForm] = useState({ to: '', subject: '', message: '' });
-  const [passwordForm, setPasswordForm] = useState({ current: '', new: '' });
-  const [emailChange, setEmailChange] = useState('');
-  const [tab, setTab] = useState(0);
   const [emailLoading, setEmailLoading] = useState(false);
-  const [passwordLoading, setPasswordLoading] = useState(false);
-  const [emailChangeLoading, setEmailChangeLoading] = useState(false);
-  const [passwordSuccess, setPasswordSuccess] = useState(false);
-  const [emailChangeSuccess, setEmailChangeSuccess] = useState(false);
 
+  
   const handleSendEmail = async (e) => {
     e.preventDefault();
     setEmailLoading(true);
@@ -65,40 +50,6 @@ export default function Options() {
     setEmailLoading(false);
   };
   
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    setPasswordLoading(true);
-    setPasswordSuccess(false);
-    try {
-      await updatePassword(user, passwordForm.new);
-      setSnackbar({ open: true, message: 'Password changed!', severity: 'success' });
-      setPasswordForm({ current: '', new: '' });
-      setPasswordSuccess(true);
-      setTimeout(() => setPasswordSuccess(false), 3000);
-    } catch (err) {
-      setSnackbar({ open: true, message: err.message, severity: 'error' });
-    } finally {
-      setPasswordLoading(false);
-    }
-  };
-  
-  const handleChangeEmail = async (e) => {
-    e.preventDefault();
-    setEmailChangeLoading(true);
-    setEmailChangeSuccess(false);
-    try {
-      await updateEmail(user, emailChange);
-      setSnackbar({ open: true, message: 'Email updated!', severity: 'success' });
-      setEmailChange('');
-      setEmailChangeSuccess(true);
-      setTimeout(() => setEmailChangeSuccess(false), 3000);
-    } catch (err) {
-      setSnackbar({ open: true, message: err.message, severity: 'error' });
-    } finally {
-      setEmailChangeLoading(false);
-    }
-  };
-  
   const handleLogout = async () => {
     await signOut(auth);
     window.location.reload();
@@ -106,101 +57,167 @@ export default function Options() {
   
   return (
     <Box sx={{ p: { xs: 1, md: 4 }, maxWidth: 900, mx: 'auto', overflowY: 'auto', bgcolor: '#f5f6fa', borderRadius: 3 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="h4" fontWeight={700} color="primary.main">Options</Typography>
-        <Button variant="contained" startIcon={<EmailIcon />} onClick={() => setOpenEmail(true)} sx={{ borderRadius: 2, fontWeight: 600 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" fontWeight={700} color="black">Options</Typography>
+        <Button 
+          variant="outlined" 
+          startIcon={<EmailIcon />} 
+          onClick={() => setOpenEmail(true)} 
+          sx={{ 
+            color: 'black',
+            borderColor: 'black',
+            fontWeight: 600,
+            '&:hover': {
+              bgcolor: '#800000',
+              color: 'white',
+              borderColor: '#800000'
+            }
+          }}
+        >
           Send Email
         </Button>
-      </Stack>
-      <Paper sx={{ mb: 3, borderRadius: 3 }}>
-        <Tabs value={tab} onChange={(_, v) => setTab(v)} centered>
-          <Tab label="Account Settings" />
-          <Tab label="Recycle Bin" />
-          <Tab label="History" />
-        </Tabs>
-      </Paper>
-      {tab === 0 && (
-        <Box>
-          <Typography variant="h5" gutterBottom>Account Settings</Typography>
-          {/* Change Password Section */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h6">Change Password</Typography>
-            <form onSubmit={handleChangePassword}>
-              <TextField label="New Password" type="password" value={passwordForm.new} onChange={e => setPasswordForm(f => ({ ...f, new: e.target.value }))} fullWidth sx={{ mb: 2, maxWidth: 400 }} />
-              <Button 
-                type="submit" 
-                variant="contained" 
-                disabled={passwordLoading || passwordSuccess}
-                color={passwordSuccess ? "success" : "primary"}
-                sx={{
-                  transition: 'all 0.3s ease',
-                  transform: passwordSuccess ? 'scale(1.05)' : 'scale(1)',
-                  boxShadow: passwordSuccess ? '0 4px 12px rgba(76, 175, 80, 0.4)' : '0 2px 8px rgba(25, 118, 210, 0.3)'
-                }}
-              >
-                {passwordLoading ? 'Changing...' : passwordSuccess ? 'Password Changed!' : 'Change Password'}
-              </Button>
-            </form>
-          </Box>
-          {/* Change Email Section */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h6">Change Email</Typography>
-            <form onSubmit={handleChangeEmail}>
-              <TextField label="New Email" type="email" value={emailChange} onChange={e => setEmailChange(e.target.value)} fullWidth sx={{ mb: 2, maxWidth: 400 }} />
-              <Button 
-                type="submit" 
-                variant="contained" 
-                disabled={emailChangeLoading || emailChangeSuccess}
-                color={emailChangeSuccess ? "success" : "primary"}
-                sx={{
-                  transition: 'all 0.3s ease',
-                  transform: emailChangeSuccess ? 'scale(1.05)' : 'scale(1)',
-                  boxShadow: emailChangeSuccess ? '0 4px 12px rgba(76, 175, 80, 0.4)' : '0 2px 8px rgba(25, 118, 210, 0.3)'
-                }}
-              >
-                {emailChangeLoading ? 'Updating...' : emailChangeSuccess ? 'Email Updated!' : 'Change Email'}
-              </Button>
-            </form>
-          </Box>
-          {/* Change Profile Section */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h6">Change Profile</Typography>
-            <Profile />
-          </Box>
-          {/* Change Name Section */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h6">Change Name</Typography>
-            <TextField label="New Name" value={user?.displayName || ''} fullWidth sx={{ mb: 2, maxWidth: 400 }} disabled />
-            {/* Implement name change logic if needed */}
-          </Box>
-          {/* Security Settings */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h6">Security Settings</Typography>
-            <Button variant="outlined" color="error" onClick={handleLogout}>Log Out</Button>
-          </Box>
-        </Box>
-      )}
-      {tab === 1 && (
+      </Box>
+      
+      {/* Options Grid */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ 
+            height: '100%',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease-in-out',
+            borderLeft: '4px solid #800000',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: 6,
+              borderLeft: '4px solid #a00000'
+            }
+          }} onClick={() => navigate('/profile')}>
+            <CardContent sx={{ textAlign: 'center', p: 3 }}>
+              <SecurityIcon sx={{ fontSize: 48, mb: 2 }} />
+              <Typography variant="h6" fontWeight={600} color="black">
+                Security Settings
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Change password, email, and security preferences
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ 
+            height: '100%',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease-in-out',
+            borderLeft: '4px solid #800000',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: 6,
+              borderLeft: '4px solid #a00000'
+            }
+          }} onClick={() => setOpenSecurity(true)}>
+            <CardContent sx={{ textAlign: 'center', p: 3 }}>
+              <DeleteIcon sx={{ fontSize: 48, mb: 2 }} />
+              <Typography variant="h6" fontWeight={600} color="black">
+                Recycle Bin
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                View and restore deleted items
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ 
+            height: '100%',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease-in-out',
+            borderLeft: '4px solid #800000',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: 6,
+              borderLeft: '4px solid #a00000'
+            }
+          }} onClick={() => setOpenAccount(true)}>
+            <CardContent sx={{ textAlign: 'center', p: 3 }}>
+              <ListAlt sx={{ fontSize: 48, mb: 2 }} />
+              <Typography variant="h6" fontWeight={600} color="black">
+                History
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                View system activity and history logs
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+      {/* Recycle Bin Modal */}
+      <Dialog open={openSecurity} onClose={() => setOpenSecurity(false)} maxWidth="lg" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, color: '#800000' }}>Recycle Bin</DialogTitle>
+        <DialogContent>
         <RecycleBin />
-      )}
-      {tab === 2 && (
-        <Box>
-          <Typography variant="h5" gutterBottom>History</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenSecurity(false)} variant="outlined">Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* History Modal */}
+      <Dialog open={openAccount} onClose={() => setOpenAccount(false)} maxWidth="lg" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, color: '#800000' }}>History</DialogTitle>
+        <DialogContent>
           <History />
-        </Box>
-      )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenAccount(false)} variant="outlined">Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Send Email Modal */}
       <Dialog open={openEmail} onClose={() => setOpenEmail(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Send Email</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700, color: '#800000' }}>Send Email</DialogTitle>
         <DialogContent>
           <form id="send-email-form" onSubmit={handleSendEmail}>
-            <TextField label="To" value={emailForm.to} onChange={e => setEmailForm(f => ({ ...f, to: e.target.value }))} fullWidth sx={{ mb: 2, mt: 1 }} />
-            <TextField label="Subject" value={emailForm.subject} onChange={e => setEmailForm(f => ({ ...f, subject: e.target.value }))} fullWidth sx={{ mb: 2 }} />
-            <TextField label="Message" value={emailForm.message} onChange={e => setEmailForm(f => ({ ...f, message: e.target.value }))} fullWidth multiline minRows={3} sx={{ mb: 2 }} />
+            <TextField 
+              label="To" 
+              value={emailForm.to} 
+              onChange={e => setEmailForm(f => ({ ...f, to: e.target.value }))} 
+              fullWidth 
+              sx={{ mb: 2, mt: 1 }} 
+            />
+            <TextField 
+              label="Subject" 
+              value={emailForm.subject} 
+              onChange={e => setEmailForm(f => ({ ...f, subject: e.target.value }))} 
+              fullWidth 
+              sx={{ mb: 2 }} 
+            />
+            <TextField 
+              label="Message" 
+              value={emailForm.message} 
+              onChange={e => setEmailForm(f => ({ ...f, message: e.target.value }))} 
+              fullWidth 
+              multiline 
+              minRows={3} 
+              sx={{ mb: 2 }} 
+            />
           </form>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenEmail(false)}>Cancel</Button>
-          <Button type="submit" form="send-email-form" variant="contained" disabled={emailLoading}>
+          <Button onClick={() => setOpenEmail(false)} variant="outlined">Cancel</Button>
+          <Button 
+            type="submit" 
+            form="send-email-form" 
+            variant="contained" 
+            disabled={emailLoading}
+            sx={{
+              bgcolor: '#800000',
+              '&:hover': {
+                bgcolor: '#a00000'
+              }
+            }}
+          >
             {emailLoading ? 'Sending...' : 'Send'}
           </Button>
         </DialogActions>

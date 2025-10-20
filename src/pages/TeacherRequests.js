@@ -31,7 +31,8 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemIcon
+  ListItemIcon,
+  InputAdornment
 } from '@mui/material';
 import {
   CheckCircle,
@@ -46,7 +47,8 @@ import {
   Security,
   Notifications,
   Refresh,
-  FilterList
+  FilterList,
+  Search
 } from '@mui/icons-material';
 import { 
   collection, 
@@ -74,6 +76,7 @@ export default function TeacherRequests() {
   const [reviewNotes, setReviewNotes] = useState('');
   const [filter, setFilter] = useState('all'); // all, pending, approved, denied
   const [newRequestsCount, setNewRequestsCount] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -233,8 +236,15 @@ export default function TeacherRequests() {
   };
 
   const filteredRequests = teacherRequests.filter(request => {
-    if (filter === 'all') return true;
-    return request.status === filter;
+    // Filter by status
+    const statusMatch = filter === 'all' || request.status === filter;
+    
+    // Filter by search term (name or email)
+    const searchMatch = !searchTerm || 
+      (request.fullName && request.fullName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (request.email && request.email.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    return statusMatch && searchMatch;
   });
 
   return (
@@ -390,6 +400,60 @@ export default function TeacherRequests() {
         </Grid>
       </Grid>
 
+      {/* Search Bar */}
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <TextField
+            fullWidth
+            placeholder="Search by teacher name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            size="small"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search color="action" />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '&:hover fieldset': {
+                  borderColor: '#1976d2',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#1976d2',
+                },
+              },
+            }}
+          />
+          {searchTerm && (
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setSearchTerm('')}
+              sx={{
+                minWidth: 'auto',
+                px: 2,
+                color: '#666',
+                borderColor: '#ddd',
+                '&:hover': {
+                  color: '#1976d2',
+                  borderColor: '#1976d2'
+                }
+              }}
+            >
+              Clear
+            </Button>
+          )}
+        </Box>
+        {searchTerm && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Showing {filteredRequests.length} result(s) for "{searchTerm}"
+          </Typography>
+        )}
+      </Paper>
+
       {/* Filter and Actions */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
@@ -448,7 +512,9 @@ export default function TeacherRequests() {
       </Paper>
 
       {/* Teacher Requests Table */}
-      <Paper sx={{ boxShadow: 2 }}>
+      <Paper sx={{ 
+        boxShadow: 2
+      }}>
         <TableContainer>
           <Table>
             <TableHead sx={{ bgcolor: '#800000' }}>

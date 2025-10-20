@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   Box, Typography, Grid, Card, CardContent, List, ListItem, ListItemAvatar, 
-  ListItemText, Avatar, Chip, Button, CircularProgress, useTheme
+  ListItemText, Avatar, Chip, Button, CircularProgress, useTheme, Divider
 } from "@mui/material";
 import { CheckCircle, Warning, Announcement, EventNote, Report, Event, Campaign, People } from "@mui/icons-material";
 import { Link, useNavigate } from "react-router-dom";
@@ -15,6 +15,7 @@ function UserOverview({ currentUser }) {
   const navigate = useNavigate();
   const [userViolations, setUserViolations] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
+  const [announcementCount, setAnnouncementCount] = useState(0);
   const [activities, setActivities] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
@@ -51,8 +52,7 @@ function UserOverview({ currentUser }) {
     // Fetch announcements from admin records
     const announcementsQuery = query(
       collection(db, "announcements"),
-      orderBy("createdAt", "desc"),
-      limit(5)
+      orderBy("createdAt", "desc")
     );
 
     // Fetch notifications from admin records
@@ -102,8 +102,9 @@ function UserOverview({ currentUser }) {
     });
 
     const unsubAnnouncements = onSnapshot(announcementsQuery, (snap) => {
-      const announcements = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAnnouncements(announcements);
+      const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAnnouncements(items);
+      setAnnouncementCount(items.length);
     });
 
     const unsubNotifications = onSnapshot(notificationsQuery, (snap) => {
@@ -179,73 +180,34 @@ function UserOverview({ currentUser }) {
   const userInfo = getUserDisplayInfo();
 
   return (
-    <Box>
-      {/* User Profile Section */}
-      <Card sx={{ 
-        mb: 4, 
-        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : 'white', 
-        border: 'none',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-        borderRadius: 2
-      }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 3 }}>
-            <Avatar 
-              src={userInfo.photo} 
-              sx={{ 
-                width: 80, 
-                height: 80, 
-                bgcolor: userInfo.photo ? 'transparent' : '#1976d2',
-                fontSize: '2rem',
-                border: '3px solid #1976d2'
-              }}
-            >
-              {!userInfo.photo && (userInfo.name?.charAt(0) || userInfo.email?.charAt(0))}
-            </Avatar>
-            <Box sx={{ flex: 1, minWidth: 200 }}>
-              <Typography variant="h4" sx={{ 
-                fontWeight: 700, 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
-                mb: 1 
-              }}>
-                {userInfo.name}
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-                {userInfo.email}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                <Chip 
-                  label={userInfo.role} 
-                  sx={{ 
-                    fontWeight: 600,
-                    bgcolor: '#1976d2',
-                    color: 'white'
-                  }}
-                />
-                <Chip 
-                  label="Active" 
-                  sx={{ 
-                    fontWeight: 600,
-                    bgcolor: '#2e7d32',
-                    color: 'white'
-                  }}
-                />
-              </Box>
-            </Box>
-            <Box sx={{ textAlign: 'right' }}>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Quick Stats
-              </Typography>
-              <Typography variant="h4" color="#1976d2" fontWeight={700}>
-                {stats.totalViolations}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Violations
-              </Typography>
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
+    <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
+      {/* Welcome Section */}
+      <Box sx={{ mb: 4, pt: { xs: 1, sm: 2 }, px: { xs: 1, sm: 0 } }}>
+        <Typography 
+          variant="h4" 
+          fontWeight={700} 
+          color="#800000" 
+          gutterBottom 
+          sx={{ 
+            wordBreak: 'break-word',
+            fontSize: { xs: '1.75rem', sm: '2.125rem' },
+            lineHeight: 1.2
+          }}
+        >
+          Hi {userInfo.name}
+        </Typography>
+        <Typography 
+          variant="body1" 
+          color="text.secondary" 
+          sx={{ 
+            fontSize: { xs: 16, sm: 18 },
+            wordBreak: 'break-word',
+            lineHeight: 1.4
+          }}
+        >
+          Welcome back, {userInfo.name}! Here's your student dashboard overview
+        </Typography>
+      </Box>
 
       {/* Classroom Access Section */}
       {userProfile && userProfile.course && userProfile.year && userProfile.section && (
@@ -322,37 +284,56 @@ function UserOverview({ currentUser }) {
         </Card>
       )}
 
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      {/* Statistics Cards */}
+      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ 
             display: 'flex', 
             alignItems: 'center', 
             p: 2, 
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+            boxShadow: 3, 
             borderRadius: 2,
-            background: theme.palette.mode === 'dark' ? '#6b7280' : 'white',
-            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : 'none',
+            borderLeft: '4px solid #800000',
+            background: 'transparent',
             cursor: 'pointer',
-            transition: 'box-shadow 0.2s, transform 0.2s',
+            transition: 'box-shadow 0.2s, background 0.2s',
             '&:hover': {
-              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
-              transform: 'translateY(-2px)',
+              boxShadow: 6,
+              background: 'transparent',
             },
           }}>
-            <Box sx={{ mr: 2 }}>
-              <Report fontSize="large" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#d32f2f' }} />
-            </Box>
-            <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
-              }}>
+            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
                 {stats.totalViolations.toLocaleString()}
               </Typography>
-              <Typography sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
-              }} variant="body2">
+              <Typography color="text.secondary" variant="body2">
                 Total Violations
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card onClick={() => navigate('/announcements')} sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            p: 2, 
+            boxShadow: 3, 
+            borderRadius: 2,
+            borderLeft: '4px solid #800000',
+            background: 'transparent',
+            cursor: 'pointer',
+            transition: 'box-shadow 0.2s, background 0.2s',
+            '&:hover': {
+              boxShadow: 6,
+              background: 'transparent',
+            },
+          }}>
+            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
+                {announcementCount.toLocaleString()}
+              </Typography>
+              <Typography color="text.secondary" variant="body2">
+                Announcements
               </Typography>
             </CardContent>
           </Card>
@@ -362,29 +343,22 @@ function UserOverview({ currentUser }) {
             display: 'flex', 
             alignItems: 'center', 
             p: 2, 
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+            boxShadow: 3, 
             borderRadius: 2,
-            background: theme.palette.mode === 'dark' ? '#6b7280' : 'white',
-            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : 'none',
+            borderLeft: '4px solid #800000',
+            background: 'transparent',
             cursor: 'pointer',
-            transition: 'box-shadow 0.2s, transform 0.2s',
+            transition: 'box-shadow 0.2s, background 0.2s',
             '&:hover': {
-              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
-              transform: 'translateY(-2px)',
+              boxShadow: 6,
+              background: 'transparent',
             },
           }}>
-            <Box sx={{ mr: 2 }}>
-              <Warning fontSize="large" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#ed6c02' }} />
-            </Box>
-            <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
-              }}>
+            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
                 {stats.pendingViolations.toLocaleString()}
               </Typography>
-              <Typography sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
-              }} variant="body2">
+              <Typography color="text.secondary" variant="body2">
                 Pending
               </Typography>
             </CardContent>
@@ -395,373 +369,220 @@ function UserOverview({ currentUser }) {
             display: 'flex', 
             alignItems: 'center', 
             p: 2, 
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+            boxShadow: 3, 
             borderRadius: 2,
-            background: theme.palette.mode === 'dark' ? '#6b7280' : 'white',
-            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : 'none',
+            borderLeft: '4px solid #800000',
+            background: 'transparent',
             cursor: 'pointer',
-            transition: 'box-shadow 0.2s, transform 0.2s',
+            transition: 'box-shadow 0.2s, background 0.2s',
             '&:hover': {
-              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
-              transform: 'translateY(-2px)',
+              boxShadow: 6,
+              background: 'transparent',
             },
           }}>
-            <Box sx={{ mr: 2 }}>
-              <CheckCircle fontSize="large" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#2e7d32' }} />
-            </Box>
-            <CardContent sx={{ flex: 1, p: '8px !important' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
-              }}>
-                {stats.resolvedViolations.toLocaleString()}
+            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} color="#000000">
+                {stats.unreadNotifications.toLocaleString()}
               </Typography>
-              <Typography sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
-              }} variant="body2">
-                Resolved
+              <Typography color="text.secondary" variant="body2">
+                Unread Notifications
               </Typography>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Recent Notifications Section */}
-      {recentNotifications.length > 0 && (
-        <Card sx={{ 
-          mb: 4, 
-          border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #800000',
-          borderLeft: theme.palette.mode === 'dark' ? '4px solid #404040' : '4px solid #800000',
-          boxShadow: 3,
-          bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#80000015',
-          borderRadius: 2
-        }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Campaign sx={{ mr: 1, fontSize: 28, color: '#800000' }} />
-              <Typography variant="h6" sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
-                fontWeight: 700 
-              }}>
-                Recent Notifications 
-                {stats.unreadNotifications > 0 && (
-                  <Chip 
-                    label={`${stats.unreadNotifications} UNREAD`} 
-                    sx={{ 
-                      ml: 2, 
-                      fontWeight: 600,
-                      bgcolor: '#d32f2f',
-                      color: 'white'
-                    }}
-                  />
-                )}
-              </Typography>
-            </Box>
-            <List>
-              {recentNotifications.map((notification, index) => (
-                <ListItem key={notification.id} sx={{ 
-                  px: 0,
-                  bgcolor: !notification.read ? '#fff3e0' : 'transparent',
-                  borderRadius: 2,
-                  mb: 1,
-                  border: !notification.read ? '1px solid #ffcc02' : 'none'
-                }}>
-                  <ListItemAvatar>
-                    <Avatar sx={{ 
-                      bgcolor: notification.read ? 'grey.300' : 
-                               notification.type === 'violation' ? 'error.main' : 'primary.main',
-                      border: !notification.read ? '2px solid #ff9800' : 'none'
-                    }}>
-                      {notification.type === 'violation' ? <Warning /> : <Announcement />}
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="subtitle1" fontWeight={notification.read ? 400 : 700}>
-                          {notification.title}
-                        </Typography>
-                        {!notification.read && (
-                          <Chip label="NEW" size="small" color="error" sx={{ fontWeight: 600 }} />
-                        )}
-                        {notification.type && (
-                          <Chip 
-                            label={notification.type.toUpperCase()} 
-                            size="small" 
-                            color={notification.type === 'violation' ? 'error' : 'primary'}
-                            variant="outlined"
-                          />
-                        )}
-                      </Box>
-                    }
-                    secondary={
-                      <Box>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                          {notification.message && notification.message.length > 150 
-                            ? `${notification.message.substring(0, 150)}...` 
-                            : notification.message
-                          }
-                        </Typography>
-                        
-                        {/* Classroom Link for classroom_addition notifications */}
-                        {notification.type === 'classroom_addition' && notification.classroomLink && (
-                          <Box sx={{ mt: 1, mb: 1 }}>
-                            <Button
-                              variant="contained"
-                              color="primary"
-                              size="small"
-                              onClick={() => {
-                                // Extract the path from the full URL
-                                const url = new URL(notification.classroomLink);
-                                const path = url.pathname;
-                                // Navigate directly to classroom
-                                navigate(path);
-                              }}
-                              sx={{ 
-                                fontWeight: 600,
-                                textTransform: 'none',
-                                fontSize: '0.75rem'
-                              }}
-                            >
-                              🎓 Access Classroom
-                            </Button>
-                          </Box>
-                        )}
-                        <Typography variant="caption" color="text.secondary">
-                          {new Date(notification.createdAt).toLocaleString()}
-                        </Typography>
-                        {notification.sender && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                            From: {notification.sender}
-                          </Typography>
-                        )}
-                      </Box>
-                    }
-                  />
-                </ListItem>
-              ))}
-            </List>
-            {notifications && notifications.length > 5 && (
-              <Box sx={{ textAlign: 'center', mt: 2 }}>
+      {/* Main Content */}
+      <Grid container spacing={3}>
+        {/* Recent Notifications */}
+        <Grid item xs={12} lg={6}>
+          <Card sx={{ 
+            borderLeft: '4px solid #800000',
+            boxShadow: 3,
+            bgcolor: 'transparent',
+            borderRadius: 2,
+            height: 'fit-content'
+          }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6" fontWeight={700} color="#800000">
+                  Recent Notifications
+                  {stats.unreadNotifications > 0 && (
+                    <Chip 
+                      label={`${stats.unreadNotifications} UNREAD`} 
+                      sx={{ 
+                        ml: 2, 
+                        fontWeight: 600,
+                        bgcolor: '#d32f2f',
+                        color: 'white'
+                      }}
+                    />
+                  )}
+                </Typography>
                 <Button 
-                  variant="contained" 
-                  color="warning" 
+                  size="small" 
+                  sx={{ 
+                    textTransform: 'none',
+                    color: '#800000',
+                    borderColor: '#800000',
+                    '&:hover': {
+                      borderColor: '#6b0000',
+                      backgroundColor: '#80000010'
+                    }
+                  }}
+                  variant="outlined"
                   component={Link} 
                   to="/notifications"
-                  sx={{ fontWeight: 600 }}
                 >
-                  View All Notifications
+                  View All
                 </Button>
               </Box>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              
+              {recentNotifications.length > 0 ? (
+                <List>
+                  {recentNotifications.map((notification, index) => (
+                    <React.Fragment key={notification.id}>
+                      <ListItem sx={{ px: 0, py: 1 }}>
+                        <ListItemAvatar>
+                          <Avatar sx={{ 
+                            bgcolor: notification.read ? 'grey.300' : 
+                                     notification.type === 'violation' ? 'error.main' : 'primary.main',
+                            border: !notification.read ? '2px solid #ff9800' : 'none',
+                            width: 40, 
+                            height: 40
+                          }}>
+                            {notification.type === 'violation' ? <Warning sx={{ fontSize: 20 }} /> : <Announcement sx={{ fontSize: 20 }} />}
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                              <Typography variant="subtitle2" fontWeight={notification.read ? 400 : 700}>
+                                {notification.title}
+                              </Typography>
+                              {!notification.read && (
+                                <Chip label="NEW" size="small" color="error" sx={{ fontWeight: 600 }} />
+                              )}
+                            </Box>
+                          }
+                          secondary={
+                            <Box>
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                {notification.message && notification.message.length > 100 
+                                  ? `${notification.message.substring(0, 100)}...` 
+                                  : notification.message
+                                }
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(notification.createdAt).toLocaleDateString()}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      </ListItem>
+                      {index < recentNotifications.length - 1 && <Divider />}
+                    </React.Fragment>
+                  ))}
+                </List>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <Campaign sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    No notifications yet
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
 
-      {/* Recent Violations Section */}
-      {recentViolations.length > 0 && (
-        <Card sx={{ 
-          mb: 4,
-          bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : 'inherit'
-        }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom sx={{ 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : 'error.main' 
-            }}>
-              Recent Violations
-            </Typography>
-            <List>
-              {recentViolations.map((violation) => (
-                <ListItem key={violation.id} sx={{ px: 0 }}>
-                  <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: 'error.main' }}>
-                      <Warning />
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={violation.violation}
-                    secondary={
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Date: {violation.date} • Classification: {violation.classification}
-                          {violation.severity && ` • Severity: ${violation.severity}`}
-                          {violation.status && ` • Status: ${violation.status}`}
-                        </Typography>
-                        {violation.description && (
-                          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                            {violation.description.length > 100 
-                              ? `${violation.description.substring(0, 100)}...` 
-                              : violation.description
-                            }
-                          </Typography>
-                        )}
-                        {violation.createdAt && (
-                          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                            Recorded: {new Date(violation.createdAt).toLocaleString()}
-                          </Typography>
-                        )}
-                      </Box>
-                    }
-                  />
-                </ListItem>
-              ))}
-            </List>
-            {userViolations && userViolations.length > 3 && (
-              <Box sx={{ textAlign: 'center', mt: 2 }}>
+        {/* Recent Violations */}
+        <Grid item xs={12} lg={6}>
+          <Card sx={{ 
+            borderRadius: 2,
+            boxShadow: 3,
+            height: 'fit-content',
+            borderLeft: '4px solid #800000',
+            background: 'transparent'
+          }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6" fontWeight={600} color="#2d3436">
+                  Recent Violations
+                </Typography>
                 <Button 
-                  variant="outlined" 
-                  color="error" 
+                  size="small" 
+                  color="primary" 
                   component={Link} 
                   to="/violations"
+                  sx={{ textTransform: 'none' }}
                 >
-                  View All Violations
+                  View All
                 </Button>
               </Box>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Combined Announcements & Activities Section */}
-      {(announcements?.length > 0 || activities?.length > 0) && (
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom color="primary.main">
-              Announcements & Activities
-            </Typography>
-            <List>
-              {[
-                ...announcements.map(a => ({ ...a, __type: 'announcement', __date: new Date(a.createdAt || a.timestamp || 0) })),
-                ...activities.map(a => ({ ...a, __type: 'activity', __date: new Date(a.date || a.createdAt || 0) }))
-              ]
-              .sort((x, y) => (y.__date - x.__date))
-              .slice(0, 10)
-              .map((item) => (
-                <ListItem key={`${item.__type}-${item.id}`} sx={{ px: 0 }}>
-                  <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: item.__type === 'announcement' ? 'primary.main' : 'secondary.main' }}>
-                      {item.__type === 'announcement' ? <Announcement /> : <EventNote />}
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="subtitle1" fontWeight={600}>
-                          {item.title}
-                        </Typography>
-                        <Chip 
-                          label={item.__type === 'announcement' ? 'Announcement' : 'Activity'} 
-                          size="small" 
-                          color={item.__type === 'announcement' ? 'primary' : 'info'}
-                          variant="outlined"
+              
+              {recentViolations.length > 0 ? (
+                <List>
+                  {recentViolations.map((violation, index) => (
+                    <React.Fragment key={violation.id}>
+                      <ListItem sx={{ px: 0, py: 1 }}>
+                        <ListItemAvatar>
+                          <Avatar sx={{ bgcolor: 'error.main', width: 40, height: 40 }}>
+                            <Warning sx={{ fontSize: 20 }} />
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Typography variant="subtitle2" fontWeight={600}>
+                              {violation.violation}
+                            </Typography>
+                          }
+                          secondary={
+                            <Box>
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                Date: {violation.date} • Classification: {violation.classification}
+                                {violation.severity && ` • Severity: ${violation.severity}`}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {violation.createdAt ? new Date(violation.createdAt).toLocaleDateString() : violation.date}
+                              </Typography>
+                            </Box>
+                          }
                         />
-                      </Box>
-                    }
-                    secondary={
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          {item.__type === 'announcement'
-                            ? (item.content && item.content.length > 100 ? `${item.content.substring(0, 100)}...` : item.content)
-                            : (item.description && item.description.length > 100 ? `${item.description.substring(0, 100)}...` : (item.description || ''))}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {item.__type === 'announcement'
-                            ? new Date(item.createdAt).toLocaleString()
-                            : (item.date ? new Date(item.date).toLocaleString() : (item.createdAt ? new Date(item.createdAt).toLocaleString() : ''))}
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                </ListItem>
-              ))}
-            </List>
-            <Box sx={{ textAlign: 'center', mt: 2 }}>
-              <Button 
-                variant="outlined" 
-                color="primary" 
-                component={Link} 
-                to="/announcements"
-              >
-                View All
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-      )}
+                        <Chip 
+                          label={violation.status || 'Pending'} 
+                          size="small"
+                          color={violation.status === 'Solved' ? 'success' : 
+                                 violation.status === 'Denied' ? 'error' : 'warning'}
+                          sx={{ fontWeight: 500 }}
+                        />
+                      </ListItem>
+                      {index < recentViolations.length - 1 && <Divider />}
+                    </React.Fragment>
+                  ))}
+                </List>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <Warning sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    No violations recorded yet
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
     </Box>
   );
 }
 
 // Main User Dashboard Component
-export default function UserDashboard() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
+export default function UserDashboard({ currentUser, userProfile }) {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      setCurrentUser(user);
-      
-      if (user) {
-        // Fetch user profile to check for classroom information
-        try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            setUserProfile(userData);
-            
-            // Check if student has classroom information and redirect automatically
-            if (userData.role === 'Student' && userData.course && userData.year && userData.section) {
-              console.log('🎓 Student has classroom info, checking for automatic redirect...');
-              
-              // Check if there's a recent classroom addition notification with auto-redirect flag
-              const notificationsQuery = query(
-                collection(db, "notifications"),
-                where("recipientEmail", "==", user.email),
-                where("type", "==", "classroom_addition"),
-                where("autoRedirect", "==", true),
-                orderBy("createdAt", "desc"),
-                limit(1)
-              );
-              
-              const notificationsSnapshot = await getDocs(notificationsQuery);
-              if (!notificationsSnapshot.empty) {
-                const latestNotification = notificationsSnapshot.docs[0].data();
-                const notificationTime = new Date(latestNotification.createdAt);
-                const now = new Date();
-                const timeDiff = now - notificationTime;
-                
-                // If notification is less than 10 minutes old and has autoRedirect flag, auto-redirect
-                if (timeDiff < 10 * 60 * 1000) {
-                  console.log('🚀 Auto-redirecting to classroom dashboard based on Student ID:', userData.studentId);
-                  console.log('📊 Classroom info:', {
-                    course: userData.course,
-                    year: userData.year,
-                    section: userData.section,
-                    studentId: userData.studentId
-                  });
-                  const classroomLink = `/classroom/${encodeURIComponent(userData.course)}/${encodeURIComponent(userData.year)}/${encodeURIComponent(userData.section)}`;
-                  console.log('🔗 Navigating to:', classroomLink);
-                  
-                  // Show a brief notification before redirecting
-                  console.log('📢 Student has been automatically redirected to their classroom');
-                  
-                  navigate(classroomLink, { replace: true });
-                  return;
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching user profile for auto-redirect:', error);
-        }
-      }
-      
-      setLoading(false);
-    });
-
-    return unsubscribe;
-  }, [navigate]);
+  // Remove conflicting auth listener - App.js handles authentication state
+  // UserDashboard now receives currentUser and userProfile as props from App.js
 
   // Removed full-page loading spinner per requirements
 

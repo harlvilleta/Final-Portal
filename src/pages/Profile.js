@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { 
   Typography, Box, Grid, TextField, MenuItem, Button, Paper, Avatar, Snackbar, Alert,
-  Card, CardContent, Divider, IconButton, Tabs, Tab, Stack, Chip
+  Card, CardContent, Divider, IconButton, Tabs, Tab, Stack, Chip, Dialog, DialogTitle, DialogContent, DialogActions
 } from "@mui/material";
 import { 
   Person, Security, PhotoCamera, Save, Edit, Visibility, VisibilityOff,
-  Email, Phone, Home, Work
+  Email, Phone, Home, Work, ArrowBack
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { collection, addDoc, doc, getDoc, updateDoc, setDoc, query, where, getDocs } from "firebase/firestore";
-import { updatePassword, updateProfile, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
+import { updatePassword, updateProfile, updateEmail, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { db, auth } from "../firebase";
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
@@ -35,6 +35,9 @@ export default function Profile() {
     sex: "",
     age: "",
     birthdate: "",
+    course: "",
+    year: "",
+    sccNumber: "",
     contact: "",
     email: "",
     fatherName: "",
@@ -55,6 +58,22 @@ export default function Profile() {
   });
 
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [editProfile, setEditProfile] = useState({
+    firstName: "",
+    lastName: "",
+    middleInitial: "",
+    sex: "",
+    age: "",
+    birthdate: "",
+    course: "",
+    year: "",
+    sccNumber: "",
+    contact: "",
+    homeAddress: "",
+    email: "",
+    image: null
+  });
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
@@ -86,6 +105,9 @@ export default function Profile() {
           sex: userData.sex || "",
           age: userData.age || "",
           birthdate: userData.birthdate || "",
+          course: userData.course || "",
+          year: userData.year || "",
+          sccNumber: userData.sccNumber || "",
           contact: userData.contact || userData.phoneNumber || "",
           fatherName: userData.fatherName || "",
           fatherOccupation: userData.fatherOccupation || "",
@@ -180,6 +202,9 @@ export default function Profile() {
         sex: profile.sex,
         age: profile.age,
         birthdate: profile.birthdate,
+        course: profile.course,
+        year: profile.year,
+        sccNumber: profile.sccNumber,
         contact: profile.contact,
         fatherName: profile.fatherName,
         fatherOccupation: profile.fatherOccupation,
@@ -218,6 +243,9 @@ export default function Profile() {
               sex: profile.sex,
               age: profile.age,
               birthdate: profile.birthdate,
+              course: profile.course,
+              year: profile.year,
+              sccNumber: profile.sccNumber,
               contact: profile.contact,
               fatherName: profile.fatherName,
               fatherOccupation: profile.fatherOccupation,
@@ -247,6 +275,9 @@ export default function Profile() {
               sex: profile.sex,
               age: profile.age,
               birthdate: profile.birthdate,
+              course: profile.course,
+              year: profile.year,
+              sccNumber: profile.sccNumber,
               contact: profile.contact,
               fatherName: profile.fatherName,
               fatherOccupation: profile.fatherOccupation,
@@ -325,6 +356,118 @@ export default function Profile() {
     }
   };
 
+  const handleOpenEditModal = () => {
+    setEditProfile({
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      middleInitial: profile.middleInitial,
+      sex: profile.sex,
+      age: profile.age,
+      birthdate: profile.birthdate,
+      course: profile.course,
+      year: profile.year,
+      sccNumber: profile.sccNumber,
+      contact: profile.contact,
+      homeAddress: profile.homeAddress,
+      email: profile.email,
+      image: profile.image
+    });
+    setOpenEditModal(true);
+  };
+
+  const handleEditProfileChange = (e) => {
+    const { name, value } = e.target;
+    setEditProfile(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setSaving(true);
+      const imageUrl = await uploadImageToStorage(file, currentUser.uid);
+      setEditProfile(prev => ({ ...prev, image: imageUrl }));
+      setSnackbar({ open: true, message: "Profile picture updated!", severity: "success" });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setSnackbar({ open: true, message: "Error uploading image: " + error.message, severity: "error" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveEditProfile = async () => {
+    setSaving(true);
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      
+      // Update Firestore document
+      const updateData = {
+        firstName: editProfile.firstName,
+        lastName: editProfile.lastName,
+        middleInitial: editProfile.middleInitial,
+        sex: editProfile.sex,
+        age: editProfile.age,
+        birthdate: editProfile.birthdate,
+        course: editProfile.course,
+        year: editProfile.year,
+        sccNumber: editProfile.sccNumber,
+        contact: editProfile.contact,
+        homeAddress: editProfile.homeAddress,
+        fullName: `${editProfile.firstName} ${editProfile.lastName}`.trim()
+      };
+
+      // Add email and image if they changed
+      if (editProfile.email !== profile.email) {
+        updateData.email = editProfile.email;
+      }
+      if (editProfile.image !== profile.image) {
+        updateData.profilePic = editProfile.image;
+      }
+
+      await updateDoc(userRef, updateData);
+
+      // Update email in Firebase Auth if it changed
+      if (editProfile.email !== profile.email && profile.role === 'Admin') {
+        await updateEmail(currentUser, editProfile.email);
+      }
+
+      // Update profile picture in Firebase Auth if it changed
+      if (editProfile.image !== profile.image) {
+        await updateProfile(currentUser, {
+          photoURL: editProfile.image
+        });
+      }
+
+      // Update local profile state
+      setProfile(prev => ({
+        ...prev,
+        firstName: editProfile.firstName,
+        lastName: editProfile.lastName,
+        middleInitial: editProfile.middleInitial,
+        sex: editProfile.sex,
+        age: editProfile.age,
+        birthdate: editProfile.birthdate,
+        course: editProfile.course,
+        year: editProfile.year,
+        sccNumber: editProfile.sccNumber,
+        contact: editProfile.contact,
+        homeAddress: editProfile.homeAddress,
+        email: editProfile.email,
+        image: editProfile.image
+      }));
+
+      setSnackbar({ open: true, message: "Profile updated successfully!", severity: "success" });
+      setOpenEditModal(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setSnackbar({ open: true, message: "Error updating profile: " + error.message, severity: "error" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
@@ -335,9 +478,24 @@ export default function Profile() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom fontWeight={700} color="primary.main">
-        Account Settings
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <IconButton 
+          onClick={() => navigate('/options')}
+          sx={{ 
+            mr: 2,
+            color: 'black',
+            '&:hover': {
+              bgcolor: 'rgba(128, 0, 0, 0.1)',
+              color: '#800000'
+            }
+          }}
+        >
+          <ArrowBack />
+        </IconButton>
+        <Typography variant="h4" fontWeight={700} color="primary.main">
+          Account Settings
+        </Typography>
+      </Box>
 
       <Paper sx={{ mb: 3 }}>
         <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
@@ -360,7 +518,8 @@ export default function Profile() {
                     fontSize: '3rem',
                     bgcolor: 'primary.main',
                     mb: 2,
-                    mx: 'auto'
+                    mx: 'auto',
+                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)'
                   }}
                 >
                   {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}
@@ -371,11 +530,6 @@ export default function Profile() {
                 <Typography variant="body2" color="textSecondary">
                   {profile.email}
                 </Typography>
-                {profile.studentId && (
-                  <Typography variant="body2" color="textSecondary" sx={{ mt: 0.5 }}>
-                    ID: {profile.studentId}
-                  </Typography>
-                )}
                 <Chip 
                   label={profile.role || "Student"} 
                   color="primary" 
@@ -384,13 +538,20 @@ export default function Profile() {
                 />
                 <Box sx={{ mt: 3 }}>
                   <Button 
-                    variant="contained" 
+                    variant="outlined" 
                     startIcon={<Edit />}
-                    onClick={() => navigate('/edit-profile')}
+                    onClick={handleOpenEditModal}
                     sx={{ 
+                      color: 'black',
+                      borderColor: 'black',
                       fontWeight: 600,
                       textTransform: 'none',
-                      px: 3
+                      px: 3,
+                      '&:hover': {
+                        bgcolor: '#800000',
+                        color: 'white',
+                        borderColor: '#800000'
+                      }
                     }}
                   >
                     Edit Profile
@@ -475,22 +636,6 @@ export default function Profile() {
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Student ID
-                      </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
-                      }}>
-                        {profile.studentId || 'Not provided'}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
                         Contact Number
                       </Typography>
                       <Typography variant="body1" sx={{ 
@@ -504,7 +649,39 @@ export default function Profile() {
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={12} sm={4}>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Course
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 500,
+                        p: 1.5,
+                        bgcolor: 'grey.50',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        {profile.course || 'Not provided'}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Year Level
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 500,
+                        p: 1.5,
+                        bgcolor: 'grey.50',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        {profile.year || 'Not provided'}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
                         Sex
@@ -520,7 +697,7 @@ export default function Profile() {
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={12} sm={4}>
+                  <Grid item xs={12} sm={6}>
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
                         Age
@@ -536,7 +713,7 @@ export default function Profile() {
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={12} sm={4}>
+                  <Grid item xs={12} sm={6}>
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
                         Birthdate
@@ -548,7 +725,23 @@ export default function Profile() {
                         borderRadius: 1,
                         border: '1px solid #e0e0e0'
                       }}>
-                        {profile.birthdate || 'Not provided'}
+                        {profile.birthdate ? new Date(profile.birthdate).toLocaleDateString() : 'Not provided'}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        SCC Number
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 500,
+                        p: 1.5,
+                        bgcolor: 'grey.50',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        {profile.sccNumber || 'Not provided'}
                       </Typography>
                     </Box>
                   </Grid>
@@ -587,17 +780,24 @@ export default function Profile() {
       )}
 
       {activeTab === 1 && (
-        <Box sx={{ maxWidth: 400 }}>
+        <Box sx={{ 
+          maxWidth: 400, 
+          mx: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center'
+        }}>
           <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
             <Security /> Change Password
           </Typography>
-          <Stack spacing={2}>
+          <Stack spacing={2} sx={{ width: '100%' }}>
             <TextField
               label="Current Password"
               name="currentPassword"
               type={showPassword ? "text" : "password"}
               value={passwordForm.currentPassword}
               onChange={handlePasswordChange}
+              fullWidth
               InputProps={{
                 endAdornment: (
                   <IconButton
@@ -616,6 +816,7 @@ export default function Profile() {
               type={showNewPassword ? "text" : "password"}
               value={passwordForm.newPassword}
               onChange={handlePasswordChange}
+              fullWidth
               InputProps={{
                 endAdornment: (
                   <IconButton
@@ -634,6 +835,7 @@ export default function Profile() {
               type={showConfirmPassword ? "text" : "password"}
               value={passwordForm.confirmPassword}
               onChange={handlePasswordChange}
+              fullWidth
               InputProps={{
                 endAdornment: (
                   <IconButton
@@ -647,21 +849,25 @@ export default function Profile() {
               }}
             />
           </Stack>
-          <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+          <Typography variant="body2" color="textSecondary" sx={{ mt: 2, textAlign: 'center' }}>
             Password must be at least 6 characters long.
           </Typography>
-          <Box sx={{ mt: 2 }}>
+          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
             <Button 
-              variant="contained" 
+              variant="outlined" 
               size="small"
               onClick={handleChangePassword}
               disabled={saving || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword || passwordSuccess}
               startIcon={<Security />}
-              color={passwordSuccess ? "success" : "primary"}
               sx={{
-                transition: 'all 0.3s ease',
-                transform: passwordSuccess ? 'scale(1.05)' : 'scale(1)',
-                boxShadow: passwordSuccess ? '0 4px 12px rgba(76, 175, 80, 0.4)' : '0 2px 8px rgba(25, 118, 210, 0.3)'
+                color: passwordSuccess ? '#4caf50' : 'black',
+                borderColor: passwordSuccess ? '#4caf50' : 'black',
+                fontWeight: 600,
+                '&:hover': {
+                  bgcolor: passwordSuccess ? '#4caf50' : '#800000',
+                  color: 'white',
+                  borderColor: passwordSuccess ? '#4caf50' : '#800000'
+                }
               }}
             >
               {saving ? 'Changing Password...' : passwordSuccess ? 'Password Changed!' : 'Change Password'}
@@ -669,6 +875,236 @@ export default function Profile() {
           </Box>
         </Box>
       )}
+
+      {/* Edit Profile Modal */}
+      <Dialog open={openEditModal} onClose={() => setOpenEditModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, color: '#800000', pb: 1 }}>
+          Edit Profile
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <Grid container spacing={2}>
+            {/* Profile Picture Section */}
+            <Grid item xs={12}>
+              <Box sx={{ textAlign: 'center', mb: 2 }}>
+                <Avatar 
+                  src={editProfile.image} 
+                  sx={{ 
+                    width: 60, 
+                    height: 60, 
+                    fontSize: '1.5rem',
+                    bgcolor: 'primary.main',
+                    mb: 1,
+                    mx: 'auto',
+                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)'
+                  }}
+                >
+                  {editProfile.firstName?.charAt(0)}{editProfile.lastName?.charAt(0)}
+                </Avatar>
+                <Box>
+                  <input
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    id="profile-picture-upload"
+                    type="file"
+                    onChange={handleImageUpload}
+                  />
+                  <label htmlFor="profile-picture-upload">
+                    <Button
+                      variant="outlined"
+                      component="span"
+                      startIcon={<PhotoCamera />}
+                      size="small"
+                      sx={{
+                        color: 'black',
+                        borderColor: 'black',
+                        fontSize: '0.75rem',
+                        py: 0.5,
+                        px: 1,
+                        '&:hover': {
+                          bgcolor: 'rgba(0,0,0,0.1)',
+                          borderColor: 'black'
+                        }
+                      }}
+                    >
+                      Change Picture
+                    </Button>
+                  </label>
+                </Box>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="First Name"
+                name="firstName"
+                value={editProfile.firstName}
+                onChange={handleEditProfileChange}
+                fullWidth
+                size="small"
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Last Name"
+                name="lastName"
+                value={editProfile.lastName}
+                onChange={handleEditProfileChange}
+                fullWidth
+                size="small"
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Middle Initial"
+                name="middleInitial"
+                value={editProfile.middleInitial}
+                onChange={handleEditProfileChange}
+                fullWidth
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Contact Number"
+                name="contact"
+                value={editProfile.contact}
+                onChange={handleEditProfileChange}
+                fullWidth
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Course"
+                name="course"
+                value={editProfile.course}
+                onChange={handleEditProfileChange}
+                fullWidth
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Year Level"
+                name="year"
+                value={editProfile.year}
+                onChange={handleEditProfileChange}
+                fullWidth
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Sex"
+                name="sex"
+                value={editProfile.sex}
+                onChange={handleEditProfileChange}
+                fullWidth
+                size="small"
+                select
+              >
+                <MenuItem value="Male">Male</MenuItem>
+                <MenuItem value="Female">Female</MenuItem>
+                <MenuItem value="Other">Other</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Age"
+                name="age"
+                value={editProfile.age}
+                onChange={handleEditProfileChange}
+                fullWidth
+                size="small"
+                type="number"
+                inputProps={{ min: 1, max: 150 }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Birthdate"
+                name="birthdate"
+                value={editProfile.birthdate}
+                onChange={handleEditProfileChange}
+                fullWidth
+                size="small"
+                type="date"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="SCC Number"
+                name="sccNumber"
+                value={editProfile.sccNumber}
+                onChange={handleEditProfileChange}
+                fullWidth
+                size="small"
+              />
+            </Grid>
+            {profile.role === 'Admin' && (
+              <Grid item xs={12}>
+                <TextField
+                  label="Email Address"
+                  name="email"
+                  type="email"
+                  value={editProfile.email}
+                  onChange={handleEditProfileChange}
+                  fullWidth
+                  size="small"
+                  required
+                />
+              </Grid>
+            )}
+            <Grid item xs={12}>
+              <TextField
+                label="Home Address"
+                name="homeAddress"
+                value={editProfile.homeAddress}
+                onChange={handleEditProfileChange}
+                fullWidth
+                size="small"
+                multiline
+                rows={2}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 1 }}>
+          <Button 
+            onClick={() => setOpenEditModal(false)} 
+            variant="outlined"
+            size="small"
+            sx={{
+              color: 'black',
+              borderColor: 'black',
+              '&:hover': {
+                bgcolor: 'rgba(0,0,0,0.1)',
+                borderColor: 'black'
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSaveEditProfile} 
+            variant="contained"
+            disabled={saving}
+            startIcon={<Save />}
+            size="small"
+            sx={{
+              bgcolor: '#800000',
+              '&:hover': {
+                bgcolor: '#a00000'
+              }
+            }}
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
         <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>

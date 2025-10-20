@@ -56,12 +56,13 @@ export default function TeacherLostFound() {
   );
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: 'primary.main' }}>
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#800000', mb: 3 }}>
         Lost & Found
       </Typography>
 
       <Grid container spacing={3}>
+        {/* Submit Item Panel */}
         <Grid item xs={12} md={5}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
@@ -71,6 +72,7 @@ export default function TeacherLostFound() {
               <TextField
                 select
                 fullWidth
+                size="small"
                 label="Type"
                 value={form.type}
                 onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
@@ -79,26 +81,37 @@ export default function TeacherLostFound() {
                 <MenuItem value="lost">Lost</MenuItem>
                 <MenuItem value="found">Found</MenuItem>
               </TextField>
-              <TextField fullWidth label="Item Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} sx={{ mb: 2 }} />
-              <TextField fullWidth label="Description" multiline minRows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} sx={{ mb: 2 }} />
-              <TextField fullWidth label="Location" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} sx={{ mb: 2 }} />
-              <Button type="submit" variant="contained" disabled={submitting} sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}>
+              <TextField fullWidth size="small" label="Item Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} sx={{ mb: 2 }} />
+              <TextField fullWidth size="small" label="Description" multiline minRows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} sx={{ mb: 2 }} />
+              <TextField fullWidth size="small" label="Location" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} sx={{ mb: 2 }} />
+              <Button type="submit" variant="outlined" disabled={submitting} sx={{
+                textTransform: 'none', bgcolor: '#fff', color: '#000', borderColor: '#000',
+                '&:hover': { bgcolor: '#800000', color: '#fff', borderColor: '#800000' }
+              }}>
                 {submitting ? 'Submitting...' : 'Submit'}
               </Button>
             </form>
           </Paper>
         </Grid>
 
+        {/* Lists Panel */}
         <Grid item xs={12} md={7}>
           <Grid container spacing={3}>
-            {/* Lost Items History Section */}
+            {/* Lost Items History */}
             <Grid item xs={12}>
-              <Paper sx={{ p: 3 }}>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: 'primary.main' }}>
+              <Paper sx={{ 
+                p: 3, 
+                bgcolor: 'rgba(255,255,255,0.9)',
+                border: '0.5px solid rgba(0,0,0,0.1)',
+                borderRadius: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              }}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#000' }}>
                   Lost Items History ({filteredLost.length})
                 </Typography>
                 <TextField
                   fullWidth
+                  size="small"
                   placeholder="Search lost items..."
                   value={lostSearch}
                   onChange={e => setLostSearch(e.target.value)}
@@ -106,39 +119,52 @@ export default function TeacherLostFound() {
                   InputProps={{ startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} /> }}
                 />
                 {filteredLost.length === 0 ? (
-                  <Typography color="text.secondary">No lost items found.</Typography>
+                  <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 2 }}>
+                    <Typography variant="body2" sx={{ color: '#333' }}>No lost items found.</Typography>
+                  </Paper>
                 ) : (
-                  filteredLost.slice(0, 10).map(item => (
-                    <Card key={item.id} sx={{ mb: 2, bgcolor: '#80000010', borderLeft: '4px solid #800000' }}>
-                      <CardContent>
-                        <Grid container spacing={2} alignItems="center">
-                          <Grid item>
-                            {item.image && (<Avatar src={item.image} variant="rounded" sx={{ width: 56, height: 56 }} />)}
-                          </Grid>
-                          <Grid item xs>
-                            <Typography fontWeight={700}>{item.name}</Typography>
-                            <Typography variant="body2" color="text.secondary">{item.description}</Typography>
-                            <Typography variant="caption" color="text.secondary">Location: {item.location}</Typography>
-                          </Grid>
-                          <Grid item>
-                            <Chip label="Lost" color="primary" size="small" />
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                  ))
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {filteredLost.map((item) => (
+                      <Paper key={item.id} sx={{ 
+                        p: 2, border: '0.5px solid rgba(0,0,0,0.1)', borderRadius: 2,
+                        '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }, transition: 'all 0.2s'
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                          <Avatar sx={{ bgcolor: '#e65100', width: 32, height: 32, mr: 2 }}>L</Avatar>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#000' }}>{item.name}</Typography>
+                            <Typography variant="caption" sx={{ color: '#333' }}>{new Date(item.createdAt).toLocaleDateString()}</Typography>
+                          </Box>
+                          <Chip label={item.resolved ? 'Resolved' : 'Active'} color={item.resolved ? 'success' : 'warning'} size="small" />
+                        </Box>
+                        {item.description && (
+                          <Typography variant="body2" sx={{ color: '#000', mb: 1 }}>{item.description}</Typography>
+                        )}
+                        <Typography variant="caption" sx={{ color: '#333' }}>
+                          <strong>Lost by:</strong> {item.lostBy || 'Unknown'} | <strong>Location:</strong> {item.location || 'Unknown'}
+                        </Typography>
+                      </Paper>
+                    ))}
+                  </Box>
                 )}
               </Paper>
             </Grid>
 
-            {/* Found Items Summary Section */}
+            {/* Found Items Summary */}
             <Grid item xs={12}>
-              <Paper sx={{ p: 3 }}>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: 'primary.main' }}>
+              <Paper sx={{ 
+                p: 3, 
+                bgcolor: 'rgba(255,255,255,0.9)',
+                border: '0.5px solid rgba(0,0,0,0.1)',
+                borderRadius: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              }}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#000' }}>
                   Found Items Summary ({filteredFound.length})
                 </Typography>
                 <TextField
                   fullWidth
+                  size="small"
                   placeholder="Search found items..."
                   value={foundSearch}
                   onChange={e => setFoundSearch(e.target.value)}
@@ -146,27 +172,33 @@ export default function TeacherLostFound() {
                   InputProps={{ startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} /> }}
                 />
                 {filteredFound.length === 0 ? (
-                  <Typography color="text.secondary">No found items found.</Typography>
+                  <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 2 }}>
+                    <Typography variant="body2" sx={{ color: '#333' }}>No found items found.</Typography>
+                  </Paper>
                 ) : (
-                  filteredFound.slice(0, 10).map(item => (
-                    <Card key={item.id} sx={{ mb: 2, bgcolor: '#2e7d3210', borderLeft: '4px solid #2e7d32' }}>
-                      <CardContent>
-                        <Grid container spacing={2} alignItems="center">
-                          <Grid item>
-                            {item.image && (<Avatar src={item.image} variant="rounded" sx={{ width: 56, height: 56 }} />)}
-                          </Grid>
-                          <Grid item xs>
-                            <Typography fontWeight={700}>{item.name}</Typography>
-                            <Typography variant="body2" color="text.secondary">{item.description}</Typography>
-                            <Typography variant="caption" color="text.secondary">Location: {item.location}</Typography>
-                          </Grid>
-                          <Grid item>
-                            <Chip label="Found" color="success" size="small" />
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                  ))
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {filteredFound.map((item) => (
+                      <Paper key={item.id} sx={{ 
+                        p: 2, border: '0.5px solid rgba(0,0,0,0.1)', borderRadius: 2,
+                        '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }, transition: 'all 0.2s'
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                          <Avatar sx={{ bgcolor: '#2e7d32', width: 32, height: 32, mr: 2 }}>F</Avatar>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#000' }}>{item.name}</Typography>
+                            <Typography variant="caption" sx={{ color: '#333' }}>{new Date(item.createdAt).toLocaleDateString()}</Typography>
+                          </Box>
+                          <Chip label={item.resolved ? 'Resolved' : 'Active'} color={item.resolved ? 'success' : 'warning'} size="small" />
+                        </Box>
+                        {item.description && (
+                          <Typography variant="body2" sx={{ color: '#000', mb: 1 }}>{item.description}</Typography>
+                        )}
+                        <Typography variant="caption" sx={{ color: '#333' }}>
+                          <strong>Found by:</strong> {item.foundBy || 'Unknown'} | <strong>Location:</strong> {item.location || 'Unknown'}
+                        </Typography>
+                      </Paper>
+                    ))}
+                  </Box>
                 )}
               </Paper>
             </Grid>

@@ -143,13 +143,11 @@ export default function TeacherNotifications() {
 
   const getNotificationIcon = (type, notificationType) => {
     switch (type) {
-      case 'meeting': return <MeetingRoom color="primary" />;
-      case 'lost_found': 
-        return notificationType === 'lost' ? 
-          <Search color="warning" /> : <Search color="success" />;
-      case 'violation': return <Warning color="error" />;
-      case 'announcement': return <Announcement color="info" />;
-      default: return <Info color="default" />;
+      case 'meeting': return <MeetingRoom />;
+      case 'lost_found': return <Search />;
+      case 'violation': return <Warning />;
+      case 'announcement': return <Announcement />;
+      default: return <Info />;
     }
   };
 
@@ -204,7 +202,7 @@ export default function TeacherNotifications() {
                 }}
               >
                 <ListItemAvatar>
-                  <Avatar sx={{ bgcolor: getNotificationColor(notification.type, notification.notificationType) }}>
+                  <Avatar>
                     {getNotificationIcon(notification.type, notification.notificationType)}
                   </Avatar>
                 </ListItemAvatar>
@@ -376,7 +374,7 @@ export default function TeacherNotifications() {
     <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={700} color="#2d3436" gutterBottom>
+        <Typography variant="h4" fontWeight={700} color="#800000" gutterBottom>
           Notifications
         </Typography>
         <Typography variant="body1" color="text.secondary">
@@ -385,10 +383,10 @@ export default function TeacherNotifications() {
       </Box>
 
       {/* Statistics Card */}
-      <Card sx={{ mb: 3, bgcolor: '#e3f2fd', border: '1px solid #2196f3' }}>
+      <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: '#1976d2' }}>
+            <Avatar>
               <NotificationsActive />
             </Avatar>
             <Box>

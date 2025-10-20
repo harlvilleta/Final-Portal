@@ -74,11 +74,13 @@ export default function TeacherViolationRecords() {
         borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#b0b0b0',
       },
       '&.Mui-focused fieldset': {
-        borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+        borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
       },
     },
     '& .MuiInputLabel-root': {
       color: theme.palette.mode === 'dark' ? '#b0b0b0' : '#666666',
+      fontSize: '0.75rem',
+      fontWeight: 500,
     },
     '& .MuiInputBase-input': {
       color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
@@ -103,13 +105,10 @@ export default function TeacherViolationRecords() {
     studentName: '',
     studentId: '',
     violation: '',
-    classification: '',
     severity: '',
     date: new Date().toISOString().split('T')[0],
     time: '',
     location: '',
-    reportedBy: '',
-    actionTaken: '',
     witnesses: '',
     description: '',
     evidenceImage: null
@@ -129,10 +128,6 @@ export default function TeacherViolationRecords() {
           if (!userSnapshot.empty) {
             const userData = userSnapshot.docs[0].data();
             setUserProfile(userData);
-            setFormData(prev => ({
-              ...prev,
-              reportedBy: userData.fullName || user.displayName || user.email
-            }));
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);
@@ -189,7 +184,7 @@ export default function TeacherViolationRecords() {
     
     // First, try to find exact matches
     const exactMatches = students.filter(student => 
-      student.name.toLowerCase() === searchLower
+      student && student.name && student.name.toLowerCase() === searchLower
     );
 
     if (exactMatches.length > 0) {
@@ -199,7 +194,7 @@ export default function TeacherViolationRecords() {
       // If no exact match, show up to 3 suggestions that start with the search text
       const suggestions = students
         .filter(student => 
-          student.name.toLowerCase().startsWith(searchLower)
+          student && student.name && student.name.toLowerCase().startsWith(searchLower)
         )
         .slice(0, 3); // Limit to 3 suggestions
       
@@ -291,7 +286,7 @@ export default function TeacherViolationRecords() {
   };
 
   const validateForm = () => {
-    const requiredFields = ['studentName', 'violation', 'classification', 'severity', 'date'];
+    const requiredFields = ['studentName', 'violation', 'severity', 'date'];
     const missingFields = requiredFields.filter(field => !formData[field]);
     
     if (missingFields.length > 0) {
@@ -310,6 +305,16 @@ export default function TeacherViolationRecords() {
     
     if (!validateForm()) return;
     
+    // Additional validation
+    if (!currentUser) {
+      setSnackbar({ 
+        open: true, 
+        message: 'User not authenticated. Please refresh the page and try again.', 
+        severity: 'error' 
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
       // Create violation record
@@ -318,17 +323,15 @@ export default function TeacherViolationRecords() {
         studentId: formData.studentId,
         studentEmail: students.find(s => s.name === formData.studentName)?.email || '',
         violationType: formData.violation,
-        classification: formData.classification,
         severity: formData.severity,
         status: 'Pending', // Always set to Pending for new violations
         date: formData.date,
         time: formData.time || null,
         location: formData.location || null,
-        reportedBy: formData.reportedBy,
-        reportedByName: formData.reportedBy,
+        reportedBy: userProfile?.fullName || currentUser?.displayName || currentUser?.email,
+        reportedByName: userProfile?.fullName || currentUser?.displayName || currentUser?.email,
         reportedByEmail: currentUser?.email,
         reportedByRole: 'Teacher',
-        actionTaken: formData.actionTaken || null,
         witnesses: formData.witnesses || null,
         description: formData.description || null,
         evidenceImage: evidenceFile ? {
@@ -351,27 +354,34 @@ export default function TeacherViolationRecords() {
 
       // Add violation to database
       const docRef = await addDoc(collection(db, 'violations'), violationData);
+      console.log('Violation added successfully with ID:', docRef.id);
       
       // Create notification for admin
-      await addDoc(collection(db, 'notifications'), {
-        recipientId: 'admin',
-        recipientEmail: 'admin@school.com',
-        recipientName: 'Administrator',
-        title: 'New Violation Reported',
-        message: `Teacher ${formData.reportedBy} has reported a ${formData.severity.toLowerCase()} violation: ${formData.violation} for student ${formData.studentName}`,
-        type: 'violation',
-        violationId: docRef.id,
-        studentName: formData.studentName,
-        violationType: formData.violation,
-        severity: formData.severity,
-        reportedBy: formData.reportedBy,
-        senderId: currentUser?.uid,
-        senderEmail: currentUser?.email,
-        senderName: formData.reportedBy,
-        read: false,
-        createdAt: new Date().toISOString(),
-        priority: formData.severity === 'Critical' ? 'high' : 'medium'
-      });
+      try {
+        await addDoc(collection(db, 'notifications'), {
+          recipientId: 'admin',
+          recipientEmail: 'admin@school.com',
+          recipientName: 'Administrator',
+          title: 'New Violation Reported',
+          message: `Teacher ${userProfile?.fullName || currentUser?.displayName || currentUser?.email} has reported a ${formData.severity.toLowerCase()} violation: ${formData.violation} for student ${formData.studentName}`,
+          type: 'violation',
+          violationId: docRef.id,
+          studentName: formData.studentName,
+          violationType: formData.violation,
+          severity: formData.severity,
+          reportedBy: userProfile?.fullName || currentUser?.displayName || currentUser?.email,
+          senderId: currentUser?.uid,
+          senderEmail: currentUser?.email,
+          senderName: userProfile?.fullName || currentUser?.displayName || currentUser?.email,
+          read: false,
+          createdAt: new Date().toISOString(),
+          priority: formData.severity === 'Critical' ? 'high' : 'medium'
+        });
+        console.log('Notification created successfully');
+      } catch (notificationError) {
+        console.warn('Failed to create notification:', notificationError);
+        // Don't fail the entire operation if notification fails
+      }
 
       setSnackbar({ 
         open: true, 
@@ -384,13 +394,10 @@ export default function TeacherViolationRecords() {
         studentName: '',
         studentId: '',
         violation: '',
-        classification: '',
         severity: '',
         date: new Date().toISOString().split('T')[0],
         time: '',
         location: '',
-        reportedBy: formData.reportedBy, // Keep the teacher's name
-        actionTaken: '',
         witnesses: '',
         description: '',
         evidenceImage: null
@@ -400,9 +407,24 @@ export default function TeacherViolationRecords() {
 
     } catch (error) {
       console.error('Error recording violation:', error);
+      console.error('Form data:', formData);
+      console.error('Current user:', currentUser);
+      console.error('User profile:', userProfile);
+      
+      let errorMessage = 'Error recording violation. Please try again.';
+      
+      // Provide more specific error messages
+      if (error.code === 'permission-denied') {
+        errorMessage = 'Permission denied. Please check your account permissions.';
+      } else if (error.code === 'unavailable') {
+        errorMessage = 'Service temporarily unavailable. Please try again later.';
+      } else if (error.message) {
+        errorMessage = `Error: ${error.message}`;
+      }
+      
       setSnackbar({ 
         open: true, 
-        message: 'Error recording violation. Please try again.', 
+        message: errorMessage, 
         severity: 'error' 
       });
     } finally {
@@ -417,7 +439,7 @@ export default function TeacherViolationRecords() {
         color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
         mb: 3 
       }}>
-        📋 Violation Records
+        Violation Records
       </Typography>
       
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
@@ -470,9 +492,8 @@ export default function TeacherViolationRecords() {
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Student Name *"
+                      label="Select Student Involved"
                       placeholder="Type to search for a student"
-                      required
                       sx={getTextFieldSx()}
                     />
                   )}
@@ -492,74 +513,17 @@ export default function TeacherViolationRecords() {
               </Grid>
               
               <Grid item xs={12} md={6}>
-                <Autocomplete
-                  options={violationTypes}
+                <TextField
+                  fullWidth
+                  label="Type of Violation Committed"
+                  placeholder="Describe the specific violation"
                   value={formData.violation}
-                  onChange={(event, newValue) => handleInputChange('violation', newValue || '')}
-                  PaperComponent={({ children, ...other }) => (
-                    <Paper 
-                      {...other} 
-                      sx={{ 
-                        backgroundColor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
-                        border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none',
-                        '& .MuiAutocomplete-option': {
-                          color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
-                          '&:hover': {
-                            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                          },
-                        }
-                      }}
-                    >
-                      {children}
-                    </Paper>
-                  )}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Violation *"
-                      placeholder="Type of violation"
-                      required
-                      sx={getTextFieldSx()}
-                    />
-                  )}
+                  onChange={(e) => handleInputChange('violation', e.target.value)}
+                  sx={getTextFieldSx()}
                 />
               </Grid>
               
-              <Grid item xs={12} md={4}>
-                <Autocomplete
-                  options={classifications}
-                  value={formData.classification}
-                  onChange={(event, newValue) => handleInputChange('classification', newValue || '')}
-                  PaperComponent={({ children, ...other }) => (
-                    <Paper 
-                      {...other} 
-                      sx={{ 
-                        backgroundColor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
-                        border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none',
-                        '& .MuiAutocomplete-option': {
-                          color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
-                          '&:hover': {
-                            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                          },
-                        }
-                      }}
-                    >
-                      {children}
-                    </Paper>
-                  )}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Classification *"
-                      placeholder="Select classification"
-                      required
-                      sx={getTextFieldSx()}
-                    />
-                  )}
-                />
-              </Grid>
-              
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12} md={6}>
                 <Autocomplete
                   options={severityLevels}
                   value={formData.severity}
@@ -584,9 +548,8 @@ export default function TeacherViolationRecords() {
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Severity *"
-                      placeholder="Severity level"
-                      required
+                      label="Severity Level of Violation"
+                      placeholder="Select severity level"
                       sx={getTextFieldSx()}
                     />
                   )}
@@ -598,12 +561,11 @@ export default function TeacherViolationRecords() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Date *"
+                  label="Date of Violation Incident"
                   type="date"
                   value={formData.date}
                   onChange={(e) => handleInputChange('date', e.target.value)}
                   InputLabelProps={{ shrink: true }}
-                  required
                   sx={getTextFieldSx()}
                 />
               </Grid>
@@ -611,7 +573,7 @@ export default function TeacherViolationRecords() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Time"
+                  label="Time of Violation Incident"
                   type="time"
                   value={formData.time}
                   onChange={(e) => handleInputChange('time', e.target.value)}
@@ -623,32 +585,10 @@ export default function TeacherViolationRecords() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Location"
-                  placeholder="Location (optional)"
+                  label="Location Where Violation Occurred"
+                  placeholder="Enter specific location or classroom"
                   value={formData.location}
                   onChange={(e) => handleInputChange('location', e.target.value)}
-                  sx={getTextFieldSx()}
-                />
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Reported By"
-                  placeholder="Who reported?"
-                  value={formData.reportedBy}
-                  onChange={(e) => handleInputChange('reportedBy', e.target.value)}
-                  sx={getTextFieldSx()}
-                />
-              </Grid>
-              
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Action Taken"
-                  placeholder="Action taken (optional)"
-                  value={formData.actionTaken}
-                  onChange={(e) => handleInputChange('actionTaken', e.target.value)}
                   sx={getTextFieldSx()}
                 />
               </Grid>
@@ -659,8 +599,8 @@ export default function TeacherViolationRecords() {
                   fullWidth
                   multiline
                   rows={3}
-                  label="Witnesses"
-                  placeholder="Witnesses (optional)"
+                  label="Names of Witnesses Present"
+                  placeholder="List any witnesses who observed the violation"
                   value={formData.witnesses}
                   onChange={(e) => handleInputChange('witnesses', e.target.value)}
                   sx={getTextFieldSx()}
@@ -672,8 +612,8 @@ export default function TeacherViolationRecords() {
                   fullWidth
                   multiline
                   rows={3}
-                  label="Description"
-                  placeholder="Describe the violation (optional)"
+                  label="Detailed Description of Incident"
+                  placeholder="Provide a detailed account of what happened"
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   sx={getTextFieldSx()}
@@ -696,15 +636,18 @@ export default function TeacherViolationRecords() {
                       component="span"
                       startIcon={<AttachFile />}
                       sx={{
-                        borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
-                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
-                        '&:hover': {
-                          borderColor: theme.palette.mode === 'dark' ? '#b0b0b0' : '#6b0000',
-                          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#80000010'
+                        textTransform: 'none',
+                        bgcolor: '#fff', 
+                        color: '#000', 
+                        borderColor: '#000', 
+                        '&:hover': { 
+                          bgcolor: '#800000', 
+                          color: '#fff', 
+                          borderColor: '#800000' 
                         }
                       }}
                     >
-                      ATTACH EVIDENCE IMAGE
+                      Attach Evidence Image
                     </Button>
                   </label>
                   
@@ -747,15 +690,18 @@ export default function TeacherViolationRecords() {
                 disabled={loading}
                 startIcon={loading ? <CircularProgress size={20} /> : <Save />}
                 sx={{
-                  borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-                  '&:hover': {
-                    borderColor: theme.palette.mode === 'dark' ? '#b0b0b0' : '#333333',
-                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#00000010'
+                  textTransform: 'none',
+                  bgcolor: '#fff', 
+                  color: '#000', 
+                  borderColor: '#000', 
+                  '&:hover': { 
+                    bgcolor: '#800000', 
+                    color: '#fff', 
+                    borderColor: '#800000' 
                   }
                 }}
               >
-                {loading ? 'Recording...' : 'ADD VIOLATION'}
+                {loading ? 'Recording...' : 'Add Violation'}
               </Button>
             </Box>
           </form>

@@ -19,31 +19,9 @@ const userMenu = [
   { text: "Account Settings", icon: <Settings sx={{ color: 'inherit' }} />, path: "/profile" },
 ];
 
-export default function UserSidebar() {
+export default function UserSidebar({ currentUser, userProfile }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [currentUser, setCurrentUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      setCurrentUser(user);
-      
-      if (user) {
-        try {
-          // Fetch user profile from Firestore
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            setUserProfile(userDoc.data());
-          }
-        } catch (error) {
-          console.error('Error fetching user profile:', error);
-        }
-      }
-    });
-
-    return unsubscribe;
-  }, []);
 
 
   const handleLogout = async () => {
