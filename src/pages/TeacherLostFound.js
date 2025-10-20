@@ -130,7 +130,7 @@ export default function TeacherLostFound() {
                         '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }, transition: 'all 0.2s'
                       }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                          <Avatar sx={{ bgcolor: '#e65100', width: 32, height: 32, mr: 2 }}>L</Avatar>
+                          <Avatar sx={{ width: 32, height: 32, mr: 2 }}>L</Avatar>
                           <Box sx={{ flex: 1 }}>
                             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#000' }}>{item.name}</Typography>
                             <Typography variant="caption" sx={{ color: '#333' }}>{new Date(item.createdAt).toLocaleDateString()}</Typography>
@@ -183,7 +183,7 @@ export default function TeacherLostFound() {
                         '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }, transition: 'all 0.2s'
                       }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                          <Avatar sx={{ bgcolor: '#2e7d32', width: 32, height: 32, mr: 2 }}>F</Avatar>
+                          <Avatar sx={{ width: 32, height: 32, mr: 2 }}>F</Avatar>
                           <Box sx={{ flex: 1 }}>
                             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#000' }}>{item.name}</Typography>
                             <Typography variant="caption" sx={{ color: '#333' }}>{new Date(item.createdAt).toLocaleDateString()}</Typography>

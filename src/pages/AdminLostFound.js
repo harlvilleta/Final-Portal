@@ -770,7 +770,6 @@ export default function AdminLostFound() {
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <Avatar 
                         sx={{ 
-                          bgcolor: '#e65100',
                           width: 32,
                           height: 32,
                           mr: 2
@@ -942,7 +941,6 @@ export default function AdminLostFound() {
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <Avatar 
                         sx={{ 
-                          bgcolor: '#2e7d32',
                           width: 32,
                           height: 32,
                           mr: 2
@@ -1027,7 +1025,7 @@ export default function AdminLostFound() {
 
       {/* Found Item Modal */}
       <Dialog open={showFoundModal} onClose={() => setShowFoundModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', bgcolor: '#2e7d32' }}>
+        <DialogTitle sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
           <Add sx={{ mr: 1, verticalAlign: 'middle' }} />
           Found Item Entry
         </DialogTitle>
@@ -1069,22 +1067,25 @@ export default function AdminLostFound() {
                 sx={{ mb: 1.5 }} 
                 placeholder="Enter the name of the person who found the item"
               />
-                             <Button 
-                 variant="outlined" 
-                 size="small"
-                 component="label" 
-                 sx={{ 
-                   mb: 1.5,
-                   fontSize: '0.75rem',
-                   color: foundForm.image ? '#1976d2' : '#000000',
-                   borderColor: foundForm.image ? '#1976d2' : '#000000',
-                   '&:hover': {
-                     borderColor: foundForm.image ? '#1976d2' : '#000000',
-                     backgroundColor: foundForm.image ? '#1976d210' : '#00000010'
-                   }
-                 }}
-                 startIcon={<Upload />}
-               >
+              <Button 
+                variant="outlined" 
+                size="small"
+                component="label" 
+                sx={{ 
+                  mb: 1.5,
+                  fontSize: '0.75rem',
+                  textTransform: 'none',
+                  bgcolor: '#fff',
+                  color: '#000',
+                  borderColor: '#000',
+                  '&:hover': { 
+                    bgcolor: '#800000', 
+                    color: '#fff', 
+                    borderColor: '#800000' 
+                  }
+                }}
+                startIcon={<Upload />}
+              >
                  Upload Image
                  <input type="file" accept="image/*" hidden onChange={handleFoundImage} />
                </Button>
@@ -1120,45 +1121,55 @@ export default function AdminLostFound() {
                    </Box>
                  </Box>
                )}
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                <Button 
-                  variant="contained" 
-                  size="small"
-                  type="submit" 
-                  disabled={loading}
-                  sx={{ 
-                    bgcolor: '#800000', 
-                    fontSize: '0.75rem',
-                    '&:hover': { bgcolor: '#6b0000' } 
-                  }}
-                >
-                  Submit Found Item
-                </Button>
-              </Box>
+              {/* Removed inline submit button to avoid duplicate actions (use dialog actions below) */}
             </form>
           </DialogContent>
           <DialogActions sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
-            <Button onClick={() => setShowFoundModal(false)}>
-              Cancel
-            </Button>
-            <Button 
-              variant="contained" 
-              onClick={handleFoundSubmit}
-              disabled={loading}
-              sx={{ 
-                bgcolor: '#2e7d32', 
-                fontSize: '0.75rem',
-                '&:hover': { bgcolor: '#1b5e20' } 
-              }}
-            >
-              Submit Found Item
-            </Button>
+          <Button 
+            onClick={() => setShowFoundModal(false)}
+            variant="outlined"
+            size="small"
+            sx={{ 
+              textTransform: 'none',
+              bgcolor: '#fff', 
+              color: '#000', 
+              borderColor: '#000', 
+              fontSize: '0.75rem',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000' 
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleFoundSubmit}
+            variant="outlined"
+            size="small"
+            disabled={loading}
+            sx={{ 
+              textTransform: 'none',
+              bgcolor: '#fff', 
+              color: '#000', 
+              borderColor: '#000', 
+              fontSize: '0.75rem',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000' 
+              }
+            }}
+          >
+            Submit Found Item
+          </Button>
           </DialogActions>
         </Dialog>
 
       {/* Lost Item Modal */}
       <Dialog open={showLostModal} onClose={() => setShowLostModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', bgcolor: '#e65100' }}>
+        <DialogTitle sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
           <Add sx={{ mr: 1, verticalAlign: 'middle' }} />
           Lost Item Entry
         </DialogTitle>
@@ -1207,11 +1218,14 @@ export default function AdminLostFound() {
               sx={{ 
                 mb: 1.5,
                 fontSize: '0.75rem',
-                color: lostForm.image ? '#1976d2' : '#000000',
-                borderColor: lostForm.image ? '#1976d2' : '#000000',
-                '&:hover': {
-                  borderColor: lostForm.image ? '#1976d2' : '#000000',
-                  backgroundColor: lostForm.image ? '#1976d210' : '#00000010'
+                textTransform: 'none',
+                bgcolor: '#fff',
+                color: '#000',
+                borderColor: '#000',
+                '&:hover': { 
+                  bgcolor: '#800000', 
+                  color: '#fff', 
+                  borderColor: '#800000' 
                 }
               }}
               startIcon={<Upload />}
@@ -1241,17 +1255,41 @@ export default function AdminLostFound() {
           </form>
         </DialogContent>
         <DialogActions sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
-          <Button onClick={() => setShowLostModal(false)}>
+          <Button 
+            onClick={() => setShowLostModal(false)}
+            variant="outlined"
+            size="small"
+            sx={{ 
+              textTransform: 'none',
+              bgcolor: '#fff', 
+              color: '#000', 
+              borderColor: '#000', 
+              fontSize: '0.75rem',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000' 
+              }
+            }}
+          >
             Cancel
           </Button>
           <Button 
-            variant="contained" 
             onClick={handleLostSubmit}
+            variant="outlined"
+            size="small"
             disabled={loading}
             sx={{ 
-              bgcolor: '#e65100', 
+              textTransform: 'none',
+              bgcolor: '#fff', 
+              color: '#000', 
+              borderColor: '#000', 
               fontSize: '0.75rem',
-              '&:hover': { bgcolor: '#bf360c' } 
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000' 
+              }
             }}
           >
             Submit Lost Item
