@@ -577,13 +577,46 @@ export default function Announcements() {
                         {userRole === 'Admin' && (
                           <>
                             <Tooltip title={a.pinned ? "Unpin" : "Pin"}><IconButton onClick={() => handlePin(a, !a.pinned)} disabled={isSubmitting}>{a.pinned ? <PushPinIcon /> : <PushPinOutlinedIcon />}</IconButton></Tooltip>
-                            <Tooltip title="Edit"><IconButton onClick={() => setEditAnnouncement(a)}><EditIcon /></IconButton></Tooltip>
-                            <Tooltip title="Delete"><IconButton onClick={() => handleDelete(a)} disabled={isSubmitting}><DeleteIcon /></IconButton></Tooltip>
+                            <Tooltip title="Edit"><IconButton 
+                              onClick={() => setEditAnnouncement(a)}
+                              sx={{
+                                '&:hover': {
+                                  color: '#f57c00',
+                                  bgcolor: 'rgba(245, 124, 0, 0.04)'
+                                }
+                              }}
+                            ><EditIcon /></IconButton></Tooltip>
+                            <Tooltip title="Delete"><IconButton 
+                              onClick={() => handleDelete(a)} 
+                              disabled={isSubmitting}
+                              sx={{
+                                '&:hover': {
+                                  color: '#f44336',
+                                  bgcolor: 'rgba(244, 67, 54, 0.04)'
+                                }
+                              }}
+                            ><DeleteIcon /></IconButton></Tooltip>
                             {!a.completed && <Tooltip title="Mark as Completed"><IconButton onClick={() => handleMarkCompleted(a)} disabled={isSubmitting}><Chip label="Complete" color="success" size="small" /></IconButton></Tooltip>}
                           </>
                         )}
-                        <Tooltip title="View"><IconButton onClick={() => setViewAnnouncement(a)}><VisibilityIcon /></IconButton></Tooltip>
-                      <Tooltip title="Print"><IconButton onClick={() => handlePrint(a)}><PrintIcon /></IconButton></Tooltip>
+                        <Tooltip title="View"><IconButton 
+                          onClick={() => setViewAnnouncement(a)}
+                          sx={{
+                            '&:hover': {
+                              color: '#1976d2',
+                              bgcolor: 'rgba(25, 118, 210, 0.04)'
+                            }
+                          }}
+                        ><VisibilityIcon /></IconButton></Tooltip>
+                      <Tooltip title="Print"><IconButton 
+                        onClick={() => handlePrint(a)}
+                        sx={{
+                          '&:hover': {
+                            color: '#666666',
+                            bgcolor: 'rgba(102, 102, 102, 0.04)'
+                          }
+                        }}
+                      ><PrintIcon /></IconButton></Tooltip>
                     </Stack>
                   }
                 />
@@ -673,8 +706,24 @@ export default function Announcements() {
                 subheader={a.completedAt ? new Date(a.completedAt).toLocaleDateString() : a.date ? new Date(a.date).toLocaleDateString() : ''}
                 action={
                   <Stack direction="row" spacing={1}>
-                    <Tooltip title="View"><IconButton onClick={() => setViewAnnouncement(a)}><VisibilityIcon /></IconButton></Tooltip>
-                    <Tooltip title="Print"><IconButton onClick={() => handlePrint(a)}><PrintIcon /></IconButton></Tooltip>
+                    <Tooltip title="View"><IconButton 
+                      onClick={() => setViewAnnouncement(a)}
+                      sx={{
+                        '&:hover': {
+                          color: '#1976d2',
+                          bgcolor: 'rgba(25, 118, 210, 0.04)'
+                        }
+                      }}
+                    ><VisibilityIcon /></IconButton></Tooltip>
+                    <Tooltip title="Print"><IconButton 
+                      onClick={() => handlePrint(a)}
+                      sx={{
+                        '&:hover': {
+                          color: '#666666',
+                          bgcolor: 'rgba(102, 102, 102, 0.04)'
+                        }
+                      }}
+                    ><PrintIcon /></IconButton></Tooltip>
                   </Stack>
                 }
               />
@@ -745,8 +794,26 @@ export default function Announcements() {
                 subheader={a.date ? new Date(a.date).toLocaleDateString() : ''}
                 action={
                   <Stack direction="row" spacing={1}>
-                    <Tooltip title="Restore"><IconButton onClick={() => handleRestore(a)} disabled={isSubmitting}><EditIcon /></IconButton></Tooltip>
-                    <Tooltip title="Delete Permanently"><IconButton onClick={() => handlePermanentDelete(a)} disabled={isSubmitting}><DeleteIcon /></IconButton></Tooltip>
+                    <Tooltip title="Restore"><IconButton 
+                      onClick={() => handleRestore(a)} 
+                      disabled={isSubmitting}
+                      sx={{
+                        '&:hover': {
+                          color: '#f57c00',
+                          bgcolor: 'rgba(245, 124, 0, 0.04)'
+                        }
+                      }}
+                    ><EditIcon /></IconButton></Tooltip>
+                    <Tooltip title="Delete Permanently"><IconButton 
+                      onClick={() => handlePermanentDelete(a)} 
+                      disabled={isSubmitting}
+                      sx={{
+                        '&:hover': {
+                          color: '#f44336',
+                          bgcolor: 'rgba(244, 67, 54, 0.04)'
+                        }
+                      }}
+                    ><DeleteIcon /></IconButton></Tooltip>
                   </Stack>
                 }
               />
@@ -778,8 +845,37 @@ export default function Announcements() {
               <TextField label="Schedule Date" name="scheduleDate" type="datetime-local" value={form.scheduleDate} onChange={handleChange} InputLabelProps={{ shrink: true }} fullWidth />
               <TextField label="Expiry Date" name="expiryDate" type="datetime-local" value={form.expiryDate} onChange={handleChange} InputLabelProps={{ shrink: true }} fullWidth />
               <DialogActions>
-                <Button onClick={() => setFormModalOpen(false)} color="secondary">Cancel</Button>
-                <Button type="submit" variant="contained" color="primary" disabled={isSubmitting}>
+                <Button 
+                  onClick={() => setFormModalOpen(false)} 
+                  color="secondary"
+                  sx={{
+                    '&:hover': {
+                      bgcolor: '#800000',
+                      color: 'white',
+                      borderColor: '#800000'
+                    }
+                  }}
+                >Cancel</Button>
+                <Button 
+                  type="submit" 
+                  variant="outlined" 
+                  color="primary" 
+                  disabled={isSubmitting}
+                  sx={{
+                    color: 'black',
+                    borderColor: 'black',
+                    '&:hover': {
+                      bgcolor: '#800000',
+                      color: 'white',
+                      borderColor: '#800000'
+                    },
+                    '&:disabled': {
+                      bgcolor: '#ccc',
+                      color: '#666',
+                      borderColor: '#ccc'
+                    }
+                  }}
+                >
                   {isSubmitting ? "Posting..." : "Post Announcement"}
                 </Button>
               </DialogActions>

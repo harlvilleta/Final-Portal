@@ -170,13 +170,13 @@ export default function ActivityRequestsAdmin() {
                       flexShrink: 0
                     }}>
                       {r.status === 'approved' ? (
-                        <CheckCircle sx={{ fontSize: 14, color: 'inherit' }} />
+                        <CheckCircle sx={{ fontSize: 14, color: '#4caf50' }} />
                       ) : r.status === 'rejected' ? (
-                        <Cancel sx={{ fontSize: 14, color: 'inherit' }} />
+                        <Cancel sx={{ fontSize: 14, color: '#f44336' }} />
                       ) : r.status === 'pending' ? (
-                        <Schedule sx={{ fontSize: 14, color: 'inherit' }} />
+                        <Schedule sx={{ fontSize: 14, color: '#ff9800' }} />
                       ) : (
-                        <Warning sx={{ fontSize: 14, color: 'inherit' }} />
+                        <Warning sx={{ fontSize: 14, color: '#9e9e9e' }} />
                       )}
                     </Box>
                     <Typography 
@@ -197,7 +197,18 @@ export default function ActivityRequestsAdmin() {
                   borderBottom: '1px solid #e0e0e0',
                   backgroundColor: 'white'
                 }}>
-                  <IconButton onClick={() => setSelected(r)} size="small"><Visibility /></IconButton>
+                  <IconButton 
+                    onClick={() => setSelected(r)} 
+                    size="small"
+                    sx={{
+                      '&:hover': { 
+                        color: '#1976d2',
+                        bgcolor: 'rgba(25, 118, 210, 0.04)'
+                      }
+                    }}
+                  >
+                    <Visibility />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}

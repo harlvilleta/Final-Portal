@@ -457,10 +457,10 @@ export default function TeacherDashboard() {
                 <List>
                   {getRecentViolations().map((violation, index) => (
                     <React.Fragment key={violation.id}>
-                      <ListItem sx={{ px: 0, py: 1 }}>
+                      <ListItem sx={{ px: 0, py: 1, '&:hover': { backgroundColor: 'transparent' } }}>
                         <ListItemAvatar>
                           <Avatar sx={{ width: 40, height: 40 }}>
-                            <Warning sx={{ fontSize: 20 }} />
+                            <Warning sx={{ fontSize: 20, color: '#ff9800' }} />
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
@@ -483,8 +483,17 @@ export default function TeacherDashboard() {
                         <Chip 
                           label={violation.status || 'Pending'} 
                           size="small"
-                          color="default"
-                          sx={{ fontWeight: 500 }}
+                          sx={{ 
+                            fontWeight: 500,
+                            backgroundColor: 'transparent',
+                            color: (violation.status || 'Pending') === 'Approved' ? '#4caf50' : 
+                                   (violation.status || 'Pending') === 'Pending' ? '#ff9800' : '#666666',
+                            border: 'none',
+                            '& .MuiChip-label': {
+                              color: (violation.status || 'Pending') === 'Approved' ? '#4caf50' : 
+                                     (violation.status || 'Pending') === 'Pending' ? '#ff9800' : '#666666'
+                            }
+                          }}
                         />
                       </ListItem>
                       {index < getRecentViolations().length - 1 && <Divider />}
@@ -541,10 +550,10 @@ export default function TeacherDashboard() {
                 <List>
                   {getRecentAnnouncements().map((announcement, index) => (
                     <React.Fragment key={announcement.id}>
-                      <ListItem sx={{ px: 0, py: 1 }}>
+                      <ListItem sx={{ px: 0, py: 1, '&:hover': { backgroundColor: 'transparent' } }}>
                         <ListItemAvatar>
                           <Avatar sx={{ width: 40, height: 40 }}>
-                            <Info sx={{ fontSize: 20 }} />
+                            <Info sx={{ fontSize: 20, color: '#1976d2' }} />
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
@@ -567,8 +576,17 @@ export default function TeacherDashboard() {
                         <Chip 
                           label={announcement.status || 'Pending'} 
                           size="small"
-                          color="default"
-                          sx={{ fontWeight: 500 }}
+                          sx={{ 
+                            fontWeight: 500,
+                            backgroundColor: 'transparent',
+                            color: (announcement.status || 'Pending') === 'Approved' ? '#4caf50' : 
+                                   (announcement.status || 'Pending') === 'Pending' ? '#ff9800' : '#666666',
+                            border: 'none',
+                            '& .MuiChip-label': {
+                              color: (announcement.status || 'Pending') === 'Approved' ? '#4caf50' : 
+                                     (announcement.status || 'Pending') === 'Pending' ? '#ff9800' : '#666666'
+                            }
+                          }}
                         />
                       </ListItem>
                       {index < getRecentAnnouncements().length - 1 && <Divider />}
@@ -604,11 +622,8 @@ export default function TeacherDashboard() {
       >
         <DialogTitle sx={{ 
           fontWeight: 600,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1
+          color: '#800000'
         }}>
-          <Report />
           My Reports ({myReportsCount})
         </DialogTitle>
         <DialogContent sx={{ p: 0 }}>

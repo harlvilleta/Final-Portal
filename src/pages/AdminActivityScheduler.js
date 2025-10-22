@@ -714,7 +714,23 @@ export default function AdminActivityScheduler() {
                             />
                             <Chip 
                               label={booking.status.charAt(0).toUpperCase() + booking.status.slice(1)} 
-                              color={getStatusColor(booking.status)} 
+                              sx={{
+                                backgroundColor: 'transparent',
+                                color: booking.status === 'approved' ? '#4caf50' : 
+                                       booking.status === 'pending' ? '#ff9800' : 
+                                       booking.status === 'rejected' ? '#f44336' : '#9e9e9e',
+                                border: 'none',
+                                '& .MuiChip-label': {
+                                  color: booking.status === 'approved' ? '#4caf50' : 
+                                         booking.status === 'pending' ? '#ff9800' : 
+                                         booking.status === 'rejected' ? '#f44336' : '#9e9e9e'
+                                },
+                                '& .MuiChip-icon': {
+                                  color: booking.status === 'approved' ? '#4caf50' : 
+                                         booking.status === 'pending' ? '#ff9800' : 
+                                         booking.status === 'rejected' ? '#f44336' : '#9e9e9e'
+                                }
+                              }}
                               size="small" 
                               icon={getStatusIcon(booking.status)}
                             />
@@ -885,7 +901,23 @@ export default function AdminActivityScheduler() {
                         <Chip
                           icon={getStatusIcon(booking.status)}
                           label={booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                          color={getStatusColor(booking.status)}
+                          sx={{
+                            backgroundColor: 'transparent',
+                            color: booking.status === 'approved' ? '#4caf50' : 
+                                   booking.status === 'pending' ? '#ff9800' : 
+                                   booking.status === 'rejected' ? '#f44336' : '#9e9e9e',
+                            border: 'none',
+                            '& .MuiChip-label': {
+                              color: booking.status === 'approved' ? '#4caf50' : 
+                                     booking.status === 'pending' ? '#ff9800' : 
+                                     booking.status === 'rejected' ? '#f44336' : '#9e9e9e'
+                            },
+                            '& .MuiChip-icon': {
+                              color: booking.status === 'approved' ? '#4caf50' : 
+                                     booking.status === 'pending' ? '#ff9800' : 
+                                     booking.status === 'rejected' ? '#f44336' : '#9e9e9e'
+                            }
+                          }}
                           size="small"
                         />
                       </TableCell>
@@ -897,6 +929,12 @@ export default function AdminActivityScheduler() {
                               e.stopPropagation();
                               setViewBooking(booking);
                               setFilteredModal({ open: false, filter: null, title: '' });
+                            }}
+                            sx={{
+                              '&:hover': { 
+                                color: '#1976d2',
+                                bgcolor: 'rgba(25, 118, 210, 0.04)'
+                              }
                             }}
                           >
                             <Visibility />
@@ -915,6 +953,15 @@ export default function AdminActivityScheduler() {
             onClick={() => setFilteredModal({ open: false, filter: null, title: '' })} 
             variant="outlined"
             size="large"
+            sx={{
+              color: 'black',
+              borderColor: 'black',
+              '&:hover': {
+                bgcolor: '#800000',
+                color: 'white',
+                borderColor: '#800000'
+              }
+            }}
           >
             Close
           </Button>
@@ -933,7 +980,23 @@ export default function AdminActivityScheduler() {
             />
             <Chip 
               label={viewBooking?.status.charAt(0).toUpperCase() + viewBooking?.status.slice(1)} 
-              color={getStatusColor(viewBooking?.status)} 
+              sx={{
+                backgroundColor: 'transparent',
+                color: viewBooking?.status === 'approved' ? '#4caf50' : 
+                       viewBooking?.status === 'pending' ? '#ff9800' : 
+                       viewBooking?.status === 'rejected' ? '#f44336' : '#9e9e9e',
+                border: 'none',
+                '& .MuiChip-label': {
+                  color: viewBooking?.status === 'approved' ? '#4caf50' : 
+                         viewBooking?.status === 'pending' ? '#ff9800' : 
+                         viewBooking?.status === 'rejected' ? '#f44336' : '#9e9e9e'
+                },
+                '& .MuiChip-icon': {
+                  color: viewBooking?.status === 'approved' ? '#4caf50' : 
+                         viewBooking?.status === 'pending' ? '#ff9800' : 
+                         viewBooking?.status === 'rejected' ? '#f44336' : '#9e9e9e'
+                }
+              }}
               size="small" 
               icon={getStatusIcon(viewBooking?.status)}
             />
@@ -1005,7 +1068,23 @@ export default function AdminActivityScheduler() {
                       </Typography>
                       <Chip 
                         label={viewBooking.status.charAt(0).toUpperCase() + viewBooking.status.slice(1)} 
-                        color={getStatusColor(viewBooking.status)} 
+                        sx={{
+                          backgroundColor: 'transparent',
+                          color: viewBooking.status === 'approved' ? '#4caf50' : 
+                                 viewBooking.status === 'pending' ? '#ff9800' : 
+                                 viewBooking.status === 'rejected' ? '#f44336' : '#9e9e9e',
+                          border: 'none',
+                          '& .MuiChip-label': {
+                            color: viewBooking.status === 'approved' ? '#4caf50' : 
+                                   viewBooking.status === 'pending' ? '#ff9800' : 
+                                   viewBooking.status === 'rejected' ? '#f44336' : '#9e9e9e'
+                          },
+                          '& .MuiChip-icon': {
+                            color: viewBooking.status === 'approved' ? '#4caf50' : 
+                                   viewBooking.status === 'pending' ? '#ff9800' : 
+                                   viewBooking.status === 'rejected' ? '#f44336' : '#9e9e9e'
+                          }
+                        }}
                         size="small"
                         icon={getStatusIcon(viewBooking.status)}
                       />

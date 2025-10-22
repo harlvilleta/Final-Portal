@@ -1378,7 +1378,17 @@ function CourseDashboard({
               setSearch("");
               setSelectedYear("All Years");
             }}
-            sx={{ mt: 2 }}
+            sx={{ 
+              mt: 2,
+              bgcolor: '#fff', 
+              color: '#000', 
+              borderColor: '#000', 
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000' 
+              }
+            }}
           >
             Clear Filters
           </Button>

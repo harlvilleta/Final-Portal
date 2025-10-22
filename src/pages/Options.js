@@ -58,7 +58,7 @@ export default function Options() {
   return (
     <Box sx={{ p: { xs: 1, md: 4 }, maxWidth: 900, mx: 'auto', overflowY: 'auto', bgcolor: '#f5f6fa', borderRadius: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" fontWeight={700} color="black">Options</Typography>
+        <Typography variant="h4" fontWeight={700} color="#800000">Options</Typography>
         <Button 
           variant="outlined" 
           startIcon={<EmailIcon />} 

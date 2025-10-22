@@ -229,7 +229,16 @@ export default function TeacherNotifications() {
                   }
                 />
                 <ListItemSecondaryAction>
-                  <IconButton edge="end" onClick={() => handleViewDetails(notification)}>
+                  <IconButton 
+                    edge="end" 
+                    onClick={() => handleViewDetails(notification)}
+                    sx={{
+                      '&:hover': {
+                        color: '#1976d2',
+                        bgcolor: 'rgba(25, 118, 210, 0.04)'
+                      }
+                    }}
+                  >
                     <Visibility />
                   </IconButton>
                 </ListItemSecondaryAction>

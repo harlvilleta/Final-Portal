@@ -537,10 +537,10 @@ export default function TeacherActivityScheduler() {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'pending': return <Warning />;
-      case 'approved': return <CheckCircle />;
-      case 'rejected': return <Cancel />;
-      default: return <Event />;
+      case 'pending': return <Warning sx={{ fontSize: 14, color: '#ff9800' }} />;
+      case 'approved': return <CheckCircle sx={{ fontSize: 14, color: '#4caf50' }} />;
+      case 'rejected': return <Cancel sx={{ fontSize: 14, color: '#f44336' }} />;
+      default: return <Event sx={{ fontSize: 14, color: '#9e9e9e' }} />;
     }
   };
 
@@ -823,10 +823,11 @@ export default function TeacherActivityScheduler() {
                   <Chip 
                     label={myBookings.filter(b => b.status === 'pending').length} 
                     sx={{ 
-                      backgroundColor: '#ff9800', // Orange
-                      color: '#ffffff',
+                      backgroundColor: 'transparent',
+                      color: '#ff9800',
+                      border: 'none',
                       '& .MuiChip-label': {
-                        color: '#ffffff'
+                        color: '#ff9800'
                       }
                     }}
                     size="small" 
@@ -837,10 +838,11 @@ export default function TeacherActivityScheduler() {
                   <Chip 
                     label={myBookings.filter(b => b.status === 'approved').length} 
                     sx={{ 
-                      backgroundColor: '#4caf50', // Green
-                      color: '#ffffff',
+                      backgroundColor: 'transparent',
+                      color: '#4caf50',
+                      border: 'none',
                       '& .MuiChip-label': {
-                        color: '#ffffff'
+                        color: '#4caf50'
                       }
                     }}
                     size="small" 
@@ -851,10 +853,11 @@ export default function TeacherActivityScheduler() {
                   <Chip 
                     label={myBookings.filter(b => b.status === 'rejected').length} 
                     sx={{ 
-                      backgroundColor: '#f44336', // Red
-                      color: '#ffffff',
+                      backgroundColor: 'transparent',
+                      color: '#f44336',
+                      border: 'none',
                       '& .MuiChip-label': {
-                        color: '#ffffff'
+                        color: '#f44336'
                       }
                     }}
                     size="small" 
@@ -1005,7 +1008,23 @@ export default function TeacherActivityScheduler() {
                         <Chip
                           icon={getStatusIcon(booking.status)}
                           label={booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                          color={getStatusColor(booking.status)}
+                          sx={{
+                            backgroundColor: 'transparent',
+                            color: booking.status === 'pending' ? '#ff9800' :
+                                   booking.status === 'approved' ? '#4caf50' :
+                                   booking.status === 'rejected' ? '#f44336' : '#9e9e9e',
+                            border: 'none',
+                            '& .MuiChip-label': {
+                              color: booking.status === 'pending' ? '#ff9800' :
+                                     booking.status === 'approved' ? '#4caf50' :
+                                     booking.status === 'rejected' ? '#f44336' : '#9e9e9e'
+                            },
+                            '& .MuiChip-icon': {
+                              color: booking.status === 'pending' ? '#ff9800' :
+                                     booking.status === 'approved' ? '#4caf50' :
+                                     booking.status === 'rejected' ? '#f44336' : '#9e9e9e'
+                            }
+                          }}
                           size="small"
                         />
                       </TableCell>

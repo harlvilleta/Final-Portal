@@ -512,10 +512,18 @@ function UserOverview({ currentUser }) {
                 </Typography>
                 <Button 
                   size="small" 
-                  color="primary" 
                   component={Link} 
                   to="/violations"
-                  sx={{ textTransform: 'none' }}
+                  sx={{ 
+                    textTransform: 'none',
+                    color: '#800000',
+                    borderColor: '#800000',
+                    '&:hover': {
+                      borderColor: '#6b0000',
+                      backgroundColor: '#80000010'
+                    }
+                  }}
+                  variant="outlined"
                 >
                   View All
                 </Button>

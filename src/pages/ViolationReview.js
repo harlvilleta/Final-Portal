@@ -333,9 +333,7 @@ export default function ViolationReview() {
                         <Box sx={{ 
                           width: 20, 
                           height: 20, 
-                          bgcolor: violation.status === 'Approved' ? '#4caf50' : 
-                                  violation.status === 'Denied' ? '#f44336' : 
-                                  violation.status === 'Pending' ? '#ff9800' : '#9e9e9e', 
+                          bgcolor: 'transparent', 
                           borderRadius: 1, 
                           display: 'flex', 
                           alignItems: 'center', 
@@ -343,13 +341,13 @@ export default function ViolationReview() {
                           flexShrink: 0
                         }}>
                           {violation.status === 'Approved' ? (
-                            <CheckCircle sx={{ fontSize: 14, color: 'white' }} />
+                            <CheckCircle sx={{ fontSize: 14, color: '#4caf50' }} />
                           ) : violation.status === 'Denied' ? (
-                            <Cancel sx={{ fontSize: 14, color: 'white' }} />
+                            <Cancel sx={{ fontSize: 14, color: '#f44336' }} />
                           ) : violation.status === 'Pending' ? (
-                            <Schedule sx={{ fontSize: 14, color: 'white' }} />
+                            <Schedule sx={{ fontSize: 14, color: '#ff9800' }} />
                           ) : (
-                            <Help sx={{ fontSize: 14, color: 'white' }} />
+                            <Help sx={{ fontSize: 14, color: '#9e9e9e' }} />
                           )}
                         </Box>
                         <Typography 

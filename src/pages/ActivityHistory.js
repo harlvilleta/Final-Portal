@@ -80,8 +80,10 @@ function ActivityHistoryTable({ activities, onView, onEdit, onDelete, search, on
                     size="small" 
                     onClick={() => onView(a)}
                     sx={{ 
-                      color: '#666',
-                      '&:hover': { color: '#1976d2' }
+                      '&:hover': { 
+                        color: '#1976d2',
+                        bgcolor: 'rgba(25, 118, 210, 0.04)'
+                      }
                     }}
                   >
                     <Visibility />

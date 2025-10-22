@@ -281,7 +281,8 @@ export default function ViolationStatus() {
                       <Typography 
                         variant="body2" 
                         sx={{ 
-                          color: violation.status === 'Solved' || violation.status === 'Completed' ? '#4caf50' : '#800000',
+                          color: violation.status === 'Pending' ? '#ff9800' :
+                                violation.status === 'Solved' || violation.status === 'Completed' ? '#4caf50' : '#800000',
                           fontWeight: 500
                         }}
                       >
@@ -290,7 +291,17 @@ export default function ViolationStatus() {
                     </TableCell>
                     <TableCell>
                       <Tooltip title="View Details">
-                        <IconButton size="small" color="primary" onClick={() => setViewViolation(violation)}>
+                        <IconButton 
+                          size="small" 
+                          color="primary" 
+                          onClick={() => setViewViolation(violation)}
+                          sx={{
+                            '&:hover': { 
+                              color: '#1976d2',
+                              bgcolor: 'rgba(25, 118, 210, 0.04)'
+                            }
+                          }}
+                        >
                           <VisibilityIcon />
                         </IconButton>
                       </Tooltip>

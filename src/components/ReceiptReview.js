@@ -67,9 +67,9 @@ const statusColors = {
 };
 
 const statusIcons = {
-  pending: <Schedule />,
-  approved: <CheckCircle />,
-  rejected: <Cancel />
+  pending: <Schedule sx={{ fontSize: 14, color: '#ff9800' }} />,
+  approved: <CheckCircle sx={{ fontSize: 14, color: '#4caf50' }} />,
+  rejected: <Cancel sx={{ fontSize: 14, color: '#f44336' }} />
 };
 
 const receiptTypeLabels = {
@@ -412,6 +412,12 @@ export default function ReceiptReview() {
                             size="small"
                             onClick={() => handleViewImage(submission.receiptImage)}
                             color="primary"
+                            sx={{
+                              '&:hover': { 
+                                color: '#1976d2',
+                                bgcolor: 'rgba(25, 118, 210, 0.04)'
+                              }
+                            }}
                           >
                             <Visibility />
                           </IconButton>

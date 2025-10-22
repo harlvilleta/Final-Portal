@@ -799,7 +799,14 @@ export default function AdminLostFound() {
                           <IconButton 
                             size="small" 
                             onClick={() => handleEditOpen('lost_items', item)}
-                            sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333', '&:hover': { color: '#1976d2' } }}
+                            sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333',
+                              padding: '4px',
+                              '&:hover': { 
+                                color: '#f57c00',
+                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(245, 124, 0, 0.1)' : 'rgba(245, 124, 0, 0.04)'
+                              }
+                            }}
                           >
                             <Edit fontSize="small" />
                           </IconButton>
@@ -970,7 +977,14 @@ export default function AdminLostFound() {
                           <IconButton 
                             size="small" 
                             onClick={() => handleEditOpen('found_items', item)}
-                            sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333', '&:hover': { color: '#1976d2' } }}
+                            sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333',
+                              padding: '4px',
+                              '&:hover': { 
+                                color: '#f57c00',
+                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(245, 124, 0, 0.1)' : 'rgba(245, 124, 0, 0.04)'
+                              }
+                            }}
                           >
                             <Edit fontSize="small" />
                           </IconButton>

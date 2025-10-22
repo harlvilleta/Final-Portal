@@ -264,11 +264,11 @@ function HistoryModal({ activities, onView, onEdit, onDelete, search, onSearch, 
           <Table stickyHeader>
             <TableHead>
               <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-                <TableCell sx={{ fontWeight: 600, color: '#800000' }}>Title</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#800000' }}>Date</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#800000' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#800000' }}>Category</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#800000' }}>Actions</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#000000' }}>Title</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#000000' }}>Date</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#000000' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#000000' }}>Category</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#000000' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -311,9 +311,9 @@ function HistoryModal({ activities, onView, onEdit, onDelete, search, onSearch, 
                           size="small"
                           onClick={() => onView(activity)}
                           sx={{
-                            color: 'grey.600',
-                            '&:hover': {
-                              color: '#800000'
+                            '&:hover': { 
+                              color: '#1976d2',
+                              bgcolor: 'rgba(25, 118, 210, 0.04)'
                             }
                           }}
                         >
@@ -323,9 +323,11 @@ function HistoryModal({ activities, onView, onEdit, onDelete, search, onSearch, 
                           size="small"
                           onClick={() => onEdit(activity)}
                           sx={{
-                            color: 'grey.600',
-                            '&:hover': {
-                              color: '#800000'
+                            color: '#666666',
+                            padding: '4px',
+                            '&:hover': { 
+                              color: '#f57c00',
+                              bgcolor: 'rgba(245, 124, 0, 0.04)'
                             }
                           }}
                         >

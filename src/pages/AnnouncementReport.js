@@ -285,6 +285,7 @@ export default function AnnouncementReport() {
                         <Box sx={{ 
                           width: 20, 
                           height: 20, 
+                          bgcolor: 'transparent',
                           borderRadius: 1, 
                           display: 'flex', 
                           alignItems: 'center', 
@@ -292,13 +293,13 @@ export default function AnnouncementReport() {
                           flexShrink: 0
                         }}>
                           {status === 'Approved' ? (
-                            <CheckCircle sx={{ fontSize: 14 }} />
+                            <CheckCircle sx={{ fontSize: 14, color: '#4caf50' }} />
                           ) : status === 'Denied' ? (
-                            <Cancel sx={{ fontSize: 14 }} />
+                            <Cancel sx={{ fontSize: 14, color: '#f44336' }} />
                           ) : status === 'Pending' ? (
-                            <Schedule sx={{ fontSize: 14 }} />
+                            <Schedule sx={{ fontSize: 14, color: '#ff9800' }} />
                           ) : (
-                            <Warning sx={{ fontSize: 14 }} />
+                            <Warning sx={{ fontSize: 14, color: '#9e9e9e' }} />
                           )}
                         </Box>
                         <Typography 
@@ -320,7 +321,12 @@ export default function AnnouncementReport() {
                           <IconButton 
                             size="small" 
                             onClick={() => handleViewDetails(announcement)}
-                            color="primary"
+                            sx={{
+                              '&:hover': {
+                                color: '#1976d2',
+                                bgcolor: 'rgba(25, 118, 210, 0.04)'
+                              }
+                            }}
                           >
                             <Visibility />
                           </IconButton>
@@ -332,7 +338,12 @@ export default function AnnouncementReport() {
                               <IconButton 
                                 size="small" 
                                 onClick={() => handleApprovalAction(announcement, 'approve')}
-                                color="success"
+                                sx={{
+                                  '&:hover': {
+                                    color: '#4caf50',
+                                    bgcolor: 'rgba(76, 175, 80, 0.04)'
+                                  }
+                                }}
                               >
                                 <CheckCircle />
                               </IconButton>
@@ -341,7 +352,12 @@ export default function AnnouncementReport() {
                               <IconButton 
                                 size="small" 
                                 onClick={() => handleApprovalAction(announcement, 'deny')}
-                                color="error"
+                                sx={{
+                                  '&:hover': {
+                                    color: '#f44336',
+                                    bgcolor: 'rgba(244, 67, 54, 0.04)'
+                                  }
+                                }}
                               >
                                 <Cancel />
                               </IconButton>

@@ -1262,7 +1262,14 @@ School Administration
                       <Tooltip title="Edit record">
                         <IconButton 
                           size="small" 
-                          sx={{ color: 'grey.600', '&:hover': { color: '#000000' } }} 
+                          sx={{ 
+                            color: '#666666',
+                            padding: '4px',
+                            '&:hover': { 
+                              color: '#f57c00',
+                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(245, 124, 0, 0.1)' : 'rgba(245, 124, 0, 0.04)'
+                            }
+                          }} 
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditViolation(v);

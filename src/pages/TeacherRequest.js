@@ -417,27 +417,27 @@ export default function TeacherRequest() {
         <Paper sx={{ p: 2, mb: 3, mt: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <TextField
-              fullWidth
               placeholder="Search by teacher name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               size="small"
+              sx={{
+                maxWidth: 400,
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: '#800000',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#800000',
+                  },
+                },
+              }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
                     <Search color="action" />
                   </InputAdornment>
                 ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: '#1976d2',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#1976d2',
-                  },
-                },
               }}
             />
             {searchTerm && (
@@ -451,8 +451,9 @@ export default function TeacherRequest() {
                   color: '#666',
                   borderColor: '#ddd',
                   '&:hover': {
-                    color: '#1976d2',
-                    borderColor: '#1976d2'
+                    bgcolor: '#800000',
+                    color: '#fff',
+                    borderColor: '#800000'
                   }
                 }}
               >

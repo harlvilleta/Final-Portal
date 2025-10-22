@@ -115,7 +115,17 @@ export default function TeacherLostFound() {
                   placeholder="Search lost items..."
                   value={lostSearch}
                   onChange={e => setLostSearch(e.target.value)}
-                  sx={{ mb: 2 }}
+                  sx={{ 
+                    mb: 2,
+                    '& .MuiOutlinedInput-root': {
+                      '&:hover fieldset': {
+                        borderColor: '#800000',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#800000',
+                      },
+                    },
+                  }}
                   InputProps={{ startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} /> }}
                 />
                 {filteredLost.length === 0 ? (
@@ -130,12 +140,23 @@ export default function TeacherLostFound() {
                         '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }, transition: 'all 0.2s'
                       }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                          <Avatar sx={{ width: 32, height: 32, mr: 2 }}>L</Avatar>
+                          <Avatar sx={{ width: 32, height: 32, mr: 2, bgcolor: '#ff9800', color: '#fff' }}>L</Avatar>
                           <Box sx={{ flex: 1 }}>
                             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#000' }}>{item.name}</Typography>
                             <Typography variant="caption" sx={{ color: '#333' }}>{new Date(item.createdAt).toLocaleDateString()}</Typography>
                           </Box>
-                          <Chip label={item.resolved ? 'Resolved' : 'Active'} color={item.resolved ? 'success' : 'warning'} size="small" />
+                          <Chip 
+                            label={item.resolved ? 'Resolved' : 'Active'} 
+                            size="small"
+                            sx={{
+                              backgroundColor: 'transparent',
+                              color: item.resolved ? '#4caf50' : '#ff9800',
+                              border: 'none',
+                              '& .MuiChip-label': {
+                                color: item.resolved ? '#4caf50' : '#ff9800'
+                              }
+                            }}
+                          />
                         </Box>
                         {item.description && (
                           <Typography variant="body2" sx={{ color: '#000', mb: 1 }}>{item.description}</Typography>
@@ -168,7 +189,17 @@ export default function TeacherLostFound() {
                   placeholder="Search found items..."
                   value={foundSearch}
                   onChange={e => setFoundSearch(e.target.value)}
-                  sx={{ mb: 2 }}
+                  sx={{ 
+                    mb: 2,
+                    '& .MuiOutlinedInput-root': {
+                      '&:hover fieldset': {
+                        borderColor: '#800000',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#800000',
+                      },
+                    },
+                  }}
                   InputProps={{ startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} /> }}
                 />
                 {filteredFound.length === 0 ? (
@@ -183,12 +214,23 @@ export default function TeacherLostFound() {
                         '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }, transition: 'all 0.2s'
                       }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                          <Avatar sx={{ width: 32, height: 32, mr: 2 }}>F</Avatar>
+                          <Avatar sx={{ width: 32, height: 32, mr: 2, bgcolor: '#4caf50', color: '#fff' }}>F</Avatar>
                           <Box sx={{ flex: 1 }}>
                             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#000' }}>{item.name}</Typography>
                             <Typography variant="caption" sx={{ color: '#333' }}>{new Date(item.createdAt).toLocaleDateString()}</Typography>
                           </Box>
-                          <Chip label={item.resolved ? 'Resolved' : 'Active'} color={item.resolved ? 'success' : 'warning'} size="small" />
+                          <Chip 
+                            label={item.resolved ? 'Resolved' : 'Active'} 
+                            size="small"
+                            sx={{
+                              backgroundColor: 'transparent',
+                              color: item.resolved ? '#4caf50' : '#ff9800',
+                              border: 'none',
+                              '& .MuiChip-label': {
+                                color: item.resolved ? '#4caf50' : '#ff9800'
+                              }
+                            }}
+                          />
                         </Box>
                         {item.description && (
                           <Typography variant="body2" sx={{ color: '#000', mb: 1 }}>{item.description}</Typography>

@@ -153,4 +153,4 @@ export default function UserSidebar({ currentUser, userProfile }) {
 
     </Drawer>
   );
-} 
+}
