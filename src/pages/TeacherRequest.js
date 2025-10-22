@@ -309,7 +309,7 @@ export default function TeacherRequest() {
               }}
             >
               <Typography variant="h4" sx={{ 
-                color: '#000000', 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
                 fontWeight: 'bold' 
               }}>
                 {teacherRequests.length}
@@ -339,7 +339,7 @@ export default function TeacherRequest() {
               }}
             >
               <Typography variant="h4" sx={{ 
-                color: '#000000', 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
                 fontWeight: 'bold' 
               }}>
                 {pendingRequests.length}
@@ -369,7 +369,7 @@ export default function TeacherRequest() {
               }}
             >
               <Typography variant="h4" sx={{ 
-                color: '#000000', 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
                 fontWeight: 'bold' 
               }}>
                 {approvedRequests.length}
@@ -399,7 +399,7 @@ export default function TeacherRequest() {
               }}
             >
               <Typography variant="h4" sx={{ 
-                color: '#000000', 
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
                 fontWeight: 'bold' 
               }}>
                 {deniedRequests.length}

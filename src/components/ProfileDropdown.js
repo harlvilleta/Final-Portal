@@ -1,17 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   IconButton,
-  Menu,
-  MenuItem,
   Avatar,
   Typography,
   Box,
   Divider,
-  ListItemIcon,
-  ListItemText,
   Tooltip,
-  Switch,
-  FormControlLabel
+  Switch
 } from '@mui/material';
 import {
   Settings,
@@ -57,6 +52,33 @@ const ProfileDropdown = ({
   const handleClose = () => {
     setAnchorEl(null);
   };
+
+  // Ensure body scroll is never blocked
+  useEffect(() => {
+    const preventScrollLock = () => {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.bottom = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+      document.documentElement.style.overflow = '';
+      document.documentElement.style.paddingRight = '';
+    };
+    
+    if (anchorEl) {
+      // Use setTimeout to ensure it runs after Material-UI's scroll lock
+      const timeoutId = setTimeout(preventScrollLock, 0);
+      return () => clearTimeout(timeoutId);
+    }
+    
+    return () => {
+      preventScrollLock();
+    };
+  }, [anchorEl]);
 
   const handleLogout = async () => {
     try {
@@ -127,46 +149,44 @@ const ProfileDropdown = ({
         </IconButton>
       </Tooltip>
 
-      <Menu
-        id="profile-menu"
-        anchorEl={anchorEl}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-        keepMounted
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-        open={Boolean(anchorEl)}
-        onClose={handleClose}
-        PaperProps={{
-          sx: {
-            minWidth: 280,
-            maxWidth: 320,
-            mt: 1,
-            boxShadow: isDark 
-              ? '0 8px 32px rgba(0, 0, 0, 0.4)' 
-              : '0 8px 32px rgba(0, 0, 0, 0.15)',
-            border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
-            borderRadius: 2,
-            overflow: 'hidden',
-            '& .MuiMenuItem-root': {
-              color: isDark ? '#ffffff' : '#000000 !important',
-              '& .MuiListItemText-primary': {
-                color: isDark ? '#ffffff' : '#000000 !important'
-              },
-              '& .MuiListItemText-secondary': {
-                color: isDark ? '#e0e0e0' : '#000000 !important'
-              }
-            }
-          }
+      {Boolean(anchorEl) && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 1200,
+            backgroundColor: 'transparent',
+          }}
+          onClick={handleClose}
+        />
+      )}
+      
+      <Box
+        sx={{
+          position: 'absolute',
+          top: anchorEl ? anchorEl.getBoundingClientRect().bottom + 4 : -9999,
+          right: anchorEl ? window.innerWidth - anchorEl.getBoundingClientRect().right : -9999,
+          minWidth: 280,
+          maxWidth: 320,
+          zIndex: 1300,
+          visibility: Boolean(anchorEl) ? 'visible' : 'hidden',
+          opacity: Boolean(anchorEl) ? 1 : 0,
+          transition: 'opacity 0.2s ease-in-out',
+          boxShadow: isDark 
+            ? '0 8px 32px rgba(0, 0, 0, 0.4)' 
+            : '0 8px 32px rgba(0, 0, 0, 0.15)',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
+          borderRadius: 2,
+          overflow: 'hidden',
+          backgroundColor: isDark ? '#2d2d2d' : '#ffffff',
         }}
       >
         {/* User Info Header */}
-        <MenuItem onClick={handleClose} sx={{ cursor: 'default', '&:hover': { bgcolor: 'transparent' } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%', py: 1 }}>
+        <Box sx={{ cursor: 'default', p: 2, borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
             <Avatar 
               src={userInfo.photo} 
               sx={{ 
@@ -182,7 +202,7 @@ const ProfileDropdown = ({
                 variant="subtitle1" 
                 sx={{ 
                   fontWeight: 600,
-                  color: isDark ? '#ffffff' : '#000000 !important',
+                  color: isDark ? '#ffffff' : '#000000',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
@@ -193,7 +213,7 @@ const ProfileDropdown = ({
               <Typography 
                 variant="body2" 
                 sx={{ 
-                  color: isDark ? '#e0e0e0' : '#000000 !important',
+                  color: isDark ? '#e0e0e0' : '#000000',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
@@ -204,7 +224,7 @@ const ProfileDropdown = ({
               <Typography 
                 variant="caption" 
                 sx={{ 
-                  color: isDark ? '#e0e0e0' : '#000000 !important',
+                  color: isDark ? '#e0e0e0' : '#000000',
                   fontWeight: 500,
                   textTransform: 'capitalize'
                 }}
@@ -213,23 +233,33 @@ const ProfileDropdown = ({
               </Typography>
             </Box>
           </Box>
-        </MenuItem>
+        </Box>
 
         <Divider />
 
         {/* Profile Settings */}
-        <MenuItem onClick={handleProfileClick}>
-          <ListItemIcon>
-            <Settings fontSize="small" sx={{ color: isDark ? '#ffffff' : '#000000 !important' }} />
-          </ListItemIcon>
-          <ListItemText 
-            primary="Profile Settings"
-            primaryTypographyProps={{ 
-              variant: 'body2',
-              sx: { color: isDark ? '#ffffff' : '#000000 !important' }
-            }}
-          />
-        </MenuItem>
+        <Box 
+          onClick={handleProfileClick}
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            p: 2, 
+            cursor: 'pointer',
+            '&:hover': { 
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' 
+            }
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+            <Settings fontSize="small" sx={{ color: isDark ? '#ffffff' : '#000000' }} />
+          </Box>
+          <Typography 
+            variant="body2"
+            sx={{ color: isDark ? '#ffffff' : '#000000' }}
+          >
+            Profile Settings
+          </Typography>
+        </Box>
 
         <Divider />
 
@@ -248,26 +278,39 @@ const ProfileDropdown = ({
           </Typography>
         </Box>
 
-        <MenuItem onClick={toggleTheme} sx={{ py: 0.5 }}>
-          <ListItemIcon>
+        <Box 
+          onClick={toggleTheme}
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            p: 2, 
+            cursor: 'pointer',
+            '&:hover': { 
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' 
+            }
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
             {isDark ? (
               <LightMode fontSize="small" sx={{ color: '#ffeb3b' }} />
             ) : (
               <DarkMode fontSize="small" sx={{ color: '#9c27b0' }} />
             )}
-          </ListItemIcon>
-          <ListItemText 
-            primary={isDark ? 'Light Mode' : 'Dark Mode'}
-            secondary={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-            primaryTypographyProps={{ 
-              variant: 'body2',
-              sx: { color: isDark ? '#ffffff' : '#000000 !important' }
-            }}
-            secondaryTypographyProps={{ 
-              variant: 'caption',
-              sx: { color: isDark ? '#e0e0e0' : '#000000 !important' }
-            }}
-          />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography 
+              variant="body2"
+              sx={{ color: isDark ? '#ffffff' : '#000000' }}
+            >
+              {isDark ? 'Light Mode' : 'Dark Mode'}
+            </Typography>
+            <Typography 
+              variant="caption"
+              sx={{ color: isDark ? '#e0e0e0' : '#000000' }}
+            >
+              {isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+            </Typography>
+          </Box>
           <Switch
             checked={isDark}
             onChange={toggleTheme}
@@ -281,24 +324,34 @@ const ProfileDropdown = ({
               },
             }}
           />
-        </MenuItem>
+        </Box>
 
         <Divider />
 
         {/* Logout */}
-        <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
-          <ListItemIcon>
+        <Box 
+          onClick={handleLogout}
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            p: 2, 
+            cursor: 'pointer',
+            '&:hover': { 
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' 
+            }
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
             <Logout fontSize="small" sx={{ color: 'error.main' }} />
-          </ListItemIcon>
-          <ListItemText 
-            primary="Logout"
-            primaryTypographyProps={{ 
-              variant: 'body2',
-              sx: { color: 'error.main' }
-            }}
-          />
-        </MenuItem>
-      </Menu>
+          </Box>
+          <Typography 
+            variant="body2"
+            sx={{ color: 'error.main' }}
+          >
+            Logout
+          </Typography>
+        </Box>
+      </Box>
     </>
   );
 };

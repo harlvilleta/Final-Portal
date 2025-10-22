@@ -356,8 +356,8 @@ export default function AdminActivityScheduler() {
             sx={{ 
             p: 2, 
             textAlign: 'center', 
-            bgcolor: '#ffffff',
-            border: '1px solid #e0e0e0',
+            bgcolor: theme.palette.mode === 'dark' ? 'transparent' : '#ffffff',
+            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : '1px solid #e0e0e0',
             borderLeft: '4px solid #800000',
             borderRadius: 2,
             boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
@@ -368,7 +368,7 @@ export default function AdminActivityScheduler() {
             },
           }}>
               <Typography variant="h4" sx={{ 
-              color: '#000000', 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
               fontWeight: 'bold' 
               }}>
                 {stats.total}
@@ -386,8 +386,8 @@ export default function AdminActivityScheduler() {
             sx={{ 
             p: 2, 
             textAlign: 'center', 
-            bgcolor: '#ffffff',
-            border: '1px solid #e0e0e0',
+            bgcolor: theme.palette.mode === 'dark' ? 'transparent' : '#ffffff',
+            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : '1px solid #e0e0e0',
             borderLeft: '4px solid #800000',
             borderRadius: 2,
             boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
@@ -398,7 +398,7 @@ export default function AdminActivityScheduler() {
             },
           }}>
               <Typography variant="h4" sx={{ 
-              color: '#000000', 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
               fontWeight: 'bold' 
               }}>
                 {stats.pending}
@@ -416,8 +416,8 @@ export default function AdminActivityScheduler() {
             sx={{ 
             p: 2, 
             textAlign: 'center', 
-            bgcolor: '#ffffff',
-            border: '1px solid #e0e0e0',
+            bgcolor: theme.palette.mode === 'dark' ? 'transparent' : '#ffffff',
+            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : '1px solid #e0e0e0',
             borderLeft: '4px solid #800000',
             borderRadius: 2,
             boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
@@ -428,7 +428,7 @@ export default function AdminActivityScheduler() {
             },
           }}>
               <Typography variant="h4" sx={{ 
-              color: '#000000', 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
               fontWeight: 'bold' 
               }}>
                 {stats.approved}
@@ -446,8 +446,8 @@ export default function AdminActivityScheduler() {
             sx={{ 
             p: 2, 
             textAlign: 'center', 
-            bgcolor: '#ffffff',
-            border: '1px solid #e0e0e0',
+            bgcolor: theme.palette.mode === 'dark' ? 'transparent' : '#ffffff',
+            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : '1px solid #e0e0e0',
             borderLeft: '4px solid #800000',
             borderRadius: 2,
             boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
@@ -458,7 +458,7 @@ export default function AdminActivityScheduler() {
             },
           }}>
               <Typography variant="h4" sx={{ 
-              color: '#000000', 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
               fontWeight: 'bold' 
               }}>
                 {stats.rejected}

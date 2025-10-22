@@ -343,7 +343,7 @@ export default function ViolationCreateMeeting() {
           title={<Typography variant="subtitle2">Meetings</Typography>} 
         />
         <CardContent>
-          <Typography variant="h4" sx={{ color: '#000000' }} fontWeight={700}>
+          <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>
             {meetings.filter(m => m.type === 'meeting').length}
           </Typography>
           <Typography variant="body2" color="textSecondary">

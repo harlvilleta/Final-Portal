@@ -180,19 +180,19 @@ function UserOverview({ currentUser }) {
   const userInfo = getUserDisplayInfo();
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: theme.palette.mode === 'dark' ? '#000000' : '#f5f6fa', minHeight: '100vh' }}>
       {/* Welcome Section */}
       <Box sx={{ mb: 4, pt: { xs: 1, sm: 2 }, px: { xs: 1, sm: 0 } }}>
         <Typography 
           variant="h4" 
           fontWeight={700} 
-          color="#800000" 
-          gutterBottom 
           sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
             wordBreak: 'break-word',
             fontSize: { xs: '1.75rem', sm: '2.125rem' },
             lineHeight: 1.2
           }}
+          gutterBottom 
         >
           Hi {userInfo.name}
         </Typography>
@@ -303,10 +303,10 @@ function UserOverview({ currentUser }) {
             },
           }}>
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {stats.totalViolations.toLocaleString()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                 Total Violations
               </Typography>
             </CardContent>
@@ -329,10 +329,10 @@ function UserOverview({ currentUser }) {
             },
           }}>
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {announcementCount.toLocaleString()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                 Announcements
               </Typography>
             </CardContent>
@@ -355,10 +355,10 @@ function UserOverview({ currentUser }) {
             },
           }}>
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {stats.pendingViolations.toLocaleString()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                 Pending
               </Typography>
             </CardContent>
@@ -381,10 +381,10 @@ function UserOverview({ currentUser }) {
             },
           }}>
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {stats.unreadNotifications.toLocaleString()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                 Unread Notifications
               </Typography>
             </CardContent>
@@ -399,7 +399,7 @@ function UserOverview({ currentUser }) {
           <Card sx={{ 
             borderLeft: '4px solid #800000',
             boxShadow: 3,
-            bgcolor: 'transparent',
+            bgcolor: theme.palette.mode === 'dark' ? '#1a1a1a' : 'transparent',
             borderRadius: 2,
             height: 'fit-content'
           }}>
@@ -423,11 +423,11 @@ function UserOverview({ currentUser }) {
                   size="small" 
                   sx={{ 
                     textTransform: 'none',
-                    color: '#800000',
-                    borderColor: '#800000',
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                    borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
                     '&:hover': {
-                      borderColor: '#6b0000',
-                      backgroundColor: '#80000010'
+                      borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#6b0000',
+                      backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#80000010'
                     }
                   }}
                   variant="outlined"
@@ -457,7 +457,7 @@ function UserOverview({ currentUser }) {
                         <ListItemText
                           primary={
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                              <Typography variant="subtitle2" fontWeight={notification.read ? 400 : 700}>
+                              <Typography variant="subtitle2" fontWeight={notification.read ? 400 : 700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>
                                 {notification.title}
                               </Typography>
                               {!notification.read && (
@@ -467,13 +467,13 @@ function UserOverview({ currentUser }) {
                           }
                           secondary={
                             <Box>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 0.5 }}>
                                 {notification.message && notification.message.length > 100 
                                   ? `${notification.message.substring(0, 100)}...` 
                                   : notification.message
                                 }
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                                 {new Date(notification.createdAt).toLocaleDateString()}
                               </Typography>
                             </Box>
@@ -486,8 +486,8 @@ function UserOverview({ currentUser }) {
                 </List>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <Campaign sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
-                  <Typography variant="body2" color="text.secondary">
+                  <Campaign sx={{ fontSize: 48, color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 1 }} />
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                     No notifications yet
                   </Typography>
                 </Box>
@@ -503,11 +503,11 @@ function UserOverview({ currentUser }) {
             boxShadow: 3,
             height: 'fit-content',
             borderLeft: '4px solid #800000',
-            background: 'transparent'
+            bgcolor: theme.palette.mode === 'dark' ? '#1a1a1a' : 'transparent'
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600} color="#2d3436">
+                <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#2d3436' }}>
                   Recent Violations
                 </Typography>
                 <Button 
@@ -516,11 +516,11 @@ function UserOverview({ currentUser }) {
                   to="/violations"
                   sx={{ 
                     textTransform: 'none',
-                    color: '#800000',
-                    borderColor: '#800000',
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                    borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
                     '&:hover': {
-                      borderColor: '#6b0000',
-                      backgroundColor: '#80000010'
+                      borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#6b0000',
+                      backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#80000010'
                     }
                   }}
                   variant="outlined"
@@ -541,17 +541,17 @@ function UserOverview({ currentUser }) {
                         </ListItemAvatar>
                         <ListItemText
                           primary={
-                            <Typography variant="subtitle2" fontWeight={600}>
+                            <Typography variant="subtitle2" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>
                               {violation.violation}
                             </Typography>
                           }
                           secondary={
                             <Box>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 0.5 }}>
                                 Date: {violation.date} • Classification: {violation.classification}
                                 {violation.severity && ` • Severity: ${violation.severity}`}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                                 {violation.createdAt ? new Date(violation.createdAt).toLocaleDateString() : violation.date}
                               </Typography>
                             </Box>
@@ -571,8 +571,8 @@ function UserOverview({ currentUser }) {
                 </List>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <Warning sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
-                  <Typography variant="body2" color="text.secondary">
+                  <Warning sx={{ fontSize: 48, color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 1 }} />
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                     No violations recorded yet
                   </Typography>
                 </Box>

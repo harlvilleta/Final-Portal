@@ -258,9 +258,10 @@ export default function StudentsChartDashboard() {
             />
             <RechartsTooltip 
               contentStyle={{ 
-                backgroundColor: '#fff', 
+                backgroundColor: isDark ? '#1a1a1a' : '#fff', 
                 border: isDark ? '1px solid #D84040' : '1px solid #800000',
-                borderRadius: '8px'
+                borderRadius: '8px',
+                color: isDark ? '#ffffff' : '#000000'
               }}
             />
             <Legend />
@@ -288,17 +289,19 @@ export default function StudentsChartDashboard() {
             <Grid item xs={6} sm={4} md={2} key={month.month}>
               <Card sx={{ 
                 textAlign: 'center', 
-                bgcolor: month.count > averagePerMonth ? '#80000015' : '#f5f5f5',
-                border: month.count > averagePerMonth ? '1px solid #800000' : '1px solid #e0e0e0'
+                bgcolor: isDark ? 'rgba(255, 255, 255, 0.05)' : (month.count > averagePerMonth ? '#80000015' : '#f5f5f5'),
+                backdropFilter: isDark ? 'blur(10px)' : 'none',
+                border: isDark ? (month.count > 0 ? '2px solid #4caf50' : '1px solid #ffffff') : (month.count > averagePerMonth ? '1px solid #800000' : '1px solid #e0e0e0'),
+                boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.1)'
               }}>
                 <CardContent sx={{ p: 2 }}>
-                  <Typography variant="h6" fontWeight={700} sx={{ color: month.count > averagePerMonth ? (isDark ? '#ffffff' : '#800000') : 'text.primary' }}>
+                  <Typography variant="h6" fontWeight={700} sx={{ color: isDark ? '#ffffff' : (month.count > averagePerMonth ? '#800000' : 'text.primary') }}>
                     {month.count}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{ color: isDark ? '#ffffff' : 'text.secondary' }}>
                     {month.month}
                   </Typography>
-                  {month.count > averagePerMonth && (
+                  {month.count > averagePerMonth && !isDark && (
                     <Chip 
                       label="Above Average" 
                       size="small" 

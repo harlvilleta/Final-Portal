@@ -517,7 +517,7 @@ School Administration
             }
           }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="black" fontWeight={700}>{total}</Typography>
+              <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{total}</Typography>
               <Typography variant="body2" color="textSecondary">Total Violations</Typography>
             </CardContent>
           </Card>
@@ -533,7 +533,7 @@ School Administration
             }
           }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="black" fontWeight={700}>{pending}</Typography>
+              <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{pending}</Typography>
               <Typography variant="body2" color="textSecondary">Pending</Typography>
             </CardContent>
           </Card>
@@ -549,7 +549,7 @@ School Administration
             }
           }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="black" fontWeight={700}>{solved}</Typography>
+              <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{solved}</Typography>
               <Typography variant="body2" color="textSecondary">Solved</Typography>
             </CardContent>
           </Card>

@@ -135,7 +135,7 @@ function SummaryCard({ stats }) {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="black" fontWeight={700}>{stats.total}</Typography>
+              <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{stats.total}</Typography>
               <Typography variant="body2" color="textSecondary">Total</Typography>
             </CardContent>
           </Card>
@@ -143,7 +143,7 @@ function SummaryCard({ stats }) {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="black" fontWeight={700}>{stats.scheduled}</Typography>
+              <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{stats.scheduled}</Typography>
               <Typography variant="body2" color="textSecondary">Scheduled</Typography>
             </CardContent>
           </Card>
@@ -151,7 +151,7 @@ function SummaryCard({ stats }) {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="black" fontWeight={700}>{stats.completed}</Typography>
+              <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{stats.completed}</Typography>
               <Typography variant="body2" color="textSecondary">Completed</Typography>
             </CardContent>
           </Card>
@@ -159,7 +159,7 @@ function SummaryCard({ stats }) {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="black" fontWeight={700}>{stats.categories}</Typography>
+              <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{stats.categories}</Typography>
               <Typography variant="body2" color="textSecondary">Categories</Typography>
             </CardContent>
           </Card>

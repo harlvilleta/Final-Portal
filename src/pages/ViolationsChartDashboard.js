@@ -200,10 +200,18 @@ export default function ViolationsChartDashboard() {
             />
             <RechartsTooltip 
               contentStyle={{ 
-                backgroundColor: '#fff', 
+                backgroundColor: isDark ? '#1a1a1a' : '#fff', 
                 border: isDark ? '1px solid #D84040' : '1px solid #800000',
-                borderRadius: '8px'
+                borderRadius: '8px',
+                color: isDark ? '#ffffff' : '#000000'
               }}
+              formatter={(value, name, props) => {
+                if (value === 0) {
+                  return ['No Violations this Month', 'Status'];
+                }
+                return [`${value} Students Violated`, 'Violations'];
+              }}
+              labelFormatter={(label) => `Month: ${label}`}
             />
             <Legend />
             <Bar 
@@ -211,6 +219,21 @@ export default function ViolationsChartDashboard() {
               fill={isDark ? '#D84040' : '#800000'} 
               name="Violations Reported"
               radius={[4, 4, 0, 0]}
+              style={{
+                cursor: 'default'
+              }}
+              onMouseEnter={(data, index, event) => {
+                // Force color to remain the same
+                if (event && event.target) {
+                  event.target.style.fill = isDark ? '#D84040' : '#800000';
+                }
+              }}
+              onMouseLeave={(data, index, event) => {
+                // Ensure color stays the same
+                if (event && event.target) {
+                  event.target.style.fill = isDark ? '#D84040' : '#800000';
+                }
+              }}
             />
           </BarChart>
         </ResponsiveContainer>
@@ -226,45 +249,48 @@ export default function ViolationsChartDashboard() {
             <Grid item xs={6} sm={4} md={2} key={month.month}>
               <Card sx={{ 
                 textAlign: 'center', 
-                bgcolor: month.count > averagePerMonth ? '#80000015' : '#f5f5f5',
-                border: month.count > averagePerMonth ? '1px solid #800000' : '1px solid #e0e0e0'
+                bgcolor: isDark ? 'rgba(255, 255, 255, 0.05)' : (month.count > averagePerMonth ? '#80000015' : '#f5f5f5'),
+                backdropFilter: isDark ? 'blur(10px)' : 'none',
+                border: month.count > 0 ? '2px solid #d32f2f' : '2px solid #4caf50',
+                boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.1)'
               }}>
                 <CardContent sx={{ p: 2 }}>
-                  <Typography variant="h6" fontWeight={700} sx={{ color: month.count > averagePerMonth ? (isDark ? '#ffffff' : '#800000') : 'text.primary' }}>
-                    {month.count}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+                    <Box sx={{ 
+                      width: 12, 
+                      height: 12, 
+                      borderRadius: '50%', 
+                      bgcolor: month.count > 0 ? '#d32f2f' : '#4caf50',
+                      mr: 1
+                    }} />
+                    <Typography variant="h6" fontWeight={700} sx={{ color: isDark ? '#ffffff' : (month.count > averagePerMonth ? '#800000' : 'text.primary') }}>
+                      {month.count}
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" sx={{ color: isDark ? '#ffffff' : 'text.secondary' }}>
                     {month.month}
                   </Typography>
-                  {month.count > averagePerMonth && averagePerMonth > 0 && (
-                    <Chip 
-                      label="Above Average" 
-                      size="small" 
-                      sx={{ 
-                        mt: 1, 
-                        bgcolor: '#800000', 
-                        color: 'white',
-                        fontSize: '0.7rem'
-                      }} 
-                    />
-                  )}
-                  {month.count === 0 && (
-                    <Chip 
-                      label="No Violations" 
-                      size="small" 
-                      sx={{ 
-                        mt: 1, 
-                        bgcolor: '#4caf50', 
-                        color: 'white',
-                        fontSize: '0.7rem'
-                      }} 
-                    />
-                  )}
                 </CardContent>
               </Card>
             </Grid>
           ))}
         </Grid>
+        
+        {/* Legend */}
+        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#4caf50' }} />
+            <Typography variant="body2" sx={{ color: isDark ? '#ffffff' : '#000000' }}>
+              No Violations
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#d32f2f' }} />
+            <Typography variant="body2" sx={{ color: isDark ? '#ffffff' : '#000000' }}>
+              Has Violations
+            </Typography>
+          </Box>
+        </Box>
       </Paper>
     </Box>
   );

@@ -112,7 +112,7 @@ export default function ViolationStatus() {
         <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="black" fontWeight={700}>{stats.totalViolations}</Typography>
+              <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{stats.totalViolations}</Typography>
               <Typography variant="body2" color="textSecondary">Total Violations</Typography>
             </CardContent>
           </Card>
@@ -120,7 +120,7 @@ export default function ViolationStatus() {
         <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="black" fontWeight={700}>{stats.pendingViolations}</Typography>
+              <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{stats.pendingViolations}</Typography>
               <Typography variant="body2" color="textSecondary">Pending</Typography>
             </CardContent>
           </Card>
@@ -128,7 +128,7 @@ export default function ViolationStatus() {
         <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="black" fontWeight={700}>{stats.solvedViolations}</Typography>
+              <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{stats.solvedViolations}</Typography>
               <Typography variant="body2" color="textSecondary">Solved</Typography>
             </CardContent>
           </Card>
@@ -149,7 +149,7 @@ export default function ViolationStatus() {
                       color={getClassificationColor(classification)} 
                       size="small" 
                     />
-                    <Typography variant="body2">{count} violations</Typography>
+                    <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>{count} violations</Typography>
                   </Box>
                   <LinearProgress 
                     variant="determinate" 
@@ -174,7 +174,7 @@ export default function ViolationStatus() {
                       color={getSeverityColor(severity)} 
                       size="small" 
                     />
-                    <Typography variant="body2">{count} violations</Typography>
+                    <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>{count} violations</Typography>
                   </Box>
                   <LinearProgress 
                     variant="determinate" 

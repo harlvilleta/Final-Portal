@@ -485,9 +485,10 @@ export default function Overview() {
                 />
                 <RechartsTooltip 
                   contentStyle={{ 
-                    backgroundColor: '#fff', 
+                    backgroundColor: isDark ? '#1a1a1a' : '#fff', 
                     border: isDark ? '1px solid #D84040' : '1px solid #800000',
-                    borderRadius: '8px'
+                    borderRadius: '8px',
+                    color: isDark ? '#ffffff' : '#000000'
                   }}
                 />
                 <Legend />
@@ -513,10 +514,11 @@ export default function Overview() {
               p: 3, 
               height: 400, 
               cursor: 'pointer',
-              transition: 'all 0.2s ease-in-out',
+              transition: 'none',
               '&:hover': {
-                boxShadow: 6,
-                transform: 'translateY(-2px)'
+                boxShadow: 'none',
+                transform: 'none',
+                backgroundColor: 'transparent'
               }
             }}
             onClick={() => navigate('/violations-chart')}
@@ -539,10 +541,18 @@ export default function Overview() {
                 />
                 <RechartsTooltip 
                   contentStyle={{ 
-                    backgroundColor: '#fff', 
+                    backgroundColor: isDark ? '#1a1a1a' : '#fff', 
                     border: isDark ? '1px solid #D84040' : '1px solid #800000',
-                    borderRadius: '8px'
+                    borderRadius: '8px',
+                    color: isDark ? '#ffffff' : '#000000'
                   }}
+                  formatter={(value, name, props) => {
+                    if (value === 0) {
+                      return ['No Violations this Month', 'Status'];
+                    }
+                    return [`${value} Students Violated`, 'Violations'];
+                  }}
+                  labelFormatter={(label) => `Month: ${label}`}
                 />
                 <Legend />
                 <Bar 
@@ -550,6 +560,21 @@ export default function Overview() {
                   fill={isDark ? '#D84040' : '#800000'} 
                   name="Violations"
                   radius={[4, 4, 0, 0]}
+                  style={{
+                    cursor: 'default'
+                  }}
+                  onMouseEnter={(data, index, event) => {
+                    // Force color to remain the same
+                    if (event && event.target) {
+                      event.target.style.fill = isDark ? '#D84040' : '#800000';
+                    }
+                  }}
+                  onMouseLeave={(data, index, event) => {
+                    // Ensure color stays the same
+                    if (event && event.target) {
+                      event.target.style.fill = isDark ? '#D84040' : '#800000';
+                    }
+                  }}
                 />
               </BarChart>
             </ResponsiveContainer>
