@@ -11,11 +11,11 @@ import { db } from "../firebase";
 import { useTheme } from "../contexts/ThemeContext";
 
 export default function ViolationsChartDashboard() {
+  const { isDark } = useTheme();
   const [monthlyData, setMonthlyData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const { isDark } = useTheme();
 
   useEffect(() => {
     fetchYearlyData();
@@ -87,7 +87,7 @@ export default function ViolationsChartDashboard() {
           <IconButton onClick={handleBack} sx={{ mr: 2 }}>
             <ArrowBack />
           </IconButton>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: '#800000' }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000' }}>
             Violations Dashboard
           </Typography>
         </Box>
@@ -105,7 +105,7 @@ export default function ViolationsChartDashboard() {
           <IconButton onClick={handleBack} sx={{ mr: 2 }}>
             <ArrowBack />
           </IconButton>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: '#800000' }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000' }}>
             Violations Dashboard
           </Typography>
         </Box>
@@ -133,7 +133,7 @@ export default function ViolationsChartDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} color="#800000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#800000' }}>
                 {totalViolations}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -145,7 +145,7 @@ export default function ViolationsChartDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} color="#800000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#800000' }}>
                 {Math.round(averagePerMonth)}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -157,7 +157,7 @@ export default function ViolationsChartDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} color="#800000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#800000' }}>
                 {peakMonth.count}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -169,7 +169,7 @@ export default function ViolationsChartDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} color="#800000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#800000' }}>
                 {monthsWithViolations}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -182,7 +182,7 @@ export default function ViolationsChartDashboard() {
 
       {/* Monthly Chart */}
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#800000' }}>
+        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000' }}>
           Violations Reported - {new Date().getFullYear()}
         </Typography>
         <ResponsiveContainer width="100%" height={500}>
@@ -218,7 +218,7 @@ export default function ViolationsChartDashboard() {
 
       {/* Monthly Breakdown */}
       <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#800000' }}>
+        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000' }}>
           Monthly Breakdown
         </Typography>
         <Grid container spacing={2}>
@@ -230,7 +230,7 @@ export default function ViolationsChartDashboard() {
                 border: month.count > averagePerMonth ? '1px solid #800000' : '1px solid #e0e0e0'
               }}>
                 <CardContent sx={{ p: 2 }}>
-                  <Typography variant="h6" fontWeight={700} color={month.count > averagePerMonth ? '#800000' : 'text.primary'}>
+                  <Typography variant="h6" fontWeight={700} sx={{ color: month.count > averagePerMonth ? (isDark ? '#ffffff' : '#800000') : 'text.primary' }}>
                     {month.count}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">

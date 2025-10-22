@@ -397,18 +397,40 @@ export default function Overview() {
                 display: 'flex', 
                 alignItems: 'center', 
                 p: 2, 
-                boxShadow: 3, 
+                boxShadow: isDark 
+                  ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
+                  : '0 4px 16px rgba(0, 0, 0, 0.1)', 
                 borderRadius: 2,
                 borderLeft: `4px solid ${stat.color}`,
-                background: '#ffffff',
+                background: isDark 
+                  ? 'rgba(255, 255, 255, 0.05)' 
+                  : 'rgba(255, 255, 255, 0.8)',
+                backdropFilter: 'blur(10px)',
+                border: isDark 
+                  ? '1px solid rgba(255, 255, 255, 0.1)' 
+                  : '1px solid rgba(255, 255, 255, 0.2)',
                 cursor: stat.to ? 'pointer' : 'default',
-                transition: 'box-shadow 0.2s',
+                transition: 'all 0.3s ease',
                 '&:hover': {
-                  boxShadow: 6,
+                  boxShadow: isDark 
+                    ? '0 12px 40px rgba(0, 0, 0, 0.4)' 
+                    : '0 8px 24px rgba(0, 0, 0, 0.15)',
+                  transform: 'translateY(-2px)',
+                  background: isDark 
+                    ? 'rgba(255, 255, 255, 0.08)' 
+                    : 'rgba(255, 255, 255, 0.9)',
                 },
               }}
             >
-              <Box sx={{ mr: 2 }}>{stat.icon}</Box>
+              <Box sx={{ 
+                mr: 2, 
+                color: isDark ? '#ffffff' : stat.color,
+                '& .MuiSvgIcon-root': {
+                  color: isDark ? '#ffffff' : stat.color
+                }
+              }}>
+                {stat.icon}
+              </Box>
               <CardContent sx={{ flex: 1, p: '8px !important' }}>
                 <Typography 
                   variant="h4" 

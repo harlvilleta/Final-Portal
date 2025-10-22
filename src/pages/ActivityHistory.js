@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Typography, Grid, Card, CardContent, TextField, Button, MenuItem, Paper, List, ListItem, ListItemText, Divider, Stack, Snackbar, Alert, IconButton, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, DialogActions, Chip, InputAdornment, Pagination } from "@mui/material";
+import { Box, Typography, Grid, Card, CardContent, TextField, Button, MenuItem, Paper, List, ListItem, ListItemText, Divider, Stack, Snackbar, Alert, IconButton, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, DialogActions, Chip, InputAdornment, Pagination, useTheme } from "@mui/material";
 import { EventNote, History, CheckCircle, Edit, Delete, Visibility } from "@mui/icons-material";
 import { collection, getDocs, updateDoc, doc, orderBy, query, deleteDoc } from "firebase/firestore";
 import { db, logActivity } from "../firebase";
@@ -127,6 +127,7 @@ function ActivityHistoryTable({ activities, onView, onEdit, onDelete, search, on
 }
 
 export default function ActivityHistory() {
+  const theme = useTheme();
   const [activities, setActivities] = useState([]);
   const [refresh, setRefresh] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -193,7 +194,7 @@ export default function ActivityHistory() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#800000', mb: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', mb: 3 }}>
         Activity History
       </Typography>
       

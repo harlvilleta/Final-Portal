@@ -20,7 +20,8 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  IconButton
+  IconButton,
+  useTheme
 } from '@mui/material';
 import { 
   Schedule, 
@@ -36,6 +37,7 @@ import { auth, db } from '../firebase';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 
 export default function TeacherSchedule() {
+  const theme = useTheme();
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -167,7 +169,7 @@ export default function TeacherSchedule() {
     <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={700} color="#800000" gutterBottom>
+        <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }} gutterBottom>
           My Schedule
         </Typography>
         <Typography variant="body1" color="text.secondary">

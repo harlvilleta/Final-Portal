@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Typography, Box, Paper, TextField, Button, Grid, Dialog, DialogTitle, DialogContent, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Tooltip, Snackbar, Alert, Card, CardContent, CardHeader, Divider } from "@mui/material";
+import { Typography, Box, Paper, TextField, Button, Grid, Dialog, DialogTitle, DialogContent, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Tooltip, Snackbar, Alert, Card, CardContent, CardHeader, Divider, useTheme } from "@mui/material";
 import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { MenuItem } from "@mui/material";
@@ -16,6 +16,7 @@ const EMAILJS_TEMPLATE_ID = 'template_f5q7j6q';
 const EMAILJS_USER_ID = 'L77JuF4PF3ZtGkwHm';
 
 export default function ViolationCreateMeeting() {
+  const theme = useTheme();
   const [meetings, setMeetings] = useState([]);
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);
@@ -331,7 +332,7 @@ export default function ViolationCreateMeeting() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom fontWeight={700} sx={{ color: '#800000' }}>
+      <Typography variant="h4" gutterBottom fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
         Create Meeting
       </Typography>
       

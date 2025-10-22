@@ -472,7 +472,7 @@ export default function AdminLostFound() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#800000', mb: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', mb: 3 }}>
         Lost & Found Management
       </Typography>
 

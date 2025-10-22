@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Typography, Box, Grid, Card, CardContent, Button, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert, TextField } from "@mui/material";
+import { Typography, Box, Grid, Card, CardContent, Button, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert, TextField, useTheme } from "@mui/material";
 import EmailIcon from '@mui/icons-material/Email';
 import SecurityIcon from '@mui/icons-material/Security';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -15,6 +15,7 @@ const EMAILJS_TEMPLATE_ID = 'template_f5q7j6q';
 const EMAILJS_USER_ID = 'L77JuF4PF3ZtGkwHm';
 
 export default function Options() {
+  const theme = useTheme();
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
@@ -58,7 +59,7 @@ export default function Options() {
   return (
     <Box sx={{ p: { xs: 1, md: 4 }, maxWidth: 900, mx: 'auto', overflowY: 'auto', bgcolor: '#f5f6fa', borderRadius: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" fontWeight={700} color="#800000">Options</Typography>
+        <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Options</Typography>
         <Button 
           variant="outlined" 
           startIcon={<EmailIcon />} 

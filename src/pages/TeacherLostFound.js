@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Grid, Paper, TextField, Button, Snackbar, Alert, MenuItem, Card, CardContent, Chip, Avatar } from '@mui/material';
+import { Box, Typography, Grid, Paper, TextField, Button, Snackbar, Alert, MenuItem, Card, CardContent, Chip, Avatar, useTheme } from '@mui/material';
 import { Add, Search } from '@mui/icons-material';
 import { db } from '../firebase';
 import { collection, addDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
 
 export default function TeacherLostFound() {
+  const theme = useTheme();
   const [form, setForm] = useState({ type: 'lost', name: '', description: '', location: '' });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [lostItems, setLostItems] = useState([]);
@@ -57,7 +58,7 @@ export default function TeacherLostFound() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#800000', mb: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', mb: 3 }}>
         Lost & Found
       </Typography>
 

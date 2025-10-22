@@ -901,7 +901,7 @@ School Administration
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <Typography variant="h6" fontWeight={600} sx={{ color: '#800000' }}>
+          <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
             Violation History
           </Typography>
           <IconButton 

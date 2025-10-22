@@ -151,7 +151,16 @@ const ProfileDropdown = ({
               : '0 8px 32px rgba(0, 0, 0, 0.15)',
             border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
             borderRadius: 2,
-            overflow: 'hidden'
+            overflow: 'hidden',
+            '& .MuiMenuItem-root': {
+              color: isDark ? '#ffffff' : '#000000 !important',
+              '& .MuiListItemText-primary': {
+                color: isDark ? '#ffffff' : '#000000 !important'
+              },
+              '& .MuiListItemText-secondary': {
+                color: isDark ? '#e0e0e0' : '#000000 !important'
+              }
+            }
           }
         }}
       >
@@ -173,7 +182,7 @@ const ProfileDropdown = ({
                 variant="subtitle1" 
                 sx={{ 
                   fontWeight: 600,
-                  color: 'text.primary',
+                  color: isDark ? '#ffffff' : '#000000 !important',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
@@ -184,7 +193,7 @@ const ProfileDropdown = ({
               <Typography 
                 variant="body2" 
                 sx={{ 
-                  color: 'text.secondary',
+                  color: isDark ? '#e0e0e0' : '#000000 !important',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
@@ -195,7 +204,7 @@ const ProfileDropdown = ({
               <Typography 
                 variant="caption" 
                 sx={{ 
-                  color: 'text.secondary',
+                  color: isDark ? '#e0e0e0' : '#000000 !important',
                   fontWeight: 500,
                   textTransform: 'capitalize'
                 }}
@@ -211,11 +220,14 @@ const ProfileDropdown = ({
         {/* Profile Settings */}
         <MenuItem onClick={handleProfileClick}>
           <ListItemIcon>
-            <Settings fontSize="small" />
+            <Settings fontSize="small" sx={{ color: isDark ? '#ffffff' : '#000000 !important' }} />
           </ListItemIcon>
           <ListItemText 
             primary="Profile Settings"
-            primaryTypographyProps={{ variant: 'body2' }}
+            primaryTypographyProps={{ 
+              variant: 'body2',
+              sx: { color: isDark ? '#ffffff' : '#000000 !important' }
+            }}
           />
         </MenuItem>
 
@@ -226,7 +238,7 @@ const ProfileDropdown = ({
           <Typography 
             variant="caption" 
             sx={{ 
-              color: 'text.secondary',
+              color: isDark ? '#e0e0e0' : '#000000 !important',
               fontWeight: 600,
               textTransform: 'uppercase',
               letterSpacing: 0.5
@@ -247,8 +259,14 @@ const ProfileDropdown = ({
           <ListItemText 
             primary={isDark ? 'Light Mode' : 'Dark Mode'}
             secondary={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-            primaryTypographyProps={{ variant: 'body2' }}
-            secondaryTypographyProps={{ variant: 'caption' }}
+            primaryTypographyProps={{ 
+              variant: 'body2',
+              sx: { color: isDark ? '#ffffff' : '#000000 !important' }
+            }}
+            secondaryTypographyProps={{ 
+              variant: 'caption',
+              sx: { color: isDark ? '#e0e0e0' : '#000000 !important' }
+            }}
           />
           <Switch
             checked={isDark}
@@ -274,7 +292,10 @@ const ProfileDropdown = ({
           </ListItemIcon>
           <ListItemText 
             primary="Logout"
-            primaryTypographyProps={{ variant: 'body2' }}
+            primaryTypographyProps={{ 
+              variant: 'body2',
+              sx: { color: 'error.main' }
+            }}
           />
         </MenuItem>
       </Menu>

@@ -885,25 +885,25 @@ function LostFound() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>Lost and Found</Typography>
+      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Lost and Found</Typography>
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2, mb: 2, bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
-            <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#800000' }}>Lost Items Summary</Typography>
+            <Typography variant="subtitle1" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Lost Items Summary</Typography>
             <Grid container spacing={2}>
-              <Grid item><Typography sx={{ color: '#800000' }}>Total: <b>{lostTotal}</b></Typography></Grid>
-              <Grid item><Typography sx={{ color: '#800000' }}>Completed: <b>{lostCompleted}</b></Typography></Grid>
-              <Grid item><Typography sx={{ color: '#800000' }}>Pending: <b>{lostPending}</b></Typography></Grid>
+              <Grid item><Typography sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Total: <b>{lostTotal}</b></Typography></Grid>
+              <Grid item><Typography sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Completed: <b>{lostCompleted}</b></Typography></Grid>
+              <Grid item><Typography sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Pending: <b>{lostPending}</b></Typography></Grid>
             </Grid>
           </Paper>
         </Grid>
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2, mb: 2, bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
-            <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#800000' }}>Found Items Summary</Typography>
+            <Typography variant="subtitle1" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Found Items Summary</Typography>
             <Grid container spacing={2}>
-              <Grid item><Typography sx={{ color: '#800000' }}>Total: <b>{foundTotal}</b></Typography></Grid>
-              <Grid item><Typography sx={{ color: '#800000' }}>Completed: <b>{foundCompleted}</b></Typography></Grid>
-              <Grid item><Typography sx={{ color: '#800000' }}>Pending: <b>{foundPending}</b></Typography></Grid>
+              <Grid item><Typography sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Total: <b>{foundTotal}</b></Typography></Grid>
+              <Grid item><Typography sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Completed: <b>{foundCompleted}</b></Typography></Grid>
+              <Grid item><Typography sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Pending: <b>{foundPending}</b></Typography></Grid>
             </Grid>
           </Paper>
         </Grid>
@@ -2261,7 +2261,14 @@ School Administration
           <Tab 
             label={`All Students (${students.length})`} 
             value={0}
-            sx={{ textAlign: 'left', minWidth: 'auto' }}
+            sx={{ 
+              textAlign: 'left', 
+              minWidth: 'auto',
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit',
+              '&.Mui-selected': {
+                color: theme.palette.mode === 'dark' ? '#ffffff !important' : '#000000 !important'
+              }
+            }}
           />
           <Tab 
             label={`Unregistered (${students.filter(s => !s.isRegisteredUser).length})`} 
@@ -2287,7 +2294,7 @@ School Administration
             borderLeft: '4px solid #800000'
           }}>
             <Typography variant="h4" sx={{ 
-              color: '#000000', 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
               fontWeight: 'bold' 
             }}>
               {filteredStudents.filter(s => s.course && s.course.trim() !== '').length}
@@ -2310,7 +2317,7 @@ School Administration
             borderLeft: '4px solid #800000'
           }}>
             <Typography variant="h4" sx={{ 
-              color: '#000000', 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
               fontWeight: 'bold' 
             }}>
               {availableCourses.length}
@@ -2331,7 +2338,7 @@ School Administration
             borderLeft: '4px solid #800000'
           }}>
             <Typography variant="h4" sx={{ 
-              color: '#000000', 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
               fontWeight: 'bold' 
             }}>
               {courseFilter !== 'all' ? filteredStudents.length : students.length}
@@ -2352,7 +2359,7 @@ School Administration
             borderLeft: '4px solid #800000'
           }}>
             <Typography variant="h4" sx={{ 
-              color: '#000000', 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
               fontWeight: 'bold' 
             }}>
               {filteredStudents.length}
@@ -3668,7 +3675,7 @@ export default function Students() {
                         Student ID
                       </Typography>
                       <Typography component="span" sx={{ 
-                        color: '#000000',
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                         fontFamily: 'monospace', 
                         fontWeight: 'bold',
                         fontSize: '0.7rem',
@@ -3693,7 +3700,7 @@ export default function Students() {
                         First Name
                       </Typography>
                       <Typography component="span" sx={{ 
-                        color: '#000000',
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                         fontSize: '0.7rem',
                         display: 'block',
                         textAlign: 'center'
@@ -3716,7 +3723,7 @@ export default function Students() {
                         Last Name
                       </Typography>
                       <Typography component="span" sx={{ 
-                        color: '#000000',
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                         fontSize: '0.7rem',
                         display: 'block',
                         textAlign: 'center'
@@ -3739,7 +3746,7 @@ export default function Students() {
                         Middle Initial
                       </Typography>
                       <Typography component="span" sx={{ 
-                        color: '#000000',
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                         fontSize: '0.7rem',
                         display: 'block',
                         textAlign: 'center'
@@ -3762,7 +3769,7 @@ export default function Students() {
                         Sex
                       </Typography>
                       <Typography component="span" sx={{ 
-                        color: '#000000',
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                         fontSize: '0.7rem',
                         display: 'block',
                         textAlign: 'center'
@@ -3785,7 +3792,7 @@ export default function Students() {
                         Age
                       </Typography>
                       <Typography component="span" sx={{ 
-                        color: '#000000',
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                         fontSize: '0.7rem',
                         display: 'block',
                         textAlign: 'center'
@@ -3808,7 +3815,7 @@ export default function Students() {
                         Birthday
                       </Typography>
                       <Typography component="span" sx={{ 
-                        color: '#000000',
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                         fontSize: '0.7rem',
                         display: 'block',
                         textAlign: 'center'
@@ -3831,7 +3838,7 @@ export default function Students() {
                         Contact Number
                       </Typography>
                       <Typography component="span" sx={{ 
-                        color: '#000000',
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                         fontFamily: 'monospace',
                         fontSize: '0.7rem',
                         display: 'block',

@@ -32,7 +32,8 @@ import {
   AccordionSummary,
   AccordionDetails,
   Divider,
-  InputAdornment
+  InputAdornment,
+  useTheme
 } from '@mui/material';
 import {
   CheckCircle,
@@ -80,6 +81,7 @@ const receiptTypeLabels = {
 };
 
 export default function ReceiptReview() {
+  const theme = useTheme();
   const [submissions, setSubmissions] = useState([]); // full dataset
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
@@ -229,7 +231,7 @@ export default function ReceiptReview() {
     <Box sx={{ p: 3 }}>
       <Paper sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" color="primary">
+          <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
             Receipt Review
           </Typography>
         </Box>

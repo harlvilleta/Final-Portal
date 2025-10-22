@@ -405,7 +405,7 @@ function UserOverview({ currentUser }) {
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={700} color="#800000">
+                <Typography variant="h6" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
                   Recent Notifications
                   {stats.unreadNotifications > 0 && (
                     <Chip 
@@ -587,6 +587,7 @@ function UserOverview({ currentUser }) {
 
 // Main User Dashboard Component
 export default function UserDashboard({ currentUser, userProfile }) {
+  const theme = useTheme();
   const navigate = useNavigate();
 
   // Remove conflicting auth listener - App.js handles authentication state

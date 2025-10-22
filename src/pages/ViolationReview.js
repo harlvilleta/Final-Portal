@@ -214,7 +214,7 @@ export default function ViolationReview() {
   return (
     <Box sx={{ p: 3 }}>
       <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, color: '#800000' }}>
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
           Violation Review & Approval
         </Typography>
         

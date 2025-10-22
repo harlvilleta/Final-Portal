@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { 
   Box, Grid, Card, CardContent, Typography, Paper, Avatar, Button, List, Chip,
   Dialog, DialogTitle, DialogContent, DialogActions, Divider, Stack, Alert, IconButton,
-  Badge, Tabs, Tab, ListItem, ListItemText, ListItemAvatar, ListItemSecondaryAction
+  Badge, Tabs, Tab, ListItem, ListItemText, ListItemAvatar, ListItemSecondaryAction,
+  useTheme
 } from "@mui/material";
 import { 
   Warning, Announcement, Search, Info, NotificationsActive, 
@@ -14,6 +15,7 @@ import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, getDocs 
 import { auth } from "../firebase";
 
 export default function TeacherNotifications() {
+  const theme = useTheme();
   const [notifications, setNotifications] = useState([]);
   const [meetingNotifications, setMeetingNotifications] = useState([]);
   const [lostFoundNotifications, setLostFoundNotifications] = useState([]);
@@ -383,7 +385,7 @@ export default function TeacherNotifications() {
     <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={700} color="#800000" gutterBottom>
+        <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }} gutterBottom>
           Notifications
         </Typography>
         <Typography variant="body1" color="text.secondary">

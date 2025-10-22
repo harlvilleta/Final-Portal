@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Typography, Grid, Card, CardContent, CardHeader, TextField, Button, MenuItem, Paper, List, ListItem, ListItemText, Divider, Stack, Snackbar, Alert, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Chip, InputAdornment, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
+import { Box, Typography, Grid, Card, CardContent, CardHeader, TextField, Button, MenuItem, Paper, List, ListItem, ListItemText, Divider, Stack, Snackbar, Alert, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Chip, InputAdornment, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, useTheme } from "@mui/material";
 import { EventNote, History, CheckCircle, Edit, Delete, Visibility } from "@mui/icons-material";
 import { collection, addDoc, getDocs, updateDoc, doc, orderBy, query, deleteDoc } from "firebase/firestore";
 import { db, logActivity } from "../firebase";
@@ -125,9 +125,10 @@ function ActivityForm({ onActivityAdded }) {
 }
 
 function SummaryCard({ stats }) {
+  const theme = useTheme();
   return (
     <Box sx={{ mb: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#800000' }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
         Activity Summary
       </Typography>
       <Grid container spacing={3}>
@@ -227,6 +228,7 @@ function HistoryButton({ onClick }) {
 }
 
 function HistoryModal({ activities, onView, onEdit, onDelete, search, onSearch, open, onClose }) {
+  const theme = useTheme();
   const filteredActivities = activities.filter(activity => 
     activity.title.toLowerCase().includes(search.toLowerCase()) ||
     activity.category.toLowerCase().includes(search.toLowerCase()) ||
@@ -264,11 +266,11 @@ function HistoryModal({ activities, onView, onEdit, onDelete, search, onSearch, 
           <Table stickyHeader>
             <TableHead>
               <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-                <TableCell sx={{ fontWeight: 600, color: '#000000' }}>Title</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#000000' }}>Date</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#000000' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#000000' }}>Category</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#000000' }}>Actions</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Title</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Date</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Category</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
