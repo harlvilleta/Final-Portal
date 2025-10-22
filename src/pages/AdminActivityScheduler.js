@@ -849,18 +849,65 @@ export default function AdminActivityScheduler() {
               </Typography>
             </Box>
           ) : (
-            <TableContainer component={Paper}>
+            <TableContainer component={Paper} sx={{
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+              backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none',
+              border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : 'none'
+            }}>
               <Table>
                 <TableHead>
-                  <TableRow sx={{ bgcolor: 'grey.50' }}>
-                    <TableCell sx={{ fontWeight: 700 }}>Activity</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Teacher</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Department</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Resource</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Time</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
+                  <TableRow sx={{ 
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'grey.50',
+                    backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                  }}>
+                    <TableCell sx={{ 
+                      fontWeight: 700,
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                      backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                    }}>Activity</TableCell>
+                    <TableCell sx={{ 
+                      fontWeight: 700,
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                      backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                    }}>Teacher</TableCell>
+                    <TableCell sx={{ 
+                      fontWeight: 700,
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                      backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                    }}>Department</TableCell>
+                    <TableCell sx={{ 
+                      fontWeight: 700,
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                      backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                    }}>Resource</TableCell>
+                    <TableCell sx={{ 
+                      fontWeight: 700,
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                      backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                    }}>Date</TableCell>
+                    <TableCell sx={{ 
+                      fontWeight: 700,
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                      backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                    }}>Time</TableCell>
+                    <TableCell sx={{ 
+                      fontWeight: 700,
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                      backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                    }}>Status</TableCell>
+                    <TableCell sx={{ 
+                      fontWeight: 700,
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                      backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                    }}>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
