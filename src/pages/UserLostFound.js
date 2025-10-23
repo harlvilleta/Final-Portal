@@ -5,7 +5,7 @@ import {
 } from "@mui/material";
 import { 
   Search, Add, CloudUpload, AdminPanelSettings, Person, Visibility, 
-  LocationOn, AccessTime, ContactSupport, Comment, Delete, ThumbUp
+  LocationOn, AccessTime, ContactSupport, Comment, Delete, ThumbUp, Reply, Favorite
 } from "@mui/icons-material";
 import { db } from "../firebase";
 import { collection, addDoc, query, orderBy, onSnapshot, doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -39,6 +39,9 @@ export default function UserLostFound({ currentUser }) {
   const [comments, setComments] = useState({});
   const [newComment, setNewComment] = useState('');
   const [commentDialog, setCommentDialog] = useState({ open: false, itemId: null, itemType: '' });
+  const [replyDialog, setReplyDialog] = useState({ open: false, itemId: null, itemType: '', parentCommentId: null });
+  const [newReply, setNewReply] = useState('');
+  const [commentLikes, setCommentLikes] = useState({});
   const [allItems, setAllItems] = useState([]);
   const [likes, setLikes] = useState({});
   const [shares, setShares] = useState({});
@@ -179,10 +182,16 @@ export default function UserLostFound({ currentUser }) {
     
     try {
       const commentData = {
-        text: newComment,
+        id: Date.now().toString(),
+        text: newComment.trim(),
         author: currentUser?.email || 'Anonymous',
+        authorName: currentUser?.displayName || 'Student',
+        authorProfilePic: currentUser?.photoURL || '',
         createdAt: new Date().toISOString(),
-        authorName: currentUser?.displayName || 'Student'
+        timestamp: serverTimestamp(),
+        likes: [],
+        likeCount: 0,
+        replies: []
       };
       
       const collectionName = commentDialog.itemType === 'lost' ? 'lost_items' : 'found_items';
@@ -219,6 +228,120 @@ export default function UserLostFound({ currentUser }) {
     } catch (err) {
       setSnackbar({ open: true, message: 'Failed to add comment.', severity: 'error' });
     }
+  };
+
+  // Reply functionality
+  const handleAddReply = async () => {
+    if (!newReply.trim() || !replyDialog.itemId) return;
+    
+    try {
+      const replyData = {
+        id: Date.now().toString(),
+        text: newReply.trim(),
+        author: currentUser?.email || 'Anonymous',
+        authorName: currentUser?.displayName || 'Student',
+        authorProfilePic: currentUser?.photoURL || '',
+        createdAt: new Date().toISOString(),
+        timestamp: serverTimestamp(),
+        likes: [],
+        likeCount: 0
+      };
+      
+      const collectionName = replyDialog.itemType === 'lost' ? 'lost_items' : 'found_items';
+      const itemRef = doc(db, collectionName, replyDialog.itemId);
+      
+      // Get current item data
+      const itemDoc = await getDoc(itemRef);
+      if (itemDoc.exists()) {
+        const itemData = itemDoc.data();
+        const comments = itemData.comments || [];
+        
+        // Find and update the parent comment
+        const updatedComments = comments.map(comment => {
+          if (comment.id === replyDialog.parentCommentId) {
+            return {
+              ...comment,
+              replies: [...(comment.replies || []), replyData]
+            };
+          }
+          return comment;
+        });
+        
+        await updateDoc(itemRef, { comments: updatedComments });
+      }
+      
+      setNewReply('');
+      setReplyDialog({ open: false, itemId: null, itemType: '', parentCommentId: null });
+      setSnackbar({ open: true, message: 'Reply added successfully!', severity: 'success' });
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to add reply.', severity: 'error' });
+    }
+  };
+
+  // Comment like functionality
+  const handleCommentLike = async (itemId, itemType, commentId, isReply = false, parentCommentId = null) => {
+    if (!currentUser?.email) {
+      setSnackbar({ open: true, message: 'Please log in to like comments.', severity: 'error' });
+      return;
+    }
+
+    try {
+      const collectionName = itemType === 'lost' ? 'lost_items' : 'found_items';
+      const itemRef = doc(db, collectionName, itemId);
+      const itemDoc = await getDoc(itemRef);
+      
+      if (!itemDoc.exists()) return;
+      
+      const itemData = itemDoc.data();
+      const comments = itemData.comments || [];
+      
+      const updatedComments = comments.map(comment => {
+        if (isReply && comment.id === parentCommentId) {
+          // Handle reply like
+          const updatedReplies = comment.replies.map(reply => {
+            if (reply.id === commentId) {
+              const currentLikes = reply.likes || [];
+              const isLiked = currentLikes.includes(currentUser.email);
+              
+              return {
+                ...reply,
+                likes: isLiked 
+                  ? currentLikes.filter(email => email !== currentUser.email)
+                  : [...currentLikes, currentUser.email],
+                likeCount: isLiked ? (reply.likeCount || 0) - 1 : (reply.likeCount || 0) + 1
+              };
+            }
+            return reply;
+          });
+          
+          return { ...comment, replies: updatedReplies };
+        } else if (!isReply && comment.id === commentId) {
+          // Handle main comment like
+          const currentLikes = comment.likes || [];
+          const isLiked = currentLikes.includes(currentUser.email);
+          
+          return {
+            ...comment,
+            likes: isLiked 
+              ? currentLikes.filter(email => email !== currentUser.email)
+              : [...currentLikes, currentUser.email],
+            likeCount: isLiked ? (comment.likeCount || 0) - 1 : (comment.likeCount || 0) + 1
+          };
+        }
+        return comment;
+      });
+      
+      await updateDoc(itemRef, { comments: updatedComments });
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to update comment like.', severity: 'error' });
+    }
+  };
+
+  // Check if user has liked a comment
+  const hasUserLikedComment = (comment, isReply = false) => {
+    if (!currentUser?.email) return false;
+    const likes = comment.likes || [];
+    return likes.includes(currentUser.email);
   };
 
   // Delete post functionality (only for own posts)
@@ -629,17 +752,101 @@ export default function UserLostFound({ currentUser }) {
                     {/* Comments Section */}
                     {item.comments && item.comments.length > 0 && (
                       <Box sx={{ mt: 2, p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#f5f5f5', borderRadius: 1 }}>
-                        <Typography variant="subtitle2" sx={{ mb: 1, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                        <Typography variant="subtitle2" sx={{ mb: 2, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                           Comments ({item.comments.length})
                         </Typography>
                         {item.comments.map((comment, index) => (
-                          <Box key={index} sx={{ mb: 1, p: 1, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff', borderRadius: 1 }}>
-                            <Typography variant="caption" sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
-                              {comment.authorName}
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333' }}>
-                              {comment.text}
-                            </Typography>
+                          <Box key={comment.id || index} sx={{ mb: 2, p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff', borderRadius: 1 }}>
+                            {/* Main Comment */}
+                            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
+                              <Avatar 
+                                sx={{ width: 24, height: 24, fontSize: '0.75rem' }}
+                                src={comment.authorProfilePic}
+                              >
+                                {comment.authorName?.charAt(0) || 'U'}
+                              </Avatar>
+                              <Box sx={{ flex: 1 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                                  {comment.authorName}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333', mt: 0.5 }}>
+                                  {comment.text}
+                                </Typography>
+                                
+                                {/* Comment Actions */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleCommentLike(item.id, item.type, comment.id)}
+                                    sx={{ 
+                                      color: hasUserLikedComment(comment) ? '#f44336' : (theme.palette.mode === 'dark' ? '#cccccc' : '#666666'),
+                                      p: 0.5
+                                    }}
+                                  >
+                                    <Favorite sx={{ fontSize: 14 }} />
+                                  </IconButton>
+                                  <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666' }}>
+                                    {comment.likeCount || 0}
+                                  </Typography>
+                                  <Button
+                                    size="small"
+                                    startIcon={<Reply sx={{ fontSize: 14 }} />}
+                                    onClick={() => setReplyDialog({ open: true, itemId: item.id, itemType: item.type, parentCommentId: comment.id })}
+                                    sx={{ 
+                                      textTransform: 'none', 
+                                      color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                                      minWidth: 'auto',
+                                      p: 0.5
+                                    }}
+                                  >
+                                    Reply
+                                  </Button>
+                                </Box>
+                              </Box>
+                            </Box>
+                            
+                            {/* Replies */}
+                            {comment.replies && comment.replies.length > 0 && (
+                              <Box sx={{ ml: 4, mt: 1 }}>
+                                {comment.replies.map((reply, replyIndex) => (
+                                  <Box key={reply.id || replyIndex} sx={{ mb: 1, p: 1, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#f8f9fa', borderRadius: 1 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                                      <Avatar 
+                                        sx={{ width: 20, height: 20, fontSize: '0.6rem' }}
+                                        src={reply.authorProfilePic}
+                                      >
+                                        {reply.authorName?.charAt(0) || 'U'}
+                                      </Avatar>
+                                      <Box sx={{ flex: 1 }}>
+                                        <Typography variant="caption" sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                                          {reply.authorName}
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333', mt: 0.5 }}>
+                                          {reply.text}
+                                        </Typography>
+                                        
+                                        {/* Reply Actions */}
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => handleCommentLike(item.id, item.type, reply.id, true, comment.id)}
+                                            sx={{ 
+                                              color: hasUserLikedComment(reply, true) ? '#f44336' : (theme.palette.mode === 'dark' ? '#cccccc' : '#666666'),
+                                              p: 0.25
+                                            }}
+                                          >
+                                            <Favorite sx={{ fontSize: 12 }} />
+                                          </IconButton>
+                                          <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666', fontSize: '0.7rem' }}>
+                                            {reply.likeCount || 0}
+                                          </Typography>
+                                        </Box>
+                                      </Box>
+                                    </Box>
+                                  </Box>
+                                ))}
+                              </Box>
+                            )}
                           </Box>
                         ))}
                       </Box>
@@ -723,6 +930,59 @@ export default function UserLostFound({ currentUser }) {
             sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}
           >
             Add Comment
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Reply Dialog */}
+      <Dialog open={replyDialog.open} onClose={() => setReplyDialog({ open: false, itemId: null, itemType: '', parentCommentId: null })} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+          Reply to Comment
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Your reply"
+            fullWidth
+            multiline
+            rows={3}
+            variant="outlined"
+            value={newReply}
+            onChange={e => setNewReply(e.target.value)}
+            sx={{
+              mt: 2,
+              '& .MuiOutlinedInput-root': {
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                '& fieldset': {
+                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+                },
+                '&:hover fieldset': {
+                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                },
+              },
+              '& .MuiInputLabel-root': {
+                color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+              },
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setReplyDialog({ open: false, itemId: null, itemType: '', parentCommentId: null })}
+            sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#666666' }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleAddReply}
+            variant="contained"
+            sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}
+          >
+            Add Reply
           </Button>
         </DialogActions>
       </Dialog>
