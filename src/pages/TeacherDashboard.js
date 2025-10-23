@@ -18,6 +18,7 @@ import {
   IconButton,
   Badge,
   Dialog,
+  useTheme,
   DialogTitle,
   DialogContent,
   DialogActions
@@ -47,6 +48,7 @@ import { collection, query, where, getDocs, onSnapshot, orderBy } from 'firebase
 import { useNavigate } from 'react-router-dom';
 
 export default function TeacherDashboard() {
+  const theme = useTheme();
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [violations, setViolations] = useState([]);
@@ -310,7 +312,7 @@ export default function TeacherDashboard() {
             }}
           >
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {myReportsCount.toLocaleString()}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -340,7 +342,7 @@ export default function TeacherDashboard() {
             }}
           >
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {meetingsCount.toLocaleString()}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -372,7 +374,7 @@ export default function TeacherDashboard() {
             }}
           >
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {mySchedulesCount.toLocaleString()}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -402,7 +404,7 @@ export default function TeacherDashboard() {
             }}
           >
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {announcements.length.toLocaleString()}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -430,7 +432,7 @@ export default function TeacherDashboard() {
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={700} color="#000000">
+                <Typography variant="h6" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                   Recent Violations
                 </Typography>
                 <Button 

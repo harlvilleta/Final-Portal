@@ -77,7 +77,7 @@ export default function UserSidebar({ currentUser, userProfile }) {
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {/* Logo Section */}
         <Box sx={{ mb: 2 }}>
-          <img src="gt.jpg" alt="Logo" style={{ width: 180, height: 144, borderRadius: 10, boxShadow: '0 2px 8px #0002' }} />
+          <img src="/gt.jpg" alt="Logo" style={{ width: 180, height: 144, borderRadius: 10, boxShadow: '0 2px 8px #0002' }} />
         </Box>
         <Divider sx={{ width: '100%', mb: 2, bgcolor: '#e0e0e0' }} />
       </Box>

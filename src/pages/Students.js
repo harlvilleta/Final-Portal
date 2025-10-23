@@ -888,7 +888,7 @@ function LostFound() {
       <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Lost and Found</Typography>
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2, mb: 2, bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
+          <Paper sx={{ p: 2, mb: 2, bgcolor: '#80000015', borderLeft: '4px solid #f44336' }}>
             <Typography variant="subtitle1" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Lost Items Summary</Typography>
             <Grid container spacing={2}>
               <Grid item><Typography sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Total: <b>{lostTotal}</b></Typography></Grid>
@@ -898,7 +898,7 @@ function LostFound() {
           </Paper>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2, mb: 2, bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
+          <Paper sx={{ p: 2, mb: 2, bgcolor: '#80000015', borderLeft: '4px solid #4caf50' }}>
             <Typography variant="subtitle1" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Found Items Summary</Typography>
             <Grid container spacing={2}>
               <Grid item><Typography sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Total: <b>{foundTotal}</b></Typography></Grid>

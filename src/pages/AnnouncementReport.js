@@ -52,6 +52,7 @@ import {
   CheckCircleOutline,
   CancelOutlined
 } from "@mui/icons-material";
+import { useTheme } from "@mui/material/styles";
 
 
 
@@ -64,6 +65,7 @@ const priorityColors = {
 };
 
 export default function AnnouncementReport() {
+  const theme = useTheme();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -205,14 +207,14 @@ export default function AnnouncementReport() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom fontWeight={700} color="primary.main">
+      <Typography variant="h4" gutterBottom fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'primary.main' }}>
         Announcement Report
       </Typography>
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
           <CircularProgress size={60} />
-          <Typography variant="h6" sx={{ ml: 2 }}>
+          <Typography variant="h6" sx={{ ml: 2, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
             Loading announcements...
           </Typography>
         </Box>
@@ -221,20 +223,20 @@ export default function AnnouncementReport() {
           <Table>
             <TableHead>
               <TableRow >
-                <TableCell sx={{ fontWeight: 600 }}>Date Submitted</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Teacher</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Category</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Priority</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Date Submitted</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Title</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Teacher</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Category</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Priority</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {announcements.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                    <Typography variant="h6" color="text.secondary">
+                    <Typography variant="h6" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                       No announcements found.
                     </Typography>
                   </TableCell>
@@ -246,30 +248,27 @@ export default function AnnouncementReport() {
                 return (
                   <TableRow key={announcement.id} hover>
                     <TableCell>
-                      <Typography variant="body2" fontWeight={500}>
+                      <Typography variant="body2" fontWeight={500} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                         {formatDate(announcement.createdAt)}
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body1" fontWeight={600} sx={{ maxWidth: 200 }}>
+                      <Typography variant="body1" fontWeight={600} sx={{ maxWidth: 200, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                         {announcement.title}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {announcement.message?.substring(0, 50)}...
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Box>
-                        <Typography variant="body2" fontWeight={500}>
+                        <Typography variant="body2" fontWeight={500} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                           {teacherInfo.name}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary' }}>
                           {teacherInfo.email}
                         </Typography>
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" fontWeight={500}>
+                      <Typography variant="body2" fontWeight={500} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                         {announcement.category || 'General'}
                       </Typography>
                     </TableCell>
@@ -328,7 +327,7 @@ export default function AnnouncementReport() {
                               }
                             }}
                           >
-                            <Visibility />
+                            <Visibility sx={{ fontSize: 16 }} />
                           </IconButton>
                         </Tooltip>
                         
@@ -345,7 +344,7 @@ export default function AnnouncementReport() {
                                   }
                                 }}
                               >
-                                <CheckCircle />
+                                <CheckCircle sx={{ fontSize: 16 }} />
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Deny">
@@ -359,7 +358,7 @@ export default function AnnouncementReport() {
                                   }
                                 }}
                               >
-                                <Cancel />
+                                <Cancel sx={{ fontSize: 16 }} />
                               </IconButton>
                             </Tooltip>
                           </>

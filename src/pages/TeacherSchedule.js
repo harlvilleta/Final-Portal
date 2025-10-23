@@ -188,7 +188,7 @@ export default function TeacherSchedule() {
             '&:hover': { boxShadow: 6, background: 'transparent' }
           }}>
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {meetings.length}
               </Typography>
               <Typography color="text.secondary" variant="body2">Total Meetings</Typography>
@@ -205,7 +205,7 @@ export default function TeacherSchedule() {
             '&:hover': { boxShadow: 6, background: 'transparent' }
           }}>
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {upcomingMeetings.length}
               </Typography>
               <Typography color="text.secondary" variant="body2">Upcoming</Typography>
@@ -222,7 +222,7 @@ export default function TeacherSchedule() {
             '&:hover': { boxShadow: 6, background: 'transparent' }
           }}>
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {meetings.filter(m => {
                   const now = new Date();
                   const meetingDate = new Date(m.date);
@@ -243,7 +243,7 @@ export default function TeacherSchedule() {
             '&:hover': { boxShadow: 6, background: 'transparent' }
           }}>
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {pastMeetings.length}
               </Typography>
               <Typography color="text.secondary" variant="body2">Past</Typography>

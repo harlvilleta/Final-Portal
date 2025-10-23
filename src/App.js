@@ -655,7 +655,7 @@ function App() {
                         <Route path="/violations" element={<UserViolations currentUser={currentUser} />} />
                         <Route path="/announcements" element={<UserAnnouncements />} />
                         <Route path="/activity" element={<ActivitiesView />} />
-                        <Route path="/lost-found" element={<AdminLostFound />} />
+                        <Route path="/lost-found" element={<UserLostFound currentUser={currentUser} />} />
                         <Route path="/receipt-submission" element={<ReceiptSubmission />} />
                         <Route path="/receipt-history" element={<ReceiptHistory />} />
                         <Route path="/profile" element={<Profile />} />

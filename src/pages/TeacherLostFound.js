@@ -104,6 +104,7 @@ export default function TeacherLostFound() {
                 p: 3, 
                 bgcolor: 'rgba(255,255,255,0.9)',
                 border: '0.5px solid rgba(0,0,0,0.1)',
+                borderLeft: '4px solid #f44336',
                 borderRadius: 2,
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
               }}>
@@ -178,6 +179,7 @@ export default function TeacherLostFound() {
                 p: 3, 
                 bgcolor: 'rgba(255,255,255,0.9)',
                 border: '0.5px solid rgba(0,0,0,0.1)',
+                borderLeft: '4px solid #4caf50',
                 borderRadius: 2,
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
               }}>

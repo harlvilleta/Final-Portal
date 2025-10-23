@@ -498,7 +498,31 @@ export default function Profile() {
       </Box>
 
       <Paper sx={{ mb: 3 }}>
-        <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+        <Tabs 
+          value={activeTab} 
+          onChange={(e, newValue) => setActiveTab(newValue)}
+          sx={{
+            '& .MuiTab-root': {
+              color: 'black',
+              fontWeight: 400,
+              textTransform: 'none',
+              '&.Mui-selected': {
+                color: 'white',
+                fontWeight: 700,
+                backgroundColor: '#800000',
+                borderRadius: '4px 4px 0 0'
+              },
+              '&:hover': {
+                backgroundColor: 'rgba(128, 0, 0, 0.1)',
+                color: '#800000'
+              }
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#800000',
+              height: 3
+            }
+          }}
+        >
           <Tab icon={<Person />} label="Profile Information" />
           <Tab icon={<Security />} label="Security" />
         </Tabs>

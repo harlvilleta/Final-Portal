@@ -57,7 +57,7 @@ export default function ActivityRequestsAdmin() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>All Booking Requests</Typography>
+      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>All Booking Requests</Typography>
       <TableContainer component={Paper} sx={{
         bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
         backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none',
@@ -67,99 +67,109 @@ export default function ActivityRequestsAdmin() {
           <TableHead>
             <TableRow>
               <TableCell sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
                 fontWeight: 'bold',
                 borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
-                backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.1)' : '#f5f5f5',
+                border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0'
               }}>Teacher</TableCell>
               <TableCell sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
                 fontWeight: 'bold',
                 borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
-                backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.1)' : '#f5f5f5',
+                border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0'
               }}>Department</TableCell>
               <TableCell sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
                 fontWeight: 'bold',
                 borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
-                backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.1)' : '#f5f5f5',
+                border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0'
               }}>Activity</TableCell>
               <TableCell sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
                 fontWeight: 'bold',
                 borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
-                backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.1)' : '#f5f5f5',
+                border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0'
               }}>Resource</TableCell>
               <TableCell sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
                 fontWeight: 'bold',
                 borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
-                backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.1)' : '#f5f5f5',
+                border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0'
               }}>Date</TableCell>
               <TableCell sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
                 fontWeight: 'bold',
-                borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
-                backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                borderBottom: 'none',
+                borderRight: 'none',
+                borderLeft: 'none',
+                borderTop: 'none',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.1)' : '#f5f5f5'
               }}>Time Range</TableCell>
               <TableCell sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
                 fontWeight: 'bold',
                 borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
-                backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.1)' : '#f5f5f5',
+                border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0'
               }}>Status</TableCell>
               <TableCell sx={{ 
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
                 fontWeight: 'bold',
                 borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
-                backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none'
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.1)' : '#f5f5f5',
+                border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0'
               }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {requests.map(r => (
-              <TableRow key={r.id} sx={{ 
-                '&:hover': {
-                  backgroundColor: '#f5f5f5'
-                }
-              }}>
+              <TableRow key={r.id}>
                 <TableCell sx={{
-                  color: 'black',
-                  borderBottom: '1px solid #e0e0e0',
-                  backgroundColor: 'white'
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
+                  backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none',
+                  fontSize: '0.875rem'
                 }}>{r.teacherName}</TableCell>
                 <TableCell sx={{
-                  color: 'black',
-                  borderBottom: '1px solid #e0e0e0',
-                  backgroundColor: 'white'
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
+                  backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none',
+                  fontSize: '0.875rem'
                 }}>{r.department}</TableCell>
                 <TableCell sx={{
-                  color: 'black',
-                  borderBottom: '1px solid #e0e0e0',
-                  backgroundColor: 'white'
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
+                  backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none',
+                  fontSize: '0.875rem'
                 }}>{r.activity}</TableCell>
                 <TableCell sx={{
-                  color: 'black',
-                  borderBottom: '1px solid #e0e0e0',
-                  backgroundColor: 'white'
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
+                  backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none',
+                  fontSize: '0.875rem'
                 }}>{r.resource}</TableCell>
                 <TableCell sx={{
-                  color: 'black',
-                  borderBottom: '1px solid #e0e0e0',
-                  backgroundColor: 'white'
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
+                  backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none',
+                  fontSize: '0.875rem'
                 }}>{new Date(r.date).toLocaleDateString()}</TableCell>
                 <TableCell sx={{
-                  color: 'black',
-                  borderBottom: '1px solid #e0e0e0',
-                  backgroundColor: 'white'
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  borderBottom: 'none',
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
+                  backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none',
+                  fontSize: '0.875rem'
                 }}>
                   {r.startTime && r.endTime 
                     ? `${r.startTime} - ${r.endTime}`
@@ -167,8 +177,10 @@ export default function ActivityRequestsAdmin() {
                   }
                 </TableCell>
                 <TableCell sx={{
-                  borderBottom: '1px solid #e0e0e0',
-                  backgroundColor: 'white'
+                  borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
+                  backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none',
+                  fontSize: '0.875rem'
                 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Box sx={{ 
@@ -206,8 +218,10 @@ export default function ActivityRequestsAdmin() {
                   </Box>
                 </TableCell>
                 <TableCell sx={{
-                  borderBottom: '1px solid #e0e0e0',
-                  backgroundColor: 'white'
+                  borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
+                  backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none',
+                  fontSize: '0.875rem'
                 }}>
                   <IconButton 
                     onClick={() => setSelected(r)} 

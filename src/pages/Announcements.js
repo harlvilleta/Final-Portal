@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Typography, Paper, TextField, Button, Stack, Snackbar, Alert, List, ListItem, ListItemText, Divider, MenuItem, Card, CardContent, CardHeader, Chip, Tabs, Tab, Badge, Dialog, DialogTitle, DialogContent, DialogActions, Select, InputAdornment } from "@mui/material";
+import { Box, Typography, Paper, TextField, Button, Stack, Snackbar, Alert, List, ListItem, ListItemText, Divider, MenuItem, Card, CardContent, CardHeader, Chip, Tabs, Tab, Badge, Dialog, DialogTitle, DialogContent, DialogActions, Select, InputAdornment, useTheme } from "@mui/material";
 import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc, getDoc, where } from "firebase/firestore";
 import { db, logActivity } from "../firebase";
 import PrintIcon from '@mui/icons-material/Print';
@@ -18,6 +18,7 @@ const audiences = ["All", "Students", "Faculty", "Staff"];
 const priorities = ["Normal", "High", "Urgent"];
 
 export default function Announcements() {
+  const theme = useTheme();
   const [form, setForm] = useState({ title: "", message: "", date: "", category: "General", audience: "All", priority: "Normal", scheduleDate: "", expiryDate: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -433,104 +434,108 @@ export default function Announcements() {
         sx={{ 
           mb: 2,
           '& .MuiTab-root': {
-            color: '#000000',
-            fontWeight: 500,
+            color: '#ffffff !important',
+            fontWeight: 400,
             '&.Mui-selected': {
-              color: '#000000',
-              fontWeight: 600
+              color: '#ffffff !important',
+              fontWeight: 700
+            },
+            '&:hover': {
+              color: '#ffffff !important'
             }
           },
+          '& .MuiTab-root.Mui-selected': {
+            color: '#ffffff !important',
+            fontWeight: 700
+          },
+          '& .MuiTab-root:not(.Mui-selected)': {
+            color: '#ffffff !important',
+            fontWeight: 400
+          },
+          '& .MuiTab-root *': {
+            color: '#ffffff !important'
+          },
+          '& .MuiTab-root.Mui-selected *': {
+            color: '#ffffff !important',
+            fontWeight: 700
+          },
           '& .MuiTabs-indicator': {
-            backgroundColor: '#000000'
+            display: 'none'
           }
         }}
       >
-        <Tab label="Active" />
+        <Tab 
+          label="Active" 
+          sx={{ 
+            color: '#ffffff !important',
+            fontWeight: tab === 0 ? 700 : 400,
+            '&.Mui-selected': {
+              color: '#ffffff !important',
+              fontWeight: 700
+            }
+          }}
+        />
         {userRole === 'Admin' && (
           <>
             <Tab 
-              label={
-                <Badge 
-                  badgeContent={recycleBin.length}
-                  sx={{ 
-                    cursor: 'pointer',
-                    '& .MuiBadge-badge': {
-                      backgroundColor: '#6c757d',
-                      color: '#ffffff'
-                    }
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setTab(1);
-                    setSelected([]);
-                  }}
-                >
-                  Recycle Bin
-                </Badge>
-              } 
+              label="Recycle Bin" 
+              sx={{ 
+                color: '#ffffff !important',
+                fontWeight: tab === 1 ? 700 : 400,
+                '&.Mui-selected': {
+                  color: '#ffffff !important',
+                  fontWeight: 700
+                }
+              }}
+              onClick={() => {
+                setTab(1);
+                setSelected([]);
+              }}
             />
             <Tab 
-              label={
-                <Badge 
-                  badgeContent={completedAnnouncements.length}
-                  sx={{ 
-                    cursor: 'pointer',
-                    '& .MuiBadge-badge': {
-                      backgroundColor: '#28a745',
-                      color: '#ffffff'
-                    }
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setTab(2);
-                    setSelected([]);
-                  }}
-                >
-                  Completed
-                </Badge>
-              } 
+              label="Completed" 
+              sx={{ 
+                color: '#ffffff !important',
+                fontWeight: tab === 2 ? 700 : 400,
+                '&.Mui-selected': {
+                  color: '#ffffff !important',
+                  fontWeight: 700
+                }
+              }}
+              onClick={() => {
+                setTab(2);
+                setSelected([]);
+              }}
             />
             <Tab 
-              label={
-                <Badge 
-                  badgeContent={scheduledList.length}
-                  sx={{ 
-                    cursor: 'pointer',
-                    '& .MuiBadge-badge': {
-                      backgroundColor: '#17a2b8',
-                      color: '#ffffff'
-                    }
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setTab(3);
-                    setSelected([]);
-                  }}
-                >
-                  Scheduled
-                </Badge>
-              } 
+              label="Scheduled" 
+              sx={{ 
+                color: '#ffffff !important',
+                fontWeight: tab === 3 ? 700 : 400,
+                '&.Mui-selected': {
+                  color: '#ffffff !important',
+                  fontWeight: 700
+                }
+              }}
+              onClick={() => {
+                setTab(3);
+                setSelected([]);
+              }}
             />
             <Tab 
-              label={
-                <Badge 
-                  badgeContent={expiredList.length}
-                  sx={{ 
-                    cursor: 'pointer',
-                    '& .MuiBadge-badge': {
-                      backgroundColor: '#ffc107',
-                      color: '#000000'
-                    }
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setTab(4);
-                    setSelected([]);
-                  }}
-                >
-                  Expired
-                </Badge>
-              } 
+              label="Expired" 
+              sx={{ 
+                color: '#ffffff !important',
+                fontWeight: tab === 4 ? 700 : 400,
+                '&.Mui-selected': {
+                  color: '#ffffff !important',
+                  fontWeight: 700
+                }
+              }}
+              onClick={() => {
+                setTab(4);
+                setSelected([]);
+              }}
             />
           </>
         )}

@@ -3,7 +3,7 @@ import {
   Box, Grid, Card, CardContent, Typography, TextField, Button, Paper, Avatar, Snackbar, Alert, 
   List, ListItem, ListItemText, ListItemAvatar, Chip, Divider, Dialog, DialogTitle, DialogContent,
   DialogActions, IconButton, Tooltip, Stack, Badge, CircularProgress, Tabs, Tab, MenuItem,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, useTheme
 } from "@mui/material";
 import { 
   Warning, CheckCircle, CalendarToday, AccessTime, LocationOn, Person, Comment,
@@ -14,6 +14,7 @@ import { db, auth } from "../firebase";
 import { collection, query, where, orderBy, onSnapshot, doc, getDoc, updateDoc } from "firebase/firestore";
 
 export default function UserViolations({ currentUser }) {
+  const theme = useTheme();
   const [violations, setViolations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [comment, setComment] = useState('');
@@ -150,7 +151,7 @@ export default function UserViolations({ currentUser }) {
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom sx={{ 
         fontWeight: 700, 
-        color: '#800000', 
+        color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
         mb: 3 
       }}>
         📋 My Violation Records
@@ -165,7 +166,7 @@ export default function UserViolations({ currentUser }) {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000', background: 'transparent', borderRadius: 2 }}>
             <CardContent sx={{ textAlign: 'center', p: 2 }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {stats.total}
               </Typography>
               <Typography variant="body2" color="textSecondary">Total Violations</Typography>
@@ -175,7 +176,7 @@ export default function UserViolations({ currentUser }) {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000', background: 'transparent', borderRadius: 2 }}>
             <CardContent sx={{ textAlign: 'center', p: 2 }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {stats.pending}
               </Typography>
               <Typography variant="body2" color="textSecondary">Pending</Typography>
@@ -185,7 +186,7 @@ export default function UserViolations({ currentUser }) {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000', background: 'transparent', borderRadius: 2 }}>
             <CardContent sx={{ textAlign: 'center', p: 2 }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {stats.solved}
               </Typography>
               <Typography variant="body2" color="textSecondary">Resolved</Typography>
@@ -195,7 +196,7 @@ export default function UserViolations({ currentUser }) {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000', background: 'transparent', borderRadius: 2 }}>
             <CardContent sx={{ textAlign: 'center', p: 2 }}>
-              <Typography variant="h4" fontWeight={700} color="#000000">
+              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {stats.critical}
               </Typography>
               <Typography variant="body2" color="textSecondary">Critical</Typography>

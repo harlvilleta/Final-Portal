@@ -354,7 +354,7 @@ export default function ViolationCreateMeeting() {
 
       {/* Create Meeting Form */}
       <Paper sx={{ p: { xs: 1, sm: 3 }, mb: 3, maxWidth: 1200, mx: 'auto', borderRadius: 3, boxShadow: 3 }}>
-        <Typography variant="h6" fontWeight={600} gutterBottom sx={{ color: '#000000' }}>Schedule New Meeting</Typography>
+        <Typography variant="h6" fontWeight={600} gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Schedule New Meeting</Typography>
         <Divider sx={{ mb: 2 }} />
         <form onSubmit={handleMeetingSubmit}>
           <Grid container spacing={2}>
@@ -481,15 +481,19 @@ export default function ViolationCreateMeeting() {
                 disabled={meetingSubmitting || !meetingForm.studentName || !meetingForm.cellphoneNumber || !meetingForm.purpose || !meetingForm.date || !!phoneValidationError}
                 sx={{ 
                   minWidth: 200,
-                  bgcolor: '#ffffff',
-                  color: '#000000',
-                  borderColor: '#000000',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#ffffff',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : '#000000',
                   '&:hover': { 
                     bgcolor: '#800000',
                     color: '#ffffff',
                     borderColor: '#800000'
                   },
-                  '&:disabled': { bgcolor: '#cccccc', color: '#666666', borderColor: '#999999' }
+                  '&:disabled': { 
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#cccccc', 
+                    color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : '#666666', 
+                    borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : '#999999' 
+                  }
                 }}
               >
                 {meetingSubmitting ? "Creating..." : "Create Meeting"}
@@ -500,9 +504,9 @@ export default function ViolationCreateMeeting() {
                 size="large"
                 sx={{ 
                   minWidth: 200,
-                  bgcolor: '#ffffff',
-                  color: '#000000',
-                  borderColor: '#000000',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#ffffff',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : '#000000',
                   '&:hover': { 
                     bgcolor: '#800000',
                     color: '#ffffff',

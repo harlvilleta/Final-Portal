@@ -483,6 +483,7 @@ export default function AdminLostFound() {
             bgcolor: 'rgba(255, 255, 255, 0.1)', 
             backdropFilter: 'blur(10px)',
             border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderLeft: '4px solid #f44336',
             borderRadius: 2,
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
           }}>
@@ -497,8 +498,8 @@ export default function AdminLostFound() {
                     onClick={() => handleFilterClick('lost', null)}
                     sx={{ 
                       bgcolor: 'transparent',
-                      color: '#000000',
-                      border: '2px solid #000000',
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      border: theme.palette.mode === 'dark' ? '2px solid #ffffff' : '2px solid #000000',
                       cursor: 'pointer',
                       '&:hover': {
                         bgcolor: '#800000',
@@ -515,8 +516,8 @@ export default function AdminLostFound() {
                     onClick={() => handleFilterClick('lost', 'resolved')}
                     sx={{ 
                       bgcolor: 'transparent',
-                      color: '#000000',
-                      border: '2px solid #000000',
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      border: theme.palette.mode === 'dark' ? '2px solid #ffffff' : '2px solid #000000',
                       cursor: 'pointer',
                       '&:hover': {
                         bgcolor: '#800000',
@@ -533,8 +534,8 @@ export default function AdminLostFound() {
                     onClick={() => handleFilterClick('lost', 'pending')}
                     sx={{ 
                       bgcolor: 'transparent',
-                      color: '#000000',
-                      border: '2px solid #000000',
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      border: theme.palette.mode === 'dark' ? '2px solid #ffffff' : '2px solid #000000',
                       cursor: 'pointer',
                       '&:hover': {
                         bgcolor: '#800000',
@@ -554,6 +555,7 @@ export default function AdminLostFound() {
             bgcolor: 'rgba(255, 255, 255, 0.1)', 
             backdropFilter: 'blur(10px)',
             border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderLeft: '4px solid #4caf50',
             borderRadius: 2,
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
           }}>
@@ -568,8 +570,8 @@ export default function AdminLostFound() {
                     onClick={() => handleFilterClick('found', null)}
                     sx={{ 
                       bgcolor: 'transparent',
-                      color: '#000000',
-                      border: '2px solid #000000',
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      border: theme.palette.mode === 'dark' ? '2px solid #ffffff' : '2px solid #000000',
                       cursor: 'pointer',
                       '&:hover': {
                         bgcolor: '#800000',
@@ -586,8 +588,8 @@ export default function AdminLostFound() {
                     onClick={() => handleFilterClick('found', 'resolved')}
                     sx={{ 
                       bgcolor: 'transparent',
-                      color: '#000000',
-                      border: '2px solid #000000',
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      border: theme.palette.mode === 'dark' ? '2px solid #ffffff' : '2px solid #000000',
                       cursor: 'pointer',
                       '&:hover': {
                         bgcolor: '#800000',
@@ -604,8 +606,8 @@ export default function AdminLostFound() {
                     onClick={() => handleFilterClick('found', 'pending')}
                     sx={{ 
                       bgcolor: 'transparent',
-                      color: '#000000',
-                      border: '2px solid #000000',
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      border: theme.palette.mode === 'dark' ? '2px solid #ffffff' : '2px solid #000000',
                       cursor: 'pointer',
                       '&:hover': {
                         bgcolor: '#800000',
@@ -630,8 +632,8 @@ export default function AdminLostFound() {
           onClick={() => setShowFoundModal(true)}
           sx={{
             bgcolor: 'transparent',
-            color: '#000000',
-            border: '1px solid #000000',
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : '1px solid #000000',
             px: 2,
             py: 1,
             fontSize: '0.75rem',
@@ -656,8 +658,8 @@ export default function AdminLostFound() {
           onClick={() => setShowLostModal(true)}
           sx={{
             bgcolor: 'transparent',
-            color: '#000000',
-            border: '1px solid #000000',
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : '1px solid #000000',
             px: 2,
             py: 1,
             fontSize: '0.75rem',
@@ -690,7 +692,7 @@ export default function AdminLostFound() {
             boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
           }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#000000' }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 Lost Items History
               </Typography>
             </Box>
@@ -758,6 +760,7 @@ export default function AdminLostFound() {
                       p: 2, 
                       bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
                       border: theme.palette.mode === 'dark' ? '0.5px solid rgba(255, 255, 255, 0.1)' : '0.5px solid rgba(0, 0, 0, 0.1)',
+                      borderLeft: '4px solid #f44336',
                       borderRadius: 2,
                       '&:hover': {
                         bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 1)',
@@ -827,14 +830,34 @@ export default function AdminLostFound() {
                         {item.description}
                       </Typography>
                     )}
+                    {/* Comments Section */}
+                    {item.comments && item.comments.length > 0 && (
+                      <Box sx={{ mt: 2, p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#f5f5f5', borderRadius: 1 }}>
+                        <Typography variant="subtitle2" sx={{ mb: 1, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                          Comments ({item.comments.length})
+                        </Typography>
+                        {item.comments.map((comment, index) => (
+                          <Box key={index} sx={{ mb: 1, p: 1, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff', borderRadius: 1 }}>
+                            <Typography variant="caption" sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                              {comment.authorName}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333' }}>
+                              {comment.text}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#999999' : '#666666', fontSize: '0.7rem' }}>
+                              {new Date(comment.createdAt).toLocaleString()}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
+
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333' }}>
                         <strong>Lost by:</strong> {item.lostBy || 'Unknown'} | <strong>Location:</strong> {item.location || 'Unknown'}
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        {item.resolved ? (
-                          <Chip label="Resolved" color="success" size="small" />
-                        ) : (
+                        {!item.resolved && (
                           <Chip label="Active" color="warning" size="small" />
                         )}
                         <Button
@@ -842,7 +865,7 @@ export default function AdminLostFound() {
                           startIcon={<CheckCircle />}
                           onClick={() => handleResolve('lost_items', item.id)}
                           sx={{ 
-                            color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333', 
+                            color: item.resolved ? '#2e7d32' : (theme.palette.mode === 'dark' ? '#cccccc' : '#333333'), 
                             '&:hover': { color: '#2e7d32' },
                             fontSize: '0.75rem'
                           }}
@@ -868,7 +891,7 @@ export default function AdminLostFound() {
             boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
           }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#000000' }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 Found Items Summary
               </Typography>
             </Box>
@@ -936,6 +959,7 @@ export default function AdminLostFound() {
                       p: 2, 
                       bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
                       border: theme.palette.mode === 'dark' ? '0.5px solid rgba(255, 255, 255, 0.1)' : '0.5px solid rgba(0, 0, 0, 0.1)',
+                      borderLeft: '4px solid #4caf50',
                       borderRadius: 2,
                       '&:hover': {
                         bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 1)',
@@ -1005,14 +1029,35 @@ export default function AdminLostFound() {
                         {item.description}
                       </Typography>
                     )}
+
+                    {/* Comments Section */}
+                    {item.comments && item.comments.length > 0 && (
+                      <Box sx={{ mt: 2, p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#f5f5f5', borderRadius: 1 }}>
+                        <Typography variant="subtitle2" sx={{ mb: 1, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                          Comments ({item.comments.length})
+                        </Typography>
+                        {item.comments.map((comment, index) => (
+                          <Box key={index} sx={{ mb: 1, p: 1, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff', borderRadius: 1 }}>
+                            <Typography variant="caption" sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                              {comment.authorName}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333' }}>
+                              {comment.text}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#999999' : '#666666', fontSize: '0.7rem' }}>
+                              {new Date(comment.createdAt).toLocaleString()}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
+
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333' }}>
                         <strong>Found by:</strong> {item.foundBy || 'Unknown'} | <strong>Location:</strong> {item.location || 'Unknown'}
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        {item.resolved ? (
-                          <Chip label="Resolved" color="success" size="small" />
-                        ) : (
+                        {!item.resolved && (
                           <Chip label="Active" color="warning" size="small" />
                         )}
                         <Button
@@ -1020,7 +1065,7 @@ export default function AdminLostFound() {
                           startIcon={<CheckCircle />}
                           onClick={() => handleResolve('found_items', item.id)}
                           sx={{ 
-                            color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333', 
+                            color: item.resolved ? '#2e7d32' : (theme.palette.mode === 'dark' ? '#cccccc' : '#333333'), 
                             '&:hover': { color: '#2e7d32' },
                             fontSize: '0.75rem'
                           }}

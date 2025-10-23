@@ -255,8 +255,8 @@ export default function ReceiptReview() {
               <CardContent sx={{ textAlign: 'center', p: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Button onClick={() => { setError(''); setStatusFilter('pending'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>
-                    <Typography variant="h4" sx={{ color: '#000' }}>{getStatusCount('pending')}</Typography>
-                    <Typography variant="body2">Pending Review</Typography>
+                    <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>{getStatusCount('pending')}</Typography>
+                    <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>Pending Review</Typography>
                   </Box>
                 </Button>
               </CardContent>
@@ -267,8 +267,8 @@ export default function ReceiptReview() {
               <CardContent sx={{ textAlign: 'center', p: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Button onClick={() => { setError(''); setStatusFilter('approved'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>
-                    <Typography variant="h4" sx={{ color: '#000' }}>{getStatusCount('approved')}</Typography>
-                    <Typography variant="body2">Approved</Typography>
+                    <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>{getStatusCount('approved')}</Typography>
+                    <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>Approved</Typography>
                   </Box>
                 </Button>
               </CardContent>
@@ -279,8 +279,8 @@ export default function ReceiptReview() {
               <CardContent sx={{ textAlign: 'center', p: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Button onClick={() => { setError(''); setStatusFilter('rejected'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>
-                    <Typography variant="h4" sx={{ color: '#000' }}>{getStatusCount('rejected')}</Typography>
-                    <Typography variant="body2">Rejected</Typography>
+                    <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>{getStatusCount('rejected')}</Typography>
+                    <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>Rejected</Typography>
                   </Box>
                 </Button>
               </CardContent>
@@ -291,8 +291,8 @@ export default function ReceiptReview() {
               <CardContent sx={{ textAlign: 'center', p: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Button onClick={() => { setError(''); setStatusFilter('all'); setPage(0); }} sx={{ color: 'inherit', textTransform: 'none' }}>
                   <Box>
-                    <Typography variant="h4" sx={{ color: '#000' }}>{submissions.length}</Typography>
-                    <Typography variant="body2">Total Submissions</Typography>
+                    <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>{submissions.length}</Typography>
+                    <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>Total Submissions</Typography>
                   </Box>
                 </Button>
               </CardContent>
