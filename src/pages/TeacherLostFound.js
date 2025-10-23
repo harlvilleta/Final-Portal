@@ -6,7 +6,7 @@ import { collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUn
 import { auth } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
-export default function TeacherLostFound() {
+export default function TeacherLostFound({ currentUser: propCurrentUser, userProfile }) {
   const theme = useTheme();
   const [currentUser, setCurrentUser] = useState(null);
   const [form, setForm] = useState({ type: 'lost', name: '', description: '', location: '', image: null });
@@ -25,13 +25,17 @@ export default function TeacherLostFound() {
   const [newReply, setNewReply] = useState('');
   const [commentLikes, setCommentLikes] = useState({});
 
-  // Manage current user state
+  // Use passed currentUser prop or fallback to auth state
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-    });
-    return () => unsubscribe();
-  }, []);
+    if (propCurrentUser) {
+      setCurrentUser(propCurrentUser);
+    } else {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setCurrentUser(user);
+      });
+      return () => unsubscribe();
+    }
+  }, [propCurrentUser]);
 
   useEffect(() => {
     const unsubLost = onSnapshot(query(collection(db, 'lost_items'), orderBy('createdAt', 'desc')), snap => {
@@ -112,7 +116,13 @@ export default function TeacherLostFound() {
     }
     setSubmitting(true);
     try {
-      const payload = { ...form, resolved: false, createdAt: new Date().toISOString() };
+      const payload = { 
+        ...form, 
+        resolved: false, 
+        createdAt: new Date().toISOString(),
+        postedBy: (userProfile?.role === 'Teacher' || currentUser?.role === 'Teacher') ? 'teacher' : 'student',
+        reportedBy: currentUser?.email
+      };
       const col = form.type === 'lost' ? 'lost_items' : 'found_items';
       await addDoc(collection(db, col), payload);
       setForm({ type: form.type, name: '', description: '', location: '', image: null });
@@ -366,6 +376,12 @@ export default function TeacherLostFound() {
         icon: <AdminPanelSettings />,
         color: 'primary'
       };
+    } else if (item.postedBy === 'teacher' || (item.reportedBy && item.reportedBy === currentUser?.email && (userProfile?.role === 'Teacher' || currentUser?.role === 'Teacher'))) {
+      return {
+        name: 'Teacher',
+        icon: <Person />,
+        color: 'secondary'
+      };
     } else {
       return {
         name: 'Student',
@@ -535,7 +551,10 @@ export default function TeacherLostFound() {
                     {/* Post Header */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar sx={{ bgcolor: posterInfo.color === 'primary' ? '#1976d2' : '#9c27b0' }}>
+                        <Avatar 
+                          src={posterInfo.name === 'Teacher' && currentUser?.photoURL ? currentUser.photoURL : undefined}
+                          sx={{ bgcolor: posterInfo.color === 'primary' ? '#1976d2' : '#9c27b0' }}
+                        >
                           {posterInfo.icon}
                         </Avatar>
                         <Box>

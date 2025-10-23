@@ -332,21 +332,12 @@ export default function AdminActivityScheduler() {
   const stats = getBookingStats();
 
   return (
-    <Box sx={{ p: 3, bgcolor: 'background.default', minHeight: '100vh' }}>
-      <Paper sx={{ 
-        p: 2, 
-        mb: 3, 
-        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f5f6fa',
-        borderRadius: 2
-      }}>
-        <Typography variant="h4" gutterBottom sx={{ 
-          fontWeight: 700, 
-          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
-          mb: 0 
-        }}>
-          Activity Scheduler - Admin Panel
-        </Typography>
-      </Paper>
+    <Box>
+      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
+        Activity Scheduler - Admin Panel
+      </Typography>
+      
+      <Box sx={{ p: 3, bgcolor: 'background.default', minHeight: '100vh' }}>
 
       {/* Statistics Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -1236,6 +1227,7 @@ export default function AdminActivityScheduler() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      </Box>
     </Box>
   );
 }

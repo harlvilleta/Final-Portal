@@ -57,9 +57,13 @@ export default function Options() {
   };
   
   return (
-    <Box sx={{ p: { xs: 1, md: 4 }, maxWidth: 900, mx: 'auto', overflowY: 'auto', bgcolor: theme.palette.mode === 'dark' ? '#000000' : '#f5f6fa', borderRadius: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Options</Typography>
+    <Box>
+      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
+        Options
+      </Typography>
+      
+      <Box sx={{ p: { xs: 1, md: 4 }, maxWidth: 900, mx: 'auto', overflowY: 'auto', bgcolor: theme.palette.mode === 'dark' ? '#000000' : '#f5f6fa', borderRadius: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Button 
           variant="outlined" 
           startIcon={<EmailIcon />} 
@@ -228,6 +232,7 @@ export default function Options() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      </Box>
     </Box>
   );
 } 

@@ -203,10 +203,10 @@ export default function AdminNotifications() {
       return (
         <Box sx={{ textAlign: 'center', p: 4 }}>
           <Notifications sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-          <Typography variant="h6" color="text.secondary" gutterBottom>
+          <Typography variant="h6" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#666666' }} gutterBottom>
             No {title.toLowerCase()} found
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#666666' }}>
             You'll see notifications here when they arrive.
           </Typography>
         </Box>
@@ -216,7 +216,7 @@ export default function AdminNotifications() {
     return (
       <Paper sx={{ mb: 3 }}>
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography variant="h6" fontWeight={600} color={theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'}>
+          <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
             {title}
           </Typography>
         </Box>
@@ -239,7 +239,7 @@ export default function AdminNotifications() {
                 <ListItemText
                   primary={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="subtitle1" fontWeight={notification.read ? 400 : 600} color={theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'}>
+                      <Typography variant="subtitle1" fontWeight={notification.read ? 400 : 600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                         {notification.title || notification.message}
                       </Typography>
                       {!notification.read && (
@@ -249,10 +249,10 @@ export default function AdminNotifications() {
                   }
                   secondary={
                     <Box>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#333333' }}>
                         {notification.description || notification.message}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#666666' }}>
                         {formatTimeAgo(notification.timestamp)}
                       </Typography>
                     </Box>
@@ -288,10 +288,10 @@ export default function AdminNotifications() {
               {getNotificationIcon(selectedNotification.type)}
             </Avatar>
             <Box>
-              <Typography variant="h6" color={theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'}>
+              <Typography variant="h6" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {selectedNotification.title || selectedNotification.message}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#666666' }}>
                 {formatTimeAgo(selectedNotification.timestamp)}
               </Typography>
             </Box>
@@ -299,13 +299,13 @@ export default function AdminNotifications() {
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2}>
-            <Typography variant="body1" color={theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'}>
+            <Typography variant="body1" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
               {selectedNotification.description || selectedNotification.message}
             </Typography>
             
             {selectedNotification.type === 'violation' && (
               <Box>
-                <Typography variant="subtitle2" gutterBottom color={theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'}>Violation Details:</Typography>
+                <Typography variant="subtitle2" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Violation Details:</Typography>
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
                     <TableBody>
@@ -372,7 +372,7 @@ export default function AdminNotifications() {
         <Typography variant="h4" fontWeight={700} color={theme.palette.mode === 'dark' ? '#ffffff' : '#2d3436'} gutterBottom>
           Admin Notifications
         </Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body1" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#666666' }}>
           Manage all system notifications, activities, announcements, and requests
         </Typography>
       </Box>
@@ -389,10 +389,10 @@ export default function AdminNotifications() {
               <NotificationsActive />
             </Avatar>
             <Box>
-              <Typography variant="h6" fontWeight={600} color={theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'}>
+              <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#666666' }}>
                 Total: {allNotifications.length} notifications
               </Typography>
             </Box>

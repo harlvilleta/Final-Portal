@@ -5,7 +5,6 @@ import {
   Typography,
   Button,
   Alert,
-  CircularProgress,
   Card,
   CardContent,
   CardMedia,
@@ -83,7 +82,6 @@ const receiptTypeLabels = {
 export default function ReceiptReview() {
   const theme = useTheme();
   const [submissions, setSubmissions] = useState([]); // full dataset
-  const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [reviewDialog, setReviewDialog] = useState(false);
   const [imageDialog, setImageDialog] = useState(false);
@@ -104,7 +102,6 @@ export default function ReceiptReview() {
   }, []);
 
   const fetchSubmissions = async () => {
-    setLoading(true);
     try {
       const q = query(collection(db, 'receipt_submissions'), orderBy('submittedAt', 'desc'));
       const querySnapshot = await getDocs(q);
@@ -117,8 +114,6 @@ export default function ReceiptReview() {
     } catch (error) {
       console.error('Error fetching submissions:', error);
       setError('Failed to load submissions');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -219,22 +214,17 @@ export default function ReceiptReview() {
     return [...bySearch].sort((a, b) => (b.submittedAt?.getTime?.() || 0) - (a.submittedAt?.getTime?.() || 0));
   }, [submissions, statusFilter, typeFilter, searchTerm]);
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress size={60} />
-      </Box>
-    );
-  }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
-            Receipt Review
-          </Typography>
-        </Box>
+    <Box>
+      <Typography variant="h4" gutterBottom sx={{ 
+        fontWeight: 700, 
+        color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' 
+      }}>
+        Receipt Review
+      </Typography>
+      
+      <Box sx={{ p: 3 }}>
 
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
@@ -453,7 +443,6 @@ export default function ReceiptReview() {
             />
           </>
         )}
-      </Paper>
 
       {/* Review Dialog */}
       <Dialog open={reviewDialog} onClose={() => setReviewDialog(false)} maxWidth="md" fullWidth>
@@ -552,6 +541,7 @@ export default function ReceiptReview() {
           </Button>
         </DialogActions>
       </Dialog>
+      </Box>
 
       {/* Image Dialog */}
       <Dialog open={imageDialog} onClose={() => setImageDialog(false)} maxWidth="lg" fullWidth>

@@ -27,6 +27,7 @@ import TeacherDashboard from './pages/TeacherDashboard';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { getDoc, doc, setDoc, collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
+import { saveAuthState, getAuthState, clearAuthState, isAuthStateValid } from './utils/authPersistence';
 import AnnouncementReport from "./pages/AnnouncementReport";
 import UserViolations from "./pages/UserViolations";
 import UserAnnouncements from "./pages/UserAnnouncements";
@@ -377,8 +378,45 @@ function App() {
   const [authError, setAuthError] = useState(null);
   const [forceLogin, setForceLogin] = useState(false);
   const [authInitialized, setAuthInitialized] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
+    // Check for stored auth state on page load
+    const checkStoredAuth = () => {
+      try {
+        const storedAuth = getAuthState();
+        if (isAuthStateValid(storedAuth)) {
+          console.log('Restoring auth state from localStorage:', storedAuth.userRole);
+          setUser(storedAuth.user);
+          setCurrentUser(storedAuth.user);
+          setUserProfile(storedAuth.userProfile);
+          setUserRole(storedAuth.userRole);
+          setLoading(false);
+          setAuthInitialized(true);
+          setIsRefreshing(false);
+        }
+      } catch (error) {
+        console.error('Error checking stored auth:', error);
+      }
+    };
+
+    checkStoredAuth();
+
+    // Check if user is already authenticated on page load
+    const checkExistingAuth = async () => {
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser && !user) {
+          // User is already authenticated, set loading to false immediately
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error checking existing auth:', error);
+      }
+    };
+
+    checkExistingAuth();
+
     // Add a shorter timeout to prevent infinite loading
     const loadingTimeout = setTimeout(() => {
       setLoading(false);
@@ -392,6 +430,8 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!isMounted) return;
       
+      console.log('Auth state changed:', { user: !!user, currentUserRole: userRole });
+      
       if (!authInitialized) {
         setAuthInitialized(true);
       }
@@ -402,6 +442,7 @@ function App() {
         setLoading(true);
         setAuthError(null);
         setForceLogin(false);
+        setIsRefreshing(true);
         
         try {
           // Fetch user profile and role with shorter timeout
@@ -412,10 +453,14 @@ function App() {
           
           if (userDoc.exists()) {
             const userData = userDoc.data();
+            console.log('Setting user role from database:', userData.role);
             setUserProfile(userData);
             setUserRole(userData.role || 'Student');
             setLoading(false);
+            setIsRefreshing(false);
             clearTimeout(loadingTimeout);
+            // Save auth state to localStorage
+            saveAuthState(user, userData, userData.role || 'Student');
           } else {
             // Create default user document
             const defaultUserData = {
@@ -435,11 +480,15 @@ function App() {
               setUserProfile(defaultUserData);
               setUserRole('Student');
               setLoading(false);
+              setIsRefreshing(false);
               clearTimeout(loadingTimeout);
+              // Save auth state to localStorage
+              saveAuthState(user, defaultUserData, 'Student');
             } catch (createError) {
               console.error('Failed to create user document:', createError);
               setAuthError('Failed to create user profile. Please try again.');
               setLoading(false);
+              setIsRefreshing(false);
               clearTimeout(loadingTimeout);
             }
           }
@@ -451,6 +500,7 @@ function App() {
             setAuthError('Failed to load user profile. Please try again.');
           }
           setLoading(false);
+          setIsRefreshing(false);
           clearTimeout(loadingTimeout);
         }
       } else {
@@ -461,8 +511,11 @@ function App() {
         setUserRole(null);
         setAuthError(null);
         setForceLogin(true);
+        setIsRefreshing(false);
         clearTimeout(loadingTimeout);
         setLoading(false);
+        // Clear stored auth state
+        clearAuthState();
       }
     });
 
@@ -480,7 +533,7 @@ function App() {
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
         <CircularProgress size={40} sx={{ mb: 1 }} />
         <Typography variant="body2" color="text.secondary">
-          Loading...
+          {isRefreshing ? 'Refreshing...' : 'Loading...'}
         </Typography>
       </Box>
     );
@@ -505,12 +558,12 @@ function App() {
 
 
   // If user is authenticated but role is not determined yet, show minimal loading
-  if (!userRole) {
+  if (!userRole && user) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
         <CircularProgress size={40} sx={{ mb: 1 }} />
         <Typography variant="body2" color="text.secondary">
-          Setting up dashboard...
+          {isRefreshing ? 'Restoring your dashboard...' : 'Setting up dashboard...'}
         </Typography>
         {authError && (
           <Alert severity="warning" sx={{ mb: 2, maxWidth: 400 }}>
@@ -551,7 +604,10 @@ function App() {
             
             {/* Admin/Teacher Routes - Only accessible to Admin/Teacher roles */}
             <Route path="/*" element={
-              (userRole === 'Admin' || userRole === 'Teacher') ? (
+              (() => {
+                console.log('Routing decision:', { userRole, user: !!user });
+                return (userRole === 'Admin' || userRole === 'Teacher');
+              })() ? (
                 userRole === 'Admin' ? (
                   <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "background.default" }}>
                     <AdminHeader currentUser={currentUser} userProfile={userProfile} />
@@ -626,7 +682,7 @@ function App() {
                           <Route path="/teacher-schedule" element={<TeacherSchedule />} />
                                                     <Route path="/teacher-notifications" element={<TeacherNotifications />} />
                           <Route path="/activity" element={<ActivitiesView />} />
-                          <Route path="/teacher-lost-found" element={<TeacherLostFound />} />
+                          <Route path="/teacher-lost-found" element={<TeacherLostFound currentUser={currentUser} userProfile={userProfile} />} />
                           <Route path="/teacher-violation-records" element={<TeacherViolationRecords />} />
                           <Route path="/teacher-activity-scheduler" element={<TeacherActivityScheduler />} />
                           <Route path="/teacher-profile" element={<Profile />} />
@@ -637,7 +693,12 @@ function App() {
                     </Box>
                   </Box>
                 )
-              ) : userRole === 'Student' ? (
+              ) : (() => {
+                console.log('Student routing decision:', { userRole, user: !!user });
+                // Only route to student dashboard if userRole is explicitly 'Student'
+                // Don't fallback to student if userRole is null/undefined
+                return userRole === 'Student';
+              })() ? (
                 <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "background.default" }}>
                   <UserHeader currentUser={currentUser} userProfile={userProfile} />
                   <Box sx={{ display: "flex", flex: 1 }}>
@@ -667,20 +728,20 @@ function App() {
                   </Box>
                 </Box>
               ) : (
-                // This should not happen since we check for userRole above, but just in case
+                // Fallback when user role is not yet determined
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
-                  <div style={{ fontSize: '18px', marginBottom: '10px' }}>Setting up your account...</div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>Please wait a moment</div>
-                  <Button 
-                    variant="contained" 
-                    onClick={() => {
-                      console.log('Force setting role to Student');
-                      setUserRole('Student');
-                    }}
-                    sx={{ mt: 2 }}
-                  >
-                    Continue as Student
-                  </Button>
+                  <CircularProgress size={40} sx={{ mb: 2 }} />
+                  <Typography variant="h6" sx={{ mb: 1 }}>
+                    {isRefreshing ? 'Restoring your dashboard...' : 'Setting up your account...'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Please wait while we determine your role
+                  </Typography>
+                  {authError && (
+                    <Alert severity="warning" sx={{ mb: 2, maxWidth: 400 }}>
+                      {authError}
+                    </Alert>
+                  )}
                 </Box>
               )
             } />

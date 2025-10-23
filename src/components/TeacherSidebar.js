@@ -165,7 +165,7 @@ export default function TeacherSidebar() {
                 },
               }}
             >
-              <ListItemIcon sx={{ minWidth: 40, color: 'white' }}>
+              <ListItemIcon sx={{ minWidth: 32, color: 'white', '& .MuiSvgIcon-root': { fontSize: '1rem' } }}>
                 {item.text === 'Notifications' ? (
                   <Badge badgeContent={unreadNotifications + unreadMeetings + unreadLostFound} color="error">
                     {item.icon}
@@ -177,11 +177,9 @@ export default function TeacherSidebar() {
               <ListItemText 
                 primary={item.text} 
                 primaryTypographyProps={{ noWrap: true }}
-                sx={{ '& .MuiListItemText-primary': { fontWeight: isItemSelected(item) ? 600 : 400 } }}
+                sx={{ '& .MuiListItemText-primary': { fontWeight: isItemSelected(item) ? 600 : 400, fontSize: '0.875rem', lineHeight: 1.2, textAlign: 'left' } }}
               />
-              {item.hasSubmenu && (
-                isSubmenuOpen(item.text) ? <ExpandLess /> : <ExpandMore />
-              )}
+              {/* Removed dropdown icons - menu expands/collapses on click */}
             </ListItem>
             {item.hasSubmenu && (
               <Collapse in={isSubmenuOpen(item.text)} timeout="auto" unmountOnExit>
@@ -205,13 +203,13 @@ export default function TeacherSidebar() {
                         }
                       }}
                     >
-                      <ListItemIcon sx={{ minWidth: 40, color: 'white' }}>
+                      <ListItemIcon sx={{ minWidth: 32, color: 'white', '& .MuiSvgIcon-root': { fontSize: '0.9rem' } }}>
                         {subItem.icon}
                       </ListItemIcon>
                       <ListItemText 
                         primary={subItem.text} 
                         primaryTypographyProps={{ noWrap: true }}
-                        sx={{ '& .MuiListItemText-primary': { fontWeight: isSubItemSelected(subItem) ? 600 : 400 } }}
+                        sx={{ '& .MuiListItemText-primary': { fontWeight: isSubItemSelected(subItem) ? 600 : 400, fontSize: '0.8rem', lineHeight: 1.2, textAlign: 'left' } }}
                       />
                     </ListItemButton>
                   ))}
@@ -235,12 +233,12 @@ export default function TeacherSidebar() {
             },
           }}
         >
-          <ListItemIcon sx={{ minWidth: 40 }}>
+          <ListItemIcon sx={{ minWidth: 32, '& .MuiSvgIcon-root': { fontSize: '1rem' } }}>
             <Logout sx={{ color: '#ff6b6b' }} />
           </ListItemIcon>
           <ListItemText 
             primary="Logout" 
-            sx={{ '& .MuiListItemText-primary': { color: '#ff6b6b', fontWeight: 500 } }}
+            sx={{ '& .MuiListItemText-primary': { color: '#ff6b6b', fontWeight: 500, fontSize: '0.875rem', lineHeight: 1.2, textAlign: 'left' } }}
           />
         </ListItem>
       </List>

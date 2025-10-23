@@ -276,7 +276,7 @@ export default function TeacherRequest() {
   });
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box>
       <Typography variant="h4" gutterBottom sx={{ 
         fontWeight: 700, 
         color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
@@ -289,6 +289,7 @@ export default function TeacherRequest() {
         Review and approve teacher registration requests. Teachers cannot log in until their accounts are approved.
       </Typography>
 
+      <Box sx={{ p: 3 }}>
         {/* Summary Cards */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
@@ -917,6 +918,7 @@ export default function TeacherRequest() {
           </Button>
         </DialogActions>
       </Dialog>
+      </Box>
 
       {/* Snackbar */}
       <Snackbar 

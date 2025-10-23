@@ -128,7 +128,7 @@ function SummaryCard({ stats }) {
   const theme = useTheme();
   return (
     <Box sx={{ mb: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
+      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
         Activity Summary
       </Typography>
       <Grid container spacing={3}>

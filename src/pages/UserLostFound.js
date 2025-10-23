@@ -140,17 +140,39 @@ export default function UserLostFound({ currentUser }) {
     e.preventDefault();
     setLoading(true);
     try {
-      await addDoc(collection(db, 'lost_items'), { 
+      // Submit to pending reports for admin approval
+      await addDoc(collection(db, 'pending_lost_reports'), { 
         ...lostForm, 
-        resolved: false, 
+        status: 'pending',
+        submittedBy: currentUser?.email,
+        submittedByName: currentUser?.displayName || 'Student',
+        submittedByPhoto: currentUser?.photoURL || null,
         createdAt: new Date().toISOString(),
-        reportedBy: currentUser?.email,
-        postedBy: 'student'
+        type: 'lost'
       });
-      setSnackbar({ open: true, message: 'Lost item reported successfully!', severity: 'success' });
+      
+      // Send notification to admin
+      await addDoc(collection(db, 'notifications'), {
+        type: 'lost_item_report',
+        title: 'New Lost Item Report',
+        message: `${currentUser?.displayName || 'A student'} has submitted a lost item report for "${lostForm.name}"`,
+        recipientEmail: 'admin@school.com', // You may need to adjust this
+        recipientRole: 'Admin',
+        createdAt: serverTimestamp(),
+        read: false,
+        data: {
+          reportType: 'lost',
+          itemName: lostForm.name,
+          submittedBy: currentUser?.email,
+          submittedByName: currentUser?.displayName || 'Student'
+        }
+      });
+      
+      setSnackbar({ open: true, message: 'Lost item report submitted for admin approval!', severity: 'success' });
       setLostForm({ name: '', description: '', location: '', image: null, timeLost: '', contactInfo: currentUser?.email || '' });
     } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to report lost item.', severity: 'error' });
+      console.error('Error submitting lost item report:', err);
+      setSnackbar({ open: true, message: 'Failed to submit lost item report.', severity: 'error' });
     } finally {
       setLoading(false);
     }
@@ -160,17 +182,39 @@ export default function UserLostFound({ currentUser }) {
     e.preventDefault();
     setLoading(true);
     try {
-      await addDoc(collection(db, 'found_items'), { 
+      // Submit to pending reports for admin approval
+      await addDoc(collection(db, 'pending_found_reports'), { 
         ...foundForm, 
-        resolved: false, 
+        status: 'pending',
+        submittedBy: currentUser?.email,
+        submittedByName: currentUser?.displayName || 'Student',
+        submittedByPhoto: currentUser?.photoURL || null,
         createdAt: new Date().toISOString(),
-        reportedBy: currentUser?.email,
-        postedBy: 'student'
+        type: 'found'
       });
-      setSnackbar({ open: true, message: 'Found item reported successfully!', severity: 'success' });
+      
+      // Send notification to admin
+      await addDoc(collection(db, 'notifications'), {
+        type: 'found_item_report',
+        title: 'New Found Item Report',
+        message: `${currentUser?.displayName || 'A student'} has submitted a found item report for "${foundForm.name}"`,
+        recipientEmail: 'admin@school.com', // You may need to adjust this
+        recipientRole: 'Admin',
+        createdAt: serverTimestamp(),
+        read: false,
+        data: {
+          reportType: 'found',
+          itemName: foundForm.name,
+          submittedBy: currentUser?.email,
+          submittedByName: currentUser?.displayName || 'Student'
+        }
+      });
+      
+      setSnackbar({ open: true, message: 'Found item report submitted for admin approval!', severity: 'success' });
       setFoundForm({ name: '', description: '', location: '', image: null, timeFound: '', contactInfo: currentUser?.email || '' });
     } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to report found item.', severity: 'error' });
+      console.error('Error submitting found item report:', err);
+      setSnackbar({ open: true, message: 'Failed to submit found item report.', severity: 'error' });
     } finally {
       setLoading(false);
     }
@@ -482,6 +526,12 @@ export default function UserLostFound({ currentUser }) {
         icon: <AdminPanelSettings />,
         color: 'primary'
       };
+    } else if (item.postedBy === 'teacher' || (item.reportedBy && item.reportedBy === currentUser?.email && currentUser?.role === 'Teacher')) {
+      return {
+        name: 'Teacher',
+        icon: <Person />,
+        color: 'secondary'
+      };
     } else {
       return {
         name: 'Student',
@@ -503,7 +553,10 @@ export default function UserLostFound({ currentUser }) {
 
       {activeTab === 0 && (
         <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>Report Lost Item</Typography>
+          <Typography variant="h6" gutterBottom>Submit Lost Item Report</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Your report will be reviewed by an administrator before being posted.
+          </Typography>
           <form onSubmit={handleLostSubmit}>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
@@ -567,7 +620,7 @@ export default function UserLostFound({ currentUser }) {
               </Grid>
               <Grid item xs={12}>
                 <Button variant="contained" type="submit" disabled={loading} sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}>
-                  Report Lost Item
+                  Submit for Review
                 </Button>
               </Grid>
             </Grid>
@@ -577,7 +630,10 @@ export default function UserLostFound({ currentUser }) {
 
       {activeTab === 1 && (
         <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>Report Found Item</Typography>
+          <Typography variant="h6" gutterBottom>Submit Found Item Report</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Your report will be reviewed by an administrator before being posted.
+          </Typography>
           <form onSubmit={handleFoundSubmit}>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
@@ -641,7 +697,7 @@ export default function UserLostFound({ currentUser }) {
               </Grid>
               <Grid item xs={12}>
                 <Button variant="contained" type="submit" disabled={loading} sx={{ bgcolor: '#800000', '&:hover': { bgcolor: '#6b0000' } }}>
-                  Report Found Item
+                  Submit for Review
                 </Button>
               </Grid>
             </Grid>

@@ -400,9 +400,13 @@ export default function Announcements() {
   }, [bulkAction]);
 
   return (
-    <Box sx={{ maxWidth: 900, mx: 'auto', p: { xs: 1, sm: 3 } }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="h4" fontWeight={700}>Announcements</Typography>
+    <Box>
+      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
+        Announcements
+      </Typography>
+      
+      <Box sx={{ maxWidth: 900, mx: 'auto', p: { xs: 1, sm: 3 } }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         {userRole === 'Admin' && (
           <Button 
             variant="outlined" 
@@ -937,6 +941,7 @@ export default function Announcements() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      </Box>
     </Box>
   );
 } 

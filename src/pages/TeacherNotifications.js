@@ -182,7 +182,7 @@ export default function TeacherNotifications() {
   const renderNotificationList = (notificationList, title) => (
     <Paper sx={{ mb: 3 }}>
       <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
-        <Typography variant="h6" fontWeight={600}>
+        <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? 'text.primary' : '#000000' }}>
           {title}
         </Typography>
       </Box>
@@ -190,8 +190,8 @@ export default function TeacherNotifications() {
         {notificationList.length === 0 ? (
           <ListItem>
             <ListItemText 
-              primary="No notifications" 
-              secondary="You're all caught up!"
+              primary={<Typography sx={{ color: theme.palette.mode === 'dark' ? 'text.primary' : '#000000' }}>No notifications</Typography>}
+              secondary={<Typography sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#666666' }}>You're all caught up!</Typography>}
             />
           </ListItem>
         ) : (
@@ -223,10 +223,10 @@ export default function TeacherNotifications() {
                   }
                   secondary={
                     <Box>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#333333' }}>
                         {notification.message}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#666666' }}>
                         {new Date(notification.createdAt).toLocaleString()}
                       </Typography>
                     </Box>
@@ -278,27 +278,27 @@ export default function TeacherNotifications() {
         <DialogContent>
           {notification.type === 'meeting' && (
             <Box>
-              <Typography variant="body1" sx={{ mb: 2 }}>
+              <Typography variant="body1" sx={{ mb: 2, color: theme.palette.mode === 'dark' ? 'text.primary' : '#000000' }}>
                 <strong>Meeting Details:</strong>
               </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#333333' }}>
                     <strong>Date & Time:</strong> {new Date(notification.date).toLocaleString()}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#333333' }}>
                     <strong>Location:</strong> {notification.location || 'TBD'}
                   </Typography>
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#333333' }}>
                     <strong>Description:</strong> {notification.description || 'No description provided'}
                   </Typography>
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#333333' }}>
                     <strong>Organizer:</strong> {notification.organizer || 'Unknown'}
                   </Typography>
                 </Grid>
@@ -308,32 +308,32 @@ export default function TeacherNotifications() {
 
           {notification.type === 'lost_found' && (
             <Box>
-              <Typography variant="body1" sx={{ mb: 2 }}>
+              <Typography variant="body1" sx={{ mb: 2, color: theme.palette.mode === 'dark' ? 'text.primary' : '#000000' }}>
                 <strong>Item Details:</strong>
               </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#333333' }}>
                     <strong>Item Name:</strong> {notification.name}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#333333' }}>
                     <strong>Type:</strong> {notification.notificationType === 'lost' ? 'Lost Item' : 'Found Item'}
                   </Typography>
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#333333' }}>
                     <strong>Description:</strong> {notification.description || 'No description provided'}
                   </Typography>
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#333333' }}>
                     <strong>Location:</strong> {notification.location || 'Unknown location'}
                   </Typography>
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#333333' }}>
                     <strong>Reported:</strong> {new Date(notification.createdAt).toLocaleString()}
                   </Typography>
                 </Grid>
@@ -343,10 +343,10 @@ export default function TeacherNotifications() {
 
           {notification.type === 'violation' && (
             <Box>
-              <Typography variant="body1" sx={{ mb: 2 }}>
+              <Typography variant="body1" sx={{ mb: 2, color: theme.palette.mode === 'dark' ? 'text.primary' : '#000000' }}>
                 <strong>Violation Details:</strong>
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#333333' }}>
                 {notification.message}
               </Typography>
             </Box>
@@ -354,10 +354,10 @@ export default function TeacherNotifications() {
 
           {notification.type === 'announcement' && (
             <Box>
-              <Typography variant="body1" sx={{ mb: 2 }}>
+              <Typography variant="body1" sx={{ mb: 2, color: theme.palette.mode === 'dark' ? 'text.primary' : '#000000' }}>
                 <strong>Announcement:</strong>
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#333333' }}>
                 {notification.message}
               </Typography>
             </Box>
@@ -390,7 +390,7 @@ export default function TeacherNotifications() {
         <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }} gutterBottom>
           Notifications
         </Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body1" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#666666' }}>
           Stay updated with all your notifications and alerts
         </Typography>
       </Box>
@@ -406,7 +406,7 @@ export default function TeacherNotifications() {
               <Typography variant="h6" fontWeight={600}>
                 {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#666666' }}>
                 Total: {allNotifications.length} notifications
               </Typography>
             </Box>

@@ -29,7 +29,10 @@ import {
   Delete,
   CheckCircle,
   Visibility,
-  Upload
+  Upload,
+  Pending,
+  Done,
+  Cancel
 } from '@mui/icons-material';
 import {
   collection,
@@ -41,7 +44,8 @@ import {
   deleteDoc,
   doc,
   getDocs,
-  where
+  where,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -66,6 +70,8 @@ export default function AdminLostFound() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [lostItems, setLostItems] = useState([]);
   const [foundItems, setFoundItems] = useState([]);
+  const [pendingLostReports, setPendingLostReports] = useState([]);
+  const [pendingFoundReports, setPendingFoundReports] = useState([]);
   const [lostImageFile, setLostImageFile] = useState(null);
   const [foundImageFile, setFoundImageFile] = useState(null);
   const [lostSearch, setLostSearch] = useState('');
@@ -89,6 +95,8 @@ export default function AdminLostFound() {
   const [feedSearch, setFeedSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState({ type: null, status: null });
   const [itemTypeFilter, setItemTypeFilter] = useState('all'); // 'all', 'lost', 'found'
+  const [editReportDialog, setEditReportDialog] = useState({ open: false, report: null, type: '' });
+  const [editReportForm, setEditReportForm] = useState({ description: '' });
 
   // Combine all items for feed display
   useEffect(() => {
@@ -185,9 +193,26 @@ export default function AdminLostFound() {
       }
     );
 
+    // Real-time listeners for pending reports
+    const unsubPendingLost = onSnapshot(
+      query(collection(db, 'pending_lost_reports'), orderBy('createdAt', 'desc')), 
+      snap => {
+        setPendingLostReports(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }
+    );
+    
+    const unsubPendingFound = onSnapshot(
+      query(collection(db, 'pending_found_reports'), orderBy('createdAt', 'desc')), 
+      snap => {
+        setPendingFoundReports(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }
+    );
+
     return () => { 
       unsubLost(); 
       unsubFound(); 
+      unsubPendingLost();
+      unsubPendingFound();
     };
   }, []);
 
@@ -410,6 +435,133 @@ export default function AdminLostFound() {
     }
   };
 
+  // Open edit report dialog
+  const handleEditReport = (report, type) => {
+    setEditReportDialog({ open: true, report, type });
+    setEditReportForm({ description: report.description });
+  };
+
+  // Save edited report and approve
+  const handleSaveAndApprove = async () => {
+    const { report, type } = editReportDialog;
+    setLoading(true);
+    try {
+      // Add to the main collection with edited description
+      const itemData = {
+        name: report.name,
+        description: editReportForm.description,
+        location: report.location,
+        image: report.image,
+        resolved: false,
+        createdAt: new Date().toISOString(),
+        reportedBy: report.submittedBy,
+        postedBy: 'student',
+        approvedBy: 'admin',
+        originalReportId: report.id,
+        adminDescription: editReportForm.description
+      };
+
+      if (type === 'lost') {
+        await addDoc(collection(db, 'lost_items'), itemData);
+      } else {
+        await addDoc(collection(db, 'found_items'), itemData);
+      }
+
+      // Delete from pending reports
+      await deleteDoc(doc(db, `pending_${type}_reports`, report.id));
+
+      // Send notification to student
+      await addDoc(collection(db, 'notifications'), {
+        type: 'report_approved',
+        title: 'Report Approved',
+        message: `Your ${type} item report for "${report.name}" has been approved and posted.`,
+        recipientEmail: report.submittedBy,
+        recipientRole: 'Student',
+        createdAt: serverTimestamp(),
+        read: false
+      });
+
+      setSnackbar({ open: true, message: `${type} item report approved and posted!`, severity: 'success' });
+      setEditReportDialog({ open: false, report: null, type: '' });
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to approve report: ' + err.message, severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Approve student report without editing
+  const handleApproveReport = async (report, type) => {
+    setLoading(true);
+    try {
+      // Add to the main collection
+      const itemData = {
+        name: report.name,
+        description: report.description,
+        location: report.location,
+        image: report.image,
+        resolved: false,
+        createdAt: new Date().toISOString(),
+        reportedBy: report.submittedBy,
+        postedBy: 'student',
+        approvedBy: 'admin',
+        originalReportId: report.id
+      };
+
+      if (type === 'lost') {
+        await addDoc(collection(db, 'lost_items'), itemData);
+      } else {
+        await addDoc(collection(db, 'found_items'), itemData);
+      }
+
+      // Delete from pending reports
+      await deleteDoc(doc(db, `pending_${type}_reports`, report.id));
+
+      // Send notification to student
+      await addDoc(collection(db, 'notifications'), {
+        type: 'report_approved',
+        title: 'Report Approved',
+        message: `Your ${type} item report for "${report.name}" has been approved and posted.`,
+        recipientEmail: report.submittedBy,
+        recipientRole: 'Student',
+        createdAt: serverTimestamp(),
+        read: false
+      });
+
+      setSnackbar({ open: true, message: `${type} item report approved and posted!`, severity: 'success' });
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to approve report: ' + err.message, severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reject student report
+  const handleRejectReport = async (report, type) => {
+    setLoading(true);
+    try {
+      // Delete from pending reports
+      await deleteDoc(doc(db, `pending_${type}_reports`, report.id));
+
+      // Send notification to student
+      await addDoc(collection(db, 'notifications'), {
+        type: 'report_rejected',
+        title: 'Report Rejected',
+        message: `Your ${type} item report for "${report.name}" has been rejected. Please review the guidelines and submit again if needed.`,
+        recipientEmail: report.submittedBy,
+        recipientRole: 'Student',
+        createdAt: serverTimestamp(),
+        read: false
+      });
+
+      setSnackbar({ open: true, message: `${type} item report rejected.`, severity: 'success' });
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to reject report: ' + err.message, severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleResolve = async (type, id) => {
     try {
       await updateDoc(doc(db, type, id), { 
@@ -471,17 +623,17 @@ export default function AdminLostFound() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', mb: 3 }}>
+    <Box>
+      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
         Lost & Found Management
       </Typography>
 
       {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Box sx={{ p: 3 }}>
+        <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} md={6}>
           <Card sx={{ 
             bgcolor: 'rgba(255, 255, 255, 0.1)', 
-            backdropFilter: 'blur(10px)',
             border: '1px solid rgba(255, 255, 255, 0.2)',
             borderLeft: '4px solid #f44336',
             borderRadius: 2,
@@ -553,7 +705,6 @@ export default function AdminLostFound() {
         <Grid item xs={12} md={6}>
           <Card sx={{ 
             bgcolor: 'rgba(255, 255, 255, 0.1)', 
-            backdropFilter: 'blur(10px)',
             border: '1px solid rgba(255, 255, 255, 0.2)',
             borderLeft: '4px solid #4caf50',
             borderRadius: 2,
@@ -680,6 +831,225 @@ export default function AdminLostFound() {
         </Button>
       </Box>
 
+      {/* Pending Reports Section */}
+      {(pendingLostReports.length > 0 || pendingFoundReports.length > 0) && (
+        <Paper sx={{ 
+          p: 3, 
+          mb: 3,
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.9)',
+          border: theme.palette.mode === 'dark' ? '0.5px solid rgba(255, 255, 255, 0.2)' : '0.5px solid rgba(0, 0, 0, 0.1)',
+          borderRadius: 2,
+          boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+        }}>
+          <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
+            Pending Student Reports
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Review and approve student reports before they are posted to Browse Items.
+          </Typography>
+          
+          <Grid container spacing={2}>
+            {/* Pending Lost Reports */}
+            {pendingLostReports.map((report) => (
+              <Grid item xs={12} md={6} key={report.id}>
+                <Card sx={{ 
+                  p: 2, 
+                  border: '1px solid', 
+                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.5)'
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Avatar src={report.submittedByPhoto} sx={{ mr: 2, width: 40, height: 40 }}>
+                      <Person />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight={600}>
+                        {report.submittedByName}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(report.createdAt).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                    <Chip 
+                      label="Lost Item" 
+                      color="warning" 
+                      size="small" 
+                      sx={{ ml: 'auto' }}
+                    />
+                  </Box>
+                  
+                  <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
+                    {report.name}
+                  </Typography>
+                  
+                  {report.image && (
+                    <Box sx={{ mb: 2 }}>
+                      <img 
+                        src={report.image} 
+                        alt={report.name}
+                        style={{ 
+                          width: '100%', 
+                          height: '150px', 
+                          objectFit: 'cover', 
+                          borderRadius: '8px' 
+                        }}
+                      />
+                    </Box>
+                  )}
+                  
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    {report.description}
+                  </Typography>
+                  
+                  <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+                      <LocationOn sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
+                      <Typography variant="caption">{report.location}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <AccessTime sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
+                      <Typography variant="caption">{report.timeLost}</Typography>
+                    </Box>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      size="small"
+                      startIcon={<Done />}
+                      onClick={() => handleApproveReport(report, 'lost')}
+                      disabled={loading}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      size="small"
+                      startIcon={<Edit />}
+                      onClick={() => handleEditReport(report, 'lost')}
+                      disabled={loading}
+                    >
+                      Edit & Approve
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      startIcon={<Cancel />}
+                      onClick={() => handleRejectReport(report, 'lost')}
+                      disabled={loading}
+                    >
+                      Reject
+                    </Button>
+                  </Box>
+                </Card>
+              </Grid>
+            ))}
+            
+            {/* Pending Found Reports */}
+            {pendingFoundReports.map((report) => (
+              <Grid item xs={12} md={6} key={report.id}>
+                <Card sx={{ 
+                  p: 2, 
+                  border: '1px solid', 
+                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.5)'
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Avatar src={report.submittedByPhoto} sx={{ mr: 2, width: 40, height: 40 }}>
+                      <Person />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight={600}>
+                        {report.submittedByName}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(report.createdAt).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                    <Chip 
+                      label="Found Item" 
+                      color="success" 
+                      size="small" 
+                      sx={{ ml: 'auto' }}
+                    />
+                  </Box>
+                  
+                  <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
+                    {report.name}
+                  </Typography>
+                  
+                  {report.image && (
+                    <Box sx={{ mb: 2 }}>
+                      <img 
+                        src={report.image} 
+                        alt={report.name}
+                        style={{ 
+                          width: '100%', 
+                          height: '150px', 
+                          objectFit: 'cover', 
+                          borderRadius: '8px' 
+                        }}
+                      />
+                    </Box>
+                  )}
+                  
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    {report.description}
+                  </Typography>
+                  
+                  <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+                      <LocationOn sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
+                      <Typography variant="caption">{report.location}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <AccessTime sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
+                      <Typography variant="caption">{report.timeFound}</Typography>
+                    </Box>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      size="small"
+                      startIcon={<Done />}
+                      onClick={() => handleApproveReport(report, 'found')}
+                      disabled={loading}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      size="small"
+                      startIcon={<Edit />}
+                      onClick={() => handleEditReport(report, 'found')}
+                      disabled={loading}
+                    >
+                      Edit & Approve
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      startIcon={<Cancel />}
+                      onClick={() => handleRejectReport(report, 'found')}
+                      disabled={loading}
+                    >
+                      Reject
+                    </Button>
+                  </Box>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Paper>
+      )}
+
       {/* Lost Items History and Found Items Summary Layout */}
       <Grid container spacing={3}>
         {/* Lost Items History Section */}
@@ -692,7 +1062,7 @@ export default function AdminLostFound() {
             boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
           }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+              <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
                 Lost Items History
               </Typography>
             </Box>
@@ -706,7 +1076,6 @@ export default function AdminLostFound() {
                 width: '60%',
                 '& .MuiOutlinedInput-root': {
                   bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                  backdropFilter: 'blur(10px)',
                   border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.2)',
                   borderRadius: 2,
                   color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
@@ -781,10 +1150,21 @@ export default function AdminLostFound() {
                         L
                       </Avatar>
                       <Box sx={{ flex: 1 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                        <Typography variant="h6" sx={{ 
+                          fontWeight: 700, 
+                          color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                          fontSize: '1.1rem',
+                          lineHeight: 1.3,
+                          letterSpacing: '0.01em'
+                        }}>
                           {item.name}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333' }}>
+                        <Typography variant="body2" sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#b0b0b0' : '#555555',
+                          fontSize: '0.8rem',
+                          fontWeight: 500,
+                          letterSpacing: '0.02em'
+                        }}>
                           {new Date(item.createdAt?.toDate?.() || item.createdAt).toLocaleDateString()}
                         </Typography>
                       </Box>
@@ -826,25 +1206,54 @@ export default function AdminLostFound() {
                       </Box>
                     </Box>
                     {item.description && (
-                      <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', mb: 1 }}>
+                      <Typography variant="body1" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#e0e0e0' : '#333333', 
+                        mb: 1.5,
+                        fontSize: '0.9rem',
+                        lineHeight: 1.6,
+                        fontWeight: 400,
+                        letterSpacing: '0.01em'
+                      }}>
                         {item.description}
                       </Typography>
                     )}
                     {/* Comments Section */}
                     {item.comments && item.comments.length > 0 && (
                       <Box sx={{ mt: 2, p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#f5f5f5', borderRadius: 1 }}>
-                        <Typography variant="subtitle2" sx={{ mb: 1, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                        <Typography variant="subtitle1" sx={{ 
+                          mb: 1.5, 
+                          color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                          fontSize: '0.95rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.01em'
+                        }}>
                           Comments ({item.comments.length})
                         </Typography>
                         {item.comments.map((comment, index) => (
                           <Box key={index} sx={{ mb: 1, p: 1, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff', borderRadius: 1 }}>
-                            <Typography variant="caption" sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                            <Typography variant="subtitle2" sx={{ 
+                              fontWeight: 700, 
+                              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                              fontSize: '0.8rem',
+                              letterSpacing: '0.01em'
+                            }}>
                               {comment.authorName}
                             </Typography>
-                            <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333' }}>
+                            <Typography variant="body1" sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#d0d0d0' : '#444444',
+                              fontSize: '0.85rem',
+                              lineHeight: 1.5,
+                              fontWeight: 400,
+                              letterSpacing: '0.01em'
+                            }}>
                               {comment.text}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#999999' : '#666666', fontSize: '0.7rem' }}>
+                            <Typography variant="caption" sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#a0a0a0' : '#666666', 
+                              fontSize: '0.72rem',
+                              fontWeight: 500,
+                              letterSpacing: '0.02em'
+                            }}>
                               {new Date(comment.createdAt).toLocaleString()}
                             </Typography>
                           </Box>
@@ -891,7 +1300,7 @@ export default function AdminLostFound() {
             boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
           }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+              <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
                 Found Items Summary
               </Typography>
             </Box>
@@ -905,7 +1314,6 @@ export default function AdminLostFound() {
                 width: '60%',
                 '& .MuiOutlinedInput-root': {
                   bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                  backdropFilter: 'blur(10px)',
                   border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.2)',
                   borderRadius: 2,
                   color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
@@ -980,10 +1388,21 @@ export default function AdminLostFound() {
                         F
                       </Avatar>
                       <Box sx={{ flex: 1 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                        <Typography variant="h6" sx={{ 
+                          fontWeight: 700, 
+                          color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                          fontSize: '1.1rem',
+                          lineHeight: 1.3,
+                          letterSpacing: '0.01em'
+                        }}>
                           {item.name}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333' }}>
+                        <Typography variant="body2" sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#b0b0b0' : '#555555',
+                          fontSize: '0.8rem',
+                          fontWeight: 500,
+                          letterSpacing: '0.02em'
+                        }}>
                           {new Date(item.createdAt?.toDate?.() || item.createdAt).toLocaleDateString()}
                         </Typography>
                       </Box>
@@ -1025,7 +1444,14 @@ export default function AdminLostFound() {
                       </Box>
                     </Box>
                     {item.description && (
-                      <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', mb: 1 }}>
+                      <Typography variant="body1" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#e0e0e0' : '#333333', 
+                        mb: 1.5,
+                        fontSize: '0.9rem',
+                        lineHeight: 1.6,
+                        fontWeight: 400,
+                        letterSpacing: '0.01em'
+                      }}>
                         {item.description}
                       </Typography>
                     )}
@@ -1033,18 +1459,40 @@ export default function AdminLostFound() {
                     {/* Comments Section */}
                     {item.comments && item.comments.length > 0 && (
                       <Box sx={{ mt: 2, p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#f5f5f5', borderRadius: 1 }}>
-                        <Typography variant="subtitle2" sx={{ mb: 1, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                        <Typography variant="subtitle1" sx={{ 
+                          mb: 1.5, 
+                          color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                          fontSize: '0.95rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.01em'
+                        }}>
                           Comments ({item.comments.length})
                         </Typography>
                         {item.comments.map((comment, index) => (
                           <Box key={index} sx={{ mb: 1, p: 1, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff', borderRadius: 1 }}>
-                            <Typography variant="caption" sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                            <Typography variant="subtitle2" sx={{ 
+                              fontWeight: 700, 
+                              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                              fontSize: '0.8rem',
+                              letterSpacing: '0.01em'
+                            }}>
                               {comment.authorName}
                             </Typography>
-                            <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#333333' }}>
+                            <Typography variant="body1" sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#d0d0d0' : '#444444',
+                              fontSize: '0.85rem',
+                              lineHeight: 1.5,
+                              fontWeight: 400,
+                              letterSpacing: '0.01em'
+                            }}>
                               {comment.text}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#999999' : '#666666', fontSize: '0.7rem' }}>
+                            <Typography variant="caption" sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#a0a0a0' : '#666666', 
+                              fontSize: '0.72rem',
+                              fontWeight: 500,
+                              letterSpacing: '0.02em'
+                            }}>
                               {new Date(comment.createdAt).toLocaleString()}
                             </Typography>
                           </Box>
@@ -1444,6 +1892,55 @@ export default function AdminLostFound() {
       </Dialog>
 
       {/* Snackbar for notifications */}
+      {/* Edit Report Dialog */}
+      <Dialog 
+        open={editReportDialog.open} 
+        onClose={() => setEditReportDialog({ open: false, report: null, type: '' })}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Edit Report Description
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              {editReportDialog.report?.name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Submitted by: {editReportDialog.report?.submittedByName}
+            </Typography>
+          </Box>
+          
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            label="Description"
+            value={editReportForm.description}
+            onChange={(e) => setEditReportForm({ description: e.target.value })}
+            placeholder="Edit the description for this report..."
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setEditReportDialog({ open: false, report: null, type: '' })}
+            color="inherit"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSaveAndApprove}
+            variant="contained"
+            color="success"
+            disabled={loading}
+          >
+            Save & Approve
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar 
         open={snackbar.open} 
         autoHideDuration={4000} 
@@ -1457,6 +1954,7 @@ export default function AdminLostFound() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      </Box>
     </Box>
   );
 }

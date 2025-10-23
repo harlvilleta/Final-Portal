@@ -103,7 +103,7 @@ export default function ViolationStatus() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom fontWeight={700} color="primary.main">
+      <Typography variant="h4" gutterBottom fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
         Violation Status & Analytics
       </Typography>
 
@@ -113,7 +113,7 @@ export default function ViolationStatus() {
           <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{stats.totalViolations}</Typography>
-              <Typography variant="body2" color="textSecondary">Total Violations</Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>Total Violations</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -121,7 +121,7 @@ export default function ViolationStatus() {
           <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{stats.pendingViolations}</Typography>
-              <Typography variant="body2" color="textSecondary">Pending</Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>Pending</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -129,7 +129,7 @@ export default function ViolationStatus() {
           <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{stats.solvedViolations}</Typography>
-              <Typography variant="body2" color="textSecondary">Solved</Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>Solved</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -272,7 +272,7 @@ export default function ViolationStatus() {
                     <TableCell>
                       <Typography variant="body2">{violation.violation}</Typography>
                       {violation.description && (
-                        <Typography variant="caption" color="textSecondary" display="block">
+                        <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }} display="block">
                           {violation.description.substring(0, 50)}...
                         </Typography>
                       )}

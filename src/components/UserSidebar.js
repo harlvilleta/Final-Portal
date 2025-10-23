@@ -108,7 +108,7 @@ export default function UserSidebar({ currentUser, userProfile }) {
               },
             }}
           >
-            <ListItemIcon sx={{ minWidth: 40, color: 'white' }}>
+            <ListItemIcon sx={{ minWidth: 32, color: 'white', '& .MuiSvgIcon-root': { fontSize: '1rem' } }}>
               {item.icon}
             </ListItemIcon>
             <ListItemText 
@@ -116,6 +116,9 @@ export default function UserSidebar({ currentUser, userProfile }) {
               sx={{ 
                 '& .MuiListItemText-primary': {
                   fontWeight: location.pathname === item.path ? 600 : 400,
+                  fontSize: '0.875rem',
+                  lineHeight: 1.2,
+                  textAlign: 'left'
                 }
               }}
             />
@@ -136,7 +139,7 @@ export default function UserSidebar({ currentUser, userProfile }) {
             },
           }}
         >
-          <ListItemIcon sx={{ minWidth: 40 }}>
+          <ListItemIcon sx={{ minWidth: 32, '& .MuiSvgIcon-root': { fontSize: '1rem' } }}>
             <Logout sx={{ color: '#ff6b6b' }} />
           </ListItemIcon>
           <ListItemText 
@@ -145,6 +148,9 @@ export default function UserSidebar({ currentUser, userProfile }) {
               '& .MuiListItemText-primary': {
                 color: '#ff6b6b',
                 fontWeight: 500,
+                fontSize: '0.875rem',
+                lineHeight: 1.2,
+                textAlign: 'left'
               }
             }}
           />

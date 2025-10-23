@@ -111,13 +111,14 @@ export default function Sidebar() {
       <List sx={{ 
         flex: 1,
         overflowY: 'auto',
+        pt: 0.5, // Reduced padding top
         '&::-webkit-scrollbar': {
           display: 'none'
         },
         scrollbarWidth: 'none', // Firefox
         msOverflowStyle: 'none' // IE and Edge
       }}>
-        {menu.map((item) => (
+        {menu.map((item, index) => (
           <Box key={item.text}>
             <ListItem
               button
@@ -125,6 +126,7 @@ export default function Sidebar() {
               onClick={() => handleMenuClick(item)}
               sx={{
                 mb: 1,
+                mt: index === 0 ? 0.5 : 0, // Minimal top margin for Overview
                 borderRadius: 2,
                 bgcolor: isItemSelected(item) ? '#636e72' : 'transparent',
                 color: isItemSelected(item) ? '#fff' : '#e8e8e8',
@@ -136,19 +138,20 @@ export default function Sidebar() {
                 },
               }}
             >
-              <ListItemIcon sx={{ minWidth: 40, color: 'white' }}>{item.icon}</ListItemIcon>
+              <ListItemIcon sx={{ minWidth: 32, color: 'white', '& .MuiSvgIcon-root': { fontSize: '1rem' } }}>{item.icon}</ListItemIcon>
               <ListItemText 
                 primary={item.text} 
                 primaryTypographyProps={{ noWrap: true }}
                 sx={{ 
                   '& .MuiListItemText-primary': { 
-                    fontWeight: isItemSelected(item) ? 600 : 400 
+                    fontWeight: isItemSelected(item) ? 600 : 400,
+                    fontSize: '0.875rem',
+                    lineHeight: 1.2,
+                    textAlign: 'left'
                   } 
                 }}
               />
-              {item.hasSubmenu && (
-                isSubmenuOpen(item.text) ? <ExpandLess /> : <ExpandMore />
-              )}
+              {/* Removed dropdown icons - menu expands/collapses on click */}
             </ListItem>
             {item.hasSubmenu && (
               <Collapse in={isSubmenuOpen(item.text)} timeout="auto" unmountOnExit>
@@ -172,7 +175,7 @@ export default function Sidebar() {
                         }
                       }}
                     >
-                      <ListItemIcon sx={{ minWidth: 40, color: 'white' }}>
+                      <ListItemIcon sx={{ minWidth: 32, color: 'white', '& .MuiSvgIcon-root': { fontSize: '0.9rem' } }}>
                         {subItem.icon}
                       </ListItemIcon>
                       <ListItemText 
@@ -180,7 +183,10 @@ export default function Sidebar() {
                         primaryTypographyProps={{ noWrap: true }}
                         sx={{ 
                           '& .MuiListItemText-primary': { 
-                            fontWeight: isSubItemSelected(subItem) ? 600 : 400 
+                            fontWeight: isSubItemSelected(subItem) ? 600 : 400,
+                            fontSize: '0.8rem',
+                            lineHeight: 1.2,
+                            textAlign: 'left'
                           } 
                         }}
                       />
@@ -206,7 +212,7 @@ export default function Sidebar() {
             },
           }}
         >
-          <ListItemIcon sx={{ minWidth: 40 }}>
+          <ListItemIcon sx={{ minWidth: 32, '& .MuiSvgIcon-root': { fontSize: '1rem' } }}>
             <Logout sx={{ color: '#ff6b6b' }} />
           </ListItemIcon>
           <ListItemText 
@@ -215,6 +221,9 @@ export default function Sidebar() {
               '& .MuiListItemText-primary': {
                 color: '#ff6b6b',
                 fontWeight: 500,
+                fontSize: '0.875rem',
+                lineHeight: 1.2,
+                textAlign: 'left'
               }
             }}
           />

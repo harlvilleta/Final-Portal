@@ -212,15 +212,14 @@ export default function ViolationReview() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
-          Violation Review & Approval
-        </Typography>
-        
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-          Review teacher-reported violations and approve or deny cases. Both students and teachers will be notified of your decision.
-        </Typography>
+    <Box>
+      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
+        Violation Review & Approval
+      </Typography>
+      
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+        Review teacher-reported violations and approve or deny cases. Both students and teachers will be notified of your decision.
+      </Typography>
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
@@ -383,7 +382,6 @@ export default function ViolationReview() {
             </Table>
           </TableContainer>
         )}
-      </Paper>
 
       {/* View Details Dialog */}
       <Dialog 
