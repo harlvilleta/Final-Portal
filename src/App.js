@@ -43,6 +43,7 @@ import ViolationReview from "./pages/ViolationReview";
 import TeacherReports from "./pages/TeacherReports";
 import TeacherSchedule from "./pages/TeacherSchedule";
 import AdminLostFound from "./pages/AdminLostFound";
+import StudentsLostFound from "./pages/StudentsLostFound";
 import ActivityHistory from "./pages/ActivityHistory";
 import ActivityRequestsAdmin from "./pages/ActivityRequestsAdmin";
 import TeacherNotifications from "./pages/TeacherNotifications";
@@ -162,42 +163,46 @@ function AdminHeader({ currentUser, userProfile }) {
   const userInfo = getUserDisplayInfo();
 
   return (
-    <AppBar position="static" sx={{ bgcolor: '#fff', color: '#333', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-      <Toolbar sx={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', width: '100%' }}>
-        <Box></Box>
-        <Typography variant="h4" component="div" sx={{ 
-          fontWeight: 700, 
-          color: '#800000', 
-          textAlign: 'center',
-          lineHeight: 1.2
-        }}>
-          Student Affairs Management System
-        </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>
-          <Tooltip title={isOnNotificationsPage ? "Back to Dashboard" : "View Notifications"}>
-            <IconButton
-              size="large"
-              aria-label="notifications"
-              color="inherit"
-              onClick={handleNotificationClick}
-              sx={{ 
-                bgcolor: unreadCount > 0 ? '#ffebee' : 'transparent',
-                '&:hover': { bgcolor: unreadCount > 0 ? '#ffcdd2' : '#f5f5f5' }
-              }}
-            >
-              <Badge badgeContent={unreadCount} color="error">
-                <Notifications />
-              </Badge>
-            </IconButton>
-          </Tooltip>
-          <ProfileDropdown 
-            currentUser={currentUser} 
-            userProfile={userProfile}
-            profileRoute="/profile"
-          />
-        </Box>
-      </Toolbar>
-    </AppBar>
+    <>
+      <AppBar position="static" sx={{ bgcolor: theme => theme.palette.mode === 'dark' ? '#424242' : '#fff', color: theme => theme.palette.mode === 'dark' ? '#ffffff' : '#333', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '32px' }}>
+        <Toolbar sx={{ display: 'flex', alignItems: 'center', width: '100%', minHeight: '32px !important' }}>
+          <Box sx={{ flex: 1 }}></Box>
+        </Toolbar>
+      </AppBar>
+      {/* Profile and Notification Icons - Outside Header Box */}
+      <Box sx={{ 
+        position: 'fixed', 
+        top: '4px', 
+        right: '16px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 2, 
+        zIndex: 1300 
+      }}>
+        <Tooltip title={isOnNotificationsPage ? "Back to Dashboard" : "View Notifications"}>
+          <IconButton
+            size="large"
+            aria-label="notifications"
+            color="inherit"
+            onClick={handleNotificationClick}
+            sx={{ 
+              bgcolor: unreadCount > 0 ? '#ffebee' : 'transparent',
+              '&:hover': { bgcolor: unreadCount > 0 ? '#ffcdd2' : '#f5f5f5' },
+              color: '#333'
+            }}
+          >
+            <Badge badgeContent={unreadCount} color="error">
+              <Notifications />
+            </Badge>
+          </IconButton>
+        </Tooltip>
+        <ProfileDropdown 
+          currentUser={currentUser} 
+          userProfile={userProfile}
+          profileRoute="/profile"
+        />
+      </Box>
+    </>
   );
 }
 
@@ -328,42 +333,44 @@ function UserHeader({ currentUser, userProfile }) {
 
   return (
     <>
-      <AppBar position="static" sx={{ bgcolor: 'background.paper', color: 'text.primary', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        <Toolbar sx={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', width: '100%' }}>
-          <Box></Box>
-          <Typography variant="h4" component="div" sx={{ 
-            fontWeight: 700, 
-            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
-            textAlign: 'center',
-            lineHeight: 1.2
-          }}>
-            Student Affairs Management System
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>
-            <Tooltip title={isOnNotificationsPage ? "Back to Dashboard" : "View Notifications"}>
-              <IconButton
-                size="large"
-                aria-label="notifications"
-                color="inherit"
-                onClick={handleNotificationClick}
-                sx={{ 
-                  bgcolor: studentNotifications.filter(n => !n.read).length > 0 ? '#ffebee' : 'transparent',
-                  '&:hover': { bgcolor: studentNotifications.filter(n => !n.read).length > 0 ? '#ffcdd2' : '#f5f5f5' }
-                }}
-              >
-                <Badge badgeContent={studentNotifications.filter(n => !n.read).length} color="error">
-                  <Notifications />
-                </Badge>
-              </IconButton>
-            </Tooltip>
-            <ProfileDropdown 
-              currentUser={currentUser} 
-              userProfile={userProfile}
-              profileRoute="/profile"
-            />
-          </Box>
+      <AppBar position="static" sx={{ bgcolor: theme => theme.palette.mode === 'dark' ? '#424242' : 'background.paper', color: theme => theme.palette.mode === 'dark' ? '#ffffff' : 'text.primary', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '32px' }}>
+        <Toolbar sx={{ display: 'flex', alignItems: 'center', width: '100%', minHeight: '32px !important' }}>
+          <Box sx={{ flex: 1 }}></Box>
         </Toolbar>
       </AppBar>
+      {/* Profile and Notification Icons - Outside Header Box */}
+      <Box sx={{ 
+        position: 'fixed', 
+        top: '4px', 
+        right: '16px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 2, 
+        zIndex: 1300 
+      }}>
+        <Tooltip title={isOnNotificationsPage ? "Back to Dashboard" : "View Notifications"}>
+          <IconButton
+            size="large"
+            aria-label="notifications"
+            color="inherit"
+            onClick={handleNotificationClick}
+            sx={{ 
+              bgcolor: studentNotifications.filter(n => !n.read).length > 0 ? '#ffebee' : 'transparent',
+              '&:hover': { bgcolor: studentNotifications.filter(n => !n.read).length > 0 ? '#ffcdd2' : '#f5f5f5' },
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#333'
+            }}
+          >
+            <Badge badgeContent={studentNotifications.filter(n => !n.read).length} color="error">
+              <Notifications />
+            </Badge>
+          </IconButton>
+        </Tooltip>
+        <ProfileDropdown 
+          currentUser={currentUser} 
+          userProfile={userProfile}
+          profileRoute="/profile"
+        />
+      </Box>
 
     </>
   );
@@ -615,9 +622,8 @@ function App() {
                       <Sidebar />
                       <Box sx={{ 
                         flex: 1, 
-                        p: 3, 
                         overflowY: "auto",
-                        height: "calc(100vh - 64px)",
+                        height: "calc(100vh - 32px)",
                         '&::-webkit-scrollbar': {
                           display: 'none'
                         },
@@ -645,6 +651,7 @@ function App() {
                           <Route path="/announcements/report" element={<AnnouncementReport />} />
                           <Route path="/receipt-review" element={<ReceiptReview />} />
                           <Route path="/lost-found" element={<AdminLostFound />} />
+                          <Route path="/students-lost-found" element={<StudentsLostFound />} />
                           <Route path="/recycle-bin" element={<RecycleBin />} />
                           <Route path="/admin-notifications" element={<AdminNotifications />} />
                           <Route path="/admin-activity-scheduler" element={<AdminActivityScheduler />} />
@@ -664,9 +671,8 @@ function App() {
                       <TeacherSidebar />
                       <Box sx={{ 
                         flex: 1, 
-                        p: 3, 
                         overflowY: "auto",
-                        height: "calc(100vh - 64px)",
+                        height: "calc(100vh - 32px)",
                         '&::-webkit-scrollbar': {
                           display: 'none'
                         },
@@ -705,10 +711,9 @@ function App() {
                     <UserSidebar currentUser={currentUser} userProfile={userProfile} />
                     <Box sx={{ 
                       flex: 1, 
-                      p: 3, 
                       overflowY: "auto",
-                      height: "calc(100vh - 64px)",
-                      minHeight: "calc(100vh - 64px)"
+                      height: "calc(100vh - 32px)",
+                      minHeight: "calc(100vh - 32px)"
                     }}>
                       <Routes>
                         <Route path="/" element={<UserDashboard currentUser={currentUser} userProfile={userProfile} />} />

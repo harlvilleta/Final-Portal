@@ -57,12 +57,11 @@ export default function Options() {
   };
   
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
+    <Box sx={{ pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
+      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', mb: 2, mt: 1 }}>
         Options
       </Typography>
       
-      <Box sx={{ p: { xs: 1, md: 4 }, maxWidth: 900, mx: 'auto', overflowY: 'auto', bgcolor: theme.palette.mode === 'dark' ? '#000000' : '#f5f6fa', borderRadius: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Button 
           variant="outlined" 
@@ -232,7 +231,6 @@ export default function Options() {
           {snackbar.message}
         </Alert>
       </Snackbar>
-      </Box>
     </Box>
   );
 } 

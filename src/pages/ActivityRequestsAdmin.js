@@ -56,8 +56,8 @@ export default function ActivityRequestsAdmin() {
   };
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>All Booking Requests</Typography>
+    <Box sx={{ pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
+      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', mb: 2, mt: 1 }}>All Booking Requests</Typography>
       <TableContainer component={Paper} sx={{
         bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
         backdropFilter: theme.palette.mode === 'dark' ? 'blur(10px)' : 'none',

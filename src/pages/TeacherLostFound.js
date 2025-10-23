@@ -540,28 +540,39 @@ export default function TeacherLostFound({ currentUser: propCurrentUser, userPro
                   <Paper 
                     key={`${item.type}-${item.id}`} 
                     sx={{ 
-                      mb: 3, 
-                      p: 3,
+                      mb: 2, 
+                      p: 2,
                       bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
                       border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e0e0e0',
-                      borderRadius: 2,
-                      borderLeft: item.type === 'lost' ? '4px solid #f44336' : '4px solid #4caf50'
+                      borderRadius: 1.5,
+                      borderLeft: item.type === 'lost' ? '3px solid #f44336' : '3px solid #4caf50'
                     }}
                   >
                     {/* Post Header */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Avatar 
                           src={posterInfo.name === 'Teacher' && currentUser?.photoURL ? currentUser.photoURL : undefined}
-                          sx={{ bgcolor: posterInfo.color === 'primary' ? '#1976d2' : '#9c27b0' }}
+                          sx={{ 
+                            bgcolor: posterInfo.color === 'primary' ? '#1976d2' : '#9c27b0',
+                            width: 32,
+                            height: 32
+                          }}
                         >
                           {posterInfo.icon}
                         </Avatar>
                         <Box>
-                          <Typography variant="h6" sx={{ fontWeight: 600, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                          <Typography variant="subtitle1" sx={{ 
+                            fontWeight: 600, 
+                            color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                            fontSize: '1rem'
+                          }}>
                             {item.name}
                           </Typography>
-                          <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666' }}>
+                          <Typography variant="caption" sx={{ 
+                            color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                            fontSize: '0.75rem'
+                          }}>
                             {posterInfo.name} • {new Date(item.createdAt).toLocaleDateString()}
                           </Typography>
                         </Box>
@@ -571,27 +582,33 @@ export default function TeacherLostFound({ currentUser: propCurrentUser, userPro
                           label={item.type === 'lost' ? 'Lost' : 'Found'} 
                           color={item.type === 'lost' ? 'error' : 'success'} 
                             size="small"
+                            sx={{ fontSize: '0.75rem', height: 24 }}
                         />
                       </Box>
                     </Box>
 
                     {/* Post Content */}
-                    <Typography variant="body1" sx={{ mb: 2, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                    <Typography variant="body2" sx={{ 
+                      mb: 1.5, 
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      fontSize: '0.9rem',
+                      lineHeight: 1.4
+                    }}>
                       {item.description}
                     </Typography>
 
                     {/* Image */}
                     {item.image && (
-                      <Box sx={{ mb: 2 }}>
+                      <Box sx={{ mb: 1.5 }}>
                         <img 
                           src={item.image} 
                           alt={item.name} 
                           style={{ 
                             width: '100%', 
-                            maxWidth: '400px',
+                            maxWidth: '300px',
                             height: 'auto', 
                             objectFit: 'cover',
-                            borderRadius: '8px',
+                            borderRadius: '6px',
                             border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e0e0e0'
                             }}
                           />
@@ -599,38 +616,49 @@ export default function TeacherLostFound({ currentUser: propCurrentUser, userPro
                     )}
 
                     {/* Location and Time */}
-                    <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', mb: 2 }}>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 1.5 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <LocationOn sx={{ fontSize: 16, color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666' }} />
-                        <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666' }}>
+                        <LocationOn sx={{ fontSize: 14, color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666' }} />
+                        <Typography variant="caption" sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                          fontSize: '0.75rem'
+                        }}>
                           {item.location}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <AccessTime sx={{ fontSize: 16, color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666' }} />
-                        <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666' }}>
+                        <AccessTime sx={{ fontSize: 14, color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666' }} />
+                        <Typography variant="caption" sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                          fontSize: '0.75rem'
+                        }}>
                           {item.type === 'lost' ? `Lost: ${item.timeLost}` : `Found: ${item.timeFound}`}
                         </Typography>
                       </Box>
                     </Box>
 
                     {/* Status */}
-                    <Box sx={{ mb: 2 }}>
+                    <Box sx={{ mb: 1.5 }}>
                       {item.resolved ? (
-                        <Chip label="Resolved" color="success" size="small" />
+                        <Chip label="Resolved" color="success" size="small" sx={{ fontSize: '0.75rem', height: 24 }} />
                       ) : (
-                        <Chip label="Active" color="warning" size="small" />
+                        <Chip label="Active" color="warning" size="small" sx={{ fontSize: '0.75rem', height: 24 }} />
                       )}
                     </Box>
 
                     {/* Comments Section */}
                     {item.comments && item.comments.length > 0 && (
-                      <Box sx={{ mt: 2, p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#f5f5f5', borderRadius: 1 }}>
-                        <Typography variant="subtitle2" sx={{ mb: 2, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                      <Box sx={{ mt: 1.5, p: 1.5, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#f5f5f5', borderRadius: 1 }}>
+                        <Typography variant="caption" sx={{ 
+                          mb: 1.5, 
+                          color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                          fontSize: '0.8rem',
+                          fontWeight: 600
+                        }}>
                           Comments ({item.comments.length})
                         </Typography>
                         {item.comments.map((comment, index) => (
-                          <Box key={comment.id || index} sx={{ mb: 2, p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff', borderRadius: 1 }}>
+                          <Box key={comment.id || index} sx={{ mb: 1, p: 1.5, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff', borderRadius: 1 }}>
                             {/* Main Comment */}
                             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
                               <Avatar 

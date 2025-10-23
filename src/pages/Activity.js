@@ -645,7 +645,7 @@ export default function Activity() {
   };
 
   return (
-    <>
+    <Box sx={{ pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
       <Grid container spacing={3}>
         <Grid item xs={12}>
           {/* Schedule Event approval removed */}
@@ -852,6 +852,6 @@ export default function Activity() {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </>
+    </Box>
   );
 } 

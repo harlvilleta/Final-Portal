@@ -180,9 +180,9 @@ function UserOverview({ currentUser }) {
   const userInfo = getUserDisplayInfo();
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: theme.palette.mode === 'dark' ? '#000000' : '#f5f6fa', minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 0.5, sm: 1 }, pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
       {/* Welcome Section */}
-      <Box sx={{ mb: 4, pt: { xs: 1, sm: 2 }, px: { xs: 1, sm: 0 } }}>
+      <Box sx={{ mb: 2, pt: { xs: 1, sm: 1 }, px: { xs: 0, sm: 0 } }}>
         <Typography 
           variant="h4" 
           fontWeight={700} 
@@ -285,7 +285,7 @@ function UserOverview({ currentUser }) {
       )}
 
       {/* Statistics Cards */}
-      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 4 }}>
+      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 1 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ 
             display: 'flex', 

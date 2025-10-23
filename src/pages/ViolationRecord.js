@@ -489,7 +489,7 @@ School Administration
   };
 
   return (
-    <Box>
+    <Box sx={{ pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
       <style>
         {`
           @media print {
@@ -501,7 +501,9 @@ School Administration
         `}
       </style>
       <Typography variant="h4" gutterBottom fontWeight={700} sx={{ 
-        color: theme.palette.mode === 'dark' ? '#ffffff' : 'primary.main' 
+        color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+        mb: 2,
+        mt: 1
       }}>
         Violation Records
       </Typography>

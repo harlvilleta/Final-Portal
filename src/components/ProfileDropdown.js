@@ -138,8 +138,8 @@ const ProfileDropdown = ({
           <Avatar 
             src={userInfo.photo} 
             sx={{ 
-              width: 32, 
-              height: 32,
+              width: 48, 
+              height: 48,
               bgcolor: userInfo.photo ? 'transparent' : '#1976d2',
               border: isDark ? '2px solid rgba(255, 255, 255, 0.2)' : '2px solid rgba(0, 0, 0, 0.1)'
             }}
@@ -190,8 +190,8 @@ const ProfileDropdown = ({
             <Avatar 
               src={userInfo.photo} 
               sx={{ 
-                width: 48, 
-                height: 48,
+                width: 64, 
+                height: 64,
                 bgcolor: userInfo.photo ? 'transparent' : '#1976d2'
               }}
             >

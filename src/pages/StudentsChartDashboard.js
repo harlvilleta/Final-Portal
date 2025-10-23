@@ -110,12 +110,12 @@ export default function StudentsChartDashboard() {
 
   if (loading) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: 3, pt: { xs: 2, sm: 3 } }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
           <IconButton onClick={handleBack} sx={{ mr: 2 }}>
             <ArrowBack />
           </IconButton>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000' }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000', mb: 2, mt: 1 }}>
             Students Registration Dashboard
           </Typography>
         </Box>
@@ -128,12 +128,12 @@ export default function StudentsChartDashboard() {
 
   if (error) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: 3, pt: { xs: 2, sm: 3 } }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
           <IconButton onClick={handleBack} sx={{ mr: 2 }}>
             <ArrowBack />
           </IconButton>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000' }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000', mb: 2, mt: 1 }}>
             Students Registration Dashboard
           </Typography>
         </Box>
@@ -145,26 +145,26 @@ export default function StudentsChartDashboard() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 2, pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
         <IconButton onClick={handleBack} sx={{ mr: 2 }}>
           <ArrowBack />
         </IconButton>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: '#800000' }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#000000', mb: 2, mt: 1 }}>
           Students Registration Dashboard
         </Typography>
       </Box>
 
       {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid container spacing={2} sx={{ mb: 1 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#800000' }}>
+              <Typography variant="h4" fontWeight={700} sx={{ color: '#ffffff' }}>
                 {totalStudents}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: '#ffffff' }}>
                 Total Students ({new Date().getFullYear()})
               </Typography>
             </CardContent>
@@ -173,10 +173,10 @@ export default function StudentsChartDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#800000' }}>
+              <Typography variant="h4" fontWeight={700} sx={{ color: '#ffffff' }}>
                 {Math.round(averagePerMonth)}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: '#ffffff' }}>
                 Average per Month
               </Typography>
             </CardContent>
@@ -185,10 +185,10 @@ export default function StudentsChartDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#800000' }}>
+              <Typography variant="h4" fontWeight={700} sx={{ color: '#ffffff' }}>
                 {peakMonth.count}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: '#ffffff' }}>
                 Peak Month: {peakMonth.month}
               </Typography>
             </CardContent>
@@ -197,10 +197,10 @@ export default function StudentsChartDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#800000' }}>
+              <Typography variant="h4" fontWeight={700} sx={{ color: '#ffffff' }}>
                 {new Date().getFullYear()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: '#ffffff' }}>
                 Current Year
               </Typography>
             </CardContent>
@@ -209,26 +209,27 @@ export default function StudentsChartDashboard() {
       </Grid>
 
       {/* Overview Comparison */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000' }}>
+      <Box sx={{ mb: 1 }}>
+        <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, color: '#ffffff' }}>
           Last 6 Months (Overview Data)
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography variant="caption" sx={{ mb: 1.5, color: '#ffffff' }}>
           This shows the same data as displayed in the Overview dashboard
         </Typography>
-        <Grid container spacing={2}>
+        <Grid container spacing={1}>
           {monthlyData.slice(-6).map((month, index) => (
             <Grid item xs={6} sm={4} md={2} key={month.month}>
               <Card sx={{ 
                 textAlign: 'center', 
-                bgcolor: '#80000015',
-                border: '1px solid #800000'
+                bgcolor: 'transparent',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                height: 'fit-content'
               }}>
-                <CardContent sx={{ p: 2 }}>
-                  <Typography variant="h6" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#800000' }}>
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Typography variant="subtitle1" fontWeight={600} sx={{ color: '#ffffff', fontSize: '1rem' }}>
                     {month.count}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{ fontSize: '0.7rem', color: '#ffffff' }}>
                     {month.month}
                   </Typography>
                 </CardContent>
@@ -236,14 +237,14 @@ export default function StudentsChartDashboard() {
             </Grid>
           ))}
         </Grid>
-      </Paper>
+      </Box>
 
       {/* Monthly Chart */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000' }}>
+      <Paper sx={{ p: 2, mb: 1 }}>
+        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#ffffff' }}>
           Student Registration Trends - {new Date().getFullYear()}
         </Typography>
-        <ResponsiveContainer width="100%" height={500}>
+        <ResponsiveContainer width="100%" height={350}>
           <LineChart data={monthlyData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 

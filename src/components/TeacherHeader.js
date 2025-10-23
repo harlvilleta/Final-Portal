@@ -62,47 +62,52 @@ export default function TeacherHeader({ currentUser, userProfile }) {
 
 
   return (
-    <AppBar position="static" sx={{ bgcolor: 'background.paper', color: 'text.primary', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-      <Toolbar sx={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', width: '100%' }}>
-        <Box></Box>
-        <Typography variant="h4" component="div" sx={{ 
-          fontWeight: 700, 
-          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
-          textAlign: 'center',
-          lineHeight: 1.2
-        }}>
-          Student Affairs Management System
-        </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>
-          <IconButton
-            size="large"
-            aria-label="mail to admin"
-            onClick={() => setComposeOpen(true)}
-            color="inherit"
-          >
-            <Mail />
-          </IconButton>
-          <IconButton
-            size="large"
-            aria-label="notifications"
-            onClick={handleNotificationClick}
-            color="inherit"
-            sx={{ 
-              bgcolor: unreadCount > 0 ? '#ffebee' : 'transparent',
-              '&:hover': { bgcolor: unreadCount > 0 ? '#ffcdd2' : '#f5f5f5' }
-            }}
-          >
-            <Badge badgeContent={unreadCount} color="error">
-              <Notifications />
-            </Badge>
-          </IconButton>
-          <ProfileDropdown 
-            currentUser={currentUser} 
-            userProfile={userProfile}
-            profileRoute="/teacher-profile"
-          />
-        </Box>
-      </Toolbar>
+    <>
+      <AppBar position="static" sx={{ bgcolor: theme => theme.palette.mode === 'dark' ? '#424242' : 'background.paper', color: theme => theme.palette.mode === 'dark' ? '#ffffff' : 'text.primary', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '32px' }}>
+        <Toolbar sx={{ display: 'flex', alignItems: 'center', width: '100%', minHeight: '32px !important' }}>
+          <Box sx={{ flex: 1 }}></Box>
+        </Toolbar>
+      </AppBar>
+      {/* Profile and Notification Icons - Outside Header Box */}
+      <Box sx={{ 
+        position: 'fixed', 
+        top: '4px', 
+        right: '16px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 2, 
+        zIndex: 1300 
+      }}>
+        <IconButton
+          size="large"
+          aria-label="mail to admin"
+          onClick={() => setComposeOpen(true)}
+          color="inherit"
+          sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#333' }}
+        >
+          <Mail />
+        </IconButton>
+        <IconButton
+          size="large"
+          aria-label="notifications"
+          onClick={handleNotificationClick}
+          color="inherit"
+          sx={{ 
+            bgcolor: unreadCount > 0 ? '#ffebee' : 'transparent',
+            '&:hover': { bgcolor: unreadCount > 0 ? '#ffcdd2' : '#f5f5f5' },
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#333'
+          }}
+        >
+          <Badge badgeContent={unreadCount} color="error">
+            <Notifications />
+          </Badge>
+        </IconButton>
+        <ProfileDropdown 
+          currentUser={currentUser} 
+          userProfile={userProfile}
+          profileRoute="/teacher-profile"
+        />
+      </Box>
 
 
 
@@ -146,6 +151,6 @@ export default function TeacherHeader({ currentUser, userProfile }) {
           </Button>
         </DialogActions>
       </Dialog>
-    </AppBar>
+    </>
   );
 } 

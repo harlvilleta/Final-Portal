@@ -336,6 +336,24 @@ export default function Overview() {
     }
   ];
 
+  // Additional action buttons for Lost & Found
+  const actionButtons = [
+    {
+      label: 'Lost & Found',
+      icon: <VisibilityIcon fontSize="large" />,
+      color: '#800000',
+      to: '/lost-found',
+      description: 'Manage lost and found items'
+    },
+    {
+      label: 'Students Lost and Found',
+      icon: <PeopleIcon fontSize="large" />,
+      color: '#800000',
+      to: '/students-lost-found',
+      description: 'Review student lost and found reports'
+    }
+  ];
+
   const handleEventFormChange = (e) => {
     const { name, value } = e.target;
     setEventForm(f => ({ ...f, [name]: value }));
@@ -382,13 +400,13 @@ export default function Overview() {
   // Removed loading screen per requirements
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom sx={{ color: isDark ? '#ffffff' : '#800000' }}>
+    <Box sx={{ p: { xs: 0.5, sm: 1 }, pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
+      <Typography variant="h4" gutterBottom sx={{ color: isDark ? '#ffffff' : '#800000', mb: 2, mt: 1 }}>
         Dashboard Overview
       </Typography>
       
       {/* Statistics Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         {statCards.map((stat) => (
           <Grid item xs={12} sm={6} md={3} key={stat.label}>
             <Card
@@ -450,24 +468,88 @@ export default function Overview() {
         ))}
       </Grid>
 
+      {/* Action Buttons Section */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        {actionButtons.map((button) => (
+          <Grid item xs={12} sm={6} md={3} key={button.label}>
+            <Card
+              onClick={() => button.to ? navigate(button.to) : null}
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                p: 2, 
+                boxShadow: isDark 
+                  ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
+                  : '0 4px 16px rgba(0, 0, 0, 0.1)', 
+                borderRadius: 2,
+                borderLeft: `4px solid ${button.color}`,
+                background: isDark 
+                  ? 'rgba(255, 255, 255, 0.05)' 
+                  : 'rgba(255, 255, 255, 0.8)',
+                backdropFilter: 'blur(10px)',
+                border: isDark 
+                  ? '1px solid rgba(255, 255, 255, 0.1)' 
+                  : '1px solid rgba(255, 255, 255, 0.2)',
+                cursor: button.to ? 'pointer' : 'default',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  boxShadow: isDark 
+                    ? '0 12px 40px rgba(0, 0, 0, 0.4)' 
+                    : '0 8px 24px rgba(0, 0, 0, 0.15)',
+                  transform: 'translateY(-2px)',
+                  background: isDark 
+                    ? 'rgba(255, 255, 255, 0.08)' 
+                    : 'rgba(255, 255, 255, 0.9)',
+                },
+              }}
+            >
+              <Box sx={{ 
+                mr: 2, 
+                color: isDark ? '#ffffff' : button.color,
+                '& .MuiSvgIcon-root': {
+                  color: isDark ? '#ffffff' : button.color
+                }
+              }}>
+                {button.icon}
+              </Box>
+              <CardContent sx={{ flex: 1, p: '8px !important' }}>
+                <Typography 
+                  variant="h6" 
+                  fontWeight={700} 
+                  sx={{ 
+                    color: isDark ? '#ffffff' : '#000000',
+                    mb: 0.5
+                  }}
+                >
+                  {button.label}
+                </Typography>
+                <Typography variant="body2" sx={{ color: isDark ? '#cccccc' : '#666666' }}>
+                  {button.description}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
       {/* Monthly Charts */}
-      <Grid container spacing={3}>
+      <Grid container spacing={3} sx={{ mt: 2 }}>
         {/* Students Monthly Chart */}
         <Grid item xs={12} md={6}>
           <Paper 
             sx={{ 
-              p: 3, 
-              height: 400, 
+              p: 2, 
+              height: 280, 
               cursor: 'pointer',
               transition: 'all 0.2s ease-in-out',
               '&:hover': {
-                boxShadow: 6,
-                transform: 'translateY(-2px)'
+                boxShadow: 4,
+                transform: 'translateY(-1px)'
               }
             }}
             onClick={() => navigate('/students-chart')}
           >
-            <Typography variant="h6" gutterBottom sx={{ color: isDark ? '#ffffff' : '#000000' }}>
+            <Typography variant="subtitle1" gutterBottom sx={{ color: isDark ? '#ffffff' : '#000000', fontWeight: 600 }}>
               Students Registration (Last 6 Months)
             </Typography>
             <ResponsiveContainer width="100%" height="100%">
@@ -511,8 +593,8 @@ export default function Overview() {
         <Grid item xs={12} md={6}>
           <Paper 
             sx={{ 
-              p: 3, 
-              height: 400, 
+              p: 2, 
+              height: 280, 
               cursor: 'pointer',
               transition: 'none',
               '&:hover': {
@@ -523,7 +605,7 @@ export default function Overview() {
             }}
             onClick={() => navigate('/violations-chart')}
           >
-            <Typography variant="h6" gutterBottom sx={{ color: isDark ? '#ffffff' : '#000000' }}>
+            <Typography variant="subtitle1" gutterBottom sx={{ color: isDark ? '#ffffff' : '#000000', fontWeight: 600 }}>
               Violations Reported (Last 6 Months)
             </Typography>
             <ResponsiveContainer width="100%" height="100%">
@@ -583,7 +665,7 @@ export default function Overview() {
       </Grid>
 
       {/* Recent Activity Section */}
-      <Grid container spacing={3} sx={{ mt: 4, justifyContent: 'center' }}>
+      <Grid container spacing={3} sx={{ mt: 6, justifyContent: 'center' }}>
         <Grid item xs={12} md={11} lg={10}>
           <Paper sx={{ p: 3, boxShadow: 2 }}>
             <Typography 

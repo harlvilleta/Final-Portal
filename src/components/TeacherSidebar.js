@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { List, ListItem, ListItemIcon, ListItemText, Drawer, Divider, Box, Collapse, ListItemButton, Badge } from "@mui/material";
+import { List, ListItem, ListItemIcon, ListItemText, Drawer, Divider, Box, Collapse, ListItemButton, Badge, Typography } from "@mui/material";
 import { Dashboard, Settings, Event, Logout, Campaign, Report, ListAlt, History, Search, ExpandLess, ExpandMore, Assignment, Assessment, Schedule, Notifications, Description } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from '../firebase';
@@ -133,9 +133,25 @@ export default function TeacherSidebar() {
       }}
     >
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Box sx={{ mb: 2 }}>
+        <Box sx={{ mb: 1 }}>
           <img src="/gt.jpg" alt="Logo" style={{ width: 180, height: 144, borderRadius: 10, boxShadow: '0 2px 8px #0002' }} />
         </Box>
+        {/* System Title */}
+        <Typography 
+          variant="caption" 
+          sx={{ 
+            color: '#ffffff', 
+            fontWeight: 600, 
+            fontSize: '0.7rem', 
+            textAlign: 'center', 
+            lineHeight: 1.2,
+            letterSpacing: '0.5px',
+            textTransform: 'uppercase',
+            mb: 1
+          }}
+        >
+          Student Affairs Management System
+        </Typography>
         <Divider sx={{ width: '100%', mb: 2, bgcolor: '#b2bec3' }} />
       </Box>
 

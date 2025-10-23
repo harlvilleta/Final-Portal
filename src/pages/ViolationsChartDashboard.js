@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { 
   Box, Typography, Paper, IconButton, Grid, Card, CardContent, Chip,
   CircularProgress, Alert
@@ -17,50 +17,43 @@ export default function ViolationsChartDashboard() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchYearlyData();
-  }, []);
-
-  const fetchYearlyData = async () => {
+  const fetchYearlyData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
       const currentYear = new Date().getFullYear();
+      const startOfYear = new Date(currentYear, 0, 1);
+      const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59);
+
+      // Single query to fetch all violations for the current year
+      const violationsQuery = query(
+        collection(db, "violations"),
+        where("createdAt", ">=", startOfYear.toISOString()),
+        where("createdAt", "<=", endOfYear.toISOString())
+      );
+      
+      const violationsSnapshot = await getDocs(violationsQuery);
+      
+      // Process violations by month
       const months = [
         'January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'
       ];
-
-      const monthlyCounts = [];
-
-      // Fetch data for each month of the current year
-      for (let i = 0; i < 12; i++) {
-        const startOfMonth = new Date(currentYear, i, 1);
-        const endOfMonth = new Date(currentYear, i + 1, 0, 23, 59, 59);
-
-        try {
-          const violationsQuery = query(
-            collection(db, "violations"),
-            where("createdAt", ">=", startOfMonth.toISOString()),
-            where("createdAt", "<=", endOfMonth.toISOString())
-          );
-          const violationsSnapshot = await getDocs(violationsQuery);
-
-          monthlyCounts.push({
-            month: months[i],
-            count: violationsSnapshot.size,
-            monthNumber: i + 1
-          });
-        } catch (monthError) {
-          console.log(`Error fetching data for ${months[i]}:`, monthError);
-          monthlyCounts.push({
-            month: months[i],
-            count: 0,
-            monthNumber: i + 1
-          });
+      
+      const monthlyCounts = Array.from({ length: 12 }, (_, i) => ({
+        month: months[i],
+        count: 0,
+        monthNumber: i + 1
+      }));
+      
+      violationsSnapshot.docs.forEach(doc => {
+        const createdAt = new Date(doc.data().createdAt);
+        const monthIndex = createdAt.getMonth();
+        if (monthIndex >= 0 && monthIndex < 12) {
+          monthlyCounts[monthIndex].count++;
         }
-      }
+      });
 
       setMonthlyData(monthlyCounts);
     } catch (err) {
@@ -69,16 +62,28 @@ export default function ViolationsChartDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchYearlyData();
+  }, [fetchYearlyData]);
 
   const handleBack = () => {
     navigate('/overview');
   };
 
-  const totalViolations = monthlyData.reduce((sum, month) => sum + month.count, 0);
-  const peakMonth = monthlyData.reduce((max, month) => month.count > max.count ? month : max, { count: 0, month: 'None' });
-  const averagePerMonth = totalViolations / 12;
-  const monthsWithViolations = monthlyData.filter(month => month.count > 0).length;
+  const stats = useMemo(() => {
+    const totalViolations = monthlyData.reduce((sum, month) => sum + month.count, 0);
+    const peakMonth = monthlyData.reduce((max, month) => month.count > max.count ? month : max, { count: 0, month: 'None' });
+    const averagePerMonth = totalViolations / 12;
+    const monthsWithViolations = monthlyData.filter(month => month.count > 0).length;
+    
+    return { totalViolations, peakMonth, averagePerMonth, monthsWithViolations };
+  }, [monthlyData]);
+  
+  const { totalViolations, peakMonth, averagePerMonth, monthsWithViolations } = stats;
+  
+  const chartData = useMemo(() => monthlyData, [monthlyData]);
 
   if (loading) {
     return (
@@ -117,26 +122,26 @@ export default function ViolationsChartDashboard() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3, pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <IconButton onClick={handleBack} sx={{ mr: 2 }}>
           <ArrowBack />
         </IconButton>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: '#800000' }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#000000', mb: 2, mt: 1 }}>
           Violations Dashboard
         </Typography>
       </Box>
 
       {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid container spacing={2} sx={{ mb: 1 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#800000' }}>
+              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#000000' }}>
                 {totalViolations}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: isDark ? '#ffffff' : '#000000' }}>
                 Total Violations ({new Date().getFullYear()})
               </Typography>
             </CardContent>
@@ -145,10 +150,10 @@ export default function ViolationsChartDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#800000' }}>
+              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#000000' }}>
                 {Math.round(averagePerMonth)}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: isDark ? '#ffffff' : '#000000' }}>
                 Average per Month
               </Typography>
             </CardContent>
@@ -157,10 +162,10 @@ export default function ViolationsChartDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#800000' }}>
+              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#000000' }}>
                 {peakMonth.count}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: isDark ? '#ffffff' : '#000000' }}>
                 Peak Month: {peakMonth.month}
               </Typography>
             </CardContent>
@@ -169,10 +174,10 @@ export default function ViolationsChartDashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
             <CardContent>
-              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#800000' }}>
+              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#000000' }}>
                 {monthsWithViolations}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: isDark ? '#ffffff' : '#000000' }}>
                 Months with Violations
               </Typography>
             </CardContent>
@@ -181,12 +186,12 @@ export default function ViolationsChartDashboard() {
       </Grid>
 
       {/* Monthly Chart */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000' }}>
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#000000' }}>
           Violations Reported - {new Date().getFullYear()}
         </Typography>
-        <ResponsiveContainer width="100%" height={500}>
-          <BarChart data={monthlyData}>
+        <ResponsiveContainer width="100%" height={350}>
+          <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               dataKey="month" 
@@ -240,34 +245,24 @@ export default function ViolationsChartDashboard() {
       </Paper>
 
       {/* Monthly Breakdown */}
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000' }}>
+      <Box sx={{ mb: 1 }}>
+        <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, color: isDark ? '#ffffff' : '#000000' }}>
           Monthly Breakdown
         </Typography>
-        <Grid container spacing={2}>
-          {monthlyData.map((month) => (
+        <Grid container spacing={1}>
+          {chartData.map((month) => (
             <Grid item xs={6} sm={4} md={2} key={month.month}>
               <Card sx={{ 
                 textAlign: 'center', 
-                bgcolor: isDark ? 'rgba(255, 255, 255, 0.05)' : (month.count > averagePerMonth ? '#80000015' : '#f5f5f5'),
-                backdropFilter: isDark ? 'blur(10px)' : 'none',
-                border: month.count > 0 ? '2px solid #d32f2f' : '2px solid #4caf50',
-                boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.1)'
+                bgcolor: 'transparent',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.2)',
+                height: 'fit-content'
               }}>
-                <CardContent sx={{ p: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
-                    <Box sx={{ 
-                      width: 12, 
-                      height: 12, 
-                      borderRadius: '50%', 
-                      bgcolor: month.count > 0 ? '#d32f2f' : '#4caf50',
-                      mr: 1
-                    }} />
-                    <Typography variant="h6" fontWeight={700} sx={{ color: isDark ? '#ffffff' : (month.count > averagePerMonth ? '#800000' : 'text.primary') }}>
-                      {month.count}
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" sx={{ color: isDark ? '#ffffff' : 'text.secondary' }}>
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Typography variant="subtitle1" fontWeight={600} sx={{ color: isDark ? '#ffffff' : '#000000', fontSize: '1rem' }}>
+                    {month.count}
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontSize: '0.7rem', color: isDark ? '#ffffff' : '#000000' }}>
                     {month.month}
                   </Typography>
                 </CardContent>
@@ -291,7 +286,7 @@ export default function ViolationsChartDashboard() {
             </Typography>
           </Box>
         </Box>
-      </Paper>
+      </Box>
     </Box>
   );
 }
