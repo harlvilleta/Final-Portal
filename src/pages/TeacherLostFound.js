@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Grid, Paper, TextField, Button, Snackbar, Alert, MenuItem, Card, CardContent, Chip, Avatar, useTheme, Tabs, Tab, IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { Add, Search, ThumbUp, Comment, AdminPanelSettings, Person, LocationOn, AccessTime } from '@mui/icons-material';
+import { Add, Search, ThumbUp, Comment, AdminPanelSettings, Person, LocationOn, AccessTime, CloudUpload } from '@mui/icons-material';
 import { db } from '../firebase';
 import { collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth } from '../firebase';
@@ -9,7 +9,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 export default function TeacherLostFound() {
   const theme = useTheme();
   const [currentUser, setCurrentUser] = useState(null);
-  const [form, setForm] = useState({ type: 'lost', name: '', description: '', location: '' });
+  const [form, setForm] = useState({ type: 'lost', name: '', description: '', location: '', image: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [lostItems, setLostItems] = useState([]);
   const [foundItems, setFoundItems] = useState([]);
@@ -78,6 +78,29 @@ export default function TeacherLostFound() {
     loadUserLikes();
   }, [currentUser?.email, lostItems, foundItems]);
 
+  // Image upload handler
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setSnackbar({ open: true, message: "Please select a valid image file", severity: "error" });
+      return;
+    }
+
+    if (file.size > 200 * 1024) { // 200KB limit
+      setSnackbar({ open: true, message: "Image file size must be less than 200KB", severity: "error" });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setForm(f => ({ ...f, image: e.target.result }));
+      setSnackbar({ open: true, message: "Image loaded!", severity: "success" });
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) {
@@ -89,7 +112,7 @@ export default function TeacherLostFound() {
       const payload = { ...form, resolved: false, createdAt: new Date().toISOString() };
       const col = form.type === 'lost' ? 'lost_items' : 'found_items';
       await addDoc(collection(db, col), payload);
-      setForm({ type: form.type, name: '', description: '', location: '' });
+      setForm({ type: form.type, name: '', description: '', location: '', image: null });
       setSnackbar({ open: true, message: `${form.type === 'lost' ? 'Lost' : 'Found'} item submitted!`, severity: 'success' });
     } catch (err) {
       setSnackbar({ open: true, message: 'Submit failed: ' + err.message, severity: 'error' });
@@ -221,6 +244,25 @@ export default function TeacherLostFound() {
             <TextField fullWidth size="small" label="Item Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value, type: 'lost' }))} sx={{ mb: 2 }} />
               <TextField fullWidth size="small" label="Description" multiline minRows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} sx={{ mb: 2 }} />
               <TextField fullWidth size="small" label="Location" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} sx={{ mb: 2 }} />
+              
+              {/* Image Upload */}
+              <Box sx={{ mb: 2 }}>
+                <Button
+                  component="label"
+                  variant="outlined"
+                  startIcon={<CloudUpload />}
+                  sx={{ mb: 1 }}
+                >
+                  Upload Image
+                  <input type="file" accept="image/*" hidden onChange={handleImageUpload} />
+                </Button>
+                {form.image && (
+                  <Box sx={{ mt: 1 }}>
+                    <img src={form.image} alt="Lost item" style={{ maxWidth: '200px', maxHeight: '200px', borderRadius: '4px' }} />
+                  </Box>
+                )}
+              </Box>
+              
               <Button type="submit" variant="outlined" disabled={submitting} sx={{
                 textTransform: 'none', bgcolor: '#fff', color: '#000', borderColor: '#000',
                 '&:hover': { bgcolor: '#800000', color: '#fff', borderColor: '#800000' }
@@ -240,6 +282,25 @@ export default function TeacherLostFound() {
             <TextField fullWidth size="small" label="Item Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value, type: 'found' }))} sx={{ mb: 2 }} />
             <TextField fullWidth size="small" label="Description" multiline minRows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} sx={{ mb: 2 }} />
             <TextField fullWidth size="small" label="Location" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} sx={{ mb: 2 }} />
+            
+            {/* Image Upload */}
+            <Box sx={{ mb: 2 }}>
+              <Button
+                component="label"
+                variant="outlined"
+                startIcon={<CloudUpload />}
+                sx={{ mb: 1 }}
+              >
+                Upload Image
+                <input type="file" accept="image/*" hidden onChange={handleImageUpload} />
+              </Button>
+              {form.image && (
+                <Box sx={{ mt: 1 }}>
+                  <img src={form.image} alt="Found item" style={{ maxWidth: '200px', maxHeight: '200px', borderRadius: '4px' }} />
+                </Box>
+              )}
+            </Box>
+            
             <Button type="submit" variant="outlined" disabled={submitting} sx={{
               textTransform: 'none', bgcolor: '#fff', color: '#000', borderColor: '#000',
               '&:hover': { bgcolor: '#800000', color: '#fff', borderColor: '#800000' }
@@ -335,6 +396,24 @@ export default function TeacherLostFound() {
                     <Typography variant="body1" sx={{ mb: 2, color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                       {item.description}
                     </Typography>
+
+                    {/* Image */}
+                    {item.image && (
+                      <Box sx={{ mb: 2 }}>
+                        <img 
+                          src={item.image} 
+                          alt={item.name} 
+                          style={{ 
+                            width: '100%', 
+                            maxWidth: '400px',
+                            height: 'auto', 
+                            objectFit: 'cover',
+                            borderRadius: '8px',
+                            border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e0e0e0'
+                          }} 
+                        />
+                      </Box>
+                    )}
 
                     {/* Location and Time */}
                     <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', mb: 2 }}>
