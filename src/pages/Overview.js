@@ -336,23 +336,6 @@ export default function Overview() {
     }
   ];
 
-  // Additional action buttons for Lost & Found
-  const actionButtons = [
-    {
-      label: 'Lost & Found',
-      icon: <VisibilityIcon fontSize="large" />,
-      color: '#800000',
-      to: '/lost-found',
-      description: 'Manage lost and found items'
-    },
-    {
-      label: 'Students Lost and Found',
-      icon: <PeopleIcon fontSize="large" />,
-      color: '#800000',
-      to: '/students-lost-found',
-      description: 'Review student lost and found reports'
-    }
-  ];
 
   const handleEventFormChange = (e) => {
     const { name, value } = e.target;
@@ -468,69 +451,6 @@ export default function Overview() {
         ))}
       </Grid>
 
-      {/* Action Buttons Section */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {actionButtons.map((button) => (
-          <Grid item xs={12} sm={6} md={3} key={button.label}>
-            <Card
-              onClick={() => button.to ? navigate(button.to) : null}
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                p: 2, 
-                boxShadow: isDark 
-                  ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
-                  : '0 4px 16px rgba(0, 0, 0, 0.1)', 
-                borderRadius: 2,
-                borderLeft: `4px solid ${button.color}`,
-                background: isDark 
-                  ? 'rgba(255, 255, 255, 0.05)' 
-                  : 'rgba(255, 255, 255, 0.8)',
-                backdropFilter: 'blur(10px)',
-                border: isDark 
-                  ? '1px solid rgba(255, 255, 255, 0.1)' 
-                  : '1px solid rgba(255, 255, 255, 0.2)',
-                cursor: button.to ? 'pointer' : 'default',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  boxShadow: isDark 
-                    ? '0 12px 40px rgba(0, 0, 0, 0.4)' 
-                    : '0 8px 24px rgba(0, 0, 0, 0.15)',
-                  transform: 'translateY(-2px)',
-                  background: isDark 
-                    ? 'rgba(255, 255, 255, 0.08)' 
-                    : 'rgba(255, 255, 255, 0.9)',
-                },
-              }}
-            >
-              <Box sx={{ 
-                mr: 2, 
-                color: isDark ? '#ffffff' : button.color,
-                '& .MuiSvgIcon-root': {
-                  color: isDark ? '#ffffff' : button.color
-                }
-              }}>
-                {button.icon}
-              </Box>
-              <CardContent sx={{ flex: 1, p: '8px !important' }}>
-                <Typography 
-                  variant="h6" 
-                  fontWeight={700} 
-                  sx={{ 
-                    color: isDark ? '#ffffff' : '#000000',
-                    mb: 0.5
-                  }}
-                >
-                  {button.label}
-                </Typography>
-                <Typography variant="body2" sx={{ color: isDark ? '#cccccc' : '#666666' }}>
-                  {button.description}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
 
       {/* Monthly Charts */}
       <Grid container spacing={3} sx={{ mt: 2 }}>

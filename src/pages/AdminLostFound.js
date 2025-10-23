@@ -35,7 +35,8 @@ import {
   Cancel,
   Person,
   LocationOn,
-  AccessTime
+  AccessTime,
+  School
 } from '@mui/icons-material';
 import {
   collection,
@@ -51,9 +52,11 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminLostFound() {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [lostForm, setLostForm] = useState({ 
     name: '', 
     description: '', 
@@ -831,6 +834,32 @@ export default function AdminLostFound() {
           startIcon={<Add sx={{ fontSize: '0.875rem' }} />}
         >
           Lost Item
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => navigate('/students-lost-found')}
+          sx={{
+            bgcolor: 'transparent',
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+            border: theme.palette.mode === 'dark' ? '1px solid #ffffff' : '1px solid #000000',
+            px: 2,
+            py: 1,
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            borderRadius: 1,
+            '&:hover': {
+              bgcolor: '#800000',
+              color: '#ffffff',
+              border: '1px solid #800000',
+              transform: 'translateY(-1px)',
+              boxShadow: '0 2px 8px rgba(128, 0, 0, 0.3)'
+            },
+            transition: 'all 0.3s ease'
+          }}
+          startIcon={<School sx={{ fontSize: '0.875rem' }} />}
+        >
+          Student Lost and Found
         </Button>
       </Box>
 
