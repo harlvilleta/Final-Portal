@@ -186,7 +186,8 @@ export default function TeacherLostFound() {
         authorName: currentUser?.displayName || currentUser?.email || 'Anonymous',
         authorEmail: currentUser?.email,
         authorProfilePic: currentUser?.photoURL || '',
-        timestamp: serverTimestamp(),
+        timestamp: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
         likes: [],
         likeCount: 0,
         replies: []
@@ -206,9 +207,19 @@ export default function TeacherLostFound() {
 
   // Reply functionality
   const handleAddReply = async () => {
-    if (!newReply.trim() || !replyDialog.itemId) return;
+    if (!newReply.trim() || !replyDialog.itemId) {
+      setSnackbar({ open: true, message: 'Please enter a reply.', severity: 'error' });
+      return;
+    }
     
     try {
+      console.log('Adding reply:', {
+        itemId: replyDialog.itemId,
+        itemType: replyDialog.itemType,
+        parentCommentId: replyDialog.parentCommentId,
+        replyText: newReply.trim()
+      });
+
       const collectionName = replyDialog.itemType === 'lost' ? 'lost_items' : 'found_items';
       const itemRef = doc(db, collectionName, replyDialog.itemId);
       
@@ -218,36 +229,66 @@ export default function TeacherLostFound() {
         authorName: currentUser?.displayName || currentUser?.email || 'Anonymous',
         authorEmail: currentUser?.email,
         authorProfilePic: currentUser?.photoURL || '',
-        timestamp: serverTimestamp(),
+        timestamp: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
         likes: [],
         likeCount: 0
       };
       
       // Get current item data
       const itemDoc = await getDoc(itemRef);
-      if (itemDoc.exists()) {
-        const itemData = itemDoc.data();
-        const comments = itemData.comments || [];
-        
-        // Find and update the parent comment
-        const updatedComments = comments.map(comment => {
-          if (comment.id === replyDialog.parentCommentId) {
-            return {
-              ...comment,
-              replies: [...(comment.replies || []), replyData]
-            };
-          }
-          return comment;
+      if (!itemDoc.exists()) {
+        setSnackbar({ open: true, message: 'Item not found.', severity: 'error' });
+        return;
+      }
+
+      const itemData = itemDoc.data();
+      const comments = itemData.comments || [];
+      
+      console.log('Current comments:', comments);
+      console.log('Looking for parent comment ID:', replyDialog.parentCommentId);
+      
+      // Find the parent comment and add reply
+      let found = false;
+      const updatedComments = comments.map((comment, index) => {
+        console.log(`Checking comment ${index}:`, {
+          commentId: comment.id,
+          parentCommentId: replyDialog.parentCommentId,
+          index: index.toString()
         });
         
-        await updateDoc(itemRef, { comments: updatedComments });
+        // Try multiple matching strategies
+        const isMatch = comment.id === replyDialog.parentCommentId || 
+                       (index.toString() === replyDialog.parentCommentId) ||
+                       (comment.id && comment.id.toString() === replyDialog.parentCommentId);
+        
+        if (isMatch) {
+          console.log('Found matching comment, adding reply');
+          found = true;
+          return {
+              ...comment,
+              id: comment.id || `comment_${Date.now()}_${index}`,
+              replies: [...(comment.replies || []), replyData]
+            };
+        }
+        return comment;
+      });
+      
+      if (!found) {
+        console.error('Parent comment not found');
+        setSnackbar({ open: true, message: 'Parent comment not found.', severity: 'error' });
+        return;
       }
+      
+      console.log('Updating comments:', updatedComments);
+      await updateDoc(itemRef, { comments: updatedComments });
       
       setNewReply('');
       setReplyDialog({ open: false, itemId: null, itemType: '', parentCommentId: null });
       setSnackbar({ open: true, message: 'Reply added successfully!', severity: 'success' });
     } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to add reply.', severity: 'error' });
+      console.error('Error adding reply:', err);
+      setSnackbar({ open: true, message: 'Failed to add reply: ' + err.message, severity: 'error' });
     }
   };
 
@@ -443,16 +484,16 @@ export default function TeacherLostFound() {
             </Typography>
             <Typography variant="body1" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666' }}>
               View and interact with all lost and found posts from students and teachers
-            </Typography>
+                </Typography>
           </Paper>
 
           {/* Search Bar */}
           <Paper sx={{ p: 2, mb: 3, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff' }}>
-            <TextField 
-              fullWidth 
+                <TextField
+                  fullWidth
               placeholder="Search posts..." 
-              value={lostSearch} 
-              onChange={e => setLostSearch(e.target.value)} 
+                  value={lostSearch}
+                  onChange={e => setLostSearch(e.target.value)}
               InputProps={{
                 startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />
               }}
@@ -469,7 +510,7 @@ export default function TeacherLostFound() {
                 <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666' }}>
                   Be the first to post a lost or found item!
                 </Typography>
-              </Paper>
+                  </Paper>
             ) : allItems
               .filter(item => 
                 item.name.toLowerCase().includes(lostSearch.toLowerCase()) ||
@@ -505,12 +546,12 @@ export default function TeacherLostFound() {
                             {posterInfo.name} • {new Date(item.createdAt).toLocaleDateString()}
                           </Typography>
                         </Box>
-                      </Box>
+                          </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip 
+                          <Chip 
                           label={item.type === 'lost' ? 'Lost' : 'Found'} 
                           color={item.type === 'lost' ? 'error' : 'success'} 
-                          size="small" 
+                            size="small"
                         />
                       </Box>
                     </Box>
@@ -533,9 +574,9 @@ export default function TeacherLostFound() {
                             objectFit: 'cover',
                             borderRadius: '8px',
                             border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e0e0e0'
-                          }} 
-                        />
-                      </Box>
+                            }}
+                          />
+                        </Box>
                     )}
 
                     {/* Location and Time */}
@@ -605,7 +646,7 @@ export default function TeacherLostFound() {
                                   <Button
                                     size="small"
                                     startIcon={<Reply sx={{ fontSize: 14 }} />}
-                                    onClick={() => setReplyDialog({ open: true, itemId: item.id, itemType: item.type, parentCommentId: comment.id })}
+                                    onClick={() => setReplyDialog({ open: true, itemId: item.id, itemType: item.type, parentCommentId: comment.id || index.toString() })}
                                     sx={{ 
                                       textTransform: 'none', 
                                       color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
@@ -662,9 +703,9 @@ export default function TeacherLostFound() {
                               </Box>
                             )}
                           </Box>
-                        ))}
-                      </Box>
-                    )}
+                    ))}
+                  </Box>
+                )}
 
                     {/* Action Buttons */}
                     <Box sx={{ display: 'flex', gap: 2, mt: 2, pt: 2, borderTop: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e0e0e0' }}>
@@ -688,7 +729,7 @@ export default function TeacherLostFound() {
                         Like {item.likeCount > 0 && `(${item.likeCount})`}
                       </Button>
                     </Box>
-                  </Paper>
+              </Paper>
                 );
               })}
           </Box>
@@ -701,27 +742,27 @@ export default function TeacherLostFound() {
           Add Comment
         </DialogTitle>
         <DialogContent>
-          <TextField
+                <TextField
             autoFocus
             margin="dense"
             label="Your comment"
-            fullWidth
+                  fullWidth
             multiline
             rows={3}
             variant="outlined"
             value={newComment}
             onChange={e => setNewComment(e.target.value)}
-            sx={{
+                  sx={{ 
               mt: 2,
-              '& .MuiOutlinedInput-root': {
+                    '& .MuiOutlinedInput-root': {
                 color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                 '& fieldset': {
                   borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
                 },
-                '&:hover fieldset': {
+                      '&:hover fieldset': {
                   borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
-                },
-                '&.Mui-focused fieldset': {
+                      },
+                      '&.Mui-focused fieldset': {
                   borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                 },
               },
@@ -764,7 +805,7 @@ export default function TeacherLostFound() {
             variant="outlined"
             value={newReply}
             onChange={e => setNewReply(e.target.value)}
-            sx={{
+                            sx={{
               mt: 2,
               '& .MuiOutlinedInput-root': {
                 color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',

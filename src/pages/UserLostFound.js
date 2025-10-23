@@ -188,7 +188,7 @@ export default function UserLostFound({ currentUser }) {
         authorName: currentUser?.displayName || 'Student',
         authorProfilePic: currentUser?.photoURL || '',
         createdAt: new Date().toISOString(),
-        timestamp: serverTimestamp(),
+        timestamp: new Date().toISOString(),
         likes: [],
         likeCount: 0,
         replies: []
@@ -232,9 +232,19 @@ export default function UserLostFound({ currentUser }) {
 
   // Reply functionality
   const handleAddReply = async () => {
-    if (!newReply.trim() || !replyDialog.itemId) return;
+    if (!newReply.trim() || !replyDialog.itemId) {
+      setSnackbar({ open: true, message: 'Please enter a reply.', severity: 'error' });
+      return;
+    }
     
     try {
+      console.log('Adding reply:', {
+        itemId: replyDialog.itemId,
+        itemType: replyDialog.itemType,
+        parentCommentId: replyDialog.parentCommentId,
+        replyText: newReply.trim()
+      });
+
       const replyData = {
         id: Date.now().toString(),
         text: newReply.trim(),
@@ -242,7 +252,7 @@ export default function UserLostFound({ currentUser }) {
         authorName: currentUser?.displayName || 'Student',
         authorProfilePic: currentUser?.photoURL || '',
         createdAt: new Date().toISOString(),
-        timestamp: serverTimestamp(),
+        timestamp: new Date().toISOString(),
         likes: [],
         likeCount: 0
       };
@@ -252,29 +262,58 @@ export default function UserLostFound({ currentUser }) {
       
       // Get current item data
       const itemDoc = await getDoc(itemRef);
-      if (itemDoc.exists()) {
-        const itemData = itemDoc.data();
-        const comments = itemData.comments || [];
-        
-        // Find and update the parent comment
-        const updatedComments = comments.map(comment => {
-          if (comment.id === replyDialog.parentCommentId) {
-            return {
-              ...comment,
-              replies: [...(comment.replies || []), replyData]
-            };
-          }
-          return comment;
+      if (!itemDoc.exists()) {
+        setSnackbar({ open: true, message: 'Item not found.', severity: 'error' });
+        return;
+      }
+
+      const itemData = itemDoc.data();
+      const comments = itemData.comments || [];
+      
+      console.log('Current comments:', comments);
+      console.log('Looking for parent comment ID:', replyDialog.parentCommentId);
+      
+      // Find the parent comment and add reply
+      let found = false;
+      const updatedComments = comments.map((comment, index) => {
+        console.log(`Checking comment ${index}:`, {
+          commentId: comment.id,
+          parentCommentId: replyDialog.parentCommentId,
+          index: index.toString()
         });
         
-        await updateDoc(itemRef, { comments: updatedComments });
+        // Try multiple matching strategies
+        const isMatch = comment.id === replyDialog.parentCommentId || 
+                       (index.toString() === replyDialog.parentCommentId) ||
+                       (comment.id && comment.id.toString() === replyDialog.parentCommentId);
+        
+        if (isMatch) {
+          console.log('Found matching comment, adding reply');
+          found = true;
+          return {
+              ...comment,
+              id: comment.id || `comment_${Date.now()}_${index}`,
+              replies: [...(comment.replies || []), replyData]
+            };
+        }
+        return comment;
+      });
+      
+      if (!found) {
+        console.error('Parent comment not found');
+        setSnackbar({ open: true, message: 'Parent comment not found.', severity: 'error' });
+        return;
       }
+      
+      console.log('Updating comments:', updatedComments);
+      await updateDoc(itemRef, { comments: updatedComments });
       
       setNewReply('');
       setReplyDialog({ open: false, itemId: null, itemType: '', parentCommentId: null });
       setSnackbar({ open: true, message: 'Reply added successfully!', severity: 'success' });
     } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to add reply.', severity: 'error' });
+      console.error('Error adding reply:', err);
+      setSnackbar({ open: true, message: 'Failed to add reply: ' + err.message, severity: 'error' });
     }
   };
 
@@ -791,7 +830,7 @@ export default function UserLostFound({ currentUser }) {
                                   <Button
                                     size="small"
                                     startIcon={<Reply sx={{ fontSize: 14 }} />}
-                                    onClick={() => setReplyDialog({ open: true, itemId: item.id, itemType: item.type, parentCommentId: comment.id })}
+                                    onClick={() => setReplyDialog({ open: true, itemId: item.id, itemType: item.type, parentCommentId: comment.id || index.toString() })}
                                     sx={{ 
                                       textTransform: 'none', 
                                       color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',

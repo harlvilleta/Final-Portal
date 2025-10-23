@@ -261,15 +261,15 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: theme.palette.mode === 'dark' ? '#000000' : '#f5f6fa', minHeight: '100vh' }}>
       {/* Welcome Section */}
       <Box sx={{ mb: 4, pt: { xs: 1, sm: 2 }, px: { xs: 1, sm: 0 } }}>
         <Typography 
           variant="h4" 
           fontWeight={700} 
-          color="#800000" 
           gutterBottom 
           sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
             wordBreak: 'break-word',
             fontSize: { xs: '1.75rem', sm: '2.125rem' },
             lineHeight: 1.2
@@ -426,7 +426,7 @@ export default function TeacherDashboard() {
           <Card sx={{ 
             border: 'none',
             boxShadow: 3,
-            bgcolor: theme.palette.mode === 'dark' ? '#000000' : 'transparent',
+            bgcolor: theme.palette.mode === 'dark' ? '#333333' : 'transparent',
             borderRadius: 2,
             height: 'fit-content'
           }}>
@@ -520,7 +520,7 @@ export default function TeacherDashboard() {
             border: 'none',
             borderRadius: 3, 
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            bgcolor: theme.palette.mode === 'dark' ? '#000000' : 'transparent',
+            bgcolor: theme.palette.mode === 'dark' ? '#333333' : 'transparent',
             height: 'fit-content'
           }}>
             <CardContent>
