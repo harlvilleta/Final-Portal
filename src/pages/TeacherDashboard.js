@@ -302,12 +302,12 @@ export default function TeacherDashboard() {
               boxShadow: 3,
               borderRadius: 2,
               borderLeft: '4px solid #800000',
-              background: 'transparent',
+              background: theme.palette.mode === 'dark' ? '#000000' : 'transparent',
               cursor: 'pointer',
               transition: 'box-shadow 0.2s, background 0.2s',
               '&:hover': {
                 boxShadow: 6,
-                background: 'transparent',
+                background: theme.palette.mode === 'dark' ? '#000000' : 'transparent',
               },
             }}
           >
@@ -315,7 +315,7 @@ export default function TeacherDashboard() {
               <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {myReportsCount.toLocaleString()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                 My Reports
               </Typography>
             </CardContent>
@@ -332,12 +332,12 @@ export default function TeacherDashboard() {
               boxShadow: 3,
               borderRadius: 2,
               borderLeft: '4px solid #800000',
-              background: 'transparent',
+              background: theme.palette.mode === 'dark' ? '#000000' : 'transparent',
               cursor: 'pointer',
               transition: 'box-shadow 0.2s, background 0.2s',
               '&:hover': {
                 boxShadow: 6,
-                background: 'transparent',
+                background: theme.palette.mode === 'dark' ? '#000000' : 'transparent',
               },
             }}
           >
@@ -345,7 +345,7 @@ export default function TeacherDashboard() {
               <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {meetingsCount.toLocaleString()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                 Meetings
               </Typography>
             </CardContent>
@@ -364,12 +364,12 @@ export default function TeacherDashboard() {
               boxShadow: 3,
               borderRadius: 2,
               borderLeft: '4px solid #800000',
-              background: 'transparent',
+              background: theme.palette.mode === 'dark' ? '#000000' : 'transparent',
               cursor: 'pointer',
               transition: 'box-shadow 0.2s, background 0.2s',
               '&:hover': {
                 boxShadow: 6,
-                background: 'transparent',
+                background: theme.palette.mode === 'dark' ? '#000000' : 'transparent',
               },
             }}
           >
@@ -377,7 +377,7 @@ export default function TeacherDashboard() {
               <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {mySchedulesCount.toLocaleString()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                 My Schedules
               </Typography>
             </CardContent>
@@ -394,12 +394,12 @@ export default function TeacherDashboard() {
               boxShadow: 3,
               borderRadius: 2,
               borderLeft: '4px solid #800000',
-              background: 'transparent',
+              background: theme.palette.mode === 'dark' ? '#000000' : 'transparent',
               cursor: 'pointer',
               transition: 'box-shadow 0.2s, background 0.2s',
               '&:hover': {
                 boxShadow: 6,
-                background: 'transparent',
+                background: theme.palette.mode === 'dark' ? '#000000' : 'transparent',
               },
             }}
           >
@@ -407,7 +407,7 @@ export default function TeacherDashboard() {
               <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {announcements.length.toLocaleString()}
               </Typography>
-              <Typography color="text.secondary" variant="body2">
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                 Announcements
               </Typography>
             </CardContent>
@@ -426,7 +426,7 @@ export default function TeacherDashboard() {
           <Card sx={{ 
             border: 'none',
             boxShadow: 3,
-            bgcolor: 'transparent',
+            bgcolor: theme.palette.mode === 'dark' ? '#000000' : 'transparent',
             borderRadius: 2,
             height: 'fit-content'
           }}>
@@ -467,16 +467,16 @@ export default function TeacherDashboard() {
                         </ListItemAvatar>
                         <ListItemText
                           primary={
-                            <Typography variant="subtitle2" fontWeight={600}>
+                            <Typography variant="subtitle2" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>
                               {violation.studentName || violation.studentId}
                             </Typography>
                           }
                           secondary={
                             <Box>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 0.5 }}>
                                 {violation.violationType || violation.violation}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                                 {new Date(violation.date || violation.createdAt).toLocaleDateString()}
                               </Typography>
                             </Box>
@@ -504,8 +504,8 @@ export default function TeacherDashboard() {
                 </List>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <Warning sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
-                  <Typography variant="body2" color="text.secondary">
+                  <Warning sx={{ fontSize: 48, color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 1 }} />
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                     No violations recorded yet
                   </Typography>
                 </Box>
@@ -520,12 +520,12 @@ export default function TeacherDashboard() {
             border: 'none',
             borderRadius: 3, 
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            bgcolor: 'transparent',
+            bgcolor: theme.palette.mode === 'dark' ? '#000000' : 'transparent',
             height: 'fit-content'
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600} color="#2d3436">
+                <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#2d3436' }}>
                   Recent Announcements
                 </Typography>
                 <Button 
@@ -560,16 +560,16 @@ export default function TeacherDashboard() {
                         </ListItemAvatar>
                         <ListItemText
                           primary={
-                            <Typography variant="subtitle2" fontWeight={600}>
+                            <Typography variant="subtitle2" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>
                               {announcement.title}
                             </Typography>
                           }
                           secondary={
                             <Box>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 0.5 }}>
                                 {announcement.content}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                                 {new Date(announcement.timestamp || announcement.createdAt).toLocaleDateString()}
                               </Typography>
                             </Box>

@@ -5,10 +5,10 @@ import {
 } from "@mui/material";
 import { 
   Search, Add, CloudUpload, AdminPanelSettings, Person, Visibility, 
-  LocationOn, AccessTime, ContactSupport, Comment, Delete, ThumbUp, Share
+  LocationOn, AccessTime, ContactSupport, Comment, Delete, ThumbUp
 } from "@mui/icons-material";
 import { db } from "../firebase";
-import { collection, addDoc, query, orderBy, onSnapshot, doc, deleteDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, addDoc, query, orderBy, onSnapshot, doc, deleteDoc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export default function UserLostFound({ currentUser }) {
   const theme = useTheme();
@@ -40,6 +40,10 @@ export default function UserLostFound({ currentUser }) {
   const [newComment, setNewComment] = useState('');
   const [commentDialog, setCommentDialog] = useState({ open: false, itemId: null, itemType: '' });
   const [allItems, setAllItems] = useState([]);
+  const [likes, setLikes] = useState({});
+  const [shares, setShares] = useState({});
+  const [userLikes, setUserLikes] = useState({});
+  const [shareDialog, setShareDialog] = useState({ open: false, item: null });
 
   useEffect(() => {
     const unsubLost = onSnapshot(query(collection(db, 'lost_items'), orderBy('createdAt', 'desc')), snap => {
@@ -52,6 +56,36 @@ export default function UserLostFound({ currentUser }) {
     });
     return () => { unsubLost(); unsubFound(); };
   }, []);
+
+  // Load user's like status
+  useEffect(() => {
+    if (!currentUser?.email) return;
+
+    const loadUserLikes = async () => {
+      try {
+        const allItems = [...lostItems, ...foundItems];
+        const likeStatus = {};
+        
+        for (const item of allItems) {
+          const collectionName = item.type === 'lost' ? 'lost_items' : 'found_items';
+          const itemRef = doc(db, collectionName, item.id);
+          const itemDoc = await getDoc(itemRef);
+          
+          if (itemDoc.exists()) {
+            const itemData = itemDoc.data();
+            const likes = itemData.likes || [];
+            likeStatus[`${item.type}-${item.id}`] = likes.includes(currentUser.email);
+          }
+        }
+        
+        setUserLikes(likeStatus);
+      } catch (err) {
+        console.error('Error loading user likes:', err);
+      }
+    };
+
+    loadUserLikes();
+  }, [currentUser?.email, lostItems, foundItems]);
 
   // Combine all items for the social feed
   useEffect(() => {
@@ -201,6 +235,54 @@ export default function UserLostFound({ currentUser }) {
   // Check if user can delete post
   const canDeletePost = (item) => {
     return item.reportedBy === currentUser?.email && item.postedBy === 'student';
+  };
+
+  // Like functionality
+  const handleLike = async (itemId, itemType) => {
+    if (!currentUser?.email) {
+      setSnackbar({ open: true, message: 'Please log in to like posts.', severity: 'error' });
+      return;
+    }
+
+    try {
+      const collectionName = itemType === 'lost' ? 'lost_items' : 'found_items';
+      const itemRef = doc(db, collectionName, itemId);
+      const itemDoc = await getDoc(itemRef);
+      
+      if (!itemDoc.exists()) {
+        setSnackbar({ open: true, message: 'Post not found.', severity: 'error' });
+        return;
+      }
+
+      const itemData = itemDoc.data();
+      const currentLikes = itemData.likes || [];
+      const isLiked = currentLikes.includes(currentUser.email);
+
+      if (isLiked) {
+        // Unlike
+        await updateDoc(itemRef, {
+          likes: arrayRemove(currentUser.email),
+          likeCount: (itemData.likeCount || 0) - 1
+        });
+        setUserLikes(prev => ({ ...prev, [`${itemType}-${itemId}`]: false }));
+      } else {
+        // Like
+        await updateDoc(itemRef, {
+          likes: arrayUnion(currentUser.email),
+          likeCount: (itemData.likeCount || 0) + 1
+        });
+        setUserLikes(prev => ({ ...prev, [`${itemType}-${itemId}`]: true }));
+      }
+    } catch (err) {
+      console.error('Error toggling like:', err);
+      setSnackbar({ open: true, message: 'Failed to update like.', severity: 'error' });
+    }
+  };
+
+
+  // Check if user has liked a post
+  const hasUserLiked = (item) => {
+    return userLikes[`${item.type}-${item.id}`] || false;
   };
 
   // Filter items based on search and view mode
@@ -570,19 +652,19 @@ export default function UserLostFound({ currentUser }) {
                         onClick={() => setCommentDialog({ open: true, itemId: item.id, itemType: item.type })}
                         sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#666666' }}
                       >
-                        Comment
+                        Comment {item.comments?.length > 0 && `(${item.comments.length})`}
                       </Button>
                       <Button
                         startIcon={<ThumbUp />}
-                        sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#666666' }}
+                        onClick={() => handleLike(item.id, item.type)}
+                        sx={{ 
+                          color: hasUserLiked(item) ? '#1976d2' : (theme.palette.mode === 'dark' ? '#ffffff' : '#666666'),
+                          '&:hover': {
+                            color: hasUserLiked(item) ? '#1565c0' : '#1976d2'
+                          }
+                        }}
                       >
-                        Like
-                      </Button>
-                      <Button
-                        startIcon={<Share />}
-                        sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#666666' }}
-                      >
-                        Share
+                        Like {item.likeCount > 0 && `(${item.likeCount})`}
                       </Button>
                     </Box>
                   </Paper>

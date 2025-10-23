@@ -6,7 +6,7 @@ import {
 import { 
   Warning, Announcement, Search, Info, NotificationsActive, 
   CalendarToday, AccessTime, LocationOn, Person, Description, 
-  PriorityHigh, Close, Visibility
+  PriorityHigh, Close, Visibility, Share
 } from "@mui/icons-material";
 import { db } from "../firebase";
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc } from "firebase/firestore";
@@ -118,6 +118,7 @@ export default function UserNotifications({ currentUser }) {
           <Warning color="error" /> : <Warning color="warning" />;
       case 'announcement': return <Announcement color="primary" />;
       case 'lost_found': return <Search color="info" />;
+      case 'post_shared': return <Share color="info" />;
       default: return <Info color="default" />;
     }
   };

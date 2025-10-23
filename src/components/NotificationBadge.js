@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Badge, IconButton, Tooltip, Menu, MenuItem, Typography, Box, Divider, List, ListItem, ListItemText, ListItemIcon, Avatar, Chip } from '@mui/material';
-import { Notifications, CheckCircle, Cancel, PersonAddAlt1, Warning, Search, Event, Assignment } from '@mui/icons-material';
+import { Notifications, CheckCircle, Cancel, PersonAddAlt1, Warning, Search, Event, Assignment, Share } from '@mui/icons-material';
 import { collection, query, where, orderBy, getDocs, onSnapshot, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
@@ -119,6 +119,8 @@ export default function NotificationBadge() {
         return <Notifications />;
       case 'classroom_addition':
         return <PersonAddAlt1 />;
+      case 'post_shared':
+        return <Share />;
       default:
         return <Notifications />;
     }
@@ -144,6 +146,8 @@ export default function NotificationBadge() {
         return 'secondary';
       case 'classroom_addition':
         return 'success';
+      case 'post_shared':
+        return 'info';
       default:
         return 'primary';
     }

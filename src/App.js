@@ -626,7 +626,7 @@ function App() {
                           <Route path="/teacher-schedule" element={<TeacherSchedule />} />
                                                     <Route path="/teacher-notifications" element={<TeacherNotifications />} />
                           <Route path="/activity" element={<ActivitiesView />} />
-                          <Route path="/teacher-lost-found" element={<AdminLostFound />} />
+                          <Route path="/teacher-lost-found" element={<TeacherLostFound />} />
                           <Route path="/teacher-violation-records" element={<TeacherViolationRecords />} />
                           <Route path="/teacher-activity-scheduler" element={<TeacherActivityScheduler />} />
                           <Route path="/teacher-profile" element={<Profile />} />

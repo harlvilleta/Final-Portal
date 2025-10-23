@@ -9,7 +9,7 @@ import {
   Warning, Announcement, Search, Info, NotificationsActive, 
   CalendarToday, AccessTime, LocationOn, Person, Description, 
   PriorityHigh, Close, Visibility, Event, MeetingRoom, Notifications,
-  Assignment, PersonAddAlt1
+  Assignment, PersonAddAlt1, Share
 } from "@mui/icons-material";
 import { db } from "../firebase";
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, getDocs } from "firebase/firestore";
@@ -116,6 +116,8 @@ export default function AdminNotifications() {
         return <Assignment />;
       case 'announcement':
         return <Announcement />;
+      case 'post_shared':
+        return <Share />;
       default:
         return <Notifications />;
     }
@@ -166,6 +168,15 @@ export default function AdminNotifications() {
         markAsRead(notification.id);
       }
       navigate('/teacher-request');
+      return;
+    }
+    
+    // If it's a lost & found comment or general lost & found notification, navigate to lost & found page
+    if (notification.type === 'lost_found_comment' || notification.type === 'lost_found') {
+      if (!notification.read) {
+        markAsRead(notification.id);
+      }
+      navigate('/lost-found');
       return;
     }
     

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Typography, Box, Paper, TextField, Button, Grid, Dialog, DialogTitle, DialogContent, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Tooltip, Snackbar, Alert, Card, CardContent, CardHeader, Divider, useTheme } from "@mui/material";
+import { Typography, Box, Paper, TextField, Button, Grid, Dialog, DialogTitle, DialogContent, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Tooltip, Snackbar, Alert, Card, CardContent, CardHeader, Divider, useTheme, Autocomplete } from "@mui/material";
 import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { MenuItem } from "@mui/material";
@@ -37,6 +37,7 @@ export default function ViolationCreateMeeting() {
   const [meetingSnackbar, setMeetingSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [phoneValidationError, setPhoneValidationError] = useState('');
   const [isValidatingPhone, setIsValidatingPhone] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -359,22 +360,48 @@ export default function ViolationCreateMeeting() {
         <form onSubmit={handleMeetingSubmit}>
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
-              <TextField
-                select
-                label="Student Name"
-                name="studentName"
-                value={meetingForm.studentName}
-                onChange={handleMeetingFormChange}
-                fullWidth
-                required
-                helperText="Select the student for the meeting"
-              >
-                {students.map(s => (
-                  <MenuItem key={s.id} value={`${s.firstName} ${s.lastName}`}>
-                    {s.firstName} {s.lastName} ({s.id})
-                  </MenuItem>
-                ))}
-              </TextField>
+              <Autocomplete
+                options={students}
+                getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
+                value={selectedStudent}
+                onChange={(event, newValue) => {
+                  setSelectedStudent(newValue);
+                  setMeetingForm(prev => ({
+                    ...prev,
+                    studentName: newValue ? `${newValue.firstName} ${newValue.lastName}` : ''
+                  }));
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Student Name"
+                    required
+                    helperText="Type to search for a student"
+                    placeholder="Start typing student name..."
+                  />
+                )}
+                renderOption={(props, option) => (
+                  <Box component="li" {...props}>
+                    {option.firstName} {option.lastName} ({option.id})
+                  </Box>
+                )}
+                filterOptions={(options, { inputValue }) => {
+                  if (!inputValue || inputValue.length < 1) {
+                    return []; // Don't show any options when not typing
+                  }
+                  const filtered = options.filter(option => {
+                    const fullName = `${option.firstName} ${option.lastName}`.toLowerCase();
+                    const studentId = option.id.toLowerCase();
+                    const searchTerm = inputValue.toLowerCase();
+                    return fullName.includes(searchTerm) || studentId.includes(searchTerm);
+                  });
+                  return filtered.slice(0, 4); // Limit to 4 results
+                }}
+                noOptionsText="No students found"
+                isOptionEqualToValue={(option, value) => option.id === value?.id}
+                openOnFocus={false}
+                disablePortal={false}
+              />
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField

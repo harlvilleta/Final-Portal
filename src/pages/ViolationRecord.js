@@ -61,6 +61,7 @@ export default function ViolationRecord() {
   const [printMode, setPrintMode] = useState(false);
   const [studentInputValue, setStudentInputValue] = useState('');
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [selectedMeetingStudent, setSelectedMeetingStudent] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [showAddForm, setShowAddForm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -1477,34 +1478,62 @@ School Administration
           <form onSubmit={handleMeetingSubmit}>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  select
-                  label="Student Name"
-                  name="studentName"
-                  value={meetingForm.studentName}
-                  onChange={handleMeetingFormChange}
-                  fullWidth
-                  sx={{ mb: 2 }}
-                >
-                  {students.map(s => (
-                    <MenuItem key={s.id} value={`${s.firstName} ${s.lastName}`}>{s.firstName} {s.lastName}</MenuItem>
-                  ))}
-                </TextField>
+                <Autocomplete
+                  options={students}
+                  getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
+                  value={selectedMeetingStudent}
+                  onChange={(event, newValue) => {
+                    setSelectedMeetingStudent(newValue);
+                    setMeetingForm(prev => ({
+                      ...prev,
+                      studentName: newValue ? `${newValue.firstName} ${newValue.lastName}` : '',
+                      studentId: newValue ? newValue.id : ''
+                    }));
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Student Name"
+                      required
+                      sx={{ mb: 2 }}
+                      placeholder="Start typing student name..."
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <Box component="li" {...props}>
+                      {option.firstName} {option.lastName} ({option.id})
+                    </Box>
+                  )}
+                  filterOptions={(options, { inputValue }) => {
+                    if (!inputValue || inputValue.length < 1) {
+                      return []; // Don't show any options when not typing
+                    }
+                    const filtered = options.filter(option => {
+                      const fullName = `${option.firstName} ${option.lastName}`.toLowerCase();
+                      const studentId = option.id.toLowerCase();
+                      const searchTerm = inputValue.toLowerCase();
+                      return fullName.includes(searchTerm) || studentId.includes(searchTerm);
+                    });
+                    return filtered.slice(0, 4); // Limit to 4 results
+                  }}
+                  noOptionsText="No students found"
+                  isOptionEqualToValue={(option, value) => option.id === value?.id}
+                  openOnFocus={false}
+                  disablePortal={false}
+                />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
-                  select
                   label="Student ID"
                   name="studentId"
                   value={meetingForm.studentId}
                   onChange={handleMeetingFormChange}
                   fullWidth
+                  required
                   sx={{ mb: 2 }}
-                >
-                  {students.map(s => (
-                    <MenuItem key={s.id} value={s.id}>{s.id}</MenuItem>
-                  ))}
-                </TextField>
+                  placeholder="Auto-filled when student is selected"
+                  disabled
+                />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField label="Location" name="location" value={meetingForm.location} onChange={handleMeetingFormChange} fullWidth required sx={{ mb: 2 }} />

@@ -8,7 +8,7 @@ import {
 import { 
   Warning, Announcement, Search, Info, NotificationsActive, 
   CalendarToday, AccessTime, LocationOn, Person, Description, 
-  PriorityHigh, Close, Visibility, Event, MeetingRoom, Notifications
+  PriorityHigh, Close, Visibility, Event, MeetingRoom, Notifications, Share
 } from "@mui/icons-material";
 import { db } from "../firebase";
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, getDocs } from "firebase/firestore";
@@ -149,6 +149,7 @@ export default function TeacherNotifications() {
       case 'lost_found': return <Search />;
       case 'violation': return <Warning />;
       case 'announcement': return <Announcement />;
+      case 'post_shared': return <Share />;
       default: return <Info />;
     }
   };
@@ -160,6 +161,7 @@ export default function TeacherNotifications() {
         return notificationType === 'lost' ? '#ff9800' : '#4caf50';
       case 'violation': return '#f44336';
       case 'announcement': return '#2196f3';
+      case 'post_shared': return '#2196f3';
       default: return '#757575';
     }
   };

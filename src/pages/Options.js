@@ -57,7 +57,7 @@ export default function Options() {
   };
   
   return (
-    <Box sx={{ p: { xs: 1, md: 4 }, maxWidth: 900, mx: 'auto', overflowY: 'auto', bgcolor: '#f5f6fa', borderRadius: 3 }}>
+    <Box sx={{ p: { xs: 1, md: 4 }, maxWidth: 900, mx: 'auto', overflowY: 'auto', bgcolor: theme.palette.mode === 'dark' ? '#000000' : '#f5f6fa', borderRadius: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>Options</Typography>
         <Button 
@@ -94,11 +94,11 @@ export default function Options() {
             }
           }} onClick={() => navigate('/profile')}>
             <CardContent sx={{ textAlign: 'center', p: 3 }}>
-              <SecurityIcon sx={{ fontSize: 48, mb: 2 }} />
-              <Typography variant="h6" fontWeight={600} color="black">
+              <SecurityIcon sx={{ fontSize: 48, mb: 2, color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }} />
+              <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'black' }}>
                 Security Settings
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mt: 1 }}>
                 Change password, email, and security preferences
               </Typography>
             </CardContent>
@@ -118,11 +118,11 @@ export default function Options() {
             }
           }} onClick={() => setOpenSecurity(true)}>
             <CardContent sx={{ textAlign: 'center', p: 3 }}>
-              <DeleteIcon sx={{ fontSize: 48, mb: 2 }} />
-              <Typography variant="h6" fontWeight={600} color="black">
+              <DeleteIcon sx={{ fontSize: 48, mb: 2, color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }} />
+              <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'black' }}>
                 Recycle Bin
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mt: 1 }}>
                 View and restore deleted items
               </Typography>
             </CardContent>
@@ -142,11 +142,11 @@ export default function Options() {
             }
           }} onClick={() => setOpenAccount(true)}>
             <CardContent sx={{ textAlign: 'center', p: 3 }}>
-              <ListAlt sx={{ fontSize: 48, mb: 2 }} />
-              <Typography variant="h6" fontWeight={600} color="black">
+              <ListAlt sx={{ fontSize: 48, mb: 2, color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }} />
+              <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'black' }}>
                 History
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mt: 1 }}>
                 View system activity and history logs
               </Typography>
             </CardContent>
