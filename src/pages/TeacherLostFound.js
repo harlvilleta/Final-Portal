@@ -40,10 +40,12 @@ export default function TeacherLostFound({ currentUser: propCurrentUser, userPro
   useEffect(() => {
     const unsubLost = onSnapshot(query(collection(db, 'lost_items'), orderBy('createdAt', 'desc')), snap => {
       const lostData = snap.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'lost' }));
+      console.log('Teacher - Lost items updated:', lostData);
       setLostItems(lostData);
     });
     const unsubFound = onSnapshot(query(collection(db, 'found_items'), orderBy('createdAt', 'desc')), snap => {
       const foundData = snap.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'found' }));
+      console.log('Teacher - Found items updated:', foundData);
       setFoundItems(foundData);
     });
     return () => { unsubLost(); unsubFound(); };
@@ -51,7 +53,7 @@ export default function TeacherLostFound({ currentUser: propCurrentUser, userPro
 
   // Combine all items for the social feed
   useEffect(() => {
-    const combined = [...lostItems, ...foundItems].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const combined = [...lostItems, ...foundItems].sort((a, b) => new Date(b.createdAt?.toDate?.() || b.createdAt) - new Date(a.createdAt?.toDate?.() || a.createdAt));
     setAllItems(combined);
   }, [lostItems, foundItems]);
 
@@ -573,7 +575,7 @@ export default function TeacherLostFound({ currentUser: propCurrentUser, userPro
                             color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
                             fontSize: '0.75rem'
                           }}>
-                            {posterInfo.name} • {new Date(item.createdAt).toLocaleDateString()}
+                            {posterInfo.name} • {new Date(item.createdAt?.toDate?.() || item.createdAt).toLocaleDateString()}
                           </Typography>
                         </Box>
                           </Box>

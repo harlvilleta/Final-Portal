@@ -47,6 +47,7 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   where,
   serverTimestamp
@@ -130,6 +131,30 @@ export default function AdminLostFound() {
   });
 
 
+  // Load main collections with real-time listeners
+  useEffect(() => {
+    const unsubLostItems = onSnapshot(
+      query(collection(db, 'lost_items'), orderBy('createdAt', 'desc')),
+      (snap) => {
+        const lostData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setLostItems(lostData);
+      }
+    );
+
+    const unsubFoundItems = onSnapshot(
+      query(collection(db, 'found_items'), orderBy('createdAt', 'desc')),
+      (snap) => {
+        const foundData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setFoundItems(foundData);
+      }
+    );
+
+    return () => {
+      unsubLostItems();
+      unsubFoundItems();
+    };
+  }, []);
+
   useEffect(() => {
     const fetchStudents = async () => {
       try {
@@ -180,31 +205,7 @@ export default function AdminLostFound() {
 
     fetchStudents();
 
-    // Optimize: Use single-time fetches instead of real-time listeners for better performance
-    const fetchLostFoundData = async () => {
-      try {
-        const [lostSnap, foundSnap] = await Promise.allSettled([
-          getDocs(query(collection(db, 'lost_items'), orderBy('createdAt', 'desc'))),
-          getDocs(query(collection(db, 'found_items'), orderBy('createdAt', 'desc')))
-        ]);
-
-        if (lostSnap.status === 'fulfilled') {
-          setLostItems(lostSnap.value.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        }
-        
-        if (foundSnap.status === 'fulfilled') {
-          setFoundItems(foundSnap.value.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        }
-      } catch (error) {
-        console.error("Error fetching lost and found data:", error);
-      }
-    };
-
-    fetchLostFoundData();
-
-    return () => { 
-      // No cleanup needed since we're using single-time fetches instead of real-time listeners
-    };
+    // Data loading is now handled by the real-time listeners above
   }, []);
 
   // Summary counts
@@ -434,27 +435,7 @@ export default function AdminLostFound() {
         resolvedAt: new Date().toISOString()
       });
       
-      // Refresh the data to update the UI
-      const fetchLostFoundData = async () => {
-        try {
-          const [lostSnap, foundSnap] = await Promise.allSettled([
-            getDocs(query(collection(db, 'lost_items'), orderBy('createdAt', 'desc'))),
-            getDocs(query(collection(db, 'found_items'), orderBy('createdAt', 'desc')))
-          ]);
-
-          if (lostSnap.status === 'fulfilled') {
-            setLostItems(lostSnap.value.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-          }
-          
-          if (foundSnap.status === 'fulfilled') {
-            setFoundItems(foundSnap.value.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-          }
-        } catch (error) {
-          console.error("Error refreshing data:", error);
-        }
-      };
-      
-      await fetchLostFoundData();
+      // Data will be automatically updated by real-time listeners
       setSnackbar({ open: true, message: 'Item marked as resolved successfully!', severity: 'success' });
     } catch (err) {
       setSnackbar({ open: true, message: 'Failed to resolve item: ' + err.message, severity: 'error' });
@@ -468,6 +449,80 @@ export default function AdminLostFound() {
         setSnackbar({ open: true, message: 'Item deleted successfully!', severity: 'success' });
       } catch (err) {
         setSnackbar({ open: true, message: 'Failed to delete item: ' + err.message, severity: 'error' });
+      }
+    }
+  };
+
+  // Handle approving pending reports
+  const handleApproveReport = async (reportId, reportType) => {
+    try {
+      const collectionName = reportType === 'lost' ? 'pending_lost_reports' : 'pending_found_reports';
+      const targetCollection = reportType === 'lost' ? 'lost_items' : 'found_items';
+      
+      console.log(`Approving ${reportType} report:`, reportId);
+      
+      // Get the report data
+      const reportRef = doc(db, collectionName, reportId);
+      const reportDoc = await getDoc(reportRef);
+      
+      if (!reportDoc.exists()) {
+        setSnackbar({ open: true, message: 'Report not found', severity: 'error' });
+        return;
+      }
+      
+      const reportData = reportDoc.data();
+      console.log('Report data:', reportData);
+      
+      // Add to the main collection - only include relevant time fields
+      const itemData = {
+        name: reportData.name,
+        description: reportData.description,
+        location: reportData.location,
+        image: reportData.image,
+        contactInfo: reportData.contactInfo,
+        reportedBy: reportData.submittedBy,
+        reportedByName: reportData.submittedByName,
+        reportedByPhoto: reportData.submittedByPhoto,
+        postedBy: 'admin',
+        resolved: false,
+        createdAt: serverTimestamp(),
+        approvedAt: serverTimestamp(),
+        approvedBy: 'admin'
+      };
+
+      // Only add time fields if they exist and are relevant
+      if (reportType === 'lost' && reportData.timeLost) {
+        itemData.timeLost = reportData.timeLost;
+      }
+      if (reportType === 'found' && reportData.timeFound) {
+        itemData.timeFound = reportData.timeFound;
+      }
+      
+      console.log('Item data to be added:', itemData);
+      
+      const docRef = await addDoc(collection(db, targetCollection), itemData);
+      console.log('Item added to collection with ID:', docRef.id);
+      
+      // Delete from pending collection
+      await deleteDoc(reportRef);
+      console.log('Report deleted from pending collection');
+      
+      setSnackbar({ open: true, message: `${reportType} report approved and published!`, severity: 'success' });
+    } catch (err) {
+      console.error('Error approving report:', err);
+      setSnackbar({ open: true, message: 'Failed to approve report: ' + err.message, severity: 'error' });
+    }
+  };
+
+  // Handle rejecting pending reports
+  const handleRejectReport = async (reportId, reportType) => {
+    if (window.confirm('Are you sure you want to reject this report? This action cannot be undone.')) {
+      try {
+        const collectionName = reportType === 'lost' ? 'pending_lost_reports' : 'pending_found_reports';
+        await deleteDoc(doc(db, collectionName, reportId));
+        setSnackbar({ open: true, message: `${reportType} report rejected`, severity: 'success' });
+      } catch (err) {
+        setSnackbar({ open: true, message: 'Failed to reject report: ' + err.message, severity: 'error' });
       }
     }
   };
