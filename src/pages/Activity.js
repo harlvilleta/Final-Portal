@@ -162,9 +162,9 @@ function SummaryCard({ stats }) {
           }}>
             <Box sx={{ 
               mr: 2, 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#666666',
               '& .MuiSvgIcon-root': {
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000'
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#666666'
               }
             }}>
               <Event fontSize="large" />
@@ -215,9 +215,9 @@ function SummaryCard({ stats }) {
           }}>
             <Box sx={{ 
               mr: 2, 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#ff9800',
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#666666',
               '& .MuiSvgIcon-root': {
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#ff9800'
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#666666'
               }
             }}>
               <Schedule fontSize="large" />
@@ -268,9 +268,9 @@ function SummaryCard({ stats }) {
           }}>
             <Box sx={{ 
               mr: 2, 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#4caf50',
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#666666',
               '& .MuiSvgIcon-root': {
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#4caf50'
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#666666'
               }
             }}>
               <CheckCircle fontSize="large" />
@@ -321,9 +321,9 @@ function SummaryCard({ stats }) {
           }}>
             <Box sx={{ 
               mr: 2, 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#9c27b0',
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#666666',
               '& .MuiSvgIcon-root': {
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#9c27b0'
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#666666'
               }
             }}>
               <Category fontSize="large" />

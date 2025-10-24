@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   Typography, Box, Grid, TextField, MenuItem, Button, Paper, Avatar, Snackbar, Alert,
-  Card, CardContent, Divider, IconButton, Tabs, Tab, Stack, Chip, Dialog, DialogTitle, DialogContent, DialogActions
+  Card, CardContent, Divider, IconButton, Tabs, Tab, Stack, Chip, Dialog, DialogTitle, DialogContent, DialogActions, useTheme
 } from "@mui/material";
 import { 
   Person, Security, PhotoCamera, Save, Edit, Visibility, VisibilityOff,
@@ -16,6 +16,7 @@ import { storage } from '../firebase';
 
 
 export default function Profile() {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
@@ -477,44 +478,58 @@ export default function Profile() {
   }
 
   return (
-    <Box>
+    <Box sx={{ 
+      pt: { xs: 2, sm: 3 }, 
+      pl: { xs: 2, sm: 3, md: 4 }, 
+      pr: { xs: 2, sm: 3, md: 4 }, 
+      pb: 3,
+      bgcolor: theme.palette.mode === 'dark' ? '#1a1a1a' : 'transparent'
+    }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <IconButton 
           onClick={() => navigate('/options')}
           sx={{ 
             mr: 2,
-            color: 'black',
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
             '&:hover': {
-              bgcolor: 'rgba(128, 0, 0, 0.1)',
-              color: '#800000'
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(128, 0, 0, 0.1)',
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000'
             }
           }}
         >
           <ArrowBack />
         </IconButton>
-        <Typography variant="h4" fontWeight={700} color="primary.main">
+        <Typography variant="h4" fontWeight={700} sx={{ 
+          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000'
+        }}>
           Account Settings
         </Typography>
       </Box>
 
-      <Paper sx={{ mb: 3 }}>
+      <Paper sx={{ 
+        mb: 3,
+        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+        borderRadius: 2,
+        boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+      }}>
         <Tabs 
           value={activeTab} 
           onChange={(e, newValue) => setActiveTab(newValue)}
           sx={{
             '& .MuiTab-root': {
-              color: 'black',
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
               fontWeight: 400,
               textTransform: 'none',
               '&.Mui-selected': {
-                color: 'white',
+                color: '#ffffff',
                 fontWeight: 700,
                 backgroundColor: '#800000',
                 borderRadius: '4px 4px 0 0'
               },
               '&:hover': {
-                backgroundColor: 'rgba(128, 0, 0, 0.1)',
-                color: '#800000'
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(128, 0, 0, 0.1)',
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000'
               }
             },
             '& .MuiTabs-indicator': {
@@ -532,7 +547,12 @@ export default function Profile() {
         <Grid container spacing={3}>
           {/* Profile Picture Section */}
           <Grid item xs={12} md={4}>
-            <Card>
+            <Card sx={{
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+              border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+              borderRadius: 2,
+              boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+            }}>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Avatar 
                   src={profile.image} 
@@ -548,10 +568,14 @@ export default function Profile() {
                 >
                   {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}
                 </Avatar>
-                <Typography variant="h6" gutterBottom>
+                <Typography variant="h6" gutterBottom sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
+                }}>
                   {profile.firstName} {profile.lastName}
                 </Typography>
-                <Typography variant="body2" color="textSecondary">
+                <Typography variant="body2" sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary'
+                }}>
                   {profile.email}
                 </Typography>
                 <Chip 
@@ -566,8 +590,8 @@ export default function Profile() {
                     startIcon={<Edit />}
                     onClick={handleOpenEditModal}
                     sx={{ 
-                      color: 'black',
-                      borderColor: 'black',
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : '#000000',
                       fontWeight: 600,
                       textTransform: 'none',
                       px: 3,
@@ -587,23 +611,36 @@ export default function Profile() {
 
           {/* Profile Information Display */}
           <Grid item xs={12} md={8}>
-            <Card>
+            <Card sx={{
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+              border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+              borderRadius: 2,
+              boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+            }}>
               <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="h6" gutterBottom sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
+                }}>
                   <Person /> Personal Information
                 </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary'
+                      }} gutterBottom>
                         First Name
                       </Typography>
                       <Typography variant="body1" sx={{ 
                         fontWeight: 500,
                         p: 1.5,
-                        bgcolor: 'grey.50',
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'grey.50',
                         borderRadius: 1,
-                        border: '1px solid #e0e0e0'
+                        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e0e0e0',
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
                       }}>
                         {profile.firstName || 'Not provided'}
                       </Typography>
@@ -611,15 +648,18 @@ export default function Profile() {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary'
+                      }} gutterBottom>
                         Last Name
                       </Typography>
                       <Typography variant="body1" sx={{ 
                         fontWeight: 500,
                         p: 1.5,
-                        bgcolor: 'grey.50',
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'grey.50',
                         borderRadius: 1,
-                        border: '1px solid #e0e0e0'
+                        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e0e0e0',
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
                       }}>
                         {profile.lastName || 'Not provided'}
                       </Typography>

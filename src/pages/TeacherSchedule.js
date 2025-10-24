@@ -166,7 +166,12 @@ export default function TeacherSchedule() {
   const pastMeetings = meetings.filter(m => new Date(m.date) <= new Date());
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
+    <Box sx={{ 
+      p: { xs: 2, sm: 3 }, 
+      bgcolor: theme.palette.mode === 'dark' ? '#1a1a1a' : '#f5f6fa', 
+      minHeight: '100vh',
+      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+    }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }} gutterBottom>
@@ -182,16 +187,23 @@ export default function TeacherSchedule() {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            p: 2, boxShadow: 3, borderRadius: 2, background: 'transparent',
+            p: 2, boxShadow: 3, borderRadius: 2, 
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+            border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
             transition: 'box-shadow 0.2s, background 0.2s', cursor: 'default',
             borderLeft: '4px solid #800000',
-            '&:hover': { boxShadow: 6, background: 'transparent' }
+            '&:hover': { 
+              boxShadow: 6, 
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 1)'
+            }
           }}>
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
               <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {meetings.length}
               </Typography>
-              <Typography color="text.secondary" variant="body2">Total Meetings</Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary' }}>
+                Total Meetings
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -199,16 +211,23 @@ export default function TeacherSchedule() {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            p: 2, boxShadow: 3, borderRadius: 2, background: 'transparent',
+            p: 2, boxShadow: 3, borderRadius: 2, 
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+            border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
             transition: 'box-shadow 0.2s, background 0.2s', cursor: 'default',
             borderLeft: '4px solid #800000',
-            '&:hover': { boxShadow: 6, background: 'transparent' }
+            '&:hover': { 
+              boxShadow: 6, 
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 1)'
+            }
           }}>
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
               <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {upcomingMeetings.length}
               </Typography>
-              <Typography color="text.secondary" variant="body2">Upcoming</Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary' }}>
+                Upcoming
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -216,10 +235,15 @@ export default function TeacherSchedule() {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            p: 2, boxShadow: 3, borderRadius: 2, background: 'transparent',
+            p: 2, boxShadow: 3, borderRadius: 2, 
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+            border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
             transition: 'box-shadow 0.2s, background 0.2s', cursor: 'default',
             borderLeft: '4px solid #800000',
-            '&:hover': { boxShadow: 6, background: 'transparent' }
+            '&:hover': { 
+              boxShadow: 6, 
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 1)'
+            }
           }}>
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
               <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
@@ -229,7 +253,9 @@ export default function TeacherSchedule() {
                   return meetingDate.getTime() - now.getTime() < 24 * 60 * 60 * 1000 && meetingDate > now;
                 }).length}
               </Typography>
-              <Typography color="text.secondary" variant="body2">Today</Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary' }}>
+                Today
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -237,16 +263,23 @@ export default function TeacherSchedule() {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            p: 2, boxShadow: 3, borderRadius: 2, background: 'transparent',
+            p: 2, boxShadow: 3, borderRadius: 2, 
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+            border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
             transition: 'box-shadow 0.2s, background 0.2s', cursor: 'default',
             borderLeft: '4px solid #800000',
-            '&:hover': { boxShadow: 6, background: 'transparent' }
+            '&:hover': { 
+              boxShadow: 6, 
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 1)'
+            }
           }}>
             <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
               <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {pastMeetings.length}
               </Typography>
-              <Typography color="text.secondary" variant="body2">Past</Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary' }}>
+                Past
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -255,7 +288,10 @@ export default function TeacherSchedule() {
       {/* Upcoming Meetings */}
       {upcomingMeetings.length > 0 && (
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h5" fontWeight={600} color="#2d3436" sx={{ mb: 2 }}>
+          <Typography variant="h5" fontWeight={600} sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#2d3436', 
+            mb: 2 
+          }}>
             Upcoming Meetings
           </Typography>
           <Grid container spacing={2}>
@@ -266,6 +302,8 @@ export default function TeacherSchedule() {
                   <Card sx={{
                     boxShadow: 2,
                     borderRadius: 2,
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+                    border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
                     transition: 'box-shadow 0.2s, background 0.2s',
                     position: 'relative',
                     overflow: 'hidden',
@@ -278,11 +316,16 @@ export default function TeacherSchedule() {
                       height: '100%',
                       background: 'linear-gradient(180deg, rgba(128,0,0,0.9), rgba(128,0,0,0.5))'
                     },
-                    '&:hover': { boxShadow: 6, background: 'white' }
+                    '&:hover': { 
+                      boxShadow: 6, 
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 1)'
+                    }
                   }}>
                     <CardContent>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                        <Typography variant="h6" fontWeight={600} color="#2d3436">
+                        <Typography variant="h6" fontWeight={600} sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#ffffff' : '#2d3436'
+                        }}>
                           {meeting.title}
                         </Typography>
                         <Chip 
@@ -354,10 +397,20 @@ export default function TeacherSchedule() {
       {/* Past Meetings */}
       {pastMeetings.length > 0 && (
         <Box>
-          <Typography variant="h5" fontWeight={600} color="#2d3436" sx={{ mb: 2 }}>
+          <Typography variant="h5" fontWeight={600} sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#2d3436', 
+            mb: 2 
+          }}>
             Past Meetings
           </Typography>
-          <Paper sx={{ maxHeight: 400, overflow: 'auto' }}>
+          <Paper sx={{ 
+            maxHeight: 400, 
+            overflow: 'auto',
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+            border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+            borderRadius: 2,
+            boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+          }}>
             <List>
               {pastMeetings.map((meeting, index) => (
                 <React.Fragment key={meeting.id}>

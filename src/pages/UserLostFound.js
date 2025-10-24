@@ -542,8 +542,10 @@ export default function UserLostFound({ currentUser }) {
   };
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>Lost and Found</Typography>
+    <Box sx={{ pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 }, pb: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', mb: 2, mt: 1 }}>
+        Lost and Found
+      </Typography>
       
       <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)} sx={{ mb: 3 }}>
         <Tab label="Report Lost Item" />
@@ -552,13 +554,26 @@ export default function UserLostFound({ currentUser }) {
       </Tabs>
 
       {activeTab === 0 && (
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>Submit Lost Item Report</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Paper sx={{ 
+          p: { xs: 2, sm: 3, md: 4 }, 
+          mb: 3,
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+          border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+          borderRadius: 2,
+          boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+        }}>
+          <Typography variant="h6" gutterBottom sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+            fontWeight: 600,
+            mb: 1
+          }}>
+            Submit Lost Item Report
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Your report will be reviewed by an administrator before being posted.
           </Typography>
           <form onSubmit={handleLostSubmit}>
-            <Grid container spacing={2}>
+            <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
                 <TextField 
                   fullWidth 
@@ -629,13 +644,26 @@ export default function UserLostFound({ currentUser }) {
       )}
 
       {activeTab === 1 && (
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>Submit Found Item Report</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Paper sx={{ 
+          p: { xs: 2, sm: 3, md: 4 }, 
+          mb: 3,
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+          border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+          borderRadius: 2,
+          boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+        }}>
+          <Typography variant="h6" gutterBottom sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+            fontWeight: 600,
+            mb: 1
+          }}>
+            Submit Found Item Report
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Your report will be reviewed by an administrator before being posted.
           </Typography>
           <form onSubmit={handleFoundSubmit}>
-            <Grid container spacing={2}>
+            <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
                 <TextField 
                   fullWidth 
@@ -708,8 +736,18 @@ export default function UserLostFound({ currentUser }) {
       {activeTab === 2 && (
         <Box>
           {/* Social Media Feed Header */}
-          <Paper sx={{ p: 3, mb: 3, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff' }}>
-            <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+          <Paper sx={{ 
+            p: { xs: 2, sm: 3, md: 4 }, 
+            mb: 3, 
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+            border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+            borderRadius: 2,
+            boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+          }}>
+            <Typography variant="h4" gutterBottom sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+              fontWeight: 600
+            }}>
               Lost & Found Feed
             </Typography>
             <Typography variant="body1" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666' }}>
@@ -718,7 +756,14 @@ export default function UserLostFound({ currentUser }) {
           </Paper>
 
           {/* Search Bar */}
-          <Paper sx={{ p: 2, mb: 3, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff' }}>
+          <Paper sx={{ 
+            p: { xs: 2, sm: 3 }, 
+            mb: 3, 
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+            border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+            borderRadius: 2,
+            boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+          }}>
             <TextField 
               fullWidth 
               placeholder="Search posts..." 

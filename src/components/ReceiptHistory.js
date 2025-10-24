@@ -23,7 +23,8 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Divider
+  Divider,
+  useTheme
 } from '@mui/material';
 import {
   Receipt,
@@ -63,6 +64,7 @@ const receiptTypeLabels = {
 };
 
 export default function ReceiptHistory() {
+  const theme = useTheme();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState('');
@@ -131,12 +133,24 @@ export default function ReceiptHistory() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Paper sx={{ p: 3 }}>
+    <Box sx={{ 
+      p: { xs: 2, sm: 3 },
+      bgcolor: theme.palette.mode === 'dark' ? '#1a1a1a' : 'transparent'
+    }}>
+      <Paper sx={{ 
+        p: { xs: 2, sm: 3 },
+        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+        borderRadius: 2,
+        boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+      }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Receipt sx={{ fontSize: 32, color: 'primary.main', mr: 2 }} />
-            <Typography variant="h4" color="primary">
+            <Receipt sx={{ fontSize: 28, color: theme.palette.mode === 'dark' ? '#ffffff' : 'primary.main', mr: 2 }} />
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'primary.main',
+              fontWeight: 600
+            }}>
               My Receipt Submissions
             </Typography>
           </Box>
@@ -144,6 +158,14 @@ export default function ReceiptHistory() {
             variant="outlined"
             startIcon={<Refresh />}
             onClick={fetchSubmissions}
+            sx={{
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'primary.main',
+              borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'primary.main',
+              '&:hover': {
+                borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'primary.dark',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'primary.light'
+              }
+            }}
           >
             Refresh
           </Button>

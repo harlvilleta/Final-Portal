@@ -17,7 +17,8 @@ import {
   CardMedia,
   IconButton,
   Chip,
-  Divider
+  Divider,
+  useTheme
 } from '@mui/material';
 import {
   CloudUpload,
@@ -52,6 +53,7 @@ const receiptTypes = [
 // Note: We will store the image directly as a data URL in Firestore per requirements
 
 export default function ReceiptSubmission() {
+  const theme = useTheme();
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [receiptType, setReceiptType] = useState('');
@@ -258,21 +260,49 @@ export default function ReceiptSubmission() {
   }
 
   return (
-    <Box sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
-      <Paper sx={{ p: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, justifyContent: 'space-between' }}>
+    <Box sx={{ 
+      p: { xs: 2, sm: 3 }, 
+      maxWidth: 600, 
+      mx: 'auto',
+      bgcolor: theme.palette.mode === 'dark' ? '#1a1a1a' : 'transparent'
+    }}>
+      <Paper sx={{ 
+        p: { xs: 2, sm: 3 },
+        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+        borderRadius: 2,
+        boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Receipt sx={{ fontSize: 32, color: 'primary.main', mr: 2 }} />
-            <Typography variant="h4" color="primary">
+            <Receipt sx={{ fontSize: 28, color: theme.palette.mode === 'dark' ? '#ffffff' : 'primary.main', mr: 2 }} />
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'primary.main',
+              fontWeight: 600
+            }}>
               Receipt Submission
             </Typography>
           </Box>
-          <Button variant="outlined" onClick={() => window.location.assign('/receipt-history')}>
+          <Button 
+            variant="outlined" 
+            onClick={() => window.location.assign('/receipt-history')}
+            sx={{
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'primary.main',
+              borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'primary.main',
+              '&:hover': {
+                borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'primary.dark',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'primary.light'
+              }
+            }}
+          >
             Receipt History
           </Button>
         </Box>
         
-        <Typography variant="body1" sx={{ mb: 3 }}>
+        <Typography variant="body1" sx={{ 
+          mb: 3,
+          color: theme.palette.mode === 'dark' ? '#e0e0e0' : '#333333'
+        }}>
           Submit receipt images for membership fees, student ID, or other school-related payments. 
           Admins will review and approve your submissions.
         </Typography>
@@ -337,7 +367,17 @@ export default function ReceiptSubmission() {
             </Grid>
 
             <Grid item xs={12}>
-              <Box sx={{ border: '2px dashed #ccc', borderRadius: 2, p: 3, textAlign: 'center' }}>
+              <Box sx={{ 
+                border: `2px dashed ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : '#ccc'}`, 
+                borderRadius: 2, 
+                p: 2, 
+                textAlign: 'center',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
+                '&:hover': {
+                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : '#999',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+                }
+              }}>
                 <input
                   accept="image/*"
                   style={{ display: 'none' }}
@@ -352,14 +392,29 @@ export default function ReceiptSubmission() {
                     startIcon={<CloudUpload />}
                     disabled={uploading}
                     size="large"
+                    sx={{
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : 'primary.main',
+                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'primary.main',
+                      '&:hover': {
+                        borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'primary.dark',
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'primary.light'
+                      }
+                    }}
                   >
                     {uploading ? 'Processing...' : 'Upload Receipt Image'}
                   </Button>
                 </label>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                <Typography variant="body2" sx={{ 
+                  mt: 1,
+                  color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary'
+                }}>
                   Supported formats: JPG, PNG, GIF. Max size: 10MB
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                <Typography variant="caption" sx={{ 
+                  mt: 1, 
+                  display: 'block',
+                  color: theme.palette.mode === 'dark' ? '#999999' : 'text.secondary'
+                }}>
                   Images will be uploaded to secure cloud storage. Max size: 10MB
                 </Typography>
               </Box>
@@ -367,10 +422,17 @@ export default function ReceiptSubmission() {
 
             {receiptBase64 && (
               <Grid item xs={12}>
-                <Card>
+                <Card sx={{
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
+                  border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+                  borderRadius: 2
+                }}>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="h6" sx={{ flex: 1 }}>
+                      <Typography variant="h6" sx={{ 
+                        flex: 1,
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
+                      }}>
                         Receipt Preview
                       </Typography>
                       <IconButton onClick={removeImage} color="error">
