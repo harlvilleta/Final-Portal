@@ -433,14 +433,23 @@ export default function TeacherViolationRecords() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ 
-        fontWeight: 700, 
-        color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', 
-        mb: 3 
-      }}>
-        Violation Records
-      </Typography>
+    <Box sx={{ p: { xs: 0.5, sm: 1 }, pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
+      {/* Welcome Section */}
+      <Box sx={{ mb: 2, pt: { xs: 1, sm: 1 }, px: { xs: 0, sm: 0 } }}>
+        <Typography 
+          variant="h4" 
+          fontWeight={700} 
+          gutterBottom 
+          sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+            wordBreak: 'break-word',
+            fontSize: { xs: '1.75rem', sm: '2.125rem' },
+            lineHeight: 1.2
+          }}
+        >
+          Violation Records
+        </Typography>
+      </Box>
       
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
         Record student violations and notify administrators for review.
@@ -448,21 +457,21 @@ export default function TeacherViolationRecords() {
 
       {/* Add New Violation Form */}
         <Paper elevation={2} sx={{ 
-          p: 3, 
+          p: 2, 
           mb: 3, 
           bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#fafafa',
           border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none'
         }}>
           <Typography variant="h6" gutterBottom sx={{ 
             fontWeight: 600, 
-            mb: 3,
+            mb: 2,
             color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit'
           }}>
             Add New Violation
           </Typography>
           
           <form onSubmit={handleSubmit}>
-            <Grid container spacing={3}>
+            <Grid container spacing={2}>
               {/* First Row */}
               <Grid item xs={12} md={6}>
                 <Autocomplete
@@ -492,6 +501,7 @@ export default function TeacherViolationRecords() {
                   renderInput={(params) => (
                     <TextField
                       {...params}
+                      size="small"
                       label="Select Student Involved"
                       placeholder="Type to search for a student"
                       sx={getTextFieldSx()}
@@ -515,6 +525,7 @@ export default function TeacherViolationRecords() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
+                  size="small"
                   label="Type of Violation Committed"
                   placeholder="Describe the specific violation"
                   value={formData.violation}
@@ -548,6 +559,7 @@ export default function TeacherViolationRecords() {
                   renderInput={(params) => (
                     <TextField
                       {...params}
+                      size="small"
                       label="Severity Level of Violation"
                       placeholder="Select severity level"
                       sx={getTextFieldSx()}
@@ -561,6 +573,7 @@ export default function TeacherViolationRecords() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
+                  size="small"
                   label="Date of Violation Incident"
                   type="date"
                   value={formData.date}
@@ -573,6 +586,7 @@ export default function TeacherViolationRecords() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
+                  size="small"
                   label="Time of Violation Incident"
                   type="time"
                   value={formData.time}
@@ -585,6 +599,7 @@ export default function TeacherViolationRecords() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
+                  size="small"
                   label="Location Where Violation Occurred"
                   placeholder="Enter specific location or classroom"
                   value={formData.location}
@@ -597,6 +612,7 @@ export default function TeacherViolationRecords() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
+                  size="small"
                   multiline
                   rows={3}
                   label="Names of Witnesses Present"
@@ -610,6 +626,7 @@ export default function TeacherViolationRecords() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
+                  size="small"
                   multiline
                   rows={3}
                   label="Detailed Description of Incident"

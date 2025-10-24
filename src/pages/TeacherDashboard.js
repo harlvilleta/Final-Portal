@@ -422,15 +422,17 @@ export default function TeacherDashboard() {
       {/* Main Content */}
       <Grid container spacing={3}>
         {/* Recent Violations */}
-        <Grid item xs={12} lg={6}>
+        <Grid item xs={12} md={6} sx={{ mt: 2 }}>
           <Card sx={{ 
             border: 'none',
             boxShadow: 3,
             bgcolor: theme.palette.mode === 'dark' ? '#333333' : 'transparent',
             borderRadius: 2,
-            height: 'fit-content'
+            height: '400px',
+            display: 'flex',
+            flexDirection: 'column'
           }}>
-            <CardContent>
+            <CardContent sx={{ flex: 1, overflow: 'auto', p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <Typography variant="h6" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                   Recent Violations
@@ -461,8 +463,15 @@ export default function TeacherDashboard() {
                     <React.Fragment key={violation.id}>
                       <ListItem sx={{ px: 0, py: 1, '&:hover': { backgroundColor: 'transparent' } }}>
                         <ListItemAvatar>
-                          <Avatar sx={{ width: 40, height: 40 }}>
-                            <Warning sx={{ fontSize: 20, color: '#ff9800' }} />
+                          <Avatar sx={{ 
+                            width: 32, 
+                            height: 32,
+                            bgcolor: 'transparent'
+                          }}>
+                            <Warning sx={{ 
+                              fontSize: 16, 
+                              color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333' 
+                            }} />
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
@@ -504,7 +513,11 @@ export default function TeacherDashboard() {
                 </List>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <Warning sx={{ fontSize: 48, color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 1 }} />
+                  <Warning sx={{ 
+                    fontSize: 32, 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333', 
+                    mb: 1 
+                  }} />
                   <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                     No violations recorded yet
                   </Typography>
@@ -515,15 +528,17 @@ export default function TeacherDashboard() {
         </Grid>
 
         {/* Recent Announcements */}
-        <Grid item xs={12} lg={6}>
+        <Grid item xs={12} md={6} sx={{ mt: 2 }}>
           <Card sx={{ 
             border: 'none',
             borderRadius: 3, 
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             bgcolor: theme.palette.mode === 'dark' ? '#333333' : 'transparent',
-            height: 'fit-content'
+            height: '400px',
+            display: 'flex',
+            flexDirection: 'column'
           }}>
-            <CardContent>
+            <CardContent sx={{ flex: 1, overflow: 'auto', p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#2d3436' }}>
                   Recent Announcements
@@ -554,8 +569,15 @@ export default function TeacherDashboard() {
                     <React.Fragment key={announcement.id}>
                       <ListItem sx={{ px: 0, py: 1, '&:hover': { backgroundColor: 'transparent' } }}>
                         <ListItemAvatar>
-                          <Avatar sx={{ width: 40, height: 40 }}>
-                            <Info sx={{ fontSize: 20, color: '#1976d2' }} />
+                          <Avatar sx={{ 
+                            width: 32, 
+                            height: 32,
+                            bgcolor: 'transparent'
+                          }}>
+                            <Info sx={{ 
+                              fontSize: 16, 
+                              color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333' 
+                            }} />
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
@@ -597,8 +619,12 @@ export default function TeacherDashboard() {
                 </List>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <Info sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
-                  <Typography variant="body2" color="text.secondary">
+                  <Info sx={{ 
+                    fontSize: 32, 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333', 
+                    mb: 1 
+                  }} />
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                     No announcements yet
                   </Typography>
                 </Box>

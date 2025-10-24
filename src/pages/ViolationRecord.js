@@ -489,7 +489,7 @@ School Administration
   };
 
   return (
-    <Box sx={{ pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
+    <Box sx={{ p: { xs: 0.5, sm: 1 }, pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
       <style>
         {`
           @media print {
@@ -500,13 +500,22 @@ School Administration
           }
         `}
       </style>
-      <Typography variant="h4" gutterBottom fontWeight={700} sx={{ 
-        color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
-        mb: 2,
-        mt: 1
-      }}>
-        Violation Records
-      </Typography>
+      {/* Welcome Section */}
+      <Box sx={{ mb: 2, pt: { xs: 1, sm: 1 }, px: { xs: 0, sm: 0 } }}>
+        <Typography 
+          variant="h4" 
+          fontWeight={700} 
+          gutterBottom 
+          sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+            wordBreak: 'break-word',
+            fontSize: { xs: '1.75rem', sm: '2.125rem' },
+            lineHeight: 1.2
+          }}
+        >
+          Violation Records
+        </Typography>
+      </Box>
       {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={4}>

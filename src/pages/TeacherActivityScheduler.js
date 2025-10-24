@@ -581,77 +581,70 @@ export default function TeacherActivityScheduler() {
   };
 
   return (
-    <Box sx={{ p: 3, minHeight: '100vh' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ 
-          fontWeight: 700, 
-          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' 
-        }}>
-          Activity Scheduler
-        </Typography>
-        <Button
-          variant="outlined"
-          startIcon={<FilterList />}
-          onClick={handleRefreshBookings}
-          disabled={refreshing}
-          sx={{
-            borderColor: '#800000',
-            color: '#800000',
-            '&:hover': {
-              borderColor: '#6b0000',
-              backgroundColor: 'rgba(128, 0, 0, 0.04)'
-            }
+    <Box sx={{ p: { xs: 0.5, sm: 1 }, pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 }, minHeight: '100vh' }}>
+      {/* Welcome Section */}
+      <Box sx={{ mb: 3, pt: { xs: 1, sm: 1 }, px: { xs: 0, sm: 0 } }}>
+        <Typography 
+          variant="h4" 
+          fontWeight={700} 
+          gutterBottom 
+          sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+            wordBreak: 'break-word',
+            fontSize: { xs: '1.75rem', sm: '2.125rem' },
+            lineHeight: 1.2
           }}
         >
-          {refreshing ? 'Refreshing...' : 'Refresh Bookings'}
-        </Button>
+          Activities
+        </Typography>
       </Box>
+      
 
-      <Grid container spacing={3}>
-        {/* Calendar Section */}
-        <Grid item xs={12} lg={8}>
-          <Paper 
-            onClick={() => console.log('Calendar clicked')}
-            sx={{ 
-            mb: 3,
-            p: 2,
-            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
-            borderLeft: '4px solid #800000',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: 4,
-            },
-          }}>
+      {/* Main Content with proper spacing */}
+      <Box sx={{ mb: 3 }}>
+        <Grid container spacing={3}>
+          {/* Calendar Section */}
+          <Grid item xs={12} lg={6}>
+            <Paper 
+              onClick={() => console.log('Calendar clicked')}
+              sx={{ 
+                mb: 3,
+                p: 3,
+                bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+                border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+                borderLeft: '4px solid #800000',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 4,
+                },
+              }}>
               <Box sx={{ 
                 display: 'flex', 
                 justifyContent: 'space-between', 
                 alignItems: 'center', 
                 mb: 2,
-                bgcolor: '#660B05',
-                p: 2,
+                bgcolor: theme.palette.mode === 'dark' ? '#333333' : '#f5f5f5',
+                p: 1.5,
                 borderRadius: 1
               }}>
                 <Typography 
-                  variant="h5" 
+                  variant="h6" 
                   sx={{ 
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '1px',
-                    fontSize: '20px'
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                    fontWeight: 600,
+                    fontSize: '1.1rem'
                   }}
                 >
                   {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </Typography>
                 <Box>
-                  <IconButton onClick={() => navigateMonth(-1)}>
-                    <Typography variant="h6">‹</Typography>
+                  <IconButton onClick={() => navigateMonth(-1)} size="small">
+                    <Typography variant="body1">‹</Typography>
                   </IconButton>
-                  <IconButton onClick={() => navigateMonth(1)}>
-                    <Typography variant="h6">›</Typography>
+                  <IconButton onClick={() => navigateMonth(1)} size="small">
+                    <Typography variant="body1">›</Typography>
                   </IconButton>
                 </Box>
               </Box>
@@ -785,83 +778,50 @@ export default function TeacherActivityScheduler() {
           </Paper>
         </Grid>
 
-        {/* Quick Stats */}
-        <Grid item xs={12} lg={4}>
-          <Paper 
-            onClick={() => console.log('My Bookings clicked')}
-            sx={{ 
-            mb: 3,
-            p: 2,
-            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
-            borderLeft: '4px solid #800000',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: 4,
-            },
-          }}>
-            <Typography variant="h4" sx={{ 
-              color: '#000000', 
-              fontWeight: 'bold',
-              textAlign: 'center',
-              mb: 1
+          {/* Quick Stats */}
+          <Grid item xs={12} lg={6}>
+            <Paper 
+              onClick={() => console.log('My Bookings clicked')}
+              sx={{ 
+                mb: 3,
+                p: 1.5,
+                height: 'fit-content',
+                maxWidth: '300px',
+                bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff', 
+                border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
+                borderRadius: 2,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  boxShadow: 2,
+                },
+              }}>
+            <Typography variant="h6" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333', 
+              fontWeight: 600,
+              mb: 1.5,
+              fontSize: '1rem'
             }}>
-              {myBookings.length}
-            </Typography>
-            <Typography variant="body2" sx={{ 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary',
-              textAlign: 'center',
-              mb: 2
-            }}>
-              My Bookings
+              My Bookings ({myBookings.length})
             </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>Pending:</Typography>
-                  <Chip 
-                    label={myBookings.filter(b => b.status === 'pending').length} 
-                    sx={{ 
-                      backgroundColor: 'transparent',
-                      color: '#ff9800',
-                      border: 'none',
-                      '& .MuiChip-label': {
-                        color: '#ff9800'
-                      }
-                    }}
-                    size="small" 
-                  />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666', fontSize: '0.75rem' }}>Pending:</Typography>
+                  <Typography variant="body2" sx={{ color: '#ff9800', fontWeight: 500, fontSize: '0.75rem' }}>
+                    {myBookings.filter(b => b.status === 'pending').length}
+                  </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>Approved:</Typography>
-                  <Chip 
-                    label={myBookings.filter(b => b.status === 'approved').length} 
-                    sx={{ 
-                      backgroundColor: 'transparent',
-                      color: '#4caf50',
-                      border: 'none',
-                      '& .MuiChip-label': {
-                        color: '#4caf50'
-                      }
-                    }}
-                    size="small" 
-                  />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666', fontSize: '0.75rem' }}>Approved:</Typography>
+                  <Typography variant="body2" sx={{ color: '#4caf50', fontWeight: 500, fontSize: '0.75rem' }}>
+                    {myBookings.filter(b => b.status === 'approved').length}
+                  </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>Rejected:</Typography>
-                  <Chip 
-                    label={myBookings.filter(b => b.status === 'rejected').length} 
-                    sx={{ 
-                      backgroundColor: 'transparent',
-                      color: '#f44336',
-                      border: 'none',
-                      '& .MuiChip-label': {
-                        color: '#f44336'
-                      }
-                    }}
-                    size="small" 
-                  />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666', fontSize: '0.75rem' }}>Rejected:</Typography>
+                  <Typography variant="body2" sx={{ color: '#f44336', fontWeight: 500, fontSize: '0.75rem' }}>
+                    {myBookings.filter(b => b.status === 'rejected').length}
+                  </Typography>
                 </Box>
               </Box>
           </Paper>
@@ -870,30 +830,41 @@ export default function TeacherActivityScheduler() {
           <Paper 
             onClick={() => console.log('Filters clicked')}
             sx={{ 
-            p: 2,
-            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
-            borderLeft: '4px solid #800000',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: 4,
-            },
-          }}>
+              p: 1.5,
+              height: 'fit-content',
+              maxWidth: '300px',
+              bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff', 
+              border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0',
+              borderRadius: 2,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': {
+                boxShadow: 2,
+              },
+            }}>
             <Typography variant="h6" sx={{ 
-              color: 'black' 
-            }} gutterBottom>
-                <FilterList sx={{ mr: 1, verticalAlign: 'middle' }} />
-                Filters
-              </Typography>
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel sx={{ color: 'black' }}>Resource</InputLabel>
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+              fontWeight: 600,
+              mb: 1.5,
+              fontSize: '1rem'
+            }}>
+              <FilterList sx={{ mr: 1, verticalAlign: 'middle', fontSize: '1rem' }} />
+              Filters
+            </Typography>
+              <FormControl fullWidth sx={{ mb: 1.5 }}>
+                <InputLabel sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                  fontSize: '0.75rem'
+                }}>Resource</InputLabel>
                 <Select
                   value={filterResource}
                   onChange={(e) => setFilterResource(e.target.value)}
                   label="Resource"
-                  sx={{ color: 'black' }}
+                  size="small"
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                    fontSize: '0.75rem'
+                  }}
                 >
                   <MenuItem value="">All Resources</MenuItem>
                   {resources.map(resource => (
@@ -902,12 +873,19 @@ export default function TeacherActivityScheduler() {
                 </Select>
               </FormControl>
               <FormControl fullWidth>
-                <InputLabel sx={{ color: 'black' }}>Department</InputLabel>
+                <InputLabel sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                  fontSize: '0.75rem'
+                }}>Department</InputLabel>
                 <Select
                   value={filterDepartment}
                   onChange={(e) => setFilterDepartment(e.target.value)}
                   label="Department"
-                  sx={{ color: 'black' }}
+                  size="small"
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                    fontSize: '0.75rem'
+                  }}
                 >
                   <MenuItem value="">All Departments</MenuItem>
                   {departments.map(department => (
@@ -919,20 +897,20 @@ export default function TeacherActivityScheduler() {
         </Grid>
       </Grid>
 
-      {/* My Bookings Table */}
-      <Paper 
-        onClick={() => console.log('My Bookings Table clicked')}
-        sx={{ 
-        mt: 3,
-        p: 2,
-        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
-        border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
-        borderLeft: '4px solid #800000',
-        cursor: 'pointer',
-        transition: 'all 0.2s',
-        '&:hover': {
-          transform: 'translateY(-2px)',
-          boxShadow: 4,
+        {/* My Bookings Table */}
+        <Paper 
+          onClick={() => console.log('My Bookings Table clicked')}
+          sx={{ 
+            mt: 3,
+            p: 3,
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+            border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+            borderLeft: '4px solid #800000',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: 4,
         },
       }}>
           <Typography variant="h6" sx={{ 
@@ -1054,7 +1032,8 @@ export default function TeacherActivityScheduler() {
               </TableBody>
             </Table>
           </TableContainer>
-      </Paper>
+        </Paper>
+      </Box>
 
       {/* Booking Dialog */}
       <Dialog open={bookingDialogOpen} onClose={() => setBookingDialogOpen(false)} maxWidth="md" fullWidth>

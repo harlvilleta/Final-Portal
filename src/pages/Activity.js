@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Grid, Card, CardContent, CardHeader, TextField, Button, MenuItem, Paper, List, ListItem, ListItemText, Divider, Stack, Snackbar, Alert, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Chip, InputAdornment, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, useTheme } from "@mui/material";
-import { EventNote, History, CheckCircle, Edit, Delete, Visibility } from "@mui/icons-material";
+import { EventNote, History, CheckCircle, Edit, Delete, Visibility, Event, Schedule, Category } from "@mui/icons-material";
 import { collection, addDoc, getDocs, updateDoc, doc, orderBy, query, deleteDoc } from "firebase/firestore";
 import { db, logActivity } from "../firebase";
 import SearchIcon from '@mui/icons-material/Search';
@@ -128,39 +128,219 @@ function SummaryCard({ stats }) {
   const theme = useTheme();
   return (
     <Box sx={{ mb: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
+      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', mb: 2, mt: 1 }}>
         Activity Summary
       </Typography>
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{stats.total}</Typography>
-              <Typography variant="body2" color="textSecondary">Total</Typography>
+          <Card sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            p: 2, 
+            boxShadow: theme.palette.mode === 'dark' 
+              ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
+              : '0 4px 16px rgba(0, 0, 0, 0.1)', 
+            borderRadius: 2,
+            borderLeft: '4px solid #800000',
+            background: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.05)' 
+              : 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(10px)',
+            border: theme.palette.mode === 'dark' 
+              ? '1px solid rgba(255, 255, 255, 0.1)' 
+              : '1px solid rgba(255, 255, 255, 0.2)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              boxShadow: theme.palette.mode === 'dark' 
+                ? '0 12px 40px rgba(0, 0, 0, 0.4)' 
+                : '0 8px 24px rgba(0, 0, 0, 0.15)',
+              transform: 'translateY(-2px)',
+              background: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.08)' 
+                : 'rgba(255, 255, 255, 0.9)',
+            },
+          }}>
+            <Box sx={{ 
+              mr: 2, 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+              '& .MuiSvgIcon-root': {
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000'
+              }
+            }}>
+              <Event fontSize="large" />
+            </Box>
+            <CardContent sx={{ flex: 1, p: '8px !important' }}>
+              <Typography 
+                variant="h4" 
+                fontWeight={700} 
+                sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+                }}
+              >
+                {stats.total}
+              </Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666' }}>
+                Total
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{stats.scheduled}</Typography>
-              <Typography variant="body2" color="textSecondary">Scheduled</Typography>
+          <Card sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            p: 2, 
+            boxShadow: theme.palette.mode === 'dark' 
+              ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
+              : '0 4px 16px rgba(0, 0, 0, 0.1)', 
+            borderRadius: 2,
+            borderLeft: '4px solid #ff9800',
+            background: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.05)' 
+              : 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(10px)',
+            border: theme.palette.mode === 'dark' 
+              ? '1px solid rgba(255, 255, 255, 0.1)' 
+              : '1px solid rgba(255, 255, 255, 0.2)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              boxShadow: theme.palette.mode === 'dark' 
+                ? '0 12px 40px rgba(0, 0, 0, 0.4)' 
+                : '0 8px 24px rgba(0, 0, 0, 0.15)',
+              transform: 'translateY(-2px)',
+              background: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.08)' 
+                : 'rgba(255, 255, 255, 0.9)',
+            },
+          }}>
+            <Box sx={{ 
+              mr: 2, 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#ff9800',
+              '& .MuiSvgIcon-root': {
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#ff9800'
+              }
+            }}>
+              <Schedule fontSize="large" />
+            </Box>
+            <CardContent sx={{ flex: 1, p: '8px !important' }}>
+              <Typography 
+                variant="h4" 
+                fontWeight={700} 
+                sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+                }}
+              >
+                {stats.scheduled}
+              </Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666' }}>
+                Scheduled
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{stats.completed}</Typography>
-              <Typography variant="body2" color="textSecondary">Completed</Typography>
+          <Card sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            p: 2, 
+            boxShadow: theme.palette.mode === 'dark' 
+              ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
+              : '0 4px 16px rgba(0, 0, 0, 0.1)', 
+            borderRadius: 2,
+            borderLeft: '4px solid #4caf50',
+            background: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.05)' 
+              : 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(10px)',
+            border: theme.palette.mode === 'dark' 
+              ? '1px solid rgba(255, 255, 255, 0.1)' 
+              : '1px solid rgba(255, 255, 255, 0.2)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              boxShadow: theme.palette.mode === 'dark' 
+                ? '0 12px 40px rgba(0, 0, 0, 0.4)' 
+                : '0 8px 24px rgba(0, 0, 0, 0.15)',
+              transform: 'translateY(-2px)',
+              background: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.08)' 
+                : 'rgba(255, 255, 255, 0.9)',
+            },
+          }}>
+            <Box sx={{ 
+              mr: 2, 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#4caf50',
+              '& .MuiSvgIcon-root': {
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#4caf50'
+              }
+            }}>
+              <CheckCircle fontSize="large" />
+            </Box>
+            <CardContent sx={{ flex: 1, p: '8px !important' }}>
+              <Typography 
+                variant="h4" 
+                fontWeight={700} 
+                sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+                }}
+              >
+                {stats.completed}
+              </Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666' }}>
+                Completed
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ boxShadow: 2, borderLeft: '4px solid #800000' }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} fontWeight={700}>{stats.categories}</Typography>
-              <Typography variant="body2" color="textSecondary">Categories</Typography>
+          <Card sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            p: 2, 
+            boxShadow: theme.palette.mode === 'dark' 
+              ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
+              : '0 4px 16px rgba(0, 0, 0, 0.1)', 
+            borderRadius: 2,
+            borderLeft: '4px solid #9c27b0',
+            background: theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.05)' 
+              : 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(10px)',
+            border: theme.palette.mode === 'dark' 
+              ? '1px solid rgba(255, 255, 255, 0.1)' 
+              : '1px solid rgba(255, 255, 255, 0.2)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              boxShadow: theme.palette.mode === 'dark' 
+                ? '0 12px 40px rgba(0, 0, 0, 0.4)' 
+                : '0 8px 24px rgba(0, 0, 0, 0.15)',
+              transform: 'translateY(-2px)',
+              background: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.08)' 
+                : 'rgba(255, 255, 255, 0.9)',
+            },
+          }}>
+            <Box sx={{ 
+              mr: 2, 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#9c27b0',
+              '& .MuiSvgIcon-root': {
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#9c27b0'
+              }
+            }}>
+              <Category fontSize="large" />
+            </Box>
+            <CardContent sx={{ flex: 1, p: '8px !important' }}>
+              <Typography 
+                variant="h4" 
+                fontWeight={700} 
+                sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+                }}
+              >
+                {stats.categories}
+              </Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666' }}>
+                Categories
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -645,7 +825,7 @@ export default function Activity() {
   };
 
   return (
-    <Box sx={{ pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
+    <Box sx={{ p: { xs: 0.5, sm: 1 }, pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
       <Grid container spacing={3}>
         <Grid item xs={12}>
           {/* Schedule Event approval removed */}

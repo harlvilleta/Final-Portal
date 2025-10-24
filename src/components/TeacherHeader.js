@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, AppBar, Toolbar, Typography, IconButton, Badge, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, useTheme } from '@mui/material';
-import { Notifications, Mail } from '@mui/icons-material';
+import { Notifications } from '@mui/icons-material';
 import ProfileDropdown from './ProfileDropdown';
 import { db } from '../firebase';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -10,8 +10,6 @@ export default function TeacherHeader({ currentUser, userProfile }) {
   const theme = useTheme();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [composeOpen, setComposeOpen] = useState(false);
-  const [compose, setCompose] = useState({ subject: '', message: '' });
   const [previousPage, setPreviousPage] = useState('/teacher-dashboard');
   const [isOnNotificationsPage, setIsOnNotificationsPage] = useState(false);
   const navigate = useNavigate();
@@ -80,15 +78,6 @@ export default function TeacherHeader({ currentUser, userProfile }) {
       }}>
         <IconButton
           size="large"
-          aria-label="mail to admin"
-          onClick={() => setComposeOpen(true)}
-          color="inherit"
-          sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#333' }}
-        >
-          <Mail />
-        </IconButton>
-        <IconButton
-          size="large"
           aria-label="notifications"
           onClick={handleNotificationClick}
           color="inherit"
@@ -111,46 +100,6 @@ export default function TeacherHeader({ currentUser, userProfile }) {
 
 
 
-      {/* Compose Message Dialog */}
-      <Dialog open={composeOpen} onClose={() => setComposeOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Message Admin</DialogTitle>
-        <DialogContent>
-          <TextField label="Subject" fullWidth sx={{ mt: 1 }} value={compose.subject} onChange={e => setCompose({ ...compose, subject: e.target.value })} />
-          <TextField label="Message" fullWidth multiline minRows={3} sx={{ mt: 2 }} value={compose.message} onChange={e => setCompose({ ...compose, message: e.target.value })} />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setComposeOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            disabled={!compose.subject.trim() || !compose.message.trim()}
-            onClick={async () => {
-              try {
-                await addDoc(collection(db, 'admin_messages'), {
-                  fromId: currentUser?.uid || null,
-                  fromEmail: currentUser?.email || null,
-                  subject: compose.subject.trim(),
-                  message: compose.message.trim(),
-                  createdAt: new Date().toISOString(),
-                });
-                await addDoc(collection(db, 'admin_notifications'), {
-                  title: 'New Message from Teacher',
-                  message: compose.subject.trim(),
-                  type: 'teacher_message',
-                  read: false,
-                  createdAt: new Date().toISOString(),
-                  senderEmail: currentUser?.email || null,
-                });
-                setCompose({ subject: '', message: '' });
-                setComposeOpen(false);
-              } catch (e) {
-                // optionally show error
-              }
-            }}
-          >
-            Send
-          </Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 } 

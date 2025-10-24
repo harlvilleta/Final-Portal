@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { List, ListItem, ListItemIcon, ListItemText, Drawer, Divider, Box, Collapse, ListItemButton, Badge, Typography } from "@mui/material";
-import { Dashboard, Settings, Event, Logout, Campaign, Report, ListAlt, History, Search, ExpandLess, ExpandMore, Assignment, Assessment, Schedule, Notifications, Description } from "@mui/icons-material";
+import { Dashboard, Settings, Event, Logout, Campaign, Report, ListAlt, History, Search, ExpandLess, ExpandMore, Assignment, Assessment, Schedule, Description } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
@@ -20,7 +20,6 @@ const menu = [
   },
   { text: "Announcements", icon: <ListAlt sx={{ color: 'inherit' }} />, path: "/teacher-announcements" },
   { text: "Schedule", icon: <Schedule sx={{ color: 'inherit' }} />, path: "/teacher-schedule" },
-  { text: "Notifications", icon: <Notifications sx={{ color: 'inherit' }} />, path: "/teacher-notifications" },
   { text: "Lost & Found", icon: <Search sx={{ color: 'inherit' }} />, path: "/teacher-lost-found" },
   { text: "Account Settings", icon: <Settings sx={{ color: 'inherit' }} />, path: "/teacher-profile" }
 ];
@@ -29,7 +28,6 @@ export default function TeacherSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [openSubmenu, setOpenSubmenu] = useState({});
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [unreadMeetings, setUnreadMeetings] = useState(0);
   const [unreadLostFound, setUnreadLostFound] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
@@ -54,14 +52,6 @@ export default function TeacherSidebar() {
 
   useEffect(() => {
     if (!currentUser?.email) return;
-    const notificationsQuery = query(
-      collection(db, "notifications"),
-      where("recipientEmail", "==", currentUser.email),
-      where("read", "==", false)
-    );
-    const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
-      setUnreadNotifications(snapshot.docs.length);
-    });
 
     const meetingsQuery = query(
       collection(db, "meetings"),
@@ -82,7 +72,6 @@ export default function TeacherSidebar() {
     });
 
     return () => {
-      unsubscribeNotifications();
       unsubscribeMeetings();
       unsubscribeLost();
     };
@@ -182,13 +171,7 @@ export default function TeacherSidebar() {
               }}
             >
               <ListItemIcon sx={{ minWidth: 32, color: 'white', '& .MuiSvgIcon-root': { fontSize: '1rem' } }}>
-                {item.text === 'Notifications' ? (
-                  <Badge badgeContent={unreadNotifications + unreadMeetings + unreadLostFound} color="error">
-                    {item.icon}
-                  </Badge>
-                ) : (
-                  item.icon
-                )}
+                {item.icon}
               </ListItemIcon>
               <ListItemText 
                 primary={item.text} 

@@ -310,19 +310,35 @@ export default function ActivitiesView() {
   );
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h4" gutterBottom sx={{ mb: 0 }}>Activities</Typography>
+    <Box sx={{ p: { xs: 0.5, sm: 1 }, pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
+      {/* Welcome Section */}
+      <Box sx={{ mb: 3, pt: { xs: 1, sm: 1 }, px: { xs: 0, sm: 0 } }}>
+        <Typography 
+          variant="h4" 
+          fontWeight={700} 
+          gutterBottom 
+          sx={{ 
+            color: 'inherit',
+            wordBreak: 'break-word',
+            fontSize: { xs: '1.75rem', sm: '2.125rem' },
+            lineHeight: 1.2,
+            mb: 3
+          }}
+        >
+          Activities
+        </Typography>
       </Box>
 
-      {/* All Activities View */}
-      <TextField 
-        placeholder="Search activities..." 
-        value={search} 
-        onChange={e => setSearch(e.target.value)} 
-        size="small"
-        sx={{ mb: 2, width: { xs: '100%', sm: 320 } }} 
-      />
+      {/* Search Bar with proper spacing */}
+      <Box sx={{ mb: 3 }}>
+        <TextField 
+          placeholder="Search activities..." 
+          value={search} 
+          onChange={e => setSearch(e.target.value)} 
+          size="small"
+          sx={{ width: { xs: '100%', sm: 320 } }} 
+        />
+      </Box>
       
       {loading ? (
         <Typography>Loading activities...</Typography>
@@ -333,19 +349,22 @@ export default function ActivitiesView() {
           </CardContent>
         </Card>
       ) : (
-        <Grid container spacing={2}>
+        <Grid container spacing={3}>
           {filtered.map((act) => (
-            <Grid item xs={12} sm={6} md={4} key={act.id}>
+            <Grid item xs={12} sm={6} md={4} lg={3} key={act.id}>
               <Card 
                 sx={{ 
-                  height: '100%',
+                  width: '100%',
+                  height: '280px',
                   cursor: 'pointer',
                   transition: 'all 0.3s ease-in-out',
                   borderLeft: '4px solid',
                   borderLeftColor: act.completed ? '#9e9e9e' : '#ff9800',
+                  display: 'flex',
+                  flexDirection: 'column',
                   '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 6,
+                    transform: 'translateY(-2px)',
+                    boxShadow: 4,
                     borderLeftColor: act.completed ? '#757575' : '#f57c00'
                   }
                 }}
@@ -375,45 +394,49 @@ export default function ActivitiesView() {
                     </Stack>
                   }
                 />
-                <CardContent sx={{ pt: 0 }}>
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary" 
-                    sx={{ 
-                      mb: 2,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
-                    }}
-                  >
-                    {act.description || 'No description available'}
-                  </Typography>
-                  <Stack direction="row" spacing={1} flexWrap="wrap">
-                    {act.organizer && (
-                      <Chip 
-                        label={`👤 ${act.organizer}`} 
-                        size="small" 
-                        variant="outlined" 
-                        sx={{ fontSize: '0.75rem' }}
-                      />
-                    )}
-                    {act.location && (
-                      <Chip 
-                        label={`📍 ${act.location}`} 
-                        size="small" 
-                        variant="outlined"
-                        sx={{ fontSize: '0.75rem' }}
-                      />
-                    )}
-                  </Stack>
+                <CardContent sx={{ pt: 0, p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography 
+                      variant="body2" 
+                      color="text.secondary" 
+                      sx={{ 
+                        mb: 1,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      {act.description || 'No description available'}
+                    </Typography>
+                    <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mb: 1 }}>
+                      {act.organizer && (
+                        <Chip 
+                          label={`👤 ${act.organizer}`} 
+                          size="small" 
+                          variant="outlined" 
+                          sx={{ fontSize: '0.7rem', height: '20px' }}
+                        />
+                      )}
+                      {act.location && (
+                        <Chip 
+                          label={`📍 ${act.location}`} 
+                          size="small" 
+                          variant="outlined"
+                          sx={{ fontSize: '0.7rem', height: '20px' }}
+                        />
+                      )}
+                    </Stack>
+                  </Box>
                   <Typography 
                     variant="caption" 
                     color="text.secondary" 
                     sx={{ 
                       display: 'block', 
-                      mt: 1,
-                      fontWeight: 500
+                      mt: 'auto',
+                      fontWeight: 500,
+                      fontSize: '0.75rem'
                     }}
                   >
                     📅 {act.date ? new Date(act.date).toLocaleDateString('en-US', {

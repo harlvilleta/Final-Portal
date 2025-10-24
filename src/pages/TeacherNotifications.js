@@ -180,8 +180,15 @@ export default function TeacherNotifications() {
   };
 
   const renderNotificationList = (notificationList, title) => (
-    <Paper sx={{ mb: 3 }}>
-      <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
+    <Paper sx={{ 
+      mb: 3,
+      bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
+      border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none'
+    }}>
+      <Box sx={{ 
+        p: 2, 
+        borderBottom: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0' 
+      }}>
         <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? 'text.primary' : '#000000' }}>
           {title}
         </Typography>
@@ -201,8 +208,8 @@ export default function TeacherNotifications() {
                 button 
                 onClick={() => handleViewDetails(notification)}
                 sx={{
-                  bgcolor: notification.read ? 'transparent' : '#f5f5f5',
-                  '&:hover': { bgcolor: '#f0f0f0' }
+                  bgcolor: notification.read ? 'transparent' : (theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5'),
+                  '&:hover': { bgcolor: theme.palette.mode === 'dark' ? '#555555' : '#f0f0f0' }
                 }}
               >
                 <ListItemAvatar>
@@ -272,7 +279,7 @@ export default function TeacherNotifications() {
             <Avatar sx={{ bgcolor: getNotificationColor(notification.type, notification.notificationType) }}>
               {getNotificationIcon(notification.type, notification.notificationType)}
             </Avatar>
-            <Typography variant="h6">{notification.title}</Typography>
+            <Typography variant="h6" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>{notification.title}</Typography>
           </Box>
         </DialogTitle>
         <DialogContent>
@@ -384,7 +391,11 @@ export default function TeacherNotifications() {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
+    <Box sx={{ 
+      p: { xs: 2, sm: 3 }, 
+      bgcolor: theme.palette.mode === 'dark' ? '#1a1a1a' : '#f5f6fa', 
+      minHeight: '100vh' 
+    }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }} gutterBottom>
@@ -396,14 +407,18 @@ export default function TeacherNotifications() {
       </Box>
 
       {/* Statistics Card */}
-      <Card sx={{ mb: 3 }}>
+      <Card sx={{ 
+        mb: 3,
+        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
+        border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none'
+      }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Avatar>
               <NotificationsActive />
             </Avatar>
             <Box>
-              <Typography variant="h6" fontWeight={600}>
+              <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                 {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
               </Typography>
               <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#666666' }}>
@@ -415,7 +430,11 @@ export default function TeacherNotifications() {
       </Card>
 
       {/* Tabs */}
-      <Paper sx={{ mb: 3 }}>
+      <Paper sx={{ 
+        mb: 3,
+        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
+        border: theme.palette.mode === 'dark' ? '1px solid #404040' : 'none'
+      }}>
         <Tabs value={currentTab} onChange={handleTabChange} sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tab label={`All (${allNotifications.length})`} />
           <Tab label={`Meetings (${meetingNotifications.length})`} />
