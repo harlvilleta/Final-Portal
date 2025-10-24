@@ -718,13 +718,30 @@ function LostFound() {
       }
     };
     fetchStudents();
-    const unsubLost = onSnapshot(query(collection(db, 'lost_items'), orderBy('createdAt', 'desc')), snap => {
-      setLostItems(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
-    const unsubFound = onSnapshot(query(collection(db, 'found_items'), orderBy('createdAt', 'desc')), snap => {
-      setFoundItems(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
-    return () => { unsubLost(); unsubFound(); };
+    
+    // Optimize: Use single-time fetches instead of real-time listeners
+    const fetchLostFoundData = async () => {
+      try {
+        const [lostSnap, foundSnap] = await Promise.allSettled([
+          getDocs(query(collection(db, 'lost_items'), orderBy('createdAt', 'desc'))),
+          getDocs(query(collection(db, 'found_items'), orderBy('createdAt', 'desc')))
+        ]);
+
+        if (lostSnap.status === 'fulfilled') {
+          setLostItems(lostSnap.value.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        }
+        
+        if (foundSnap.status === 'fulfilled') {
+          setFoundItems(foundSnap.value.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        }
+      } catch (error) {
+        console.error("Error fetching lost and found data:", error);
+      }
+    };
+
+    fetchLostFoundData();
+    
+    return () => { /* No cleanup needed since we're using single-time fetches */ };
   }, []);
 
   // Summary counts

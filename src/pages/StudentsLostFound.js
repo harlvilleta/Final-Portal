@@ -29,7 +29,8 @@ import {
   Person,
   LocationOn,
   AccessTime,
-  Done
+  Done,
+  ArrowBack
 } from '@mui/icons-material';
 import {
   collection,
@@ -45,9 +46,11 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useNavigate } from 'react-router-dom';
 
 export default function StudentsLostFound() {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [pendingLostReports, setPendingLostReports] = useState([]);
   const [pendingFoundReports, setPendingFoundReports] = useState([]);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -327,9 +330,27 @@ export default function StudentsLostFound() {
 
   return (
     <Box sx={{ pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
-      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000', mb: 2, mt: 1 }}>
-        Students Lost and Found Reports
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, mt: 1 }}>
+        <Tooltip title="Back to Lost & Found">
+          <IconButton 
+            onClick={() => navigate('/lost-found')}
+            sx={{ 
+              mr: 1,
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+              '&:hover': {
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(128, 0, 0, 0.1)',
+                transform: 'translateX(-2px)'
+              },
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <ArrowBack />
+          </IconButton>
+        </Tooltip>
+        <Typography variant="h4" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
+          Students Lost and Found Reports
+        </Typography>
+      </Box>
 
       {/* Search Bar */}
       <Box sx={{ mb: 3 }}>

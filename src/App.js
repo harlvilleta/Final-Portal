@@ -44,6 +44,8 @@ import TeacherReports from "./pages/TeacherReports";
 import TeacherSchedule from "./pages/TeacherSchedule";
 import AdminLostFound from "./pages/AdminLostFound";
 import StudentsLostFound from "./pages/StudentsLostFound";
+import LostItemRecords from "./pages/LostItemRecords";
+import FoundItemRecords from "./pages/FoundItemRecords";
 import ActivityHistory from "./pages/ActivityHistory";
 import ActivityRequestsAdmin from "./pages/ActivityRequestsAdmin";
 import TeacherNotifications from "./pages/TeacherNotifications";
@@ -64,6 +66,7 @@ import EditProfile from "./pages/EditProfile";
 
 // Header component for admin dashboard
 function AdminHeader({ currentUser, userProfile }) {
+  const theme = useTheme();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationLoading, setNotificationLoading] = useState(false);
@@ -186,9 +189,9 @@ function AdminHeader({ currentUser, userProfile }) {
             color="inherit"
             onClick={handleNotificationClick}
             sx={{ 
-              bgcolor: unreadCount > 0 ? '#ffebee' : 'transparent',
-              '&:hover': { bgcolor: unreadCount > 0 ? '#ffcdd2' : '#f5f5f5' },
-              color: '#333'
+              bgcolor: 'transparent',
+              '&:hover': { bgcolor: 'transparent' },
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
             }}
           >
             <Badge badgeContent={unreadCount} color="error">
@@ -652,6 +655,8 @@ function App() {
                           <Route path="/receipt-review" element={<ReceiptReview />} />
                           <Route path="/lost-found" element={<AdminLostFound />} />
                           <Route path="/students-lost-found" element={<StudentsLostFound />} />
+                          <Route path="/lost-item-records" element={<LostItemRecords />} />
+                          <Route path="/found-item-records" element={<FoundItemRecords />} />
                           <Route path="/recycle-bin" element={<RecycleBin />} />
                           <Route path="/admin-notifications" element={<AdminNotifications />} />
                           <Route path="/admin-activity-scheduler" element={<AdminActivityScheduler />} />

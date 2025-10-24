@@ -50,37 +50,34 @@ export default function AdminNotifications() {
         orderBy("createdAt", "desc")
       );
 
-      const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
-        const allNotifications = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          type: doc.data().type || 'general',
-          timestamp: doc.data().createdAt
-        }));
+      // Optimize: Use single-time fetch instead of real-time listener for better performance
+      const snapshot = await getDocs(notificationsQuery);
+      const allNotifications = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        type: doc.data().type || 'general',
+        timestamp: doc.data().createdAt
+      }));
 
-        setNotifications(allNotifications);
-        
-        // Categorize notifications
-        const activities = allNotifications.filter(n => 
-          n.type === 'activity' || n.type === 'activity_request' || n.type === 'event'
-        );
-        const announcements = allNotifications.filter(n => 
-          n.type === 'announcement'
-        );
-        const requests = allNotifications.filter(n => 
-          n.type === 'teacher_request' || n.type === 'violation' || n.type === 'lost_found'
-        );
+      setNotifications(allNotifications);
+      
+      // Categorize notifications
+      const activities = allNotifications.filter(n => 
+        n.type === 'activity' || n.type === 'activity_request' || n.type === 'event'
+      );
+      const announcements = allNotifications.filter(n => 
+        n.type === 'announcement'
+      );
+      const requests = allNotifications.filter(n => 
+        n.type === 'teacher_request' || n.type === 'violation' || n.type === 'lost_found'
+      );
 
-        setActivityNotifications(activities);
-        setAnnouncementNotifications(announcements);
-        setRequestNotifications(requests);
-        setLoading(false);
-      }, (error) => {
-        console.error('Error listening to notifications:', error);
-        setLoading(false);
-      });
+      setActivityNotifications(activities);
+      setAnnouncementNotifications(announcements);
+      setRequestNotifications(requests);
+      setLoading(false);
 
-      return unsubscribeNotifications;
+      return () => {}; // No cleanup needed since we're using single-time fetch
     } catch (error) {
       console.error('Error setting up notification listeners:', error);
       setLoading(false);

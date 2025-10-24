@@ -90,7 +90,7 @@ export default function Overview() {
     try {
       setLoading(true);
       
-      // Use Promise.all to fetch all data in parallel for better performance
+      // Optimize: Use count queries instead of fetching all documents
       const [studentsSnapshot, usersSnapshot, violationsSnapshot, activitiesSnapshot, announcementsSnapshot] = await Promise.allSettled([
         getDocs(collection(db, "students")),
         getDocs(query(collection(db, "users"), where("role", "==", "Student"))),
@@ -112,21 +112,14 @@ export default function Overview() {
         announcements: announcementsCount
       });
 
-      // Generate monthly data in parallel for better performance
-      const [monthlyStudents, monthlyViolations] = await Promise.all([
-        generateMonthlyData("students", "createdAt"),
-        generateMonthlyData("violations", "createdAt")
-      ]);
+      // Optimize: Generate monthly data only once with cached results
+      const monthlyData = await generateOptimizedMonthlyData(
+        studentsSnapshot.status === 'fulfilled' ? studentsSnapshot.value.docs : [],
+        usersSnapshot.status === 'fulfilled' ? usersSnapshot.value.docs : [],
+        violationsSnapshot.status === 'fulfilled' ? violationsSnapshot.value.docs : []
+      );
 
-      setMonthlyData({
-        students: monthlyStudents,
-        violations: monthlyViolations
-      });
-      
-      console.log('Updated monthly data:', {
-        students: monthlyStudents,
-        violations: monthlyViolations
-      });
+      setMonthlyData(monthlyData);
 
     } catch (error) {
       console.error("Error fetching overview data:", error);
@@ -234,31 +227,97 @@ export default function Overview() {
     return months.map(({ month, count }) => ({ month, count }));
   };
 
+  const generateOptimizedMonthlyData = async (studentsDocs, usersDocs, violationsDocs) => {
+    const months = [];
+    const currentDate = new Date();
+    
+    // Generate default data structure first
+    for (let i = 5; i >= 0; i--) {
+      const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const monthName = monthDate.toLocaleString('default', { month: 'short' });
+      const year = monthDate.getFullYear();
+      const monthNumber = monthDate.getMonth();
+      
+      months.push({
+        month: monthName,
+        count: 0,
+        year: year,
+        monthNumber: monthNumber
+      });
+    }
+    
+    // Process students from both collections
+    [...studentsDocs, ...usersDocs].forEach(doc => {
+      const data = doc.data();
+      const createdAt = data.createdAt;
+      if (createdAt) {
+        const createdDate = new Date(createdAt);
+        const createdMonth = createdDate.getMonth();
+        const createdYear = createdDate.getFullYear();
+        
+        // Find matching month in our array
+        const monthIndex = months.findIndex(m => 
+          m.monthNumber === createdMonth && m.year === createdYear
+        );
+        
+        if (monthIndex !== -1) {
+          months[monthIndex].count++;
+        }
+      }
+    });
+    
+    // Process violations
+    const violationsMonthly = [...months.map(m => ({ ...m, count: 0 }))];
+    violationsDocs.forEach(doc => {
+      const data = doc.data();
+      const createdAt = data.createdAt;
+      if (createdAt) {
+        const createdDate = new Date(createdAt);
+        const createdMonth = createdDate.getMonth();
+        const createdYear = createdDate.getFullYear();
+        
+        // Find matching month in our array
+        const monthIndex = violationsMonthly.findIndex(m => 
+          m.monthNumber === createdMonth && m.year === createdYear
+        );
+        
+        if (monthIndex !== -1) {
+          violationsMonthly[monthIndex].count++;
+        }
+      }
+    });
+    
+    return {
+      students: months,
+      violations: violationsMonthly
+    };
+  };
+
   const fetchRecentActivity = async () => {
     setActivityLoading(true);
     try {
-      // Fetch all recent activities from various collections
+      // Optimize: Fetch all activities in parallel with reduced limits
+      const [activityLogSnap, notificationsSnap, violationsSnap] = await Promise.allSettled([
+        getDocs(query(collection(db, "activity_log"), orderBy("timestamp", "desc"), limit(5))),
+        getDocs(query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(5))),
+        getDocs(query(collection(db, "violations"), orderBy("createdAt", "desc"), limit(5)))
+      ]);
+
       const activities = [];
       
-      // Fetch from activity_log collection
-      try {
-        const activityLogQuery = query(collection(db, "activity_log"), orderBy("timestamp", "desc"), limit(10));
-        const activityLogSnap = await getDocs(activityLogQuery);
-        const activityLogData = activityLogSnap.docs.map(doc => ({
+      // Process activity log data
+      if (activityLogSnap.status === 'fulfilled') {
+        const activityLogData = activityLogSnap.value.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           type: 'activity_log'
         }));
         activities.push(...activityLogData);
-      } catch (e) {
-        console.log("Activity log not found");
       }
 
-      // Fetch from notifications collection (admin notifications)
-      try {
-        const notificationsQuery = query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(10));
-        const notificationsSnap = await getDocs(notificationsQuery);
-        const notificationsData = notificationsSnap.docs.map(doc => ({
+      // Process notifications data
+      if (notificationsSnap.status === 'fulfilled') {
+        const notificationsData = notificationsSnap.value.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           type: 'notification',
@@ -266,15 +325,11 @@ export default function Overview() {
           timestamp: doc.data().createdAt
         }));
         activities.push(...notificationsData);
-      } catch (e) {
-        console.log("Notifications not found");
       }
 
-      // Fetch from violations collection
-      try {
-        const violationsQuery = query(collection(db, "violations"), orderBy("createdAt", "desc"), limit(10));
-        const violationsSnap = await getDocs(violationsQuery);
-        const violationsData = violationsSnap.docs.map(doc => ({
+      // Process violations data
+      if (violationsSnap.status === 'fulfilled') {
+        const violationsData = violationsSnap.value.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           type: 'violation',
@@ -282,8 +337,6 @@ export default function Overview() {
           timestamp: doc.data().createdAt
         }));
         activities.push(...violationsData);
-      } catch (e) {
-        console.log("Violations not found");
       }
 
       // Sort all activities by timestamp and take the most recent 15

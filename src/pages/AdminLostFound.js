@@ -76,8 +76,6 @@ export default function AdminLostFound() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [lostItems, setLostItems] = useState([]);
   const [foundItems, setFoundItems] = useState([]);
-  const [pendingLostReports, setPendingLostReports] = useState([]);
-  const [pendingFoundReports, setPendingFoundReports] = useState([]);
   const [lostImageFile, setLostImageFile] = useState(null);
   const [foundImageFile, setFoundImageFile] = useState(null);
   const [lostSearch, setLostSearch] = useState('');
@@ -101,8 +99,6 @@ export default function AdminLostFound() {
   const [feedSearch, setFeedSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState({ type: null, status: null });
   const [itemTypeFilter, setItemTypeFilter] = useState('all'); // 'all', 'lost', 'found'
-  const [editReportDialog, setEditReportDialog] = useState({ open: false, report: null, type: '' });
-  const [editReportForm, setEditReportForm] = useState({ description: '' });
 
   // Combine all items for feed display
   useEffect(() => {
@@ -184,41 +180,30 @@ export default function AdminLostFound() {
 
     fetchStudents();
 
-    // Real-time listeners for lost and found items
-    const unsubLost = onSnapshot(
-      query(collection(db, 'lost_items'), orderBy('createdAt', 'desc')), 
-      snap => {
-        setLostItems(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      }
-    );
-    
-    const unsubFound = onSnapshot(
-      query(collection(db, 'found_items'), orderBy('createdAt', 'desc')), 
-      snap => {
-        setFoundItems(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      }
-    );
+    // Optimize: Use single-time fetches instead of real-time listeners for better performance
+    const fetchLostFoundData = async () => {
+      try {
+        const [lostSnap, foundSnap] = await Promise.allSettled([
+          getDocs(query(collection(db, 'lost_items'), orderBy('createdAt', 'desc'))),
+          getDocs(query(collection(db, 'found_items'), orderBy('createdAt', 'desc')))
+        ]);
 
-    // Real-time listeners for pending reports
-    const unsubPendingLost = onSnapshot(
-      query(collection(db, 'pending_lost_reports'), orderBy('createdAt', 'desc')), 
-      snap => {
-        setPendingLostReports(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        if (lostSnap.status === 'fulfilled') {
+          setLostItems(lostSnap.value.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        }
+        
+        if (foundSnap.status === 'fulfilled') {
+          setFoundItems(foundSnap.value.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        }
+      } catch (error) {
+        console.error("Error fetching lost and found data:", error);
       }
-    );
-    
-    const unsubPendingFound = onSnapshot(
-      query(collection(db, 'pending_found_reports'), orderBy('createdAt', 'desc')), 
-      snap => {
-        setPendingFoundReports(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      }
-    );
+    };
+
+    fetchLostFoundData();
 
     return () => { 
-      unsubLost(); 
-      unsubFound(); 
-      unsubPendingLost();
-      unsubPendingFound();
+      // No cleanup needed since we're using single-time fetches instead of real-time listeners
     };
   }, []);
 
@@ -441,132 +426,6 @@ export default function AdminLostFound() {
     }
   };
 
-  // Open edit report dialog
-  const handleEditReport = (report, type) => {
-    setEditReportDialog({ open: true, report, type });
-    setEditReportForm({ description: report.description });
-  };
-
-  // Save edited report and approve
-  const handleSaveAndApprove = async () => {
-    const { report, type } = editReportDialog;
-    setLoading(true);
-    try {
-      // Add to the main collection with edited description
-      const itemData = {
-        name: report.name,
-        description: editReportForm.description,
-        location: report.location,
-        image: report.image,
-        resolved: false,
-        createdAt: new Date().toISOString(),
-        reportedBy: report.submittedBy,
-        postedBy: 'student',
-        approvedBy: 'admin',
-        originalReportId: report.id,
-        adminDescription: editReportForm.description
-      };
-
-      if (type === 'lost') {
-        await addDoc(collection(db, 'lost_items'), itemData);
-      } else {
-        await addDoc(collection(db, 'found_items'), itemData);
-      }
-
-      // Delete from pending reports
-      await deleteDoc(doc(db, `pending_${type}_reports`, report.id));
-
-      // Send notification to student
-      await addDoc(collection(db, 'notifications'), {
-        type: 'report_approved',
-        title: 'Report Approved',
-        message: `Your ${type} item report for "${report.name}" has been approved and posted.`,
-        recipientEmail: report.submittedBy,
-        recipientRole: 'Student',
-        createdAt: serverTimestamp(),
-        read: false
-      });
-
-      setSnackbar({ open: true, message: `${type} item report approved and posted!`, severity: 'success' });
-      setEditReportDialog({ open: false, report: null, type: '' });
-    } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to approve report: ' + err.message, severity: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Approve student report without editing
-  const handleApproveReport = async (report, type) => {
-    setLoading(true);
-    try {
-      // Add to the main collection
-      const itemData = {
-        name: report.name,
-        description: report.description,
-        location: report.location,
-        image: report.image,
-        resolved: false,
-        createdAt: new Date().toISOString(),
-        reportedBy: report.submittedBy,
-        postedBy: 'student',
-        approvedBy: 'admin',
-        originalReportId: report.id
-      };
-
-      if (type === 'lost') {
-        await addDoc(collection(db, 'lost_items'), itemData);
-      } else {
-        await addDoc(collection(db, 'found_items'), itemData);
-      }
-
-      // Delete from pending reports
-      await deleteDoc(doc(db, `pending_${type}_reports`, report.id));
-
-      // Send notification to student
-      await addDoc(collection(db, 'notifications'), {
-        type: 'report_approved',
-        title: 'Report Approved',
-        message: `Your ${type} item report for "${report.name}" has been approved and posted.`,
-        recipientEmail: report.submittedBy,
-        recipientRole: 'Student',
-        createdAt: serverTimestamp(),
-        read: false
-      });
-
-      setSnackbar({ open: true, message: `${type} item report approved and posted!`, severity: 'success' });
-    } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to approve report: ' + err.message, severity: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Reject student report
-  const handleRejectReport = async (report, type) => {
-    setLoading(true);
-    try {
-      // Delete from pending reports
-      await deleteDoc(doc(db, `pending_${type}_reports`, report.id));
-
-      // Send notification to student
-      await addDoc(collection(db, 'notifications'), {
-        type: 'report_rejected',
-        title: 'Report Rejected',
-        message: `Your ${type} item report for "${report.name}" has been rejected. Please review the guidelines and submit again if needed.`,
-        recipientEmail: report.submittedBy,
-        recipientRole: 'Student',
-        createdAt: serverTimestamp(),
-        read: false
-      });
-
-      setSnackbar({ open: true, message: `${type} item report rejected.`, severity: 'success' });
-    } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to reject report: ' + err.message, severity: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleResolve = async (type, id) => {
     try {
@@ -574,6 +433,28 @@ export default function AdminLostFound() {
         resolved: true,
         resolvedAt: new Date().toISOString()
       });
+      
+      // Refresh the data to update the UI
+      const fetchLostFoundData = async () => {
+        try {
+          const [lostSnap, foundSnap] = await Promise.allSettled([
+            getDocs(query(collection(db, 'lost_items'), orderBy('createdAt', 'desc'))),
+            getDocs(query(collection(db, 'found_items'), orderBy('createdAt', 'desc')))
+          ]);
+
+          if (lostSnap.status === 'fulfilled') {
+            setLostItems(lostSnap.value.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          }
+          
+          if (foundSnap.status === 'fulfilled') {
+            setFoundItems(foundSnap.value.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          }
+        } catch (error) {
+          console.error("Error refreshing data:", error);
+        }
+      };
+      
+      await fetchLostFoundData();
       setSnackbar({ open: true, message: 'Item marked as resolved successfully!', severity: 'success' });
     } catch (err) {
       setSnackbar({ open: true, message: 'Failed to resolve item: ' + err.message, severity: 'error' });
@@ -591,18 +472,23 @@ export default function AdminLostFound() {
     }
   };
 
-  // Filter functions
+  // Filter functions - exclude resolved items from main display
   const filteredLost = lostItems.filter(item =>
-    item.name.toLowerCase().includes(lostSearch.toLowerCase()) ||
-    item.description.toLowerCase().includes(lostSearch.toLowerCase()) ||
-    item.location.toLowerCase().includes(lostSearch.toLowerCase())
+    !item.resolved && (
+      item.name.toLowerCase().includes(lostSearch.toLowerCase()) ||
+      item.description.toLowerCase().includes(lostSearch.toLowerCase()) ||
+      item.location.toLowerCase().includes(lostSearch.toLowerCase())
+    )
   );
   
   const filteredFound = foundItems.filter(item =>
-    item.name.toLowerCase().includes(foundSearch.toLowerCase()) ||
-    item.description.toLowerCase().includes(foundSearch.toLowerCase()) ||
-    item.location.toLowerCase().includes(foundSearch.toLowerCase())
+    !item.resolved && (
+      item.name.toLowerCase().includes(foundSearch.toLowerCase()) ||
+      item.description.toLowerCase().includes(foundSearch.toLowerCase()) ||
+      item.location.toLowerCase().includes(foundSearch.toLowerCase())
+    )
   );
+
 
   // Edit logic
   const handleEditOpen = (type, item) => {
@@ -643,11 +529,18 @@ export default function AdminLostFound() {
             border: '1px solid rgba(255, 255, 255, 0.2)',
             borderLeft: '4px solid #f44336',
             borderRadius: 2,
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
-          }}>
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+            cursor: 'pointer',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 6px 25px rgba(0, 0, 0, 0.15)',
+              transition: 'all 0.3s ease'
+            }
+          }}
+          onClick={() => navigate('/lost-item-records')}>
             <CardContent>
               <Typography variant="h6" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} gutterBottom>
-                Lost Items Summary
+                Lost Item Records
               </Typography>
               <Grid container spacing={2}>
                 <Grid item>
@@ -714,11 +607,18 @@ export default function AdminLostFound() {
             border: '1px solid rgba(255, 255, 255, 0.2)',
             borderLeft: '4px solid #4caf50',
             borderRadius: 2,
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
-          }}>
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+            cursor: 'pointer',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 6px 25px rgba(0, 0, 0, 0.15)',
+              transition: 'all 0.3s ease'
+            }
+          }}
+          onClick={() => navigate('/found-item-records')}>
             <CardContent>
               <Typography variant="h6" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} gutterBottom>
-                Found Items Summary
+                Found Item Records
               </Typography>
               <Grid container spacing={2}>
                 <Grid item>
@@ -859,228 +759,10 @@ export default function AdminLostFound() {
           }}
           startIcon={<School sx={{ fontSize: '0.875rem' }} />}
         >
-          Student Lost and Found
+          Lost and Found Report
         </Button>
       </Box>
 
-      {/* Pending Reports Section */}
-      {(pendingLostReports.length > 0 || pendingFoundReports.length > 0) && (
-        <Paper sx={{ 
-          p: 3, 
-          mb: 3,
-          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.9)',
-          border: theme.palette.mode === 'dark' ? '0.5px solid rgba(255, 255, 255, 0.2)' : '0.5px solid rgba(0, 0, 0, 0.1)',
-          borderRadius: 2,
-          boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
-        }}>
-          <Typography variant="h4" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
-            Pending Student Reports
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Review and approve student reports before they are posted to Browse Items.
-          </Typography>
-          
-          <Grid container spacing={2}>
-            {/* Pending Lost Reports */}
-            {pendingLostReports.map((report) => (
-              <Grid item xs={12} md={6} key={report.id}>
-                <Card sx={{ 
-                  p: 2, 
-                  border: '1px solid', 
-                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.5)'
-                }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Avatar src={report.submittedByPhoto} sx={{ mr: 2, width: 40, height: 40 }}>
-                      <Person />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        {report.submittedByName}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {new Date(report.createdAt).toLocaleDateString()}
-                      </Typography>
-                    </Box>
-                    <Chip 
-                      label="Lost Item" 
-                      color="warning" 
-                      size="small" 
-                      sx={{ ml: 'auto' }}
-                    />
-                  </Box>
-                  
-                  <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
-                    {report.name}
-                  </Typography>
-                  
-                  {report.image && (
-                    <Box sx={{ mb: 2 }}>
-                      <img 
-                        src={report.image} 
-                        alt={report.name}
-                        style={{ 
-                          width: '100%', 
-                          height: '150px', 
-                          objectFit: 'cover', 
-                          borderRadius: '8px' 
-                        }}
-                      />
-                    </Box>
-                  )}
-                  
-                  <Typography variant="body2" sx={{ mb: 2 }}>
-                    {report.description}
-                  </Typography>
-                  
-                  <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
-                      <LocationOn sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
-                      <Typography variant="caption">{report.location}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <AccessTime sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
-                      <Typography variant="caption">{report.timeLost}</Typography>
-                    </Box>
-                  </Box>
-                  
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    <Button
-                      variant="contained"
-                      color="success"
-                      size="small"
-                      startIcon={<Done />}
-                      onClick={() => handleApproveReport(report, 'lost')}
-                      disabled={loading}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      size="small"
-                      startIcon={<Edit />}
-                      onClick={() => handleEditReport(report, 'lost')}
-                      disabled={loading}
-                    >
-                      Edit & Approve
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      size="small"
-                      startIcon={<Cancel />}
-                      onClick={() => handleRejectReport(report, 'lost')}
-                      disabled={loading}
-                    >
-                      Reject
-                    </Button>
-                  </Box>
-                </Card>
-              </Grid>
-            ))}
-            
-            {/* Pending Found Reports */}
-            {pendingFoundReports.map((report) => (
-              <Grid item xs={12} md={6} key={report.id}>
-                <Card sx={{ 
-                  p: 2, 
-                  border: '1px solid', 
-                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.5)'
-                }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Avatar src={report.submittedByPhoto} sx={{ mr: 2, width: 40, height: 40 }}>
-                      <Person />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        {report.submittedByName}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {new Date(report.createdAt).toLocaleDateString()}
-                      </Typography>
-                    </Box>
-                    <Chip 
-                      label="Found Item" 
-                      color="success" 
-                      size="small" 
-                      sx={{ ml: 'auto' }}
-                    />
-                  </Box>
-                  
-                  <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
-                    {report.name}
-                  </Typography>
-                  
-                  {report.image && (
-                    <Box sx={{ mb: 2 }}>
-                      <img 
-                        src={report.image} 
-                        alt={report.name}
-                        style={{ 
-                          width: '100%', 
-                          height: '150px', 
-                          objectFit: 'cover', 
-                          borderRadius: '8px' 
-                        }}
-                      />
-                    </Box>
-                  )}
-                  
-                  <Typography variant="body2" sx={{ mb: 2 }}>
-                    {report.description}
-                  </Typography>
-                  
-                  <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
-                      <LocationOn sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
-                      <Typography variant="caption">{report.location}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <AccessTime sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
-                      <Typography variant="caption">{report.timeFound}</Typography>
-                    </Box>
-                  </Box>
-                  
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    <Button
-                      variant="contained"
-                      color="success"
-                      size="small"
-                      startIcon={<Done />}
-                      onClick={() => handleApproveReport(report, 'found')}
-                      disabled={loading}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      size="small"
-                      startIcon={<Edit />}
-                      onClick={() => handleEditReport(report, 'found')}
-                      disabled={loading}
-                    >
-                      Edit & Approve
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      size="small"
-                      startIcon={<Cancel />}
-                      onClick={() => handleRejectReport(report, 'found')}
-                      disabled={loading}
-                    >
-                      Reject
-                    </Button>
-                  </Box>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </Paper>
-      )}
 
       {/* Lost Items History and Found Items Summary Layout */}
       <Grid container spacing={2}>
@@ -1095,7 +777,7 @@ export default function AdminLostFound() {
           }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
               <Typography variant="h6" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
-                Lost Items History
+                Lost Item
               </Typography>
             </Box>
             <TextField
@@ -1336,7 +1018,7 @@ export default function AdminLostFound() {
           }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
               <Typography variant="h6" gutterBottom sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
-                Found Items Summary
+                Found Item
               </Typography>
             </Box>
             <TextField
@@ -1567,6 +1249,7 @@ export default function AdminLostFound() {
           </Paper>
         </Grid>
       </Grid>
+
 
       {/* Found Item Modal */}
       <Dialog open={showFoundModal} onClose={() => setShowFoundModal(false)} maxWidth="sm" fullWidth>
@@ -1930,54 +1613,6 @@ export default function AdminLostFound() {
       </Dialog>
 
       {/* Snackbar for notifications */}
-      {/* Edit Report Dialog */}
-      <Dialog 
-        open={editReportDialog.open} 
-        onClose={() => setEditReportDialog({ open: false, report: null, type: '' })}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          Edit Report Description
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              {editReportDialog.report?.name}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Submitted by: {editReportDialog.report?.submittedByName}
-            </Typography>
-          </Box>
-          
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            label="Description"
-            value={editReportForm.description}
-            onChange={(e) => setEditReportForm({ description: e.target.value })}
-            placeholder="Edit the description for this report..."
-            sx={{ mt: 2 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button 
-            onClick={() => setEditReportDialog({ open: false, report: null, type: '' })}
-            color="inherit"
-          >
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSaveAndApprove}
-            variant="contained"
-            color="success"
-            disabled={loading}
-          >
-            Save & Approve
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <Snackbar 
         open={snackbar.open} 
