@@ -276,14 +276,6 @@ export default function ClassroomDashboard({ currentUser }) {
     }
   };
 
-  if (loading || !currentUser || !userRole) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-        <Typography sx={{ ml: 2 }}>Loading classroom...</Typography>
-      </Box>
-    );
-  }
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);

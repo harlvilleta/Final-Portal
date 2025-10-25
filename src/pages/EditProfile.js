@@ -197,7 +197,14 @@ export default function EditProfile() {
               sex: profile.sex,
               age: profile.age,
               birthdate: profile.birthdate,
+              sccNumber: profile.sccNumber,
               contact: profile.contact,
+              fatherName: profile.fatherName,
+              fatherOccupation: profile.fatherOccupation,
+              motherName: profile.motherName,
+              motherOccupation: profile.motherOccupation,
+              guardian: profile.guardian,
+              guardianContact: profile.guardianContact,
               homeAddress: profile.homeAddress,
               profilePic: imageURL,
               email: profile.email,
@@ -220,7 +227,14 @@ export default function EditProfile() {
               sex: profile.sex,
               age: profile.age,
               birthdate: profile.birthdate,
+              sccNumber: profile.sccNumber,
               contact: profile.contact,
+              fatherName: profile.fatherName,
+              fatherOccupation: profile.fatherOccupation,
+              motherName: profile.motherName,
+              motherOccupation: profile.motherOccupation,
+              guardian: profile.guardian,
+              guardianContact: profile.guardianContact,
               homeAddress: profile.homeAddress,
               profilePic: imageURL,
               email: profile.email,
@@ -297,13 +311,6 @@ export default function EditProfile() {
     }
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <Typography>Loading profile...</Typography>
-      </Box>
-    );
-  }
 
   return (
     <Box>
@@ -429,6 +436,18 @@ export default function EditProfile() {
                 <Grid item xs={12} sm={6}>
                   <TextField 
                     fullWidth 
+                    label="Student ID" 
+                    name="studentId" 
+                    value={profile.studentId} 
+                    onChange={handleChange}
+                    required
+                    disabled={profile.role !== 'Admin' && profile.studentId} // Allow editing if not set, but disable if already set
+                    helperText={profile.role !== 'Admin' && profile.studentId ? 'Student ID cannot be changed once set' : ''}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField 
+                    fullWidth 
                     label="Middle Initial" 
                     name="middleInitial" 
                     value={profile.middleInitial} 
@@ -444,17 +463,6 @@ export default function EditProfile() {
                     onChange={handleChange}
                     type="email"
                     required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField 
-                    fullWidth 
-                    label="Student ID" 
-                    name="studentId" 
-                    value={profile.studentId} 
-                    onChange={handleChange}
-                    disabled
-                    helperText="Student ID cannot be changed"
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>

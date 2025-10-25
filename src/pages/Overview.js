@@ -506,124 +506,16 @@ export default function Overview() {
 
   const userInfo = getUserDisplayInfo();
 
-  // Show loading screen while data is being fetched
-  if (loading) {
-    return (
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '50vh',
-        flexDirection: 'column',
-        gap: 2
-      }}>
-        <CircularProgress size={60} />
-        <Typography variant="h6" color="text.secondary">
-          Loading dashboard...
-        </Typography>
-      </Box>
-    );
-  }
 
-  const handleRefresh = async () => {
-    setLoading(true);
-    try {
-      await Promise.all([
-        fetchOverviewData(),
-        fetchRecentActivity()
-      ]);
-    } catch (error) {
-      console.error('Error refreshing dashboard:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <Box sx={{ p: { xs: 0.5, sm: 1 }, pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ mb: 2 }}>
         <Typography variant="h4" gutterBottom sx={{ color: isDark ? '#ffffff' : '#800000', mb: 0, mt: 1 }}>
           Dashboard Overview
         </Typography>
-        <Button
-          variant="outlined"
-          onClick={handleRefresh}
-          disabled={loading}
-          sx={{
-            color: isDark ? '#ffffff' : '#800000',
-            borderColor: isDark ? '#ffffff' : '#800000',
-            '&:hover': {
-              bgcolor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(128, 0, 0, 0.1)',
-              borderColor: isDark ? '#ffffff' : '#800000'
-            }
-          }}
-        >
-          {loading ? 'Refreshing...' : 'Refresh'}
-        </Button>
       </Box>
       
-      {/* Statistics Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {statCards.map((stat) => (
-          <Grid item xs={12} sm={6} md={3} key={stat.label}>
-            <Card
-              onClick={() => stat.to ? navigate(stat.to) : null}
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                p: 2, 
-                boxShadow: isDark 
-                  ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
-                  : '0 4px 16px rgba(0, 0, 0, 0.1)', 
-                borderRadius: 2,
-                borderLeft: `4px solid ${stat.color}`,
-                background: isDark 
-                  ? 'rgba(255, 255, 255, 0.05)' 
-                  : 'rgba(255, 255, 255, 0.8)',
-                backdropFilter: 'blur(10px)',
-                border: isDark 
-                  ? '1px solid rgba(255, 255, 255, 0.1)' 
-                  : '1px solid rgba(255, 255, 255, 0.2)',
-                cursor: stat.to ? 'pointer' : 'default',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  boxShadow: isDark 
-                    ? '0 12px 40px rgba(0, 0, 0, 0.4)' 
-                    : '0 8px 24px rgba(0, 0, 0, 0.15)',
-                  transform: 'translateY(-2px)',
-                  background: isDark 
-                    ? 'rgba(255, 255, 255, 0.08)' 
-                    : 'rgba(255, 255, 255, 0.9)',
-                },
-              }}
-            >
-              <Box sx={{ 
-                mr: 2, 
-                color: isDark ? '#ffffff' : stat.color,
-                '& .MuiSvgIcon-root': {
-                  color: isDark ? '#ffffff' : stat.color
-                }
-              }}>
-                {stat.icon}
-              </Box>
-              <CardContent sx={{ flex: 1, p: '8px !important' }}>
-                <Typography 
-                  variant="h4" 
-                  fontWeight={700} 
-                  sx={{ 
-                    color: isDark ? '#ffffff' : '#000000'
-                  }}
-                >
-                  {stat.value.toLocaleString()}
-                </Typography>
-                <Typography variant="body2" sx={{ color: isDark ? '#cccccc' : '#666666' }}>
-                  {stat.label}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
 
 
       {/* Monthly Charts */}

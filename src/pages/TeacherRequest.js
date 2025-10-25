@@ -483,11 +483,61 @@ export default function TeacherRequest() {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Teacher</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Request Date</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                  <TableCell sx={{
+                    bgcolor: '#800000',
+                    fontWeight: 'bold',
+                    color: '#ffffff',
+                    fontSize: '0.875rem',
+                    padding: '12px 16px',
+                    minWidth: '140px',
+                    maxWidth: '140px'
+                  }}>
+                    Teacher
+                  </TableCell>
+                  <TableCell sx={{
+                    bgcolor: '#800000',
+                    fontWeight: 'bold',
+                    color: '#ffffff',
+                    fontSize: '0.875rem',
+                    padding: '12px 16px',
+                    minWidth: '200px',
+                    maxWidth: '200px'
+                  }}>
+                    Email
+                  </TableCell>
+                  <TableCell sx={{
+                    bgcolor: '#800000',
+                    fontWeight: 'bold',
+                    color: '#ffffff',
+                    fontSize: '0.875rem',
+                    padding: '12px 16px',
+                    minWidth: '120px',
+                    maxWidth: '120px'
+                  }}>
+                    Request Date
+                  </TableCell>
+                  <TableCell sx={{
+                    bgcolor: '#800000',
+                    fontWeight: 'bold',
+                    color: '#ffffff',
+                    fontSize: '0.875rem',
+                    padding: '12px 16px',
+                    minWidth: '100px',
+                    maxWidth: '100px'
+                  }}>
+                    Status
+                  </TableCell>
+                  <TableCell sx={{
+                    bgcolor: '#800000',
+                    fontWeight: 'bold',
+                    color: '#ffffff',
+                    fontSize: '0.875rem',
+                    padding: '12px 16px',
+                    minWidth: '120px',
+                    maxWidth: '120px'
+                  }}>
+                    Actions
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

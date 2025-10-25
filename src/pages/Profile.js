@@ -433,7 +433,6 @@ export default function Profile() {
       sex: profile.sex,
       age: profile.age,
       birthdate: profile.birthdate,
-      studentId: profile.studentId,
       course: profile.course,
       year: profile.year,
       section: profile.section,
@@ -481,7 +480,6 @@ export default function Profile() {
         sex: editProfile.sex,
         age: editProfile.age,
         birthdate: editProfile.birthdate,
-        studentId: editProfile.studentId,
         course: editProfile.course,
         year: editProfile.year,
         section: editProfile.section,
@@ -863,7 +861,7 @@ export default function Profile() {
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Birthdate
+                        Birthday
                       </Typography>
                       <Typography variant="body1" sx={{ 
                         fontWeight: 500,
@@ -1197,6 +1195,18 @@ export default function Profile() {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
+                label="Birthdate"
+                name="birthdate"
+                value={editProfile.birthdate}
+                onChange={handleEditProfileChange}
+                fullWidth
+                size="small"
+                type="date"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
                 label="Sex"
                 name="sex"
                 value={editProfile.sex}
@@ -1220,18 +1230,6 @@ export default function Profile() {
                 size="small"
                 type="number"
                 inputProps={{ min: 1, max: 150 }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Birthdate"
-                name="birthdate"
-                value={editProfile.birthdate}
-                onChange={handleEditProfileChange}
-                fullWidth
-                size="small"
-                type="date"
-                InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>

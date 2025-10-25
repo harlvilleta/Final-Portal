@@ -108,23 +108,6 @@ export default function StudentsChartDashboard() {
   const peakMonth = monthlyData.reduce((max, month) => month.count > max.count ? month : max, { count: 0, month: 'None' });
   const averagePerMonth = totalStudents / 12;
 
-  if (loading) {
-    return (
-      <Box sx={{ p: 3, pt: { xs: 2, sm: 3 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <IconButton onClick={handleBack} sx={{ mr: 2 }}>
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000', mb: 2, mt: 1 }}>
-            Students Registration Dashboard
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-          <CircularProgress size={60} />
-        </Box>
-      </Box>
-    );
-  }
 
   if (error) {
     return (

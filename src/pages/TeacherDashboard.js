@@ -52,12 +52,14 @@ export default function TeacherDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [violations, setViolations] = useState([]);
+  const [activities, setActivities] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [mySchedulesCount, setMySchedulesCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
-    const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [meetingsCount, setMeetingsCount] = useState(0);
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
+  const [allActivities, setAllActivities] = useState([]);
   
 
   
@@ -93,7 +95,7 @@ export default function TeacherDashboard() {
     }
 
     let dataLoadedCount = 0;
-    const totalDataSources = 4; // violations, announcements, notifications, meetings
+    const totalDataSources = 7; // violations, announcements, notifications, meetings, activity_requests, lost_items, found_items
     let hasSetLoading = false;
 
     const checkAndSetLoading = () => {
@@ -132,6 +134,81 @@ export default function TeacherDashboard() {
       console.error('Error fetching violations:', error);
       checkAndSetLoading();
     });
+
+    // Fetch teacher violations (violations reported by this teacher)
+    let activitiesUnsubscribe = null;
+    try {
+      // Fetch violations reported by this teacher
+      const violationsQuery = query(
+        collection(db, 'violations'),
+        where('reportedBy', '==', currentUser.uid),
+        orderBy('createdAt', 'desc')
+      );
+      activitiesUnsubscribe = onSnapshot(violationsQuery, (snapshot) => {
+        const violationsData = snapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          // Transform violation data to activity log format
+          action: `Reported violation: ${doc.data().violationType || doc.data().violation}`,
+          message: `Violation reported for student ${doc.data().studentName}`,
+          type: 'violation',
+          timestamp: doc.data().createdAt,
+          details: doc.data().description || 'No description provided',
+          status: doc.data().status || 'pending'
+        }));
+        setActivities(violationsData);
+        
+        // Update allActivities with new violations
+        setAllActivities(prev => {
+          const filtered = prev.filter(activity => activity.type !== 'violation');
+          return [...filtered, ...violationsData].sort((a, b) => 
+            new Date(b.timestamp || b.createdAt).getTime() - new Date(a.timestamp || a.createdAt).getTime()
+          );
+        });
+        checkAndSetLoading();
+      }, (error) => {
+        console.error('Error fetching violations by reportedBy:', error);
+        // Fallback: try fetching by email
+        if (currentUser?.email) {
+          const violationsByEmailQuery = query(
+            collection(db, 'violations'),
+            where('reportedByEmail', '==', currentUser.email),
+            orderBy('createdAt', 'desc')
+          );
+          onSnapshot(violationsByEmailQuery, (snapshot) => {
+            const violationsData = snapshot.docs.map(doc => ({ 
+              id: doc.id, 
+              ...doc.data(),
+              // Transform violation data to activity log format
+              action: `Reported violation: ${doc.data().violationType || doc.data().violation}`,
+              message: `Violation reported for student ${doc.data().studentName}`,
+              type: 'violation',
+              timestamp: doc.data().createdAt,
+              details: doc.data().description || 'No description provided',
+              status: doc.data().status || 'pending'
+            }));
+            setActivities(violationsData);
+            
+            // Update allActivities with new violations
+            setAllActivities(prev => {
+              const filtered = prev.filter(activity => activity.type !== 'violation');
+              return [...filtered, ...violationsData].sort((a, b) => 
+                new Date(b.timestamp || b.createdAt).getTime() - new Date(a.timestamp || a.createdAt).getTime()
+              );
+            });
+            checkAndSetLoading();
+          }, (error) => {
+            console.error('Error fetching violations by email:', error);
+            checkAndSetLoading();
+          });
+        } else {
+          checkAndSetLoading();
+        }
+      });
+    } catch (error) {
+      console.error('Error setting up violations query:', error);
+      checkAndSetLoading();
+    }
 
     // Fetch announcements
     const announcementsQuery = query(collection(db, 'announcements'), orderBy('createdAt', 'desc'));
@@ -242,15 +319,130 @@ export default function TeacherDashboard() {
       checkAndSetLoading();
     }
 
+    // Fetch activity requests by this teacher
+    let activityRequestsUnsubscribe = null;
+    try {
+      const activityRequestsQuery = query(
+        collection(db, 'activity_requests'),
+        where('teacherId', '==', currentUser.uid),
+        orderBy('createdAt', 'desc')
+      );
+      activityRequestsUnsubscribe = onSnapshot(activityRequestsQuery, (snapshot) => {
+        const activityRequestsData = snapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          action: `Requested activity: ${doc.data().activity}`,
+          message: `Activity request for ${doc.data().resource} on ${new Date(doc.data().date).toLocaleDateString()}`,
+          type: 'activity_request',
+          timestamp: doc.data().createdAt,
+          details: doc.data().notes || 'No notes provided',
+          status: doc.data().status || 'pending'
+        }));
+        
+        // Update allActivities with new activity requests
+        setAllActivities(prev => {
+          const filtered = prev.filter(activity => activity.type !== 'activity_request');
+          return [...filtered, ...activityRequestsData].sort((a, b) => 
+            new Date(b.timestamp || b.createdAt).getTime() - new Date(a.timestamp || a.createdAt).getTime()
+          );
+        });
+        checkAndSetLoading();
+      }, (error) => {
+        console.error('Error fetching activity requests:', error);
+        checkAndSetLoading();
+      });
+    } catch (error) {
+      console.error('Error setting up activity requests query:', error);
+      checkAndSetLoading();
+    }
+
+    // Fetch lost items by this teacher
+    let lostItemsUnsubscribe = null;
+    try {
+      const lostItemsQuery = query(
+        collection(db, 'lost_items'),
+        where('submittedBy', '==', currentUser.email),
+        orderBy('createdAt', 'desc')
+      );
+      lostItemsUnsubscribe = onSnapshot(lostItemsQuery, (snapshot) => {
+        const lostItemsData = snapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          action: `Posted lost item: ${doc.data().name}`,
+          message: `Lost item reported at ${doc.data().location}`,
+          type: 'lost_item',
+          timestamp: doc.data().createdAt,
+          details: doc.data().description || 'No description provided',
+          status: doc.data().status || 'active'
+        }));
+        
+        // Update allActivities with new lost items
+        setAllActivities(prev => {
+          const filtered = prev.filter(activity => activity.type !== 'lost_item');
+          return [...filtered, ...lostItemsData].sort((a, b) => 
+            new Date(b.timestamp || b.createdAt).getTime() - new Date(a.timestamp || a.createdAt).getTime()
+          );
+        });
+        checkAndSetLoading();
+      }, (error) => {
+        console.error('Error fetching lost items:', error);
+        checkAndSetLoading();
+      });
+    } catch (error) {
+      console.error('Error setting up lost items query:', error);
+      checkAndSetLoading();
+    }
+
+    // Fetch found items by this teacher
+    let foundItemsUnsubscribe = null;
+    try {
+      const foundItemsQuery = query(
+        collection(db, 'found_items'),
+        where('submittedBy', '==', currentUser.email),
+        orderBy('createdAt', 'desc')
+      );
+      foundItemsUnsubscribe = onSnapshot(foundItemsQuery, (snapshot) => {
+        const foundItemsData = snapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          action: `Posted found item: ${doc.data().name}`,
+          message: `Found item reported at ${doc.data().location}`,
+          type: 'found_item',
+          timestamp: doc.data().createdAt,
+          details: doc.data().description || 'No description provided',
+          status: doc.data().status || 'active'
+        }));
+        
+        // Update allActivities with new found items
+        setAllActivities(prev => {
+          const filtered = prev.filter(activity => activity.type !== 'found_item');
+          return [...filtered, ...foundItemsData].sort((a, b) => 
+            new Date(b.timestamp || b.createdAt).getTime() - new Date(a.timestamp || a.createdAt).getTime()
+          );
+        });
+        checkAndSetLoading();
+      }, (error) => {
+        console.error('Error fetching found items:', error);
+        checkAndSetLoading();
+      });
+    } catch (error) {
+      console.error('Error setting up found items query:', error);
+      checkAndSetLoading();
+    }
+
     return () => {
       clearTimeout(loadingTimeout);
       clearTimeout(fallbackTimeout);
       violationsUnsubscribe();
+      if (activitiesUnsubscribe) activitiesUnsubscribe();
       announcementsUnsubscribe();
       notificationsUnsubscribe();
       if (unsubMeetingsA) unsubMeetingsA();
       if (unsubMeetingsB) unsubMeetingsB();
       if (unsubMySchedules) unsubMySchedules();
+      if (activityRequestsUnsubscribe) activityRequestsUnsubscribe();
+      if (lostItemsUnsubscribe) lostItemsUnsubscribe();
+      if (foundItemsUnsubscribe) foundItemsUnsubscribe();
     };
   }, [currentUser]);
 
@@ -295,17 +487,15 @@ export default function TeacherDashboard() {
     return violations.slice(0, 5);
   };
 
+  const getRecentActivities = () => {
+    // Activity logs are already sorted by timestamp in the query, just return first 5
+    return allActivities.slice(0, 5);
+  };
+
   const getRecentAnnouncements = () => {
     return announcements.slice(0, 3);
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Typography>Loading Teacher Dashboard...</Typography>
-      </Box>
-    );
-  }
 
   return (
     <Box sx={{ p: { xs: 0.5, sm: 1 }, pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
@@ -468,7 +658,7 @@ export default function TeacherDashboard() {
 
       {/* Main Content */}
       <Grid container spacing={3}>
-        {/* Recent Violations */}
+        {/* Recent Activities */}
         <Grid item xs={12} md={6} sx={{ mt: 2 }}>
           <Card sx={{ 
             border: 'none',
@@ -482,7 +672,7 @@ export default function TeacherDashboard() {
             <CardContent sx={{ flex: 1, overflow: 'auto', p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <Typography variant="h6" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
-                  Recent Violations
+                  Recent Activity Log
                 </Typography>
                 <Button 
                   size="small" 
@@ -504,69 +694,97 @@ export default function TeacherDashboard() {
                 </Button>
               </Box>
               
-              {getRecentViolations().length > 0 ? (
+              {getRecentActivities().length > 0 ? (
                 <List>
-                  {getRecentViolations().map((violation, index) => (
-                    <React.Fragment key={violation.id}>
-                      <ListItem sx={{ px: 0, py: 1, '&:hover': { backgroundColor: 'transparent' } }}>
-                        <ListItemAvatar>
-                          <Avatar sx={{ 
-                            width: 32, 
-                            height: 32,
-                            bgcolor: 'transparent'
-                          }}>
-                            <Warning sx={{ 
-                              fontSize: 16, 
-                              color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333' 
-                            }} />
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={
-                            <Typography variant="subtitle2" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>
-                              {violation.studentName || violation.studentId}
-                            </Typography>
-                          }
-                          secondary={
-                            <Box>
-                              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 0.5 }}>
-                                {violation.violationType || violation.violation}
+                  {getRecentActivities().map((activity, index) => {
+                    // Get appropriate icon and color based on activity type
+                    const getActivityIcon = (type) => {
+                      switch (type) {
+                        case 'violation':
+                          return <Warning sx={{ fontSize: 16, color: '#ff9800' }} />;
+                        case 'activity_request':
+                          return <Schedule sx={{ fontSize: 16, color: '#2196f3' }} />;
+                        case 'lost_item':
+                          return <Assignment sx={{ fontSize: 16, color: '#f44336' }} />;
+                        case 'found_item':
+                          return <CheckCircle sx={{ fontSize: 16, color: '#4caf50' }} />;
+                        default:
+                          return <Event sx={{ fontSize: 16, color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333' }} />;
+                      }
+                    };
+
+                    const getStatusColor = (status) => {
+                      switch (status) {
+                        case 'approved':
+                        case 'active':
+                          return '#4caf50';
+                        case 'pending':
+                          return '#ff9800';
+                        case 'denied':
+                        case 'inactive':
+                          return '#f44336';
+                        default:
+                          return '#800000';
+                      }
+                    };
+
+                    return (
+                      <React.Fragment key={activity.id}>
+                        <ListItem sx={{ px: 0, py: 1, '&:hover': { backgroundColor: 'transparent' } }}>
+                          <ListItemAvatar>
+                            <Avatar sx={{ 
+                              width: 32, 
+                              height: 32,
+                              bgcolor: 'transparent'
+                            }}>
+                              {getActivityIcon(activity.type)}
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={
+                              <Typography variant="subtitle2" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+                                {activity.action || 'System Action'}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
-                                {new Date(violation.date || violation.createdAt).toLocaleDateString()}
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                        <Chip 
-                          label={violation.status || 'Pending'} 
-                          size="small"
-                          sx={{ 
-                            fontWeight: 500,
-                            backgroundColor: 'transparent',
-                            color: (violation.status || 'Pending') === 'Approved' ? '#4caf50' : 
-                                   (violation.status || 'Pending') === 'Pending' ? '#ff9800' : '#666666',
-                            border: 'none',
-                            '& .MuiChip-label': {
-                              color: (violation.status || 'Pending') === 'Approved' ? '#4caf50' : 
-                                     (violation.status || 'Pending') === 'Pending' ? '#ff9800' : '#666666'
                             }
-                          }}
-                        />
-                      </ListItem>
-                      {index < getRecentViolations().length - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
+                            secondary={
+                              <Box>
+                                <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333', mb: 0.5 }}>
+                                  {activity.message || activity.details || 'System activity performed'}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#666666' }}>
+                                  {new Date(activity.timestamp || activity.date || activity.createdAt).toLocaleDateString()}
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                          <Chip 
+                            label={activity.status || 'Activity'} 
+                            size="small"
+                            sx={{ 
+                              fontWeight: 500,
+                              backgroundColor: 'transparent',
+                              color: getStatusColor(activity.status),
+                              border: 'none',
+                              '& .MuiChip-label': {
+                                color: getStatusColor(activity.status)
+                              }
+                            }}
+                          />
+                        </ListItem>
+                        {index < getRecentActivities().length - 1 && <Divider />}
+                      </React.Fragment>
+                    );
+                  })}
                 </List>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <Warning sx={{ 
+                  <Event sx={{ 
                     fontSize: 32, 
                     color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333', 
                     mb: 1 
                   }} />
                   <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
-                    No violations recorded yet
+                    No activities yet
                   </Typography>
                 </Box>
               )}
@@ -629,16 +847,16 @@ export default function TeacherDashboard() {
                         </ListItemAvatar>
                         <ListItemText
                           primary={
-                            <Typography variant="subtitle2" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>
+                            <Typography variant="subtitle2" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                               {announcement.title}
                             </Typography>
                           }
                           secondary={
                             <Box>
-                              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 0.5 }}>
+                              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333', mb: 0.5 }}>
                                 {announcement.content}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
+                              <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#666666' }}>
                                 {new Date(announcement.timestamp || announcement.createdAt).toLocaleDateString()}
                               </Typography>
                             </Box>
@@ -671,7 +889,7 @@ export default function TeacherDashboard() {
                     color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333', 
                     mb: 1 
                   }} />
-                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333' }}>
                     No announcements yet
                   </Typography>
                 </Box>

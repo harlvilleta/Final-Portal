@@ -167,11 +167,31 @@ export default function TeacherNotifications() {
   };
 
   const handleViewDetails = (notification) => {
-    setSelectedNotification(notification);
-    setOpenDetailDialog(true);
+    // Always mark as read when clicked
     if (!notification.read) {
       markAsRead(notification.id, notification.type === 'meeting' ? 'meetings' : 
                  notification.type === 'lost_found' ? 'lost_items' : 'notifications');
+    }
+
+    // Navigate based on notification type
+    switch (notification.type) {
+      case 'meeting':
+        navigate('/teacher-schedule');
+        break;
+      case 'lost_found':
+        navigate('/lost-found');
+        break;
+      case 'announcement':
+        navigate('/teacher-announcements');
+        break;
+      case 'violation':
+        navigate('/teacher-violation-records');
+        break;
+      default:
+        // For other notification types, show details dialog
+        setSelectedNotification(notification);
+        setOpenDetailDialog(true);
+        break;
     }
   };
 
@@ -239,20 +259,6 @@ export default function TeacherNotifications() {
                     </Box>
                   }
                 />
-                <ListItemSecondaryAction>
-                  <IconButton 
-                    edge="end" 
-                    onClick={() => handleViewDetails(notification)}
-                    sx={{
-                      '&:hover': {
-                        color: '#1976d2',
-                        bgcolor: 'rgba(25, 118, 210, 0.04)'
-                      }
-                    }}
-                  >
-                    <Visibility />
-                  </IconButton>
-                </ListItemSecondaryAction>
               </ListItem>
               {index < notificationList.length - 1 && <Divider />}
             </React.Fragment>
@@ -382,13 +388,6 @@ export default function TeacherNotifications() {
 
   const unreadCount = allNotifications.filter(n => !n.read).length;
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Typography>Loading notifications...</Typography>
-      </Box>
-    );
-  }
 
   return (
     <Box sx={{ 

@@ -146,13 +146,6 @@ export default function TeacherSchedule() {
     setSelectedMeeting(null);
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
 
   if (error) {
     return (

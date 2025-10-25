@@ -3,7 +3,7 @@ import { Routes, Route, Link } from "react-router-dom";
 import { 
   Box, Grid, Typography, TextField, Button, Paper, MenuItem, Avatar, Snackbar, Alert, 
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Stack, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText,
-  IconButton, Tooltip, Chip, InputAdornment, CircularProgress, useTheme, Tabs, Tab
+  IconButton, Tooltip, Chip, InputAdornment, CircularProgress, useTheme, Tabs, Tab, TablePagination
 } from "@mui/material";
 import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete, Search, CloudUpload, PictureAsPdf, Close, ArrowBack } from "@mui/icons-material";
 import { db, storage, logActivity } from "../firebase";
@@ -1140,16 +1140,29 @@ function CourseDashboard({
     setOpenEditStudent(true);
   };
 
-  // Handle delete student
+  // Handle delete student - move to recycle bin
   const handleDeleteStudent = async (student) => {
-    if (window.confirm(`Are you sure you want to delete ${student.firstName} ${student.lastName}?`)) {
+    if (window.confirm(`Are you sure you want to delete ${student.firstName} ${student.lastName}? This will move the student to the recycle bin.`)) {
       try {
-        console.log("Deleting student:", student.id);
+        console.log("Moving student to recycle bin:", student.id);
         
         if (!student.isRegisteredUser) {
+          // Move to recycle bin instead of permanent deletion
+          const studentData = {
+            ...student,
+            deletedAt: new Date().toISOString(),
+            deletedBy: 'admin', // You can get this from current user context
+            originalCollection: 'students'
+          };
+          
+          // Add to recycle bin
+          await addDoc(collection(db, "recycle_bin_students"), studentData);
+          
+          // Remove from original collection
           await deleteDoc(doc(db, "students", student.id));
-          await logActivity({ message: `Deleted student: ${student.firstName} ${student.lastName}`, type: 'delete_student' });
-          setSnackbar({ open: true, message: "Student deleted successfully!", severity: "success" });
+          
+          await logActivity({ message: `Moved student to recycle bin: ${student.firstName} ${student.lastName}`, type: 'delete_student' });
+          setSnackbar({ open: true, message: "Student moved to recycle bin successfully!", severity: "success" });
           
           // Refresh the student list
           setStudents(prev => prev.filter(s => s.id !== student.id));
@@ -1161,8 +1174,8 @@ function CourseDashboard({
           });
         }
       } catch (error) {
-        console.error("Error deleting student:", error);
-        setSnackbar({ open: true, message: "Error deleting student: " + error.message, severity: "error" });
+        console.error("Error moving student to recycle bin:", error);
+        setSnackbar({ open: true, message: "Error moving student to recycle bin: " + error.message, severity: "error" });
       }
     }
   };
@@ -1647,6 +1660,10 @@ function StudentList({
   });
   const [violationImageFile, setViolationImageFile] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(8);
 
   // Debug activeTab changes
   useEffect(() => {
@@ -1841,6 +1858,28 @@ function StudentList({
     return courses.sort();
   }, [students]);
 
+  // Pagination handlers
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Get paginated students
+  const paginatedStudents = useMemo(() => {
+    const startIndex = page * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    return filteredStudents.slice(startIndex, endIndex);
+  }, [filteredStudents, page, rowsPerPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [search, courseFilter, activeTab]);
+
 
   const handleExportToPDF = useCallback(() => {
     // For PDF export, we'll use the browser's print functionality with PDF option
@@ -1977,17 +2016,30 @@ function StudentList({
     setOpenEditStudent(true);
   };
 
-  // Handle delete student
+  // Handle delete student - move to recycle bin
   const handleDeleteStudent = async (student) => {
-    if (window.confirm(`Are you sure you want to delete ${student.firstName} ${student.lastName}?`)) {
+    if (window.confirm(`Are you sure you want to delete ${student.firstName} ${student.lastName}? This will move the student to the recycle bin.`)) {
       try {
-        console.log("Deleting student:", student.id);
+        console.log("Moving student to recycle bin:", student.id);
         
-        // Only delete from students collection if it's not a registered user
+        // Only move to recycle bin if it's not a registered user
         if (!student.isRegisteredUser) {
+          // Move to recycle bin instead of permanent deletion
+          const studentData = {
+            ...student,
+            deletedAt: new Date().toISOString(),
+            deletedBy: 'admin', // You can get this from current user context
+            originalCollection: 'students'
+          };
+          
+          // Add to recycle bin
+          await addDoc(collection(db, "recycle_bin_students"), studentData);
+          
+          // Remove from original collection
           await deleteDoc(doc(db, "students", student.id));
-          await logActivity({ message: `Deleted student: ${student.firstName} ${student.lastName}`, type: 'delete_student' });
-          setSnackbar({ open: true, message: "Student deleted successfully!", severity: "success" });
+          
+          await logActivity({ message: `Moved student to recycle bin: ${student.firstName} ${student.lastName}`, type: 'delete_student' });
+          setSnackbar({ open: true, message: "Student moved to recycle bin successfully!", severity: "success" });
         } else {
           setSnackbar({ 
             open: true, 
@@ -2488,32 +2540,6 @@ School Administration
             Export PDF
           </Button>
         </Stack>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-          <TextField
-            select
-            label="Filter by Course"
-            value={courseFilter}
-            onChange={e => setCourseFilter(e.target.value)}
-            size="small"
-            sx={{ 
-              minWidth: 200,
-              '& .MuiOutlinedInput-root': {
-                '&:hover fieldset': {
-                  borderColor: '#1976d2',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#1976d2',
-                  borderWidth: 2,
-                },
-              }
-            }}
-          >
-            <MenuItem value="all">All Courses</MenuItem>
-            {availableCourses.map(course => (
-              <MenuItem key={course} value={course}>{course}</MenuItem>
-            ))}
-          </TextField>
-        </Stack>
       </Stack>
       
       {/* Instructions */}
@@ -2595,83 +2621,86 @@ School Administration
           )}
         </Box>
       ) : (
-        <TableContainer component={Paper} key={`table-${activeTab}`} sx={{ 
-          maxHeight: 600,
-          bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
-          '&::-webkit-scrollbar': {
-            height: 8,
-          },
-          '&::-webkit-scrollbar-track': {
-            backgroundColor: theme.palette.mode === 'dark' ? '#404040' : '#f1f1f1',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: theme.palette.mode === 'dark' ? '#666666' : '#c1c1c1',
-            borderRadius: 4,
-          },
-          '&::-webkit-scrollbar-thumb:hover': {
-            backgroundColor: theme.palette.mode === 'dark' ? '#888888' : '#a8a8a8',
-          }
-        }}>
-          <Table stickyHeader>
-            <TableHead>
-              {/* Search Bar Row */}
-              <TableRow>
-                <TableCell 
-                  colSpan={6} 
-                  sx={{ 
-                    bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#fafafa',
-                    padding: '12px 16px',
-                    borderBottom: 'none'
-                  }}
-                >
-                  <TextField 
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    size="small"
-                    placeholder="Search by name, course, ID, year, or section..."
-                    sx={{ 
-                      width: '300px',
-                      bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#ffffff',
-                      '& .MuiOutlinedInput-root': {
-                        '&:hover fieldset': {
-                          borderColor: '#1976d2',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#1976d2',
-                          borderWidth: 2,
-                        },
-                      }
-                    }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Search sx={{ fontSize: 18, color: search.trim() ? '#1976d2' : 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
-                      endAdornment: search.trim() && (
-                        <InputAdornment position="end">
-                          <IconButton
-                            size="small"
-                            onClick={() => setSearch("")}
-                            sx={{ 
-                              color: 'text.secondary',
-                              '&:hover': { color: '#1976d2' }
-                            }}
-                          >
-                            ✕
-                          </IconButton>
-                        </InputAdornment>
-                      )
-                    }}
-                  />
-                </TableCell>
-              </TableRow>
-              {/* Header Row */}
+        <>
+          {/* Search Bar and Course Filter - Outside Table */}
+          <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
+            <TextField 
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              size="small"
+              placeholder="Search by name, course, ID, year, or section..."
+              sx={{ 
+                width: '300px',
+                bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#ffffff',
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: '#1976d2',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#1976d2',
+                    borderWidth: 2,
+                  },
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search sx={{ fontSize: 18, color: search.trim() ? '#1976d2' : 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: search.trim() && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setSearch("")}
+                      sx={{ 
+                        color: 'text.secondary',
+                        '&:hover': { color: '#1976d2' }
+                      }}
+                    >
+                      ✕
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+            />
+            <TextField
+              select
+              label="Filter by Course"
+              value={courseFilter}
+              onChange={e => setCourseFilter(e.target.value)}
+              size="small"
+              sx={{ 
+                minWidth: 200,
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: '#1976d2',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#1976d2',
+                    borderWidth: 2,
+                  },
+                }
+              }}
+            >
+              <MenuItem value="all">All Courses</MenuItem>
+              {availableCourses.map(course => (
+                <MenuItem key={course} value={course}>{course}</MenuItem>
+              ))}
+            </TextField>
+          </Box>
+
+          <TableContainer component={Paper} key={`table-${activeTab}`} sx={{ 
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff'
+          }}>
+            <Table stickyHeader>
+              <TableHead>
+                {/* Header Row */}
               <TableRow>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '140px',
@@ -2680,9 +2709,9 @@ School Administration
                   Student
                 </TableCell>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '120px',
@@ -2691,9 +2720,9 @@ School Administration
                   Student ID
                 </TableCell>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '100px',
@@ -2702,9 +2731,9 @@ School Administration
                   Course
                 </TableCell>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '120px',
@@ -2713,9 +2742,9 @@ School Administration
                   Year & Section
                 </TableCell>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '100px',
@@ -2724,9 +2753,9 @@ School Administration
                   Status
                 </TableCell>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '120px',
@@ -2746,7 +2775,7 @@ School Administration
                 })));
                 return null;
               })()}
-              {filteredStudents.map((student) => (
+              {paginatedStudents.map((student) => (
                 <TableRow 
                   key={student.id} 
                   hover
@@ -2893,6 +2922,22 @@ School Administration
             </TableBody>
           </Table>
         </TableContainer>
+        
+        {/* Pagination */}
+        <TablePagination
+          rowsPerPageOptions={[5, 8]}
+          component="div"
+          count={filteredStudents.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          sx={{
+            bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff',
+            borderTop: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e0e0e0'
+          }}
+        />
+        </>
       )}
       <Dialog open={openViolation} onClose={() => setOpenViolation(false)} maxWidth="md" fullWidth>
         <DialogTitle>
@@ -2927,10 +2972,10 @@ School Administration
             onChange={e => setViolation(v => ({ ...v, classification: e.target.value }))}
                 required
               >
-                <MenuItem value="Minor">Minor</MenuItem>
-                <MenuItem value="Major">Major</MenuItem>
-                <MenuItem value="Serious">Serious</MenuItem>
-                <MenuItem value="Grave">Grave</MenuItem>
+                <MenuItem value="Academic">Academic</MenuItem>
+                <MenuItem value="Behavioral">Behavioral</MenuItem>
+                <MenuItem value="Policy/Rules">Policy/Rules</MenuItem>
+                <MenuItem value="Other">Other</MenuItem>
               </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>

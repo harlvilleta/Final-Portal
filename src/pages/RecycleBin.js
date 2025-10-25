@@ -107,15 +107,19 @@ export default function RecycleBin() {
   };
 
   const handlePermanentDeleteAnnouncement = async (item) => {
-    setIsSubmitting(true);
-    try {
-      await deleteDoc(doc(db, "recycle_bin_announcements", item.id));
-      setSnackbar({ open: true, message: "Announcement permanently deleted.", severity: "success" });
-      fetchAnnouncements();
-    } catch {
-      setSnackbar({ open: true, message: "Error deleting announcement", severity: "error" });
+    if (window.confirm(`Are you sure you want to permanently delete "${item.title}"? This action cannot be undone.`)) {
+      setIsSubmitting(true);
+      try {
+        await deleteDoc(doc(db, "recycle_bin_announcements", item.id));
+        // Update local state immediately
+        setAnnouncements(prev => prev.filter(a => a.id !== item.id));
+        setSnackbar({ open: true, message: "Announcement permanently deleted.", severity: "success" });
+      } catch (error) {
+        console.error('Error permanently deleting announcement:', error);
+        setSnackbar({ open: true, message: "Error deleting announcement", severity: "error" });
+      }
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const handleRestoreActivity = async (item) => {
@@ -133,15 +137,19 @@ export default function RecycleBin() {
   };
 
   const handlePermanentDeleteActivity = async (item) => {
-    setIsSubmitting(true);
-    try {
-      await deleteDoc(doc(db, "recycle_bin_activities", item.id));
-      setSnackbar({ open: true, message: "Activity permanently deleted.", severity: "success" });
-      fetchActivities();
-    } catch {
-      setSnackbar({ open: true, message: "Error deleting activity", severity: "error" });
+    if (window.confirm(`Are you sure you want to permanently delete "${item.title || item.name}"? This action cannot be undone.`)) {
+      setIsSubmitting(true);
+      try {
+        await deleteDoc(doc(db, "recycle_bin_activities", item.id));
+        // Update local state immediately
+        setActivities(prev => prev.filter(a => a.id !== item.id));
+        setSnackbar({ open: true, message: "Activity permanently deleted.", severity: "success" });
+      } catch (error) {
+        console.error('Error permanently deleting activity:', error);
+        setSnackbar({ open: true, message: "Error deleting activity", severity: "error" });
+      }
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const handleRestoreLostFound = async (item) => {
@@ -159,15 +167,19 @@ export default function RecycleBin() {
   };
 
   const handlePermanentDeleteLostFound = async (item) => {
-    setIsSubmitting(true);
-    try {
-      await deleteDoc(doc(db, "recycle_bin_lost_found", item.id));
-      setSnackbar({ open: true, message: "Lost & Found item permanently deleted.", severity: "success" });
-      fetchLostFound();
-    } catch {
-      setSnackbar({ open: true, message: "Error deleting lost & found item", severity: "error" });
+    if (window.confirm(`Are you sure you want to permanently delete "${item.itemName}"? This action cannot be undone.`)) {
+      setIsSubmitting(true);
+      try {
+        await deleteDoc(doc(db, "recycle_bin_lost_found", item.id));
+        // Update local state immediately
+        setLostFound(prev => prev.filter(lf => lf.id !== item.id));
+        setSnackbar({ open: true, message: "Lost & Found item permanently deleted.", severity: "success" });
+      } catch (error) {
+        console.error('Error permanently deleting lost & found item:', error);
+        setSnackbar({ open: true, message: "Error deleting lost & found item", severity: "error" });
+      }
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const handleRestoreViolation = async (item) => {
@@ -185,15 +197,19 @@ export default function RecycleBin() {
   };
 
   const handlePermanentDeleteViolation = async (item) => {
-    setIsSubmitting(true);
-    try {
-      await deleteDoc(doc(db, "recycle_bin_violations", item.id));
-      setSnackbar({ open: true, message: "Violation permanently deleted.", severity: "success" });
-      fetchViolations();
-    } catch {
-      setSnackbar({ open: true, message: "Error deleting violation", severity: "error" });
+    if (window.confirm(`Are you sure you want to permanently delete violation "${item.violation || item.studentName}"? This action cannot be undone.`)) {
+      setIsSubmitting(true);
+      try {
+        await deleteDoc(doc(db, "recycle_bin_violations", item.id));
+        // Update local state immediately
+        setViolations(prev => prev.filter(v => v.id !== item.id));
+        setSnackbar({ open: true, message: "Violation permanently deleted.", severity: "success" });
+      } catch (error) {
+        console.error('Error permanently deleting violation:', error);
+        setSnackbar({ open: true, message: "Error deleting violation", severity: "error" });
+      }
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const handleRestoreStudent = async (item) => {
@@ -211,25 +227,21 @@ export default function RecycleBin() {
   };
 
   const handlePermanentDeleteStudent = async (item) => {
-    setIsSubmitting(true);
-    try {
-      await deleteDoc(doc(db, "recycle_bin_students", item.id));
-      setSnackbar({ open: true, message: "Student permanently deleted.", severity: "success" });
-      fetchStudents();
-    } catch {
-      setSnackbar({ open: true, message: "Error deleting student", severity: "error" });
+    if (window.confirm(`Are you sure you want to permanently delete student "${item.firstName} ${item.lastName}"? This action cannot be undone.`)) {
+      setIsSubmitting(true);
+      try {
+        await deleteDoc(doc(db, "recycle_bin_students", item.id));
+        // Update local state immediately
+        setStudents(prev => prev.filter(s => s.id !== item.id));
+        setSnackbar({ open: true, message: "Student permanently deleted.", severity: "success" });
+      } catch (error) {
+        console.error('Error permanently deleting student:', error);
+        setSnackbar({ open: true, message: "Error deleting student", severity: "error" });
+      }
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
-        <Typography sx={{ ml: 2 }}>Loading recycle bin...</Typography>
-      </Box>
-    );
-  }
 
   return (
     <Box>

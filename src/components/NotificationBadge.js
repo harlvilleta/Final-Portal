@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Badge, IconButton, Tooltip, Menu, MenuItem, Typography, Box, Divider, List, ListItem, ListItemText, ListItemIcon, Avatar, Chip } from '@mui/material';
 import { Notifications, CheckCircle, Cancel, PersonAddAlt1, Warning, Search, Event, Assignment, Share } from '@mui/icons-material';
-import { collection, query, where, orderBy, getDocs, onSnapshot, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, onSnapshot, limit, updateDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
 export default function NotificationBadge() {
@@ -72,8 +72,11 @@ export default function NotificationBadge() {
             return !shouldExclude;
           });
           
+          const unreadCount = filteredNotifications.filter(n => !n.read).length;
+          console.log('NotificationBadge: Updated notifications count:', unreadCount);
+          
           setNotifications(filteredNotifications);
-          setUnreadCount(filteredNotifications.filter(n => !n.read).length);
+          setUnreadCount(unreadCount);
         }, (error) => {
           console.error('Error listening to notifications:', error);
         });
@@ -91,12 +94,32 @@ export default function NotificationBadge() {
     };
   }, [currentUser]);
 
+  const markAsRead = async (notificationId) => {
+    try {
+      await updateDoc(doc(db, "notifications", notificationId), {
+        read: true
+      });
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleNotificationClick = async (notification) => {
+    // Mark as read if not already read
+    if (!notification.read) {
+      await markAsRead(notification.id);
+    }
+    
+    // Close the menu
+    handleClose();
   };
 
   const getNotificationIcon = (type) => {
@@ -207,7 +230,16 @@ export default function NotificationBadge() {
           <List sx={{ maxHeight: 300, overflow: 'auto' }}>
             {notifications.map((notification, index) => (
               <React.Fragment key={notification.id}>
-                <ListItem sx={{ py: 1.5 }}>
+                <ListItem 
+                  sx={{ 
+                    py: 1.5,
+                    cursor: 'pointer',
+                    '&:hover': {
+                      bgcolor: 'action.hover'
+                    }
+                  }}
+                  onClick={() => handleNotificationClick(notification)}
+                >
                   <ListItemIcon>
                     <Avatar sx={{ bgcolor: `${getNotificationColor(notification.type)}.light`, width: 32, height: 32 }}>
                       {getNotificationIcon(notification.type)}
@@ -216,7 +248,7 @@ export default function NotificationBadge() {
                   <ListItemText
                     primary={
                       <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: notification.read ? 400 : 600 }}>
                           {notification.title || 'Notification'}
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ 

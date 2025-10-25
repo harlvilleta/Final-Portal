@@ -9,7 +9,7 @@ import {
   Warning, Announcement, Search, Info, NotificationsActive, 
   CalendarToday, AccessTime, LocationOn, Person, Description, 
   PriorityHigh, Close, Visibility, Event, MeetingRoom, Notifications,
-  Assignment, PersonAddAlt1, Share
+  Assignment, PersonAddAlt1, Share, Archive
 } from "@mui/icons-material";
 import { db } from "../firebase";
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, getDocs } from "firebase/firestore";
@@ -22,6 +22,7 @@ export default function AdminNotifications() {
   const [activityNotifications, setActivityNotifications] = useState([]);
   const [announcementNotifications, setAnnouncementNotifications] = useState([]);
   const [requestNotifications, setRequestNotifications] = useState([]);
+  const [archivedNotifications, setArchivedNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
@@ -61,20 +62,22 @@ export default function AdminNotifications() {
 
       setNotifications(allNotifications);
       
-      // Categorize notifications
+      // Categorize notifications (exclude archived)
       const activities = allNotifications.filter(n => 
-        n.type === 'activity' || n.type === 'activity_request' || n.type === 'event'
+        !n.archived && (n.type === 'activity' || n.type === 'activity_request' || n.type === 'event')
       );
       const announcements = allNotifications.filter(n => 
-        n.type === 'announcement'
+        !n.archived && n.type === 'announcement'
       );
       const requests = allNotifications.filter(n => 
-        n.type === 'teacher_request' || n.type === 'violation' || n.type === 'lost_found'
+        !n.archived && (n.type === 'teacher_request' || n.type === 'violation' || n.type === 'lost_found')
       );
+      const archived = allNotifications.filter(n => n.archived);
 
       setActivityNotifications(activities);
       setAnnouncementNotifications(announcements);
       setRequestNotifications(requests);
+      setArchivedNotifications(archived);
       setLoading(false);
 
       return () => {}; // No cleanup needed since we're using single-time fetch
@@ -92,6 +95,61 @@ export default function AdminNotifications() {
       });
     } catch (error) {
       console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const archiveNotification = async (notificationId) => {
+    try {
+      await updateDoc(doc(db, "notifications", notificationId), {
+        archived: true,
+        archivedAt: new Date().toISOString()
+      });
+      
+      // Update local state immediately
+      setNotifications(prev => 
+        prev.map(n => 
+          n.id === notificationId 
+            ? { ...n, archived: true, archivedAt: new Date().toISOString() }
+            : n
+        )
+      );
+      
+      // Update archived notifications list
+      const notificationToArchive = notifications.find(n => n.id === notificationId);
+      if (notificationToArchive) {
+        setArchivedNotifications(prev => [
+          { ...notificationToArchive, archived: true, archivedAt: new Date().toISOString() },
+          ...prev
+        ]);
+      }
+      
+      // Remove from active lists
+      setActivityNotifications(prev => prev.filter(n => n.id !== notificationId));
+      setAnnouncementNotifications(prev => prev.filter(n => n.id !== notificationId));
+      setRequestNotifications(prev => prev.filter(n => n.id !== notificationId));
+      
+    } catch (error) {
+      console.error('Error archiving notification:', error);
+    }
+  };
+
+  const handleAnnouncementDeleted = async (announcementId) => {
+    try {
+      // Find all notifications related to this announcement
+      const announcementNotifications = notifications.filter(n => 
+        n.announcementId === announcementId
+      );
+      
+      // Archive all related notifications
+      for (const notification of announcementNotifications) {
+        await updateDoc(doc(db, "notifications", notification.id), {
+          archived: true,
+          archivedAt: new Date().toISOString(),
+          archivedReason: 'announcement_deleted'
+        });
+      }
+    } catch (error) {
+      console.error('Error handling announcement deletion:', error);
     }
   };
 
@@ -159,42 +217,55 @@ export default function AdminNotifications() {
   };
 
   const handleViewDetails = (notification) => {
-    // If it's a teacher request notification, navigate to teacher request page
-    if (notification.type === 'teacher_request') {
-      if (!notification.read) {
-        markAsRead(notification.id);
-      }
-      navigate('/teacher-request');
-      return;
-    }
-    
-    // If it's a lost & found comment or general lost & found notification, navigate to lost & found page
-    if (notification.type === 'lost_found_comment' || notification.type === 'lost_found') {
-      if (!notification.read) {
-        markAsRead(notification.id);
-      }
-      navigate('/lost-found');
-      return;
-    }
-    
-    setSelectedNotification(notification);
-    setOpenDetailDialog(true);
+    // Always mark as read when clicked
     if (!notification.read) {
       markAsRead(notification.id);
     }
+
+    // Navigate based on notification type
+    switch (notification.type) {
+      case 'teacher_request':
+        navigate('/teacher-request');
+        break;
+      case 'lost_found_comment':
+      case 'lost_found':
+        navigate('/lost-found');
+        break;
+      case 'activity':
+        navigate('/admin-activity-scheduler');
+        break;
+      case 'announcement':
+      case 'announcements':
+        // Navigate to announcements page with announcement ID if available
+        if (notification.announcementId) {
+          navigate('/admin-announcements', { 
+            state: { 
+              viewAnnouncementId: notification.announcementId,
+              fromNotification: true 
+            } 
+          });
+        } else {
+          navigate('/admin-announcements');
+        }
+        break;
+      case 'violation':
+        navigate('/violation-review');
+        break;
+      case 'student':
+        navigate('/students');
+        break;
+      default:
+        // For other notification types, show details dialog
+        setSelectedNotification(notification);
+        setOpenDetailDialog(true);
+        break;
+    }
   };
 
-  const allNotifications = [...notifications];
+  const allNotifications = [...notifications].filter(n => !n.archived);
   const unreadCount = allNotifications.filter(n => !n.read).length;
 
   const renderNotificationList = (notificationList, title) => {
-    if (loading) {
-      return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <Typography>Loading notifications...</Typography>
-        </Box>
-      );
-    }
 
     if (notificationList.length === 0) {
       return (
@@ -211,9 +282,22 @@ export default function AdminNotifications() {
     }
 
     return (
-      <Paper sx={{ mb: 3 }}>
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+      <Paper sx={{ 
+        mb: 3,
+        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f4f4',
+        border: '1px solid #800000',
+        '&:hover': {
+          boxShadow: '0 4px 8px rgba(128, 0, 0, 0.1)'
+        }
+      }}>
+        <Box sx={{ 
+          p: 2, 
+          borderBottom: 1, 
+          borderColor: 'divider',
+          bgcolor: '#800000',
+          color: '#ffffff'
+        }}>
+          <Typography variant="h6" fontWeight={600} sx={{ color: '#ffffff' }}>
             {title}
           </Typography>
         </Box>
@@ -227,6 +311,27 @@ export default function AdminNotifications() {
                   cursor: 'pointer'
                 }}
                 onClick={() => handleViewDetails(notification)}
+                secondaryAction={
+                  !notification.archived ? (
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <IconButton
+                        edge="end"
+                        aria-label="archive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          archiveNotification(notification.id);
+                        }}
+                        size="small"
+                        sx={{ 
+                          color: 'text.secondary',
+                          '&:hover': { color: 'primary.main' }
+                        }}
+                      >
+                        <Archive fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  ) : null
+                }
               >
                 <ListItemAvatar>
                   <Avatar sx={{ bgcolor: `${getNotificationColor(notification.type)}.light` }}>
@@ -255,11 +360,6 @@ export default function AdminNotifications() {
                     </Box>
                   }
                 />
-                <ListItemSecondaryAction>
-                  <IconButton edge="end" size="small">
-                    <Visibility />
-                  </IconButton>
-                </ListItemSecondaryAction>
               </ListItem>
               {index < notificationList.length - 1 && <Divider />}
             </React.Fragment>
@@ -374,28 +474,6 @@ export default function AdminNotifications() {
         </Typography>
       </Box>
 
-      {/* Statistics Card */}
-      <Card sx={{ 
-        mb: 3, 
-        bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#e3f2fd', 
-        border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #2196f3' 
-      }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: '#1976d2' }}>
-              <NotificationsActive />
-            </Avatar>
-            <Box>
-              <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
-                {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
-              </Typography>
-              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? 'text.secondary' : '#666666' }}>
-                Total: {allNotifications.length} notifications
-              </Typography>
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
 
       {/* Tabs */}
       <Paper sx={{ mb: 3 }}>
@@ -404,6 +482,7 @@ export default function AdminNotifications() {
           <Tab label={`Activities (${activityNotifications.length})`} />
           <Tab label={`Announcements (${announcementNotifications.length})`} />
           <Tab label={`Requests (${requestNotifications.length})`} />
+          <Tab label={`Archive (${archivedNotifications.length})`} />
         </Tabs>
       </Paper>
 
@@ -412,6 +491,7 @@ export default function AdminNotifications() {
       {currentTab === 1 && renderNotificationList(activityNotifications, "Activity Notifications")}
       {currentTab === 2 && renderNotificationList(announcementNotifications, "Announcement Notifications")}
       {currentTab === 3 && renderNotificationList(requestNotifications, "Request Notifications")}
+      {currentTab === 4 && renderNotificationList(archivedNotifications, "Archived Notifications")}
 
       {/* Notification Details Dialog */}
       {renderNotificationDetails()}

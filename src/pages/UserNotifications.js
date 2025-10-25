@@ -143,10 +143,27 @@ export default function UserNotifications({ currentUser }) {
   };
 
   const handleViewDetails = (notification) => {
-    setSelectedNotification(notification);
-    setOpenDetailDialog(true);
+    // Always mark as read when clicked
     if (!notification.read) {
       markAsRead(notification.id);
+    }
+
+    // Navigate based on notification type
+    switch (notification.type) {
+      case 'violation':
+        navigate('/user-violations');
+        break;
+      case 'announcement':
+        navigate('/announcements');
+        break;
+      case 'lost_found':
+        navigate('/lost-found');
+        break;
+      default:
+        // For other notification types, show details dialog
+        setSelectedNotification(notification);
+        setOpenDetailDialog(true);
+        break;
     }
   };
 

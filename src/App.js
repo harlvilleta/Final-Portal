@@ -57,6 +57,7 @@ import ViolationsChartDashboard from "./pages/ViolationsChartDashboard";
 import TeacherRequest from "./pages/TeacherRequest";
 import TeacherViolationRecords from "./pages/TeacherViolationRecords";
 import TeacherActivityScheduler from "./pages/TeacherActivityScheduler";
+import TeacherActivityRequests from "./pages/TeacherActivityRequests";
 import AdminActivityScheduler from "./pages/AdminActivityScheduler";
 import ClassroomManager from "./components/ClassroomManager";
 import TeacherStudentsView from "./components/TeacherStudentsView";
@@ -697,6 +698,7 @@ function App() {
                           <Route path="/teacher-lost-found" element={<TeacherLostFound currentUser={currentUser} userProfile={userProfile} />} />
                           <Route path="/teacher-violation-records" element={<TeacherViolationRecords />} />
                           <Route path="/teacher-activity-scheduler" element={<TeacherActivityScheduler />} />
+                          <Route path="/teacher-activity-requests" element={<TeacherActivityRequests />} />
                           <Route path="/teacher-profile" element={<Profile />} />
                           <Route path="/edit-profile" element={<EditProfile />} />
                           <Route path="/*" element={<Navigate to="/teacher-dashboard" />} />

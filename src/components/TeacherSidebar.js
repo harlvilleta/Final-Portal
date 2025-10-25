@@ -14,8 +14,8 @@ const menu = [
     icon: <Event sx={{ color: 'inherit' }} />, 
     hasSubmenu: true,
     submenu: [
-      { text: "Activity View", icon: <Event sx={{ color: 'inherit' }} />, path: "/activity" },
-      { text: "Activity Scheduler", icon: <Schedule sx={{ color: 'inherit' }} />, path: "/teacher-activity-scheduler" }
+      { text: "Activity Scheduler", icon: <Schedule sx={{ color: 'inherit' }} />, path: "/teacher-activity-scheduler" },
+      { text: "Request", icon: <Assignment sx={{ color: 'inherit' }} />, path: "/teacher-activity-requests" }
     ]
   },
   { text: "Announcements", icon: <ListAlt sx={{ color: 'inherit' }} />, path: "/teacher-announcements" },

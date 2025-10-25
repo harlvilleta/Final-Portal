@@ -155,14 +155,6 @@ export default function StudentClassroom({ currentUser }) {
     navigate(`/classroom/${course}/${yearLevel}/${section}`);
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
-        <Typography sx={{ ml: 2 }}>Loading your classroom...</Typography>
-      </Box>
-    );
-  }
 
   if (error) {
     return (

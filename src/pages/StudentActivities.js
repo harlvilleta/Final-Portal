@@ -275,14 +275,6 @@ export default function StudentActivities() {
     }
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
-        <Typography sx={{ ml: 2 }}>Loading activities...</Typography>
-      </Box>
-    );
-  }
 
   if (!userProfile?.course || !userProfile?.year || !userProfile?.section) {
     return (

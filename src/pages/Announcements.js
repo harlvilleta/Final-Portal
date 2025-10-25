@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper, TextField, Button, Stack, Snackbar, Alert, List, ListItem, ListItemText, Divider, MenuItem, Card, CardContent, CardHeader, Chip, Tabs, Tab, Badge, Dialog, DialogTitle, DialogContent, DialogActions, Select, InputAdornment, useTheme } from "@mui/material";
+import { CloudUpload, Image, Delete } from "@mui/icons-material";
 import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc, getDoc, where } from "firebase/firestore";
-import { db, logActivity } from "../firebase";
+import { db, logActivity, storage } from "../firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import PrintIcon from '@mui/icons-material/Print';
 import DeleteIcon from '@mui/icons-material/Delete';
 import IconButton from '@mui/material/IconButton';
@@ -12,14 +14,16 @@ import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import { Tooltip } from "@mui/material";
 import { auth } from "../firebase"; // Added auth import
+import { useLocation } from "react-router-dom";
 
 const categories = ["General", "Event", "Urgent", "Reminder", "Other"];
-const audiences = ["All", "Students", "Faculty", "Staff"];
+const audiences = ["All", "Student", "Teacher"];
 const priorities = ["Normal", "High", "Urgent"];
 
 export default function Announcements() {
   const theme = useTheme();
-  const [form, setForm] = useState({ title: "", message: "", date: "", category: "General", audience: "All", priority: "Normal", scheduleDate: "", expiryDate: "" });
+  const location = useLocation();
+  const [form, setForm] = useState({ title: "", message: "", date: "", audience: "All", scheduleDate: "", expiryDate: "", photo: null });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [announcements, setAnnouncements] = useState([]);
@@ -35,6 +39,7 @@ export default function Announcements() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userRole, setUserRole] = useState('Student');
   const [activities, setActivities] = useState([]);
+  const [photoPreview, setPhotoPreview] = useState(null);
 
   useEffect(() => {
     // Get current user and role
@@ -62,6 +67,16 @@ export default function Announcements() {
   useEffect(() => {
     setCompletedAnnouncements(announcements.filter(a => a.completed));
   }, [announcements]);
+
+  // Handle navigation from notification
+  useEffect(() => {
+    if (location.state?.fromNotification && location.state?.viewAnnouncementId && announcements.length > 0) {
+      const targetAnnouncement = announcements.find(a => a.id === location.state.viewAnnouncementId);
+      if (targetAnnouncement) {
+        setViewAnnouncement(targetAnnouncement);
+      }
+    }
+  }, [location.state, announcements]);
 
   const fetchAnnouncements = async () => {
     try {
@@ -98,6 +113,53 @@ export default function Announcements() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setForm({ ...form, photo: file });
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPhotoPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removePhoto = () => {
+    setForm({ ...form, photo: null });
+    setPhotoPreview(null);
+  };
+
+  const sendNotificationsToRole = async (role, announcementId, form, senderId, senderEmail, senderName) => {
+    const usersQuery = query(
+      collection(db, "users"),
+      where("role", "==", role)
+    );
+    const usersSnapshot = await getDocs(usersQuery);
+    
+    // Create notifications for each user
+    const notificationPromises = usersSnapshot.docs.map(doc => {
+      const user = doc.data();
+      return addDoc(collection(db, "notifications"), {
+        recipientEmail: user.email,
+        recipientName: user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        title: `📢 New Announcement: ${form.title}`,
+        message: form.message.length > 100 ? `${form.message.substring(0, 100)}...` : form.message,
+        type: "announcement",
+        announcementId: announcementId,
+        senderId: senderId,
+        senderEmail: senderEmail,
+        senderName: senderName,
+        read: false,
+        createdAt: new Date().toISOString(),
+        audience: form.audience
+      });
+    });
+    
+    await Promise.all(notificationPromises);
+    console.log(`✅ Announcement notifications sent to ${usersSnapshot.docs.length} ${role.toLowerCase()}s`);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title.trim() || !form.message.trim()) {
@@ -111,9 +173,29 @@ export default function Announcements() {
       const userEmail = currentUser?.email || 'unknown@school.com';
       const userName = currentUser?.displayName || userEmail.split('@')[0];
       
+      // Upload photo if provided
+      let photoUrl = null;
+      if (form.photo) {
+        try {
+          const photoRef = ref(storage, `announcements/${Date.now()}_${form.photo.name}`);
+          const uploadResult = await uploadBytes(photoRef, form.photo);
+          photoUrl = await getDownloadURL(uploadResult.ref);
+        } catch (photoError) {
+          console.error('Error uploading photo:', photoError);
+          setSnackbar({ open: true, message: "Error uploading photo", severity: "error" });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       const announcementRef = await addDoc(collection(db, "announcements"), {
-        ...form,
+        title: form.title,
+        message: form.message,
         date: form.date || new Date().toISOString(),
+        audience: form.audience,
+        scheduleDate: form.scheduleDate,
+        expiryDate: form.expiryDate,
+        photoUrl: photoUrl,
         createdAt: new Date().toISOString(),
         postedBy: userName,
         postedByEmail: userEmail,
@@ -124,39 +206,19 @@ export default function Announcements() {
         reviewReason: null
       });
 
-      // Create notifications for all students if audience is "All" or "Students"
-      if (form.audience === "All" || form.audience === "Students") {
+      // Create notifications based on audience
+      if (form.audience === "All" || form.audience === "Student" || form.audience === "Teacher") {
         try {
-          // Get all students from the users collection
-          const studentsQuery = query(
-            collection(db, "users"),
-            where("role", "==", "Student")
-          );
-          const studentsSnapshot = await getDocs(studentsQuery);
-          
-          // Create notifications for each student
-          const notificationPromises = studentsSnapshot.docs.map(doc => {
-            const student = doc.data();
-            return addDoc(collection(db, "notifications"), {
-              recipientEmail: student.email,
-              recipientName: student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim(),
-              title: `📢 New Announcement: ${form.title}`,
-              message: form.message.length > 100 ? `${form.message.substring(0, 100)}...` : form.message,
-              type: "announcement",
-              announcementId: announcementRef.id,
-              senderId: currentUser.uid,
-              senderEmail: userEmail,
-              senderName: userName,
-              read: false,
-              createdAt: new Date().toISOString(),
-              priority: form.priority.toLowerCase(),
-              category: form.category,
-              audience: form.audience
-            });
-          });
-          
-          await Promise.all(notificationPromises);
-          console.log(`✅ Announcement notifications sent to ${studentsSnapshot.docs.length} students`);
+          let targetRole = "Student";
+          if (form.audience === "Teacher") {
+            targetRole = "Teacher";
+          } else if (form.audience === "All") {
+            // For "All", we'll send to both students and teachers
+            await sendNotificationsToRole("Student", announcementRef.id, form, currentUser.uid, userEmail, userName);
+            await sendNotificationsToRole("Teacher", announcementRef.id, form, currentUser.uid, userEmail, userName);
+          } else {
+            await sendNotificationsToRole(targetRole, announcementRef.id, form, currentUser.uid, userEmail, userName);
+          }
         } catch (notificationError) {
           console.error('❌ Error sending announcement notifications:', notificationError);
           // Don't fail the entire operation if notifications fail
@@ -165,7 +227,8 @@ export default function Announcements() {
 
       await logActivity({ message: `Announcement posted: ${form.title}`, type: 'add_announcement' });
       setSnackbar({ open: true, message: "Announcement submitted for approval!", severity: "success" });
-      setForm({ title: "", message: "", date: "", category: "General", audience: "All", priority: "Normal", scheduleDate: "", expiryDate: "" });
+      setForm({ title: "", message: "", date: "", audience: "All", scheduleDate: "", expiryDate: "", photo: null });
+      setPhotoPreview(null);
       setFormModalOpen(false);
       fetchAnnouncements();
     } catch (e) {
@@ -575,9 +638,7 @@ export default function Announcements() {
                   title={<Stack direction="row" alignItems="center" spacing={1}>
                     <Typography fontWeight={700}>{a.title}</Typography>
                     {a.pinned && <Chip label="Pinned" color="info" size="small" icon={<PushPinIcon fontSize="small" />} />}
-                    <Chip label={a.category} color="default" size="small" />
                     <Chip label={a.audience} color="secondary" size="small" />
-                    <Chip label={a.priority} color={a.priority === 'Urgent' ? 'error' : a.priority === 'High' ? 'warning' : 'success'} size="small" />
                     {a.completed && <Chip label="Completed" color="success" size="small" />}
                   </Stack>}
                   subheader={a.date ? new Date(a.date).toLocaleDateString() : ''}
@@ -631,6 +692,21 @@ export default function Announcements() {
                 />
                 <CardContent>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{a.message}</Typography>
+                  {a.photoUrl && (
+                    <Box sx={{ mt: 2 }}>
+                      <img
+                        src={a.photoUrl}
+                        alt="Announcement"
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: '400px',
+                          objectFit: 'cover',
+                          borderRadius: '8px',
+                          border: '1px solid #e0e0e0'
+                        }}
+                      />
+                    </Box>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -665,9 +741,7 @@ export default function Announcements() {
                     title={<Stack direction="row" alignItems="center" spacing={1}>
                       <Typography fontWeight={700}>{a.title}</Typography>
                       {a.pinned && <Chip label="Pinned" color="info" size="small" icon={<PushPinIcon fontSize="small" />} />}
-                      <Chip label={a.category} color="default" size="small" />
                       <Chip label={a.audience} color="secondary" size="small" />
-                      <Chip label={a.priority} color={a.priority === 'Urgent' ? 'error' : a.priority === 'High' ? 'warning' : 'success'} size="small" />
                       {a.completed && <Chip label="Completed" color="success" size="small" />}
                     </Stack>}
                     subheader={a.date ? new Date(a.date).toLocaleDateString() : ''}
@@ -688,6 +762,21 @@ export default function Announcements() {
                   />
                   <CardContent>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{a.message}</Typography>
+                    {a.photoUrl && (
+                      <Box sx={{ mt: 2 }}>
+                        <img
+                          src={a.photoUrl}
+                          alt="Announcement"
+                          style={{
+                            maxWidth: '100%',
+                            maxHeight: '300px',
+                            objectFit: 'cover',
+                            borderRadius: '8px',
+                            border: '1px solid #e0e0e0'
+                          }}
+                        />
+                      </Box>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -708,9 +797,7 @@ export default function Announcements() {
                 title={<Stack direction="row" alignItems="center" spacing={1}>
                   <Typography fontWeight={700}>{a.title}</Typography>
                   <Chip label="Completed" color="success" size="small" />
-                  <Chip label={a.category} color="default" size="small" />
                   <Chip label={a.audience} color="secondary" size="small" />
-                  <Chip label={a.priority} color={a.priority === 'Urgent' ? 'error' : a.priority === 'High' ? 'warning' : 'success'} size="small" />
                 </Stack>}
                 subheader={a.completedAt ? new Date(a.completedAt).toLocaleDateString() : a.date ? new Date(a.date).toLocaleDateString() : ''}
                 action={
@@ -738,6 +825,21 @@ export default function Announcements() {
               />
               <CardContent>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{a.message}</Typography>
+                {a.photoUrl && (
+                  <Box sx={{ mt: 2 }}>
+                    <img
+                      src={a.photoUrl}
+                      alt="Announcement"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '300px',
+                        objectFit: 'cover',
+                        borderRadius: '8px',
+                        border: '1px solid #e0e0e0'
+                      }}
+                    />
+                  </Box>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -762,6 +864,21 @@ export default function Announcements() {
               />
               <CardContent>
                 <Typography variant="body2" color="text.secondary">{a.message}</Typography>
+                {a.photoUrl && (
+                  <Box sx={{ mt: 2 }}>
+                    <img
+                      src={a.photoUrl}
+                      alt="Announcement"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '300px',
+                        objectFit: 'cover',
+                        borderRadius: '8px',
+                        border: '1px solid #e0e0e0'
+                      }}
+                    />
+                  </Box>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -786,6 +903,21 @@ export default function Announcements() {
               />
               <CardContent>
                 <Typography variant="body2" color="text.secondary">{a.message}</Typography>
+                {a.photoUrl && (
+                  <Box sx={{ mt: 2 }}>
+                    <img
+                      src={a.photoUrl}
+                      alt="Announcement"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '300px',
+                        objectFit: 'cover',
+                        borderRadius: '8px',
+                        border: '1px solid #e0e0e0'
+                      }}
+                    />
+                  </Box>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -828,6 +960,21 @@ export default function Announcements() {
               />
               <CardContent>
                 <Typography variant="body2" color="text.secondary">{a.message}</Typography>
+                {a.photoUrl && (
+                  <Box sx={{ mt: 2 }}>
+                    <img
+                      src={a.photoUrl}
+                      alt="Announcement"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '300px',
+                        objectFit: 'cover',
+                        borderRadius: '8px',
+                        border: '1px solid #e0e0e0'
+                      }}
+                    />
+                  </Box>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -840,19 +987,76 @@ export default function Announcements() {
           <form onSubmit={handleSubmit}>
             <Stack spacing={2}>
               <TextField label="Title" name="title" value={form.title} onChange={handleChange} required fullWidth />
-              <TextField label="Message" name="message" value={form.message} onChange={handleChange} required fullWidth multiline minRows={3} />
-              <TextField label="Category" name="category" value={form.category} onChange={handleChange} select fullWidth>
-                {categories.map((cat) => <MenuItem key={cat} value={cat}>{cat}</MenuItem>)}
-              </TextField>
+              <TextField label="Message" name="message" value={form.message} onChange={handleChange} required fullWidth multiline minRows={1} />
               <TextField label="Target Audience" name="audience" value={form.audience} onChange={handleChange} select fullWidth>
                 {audiences.map((aud) => <MenuItem key={aud} value={aud}>{aud}</MenuItem>)}
-              </TextField>
-              <TextField label="Priority" name="priority" value={form.priority} onChange={handleChange} select fullWidth>
-                {priorities.map((pri) => <MenuItem key={pri} value={pri}>{pri}</MenuItem>)}
               </TextField>
               <TextField label="Date" name="date" type="date" value={form.date} onChange={handleChange} InputLabelProps={{ shrink: true }} fullWidth />
               <TextField label="Schedule Date" name="scheduleDate" type="datetime-local" value={form.scheduleDate} onChange={handleChange} InputLabelProps={{ shrink: true }} fullWidth />
               <TextField label="Expiry Date" name="expiryDate" type="datetime-local" value={form.expiryDate} onChange={handleChange} InputLabelProps={{ shrink: true }} fullWidth />
+              
+              {/* Photo Upload Section - Moved to bottom */}
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                  Attach Photo (Optional)
+                </Typography>
+                <input
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  id="photo-upload"
+                  type="file"
+                  onChange={handlePhotoChange}
+                />
+                <label htmlFor="photo-upload">
+                  <Button
+                    variant="outlined"
+                    component="span"
+                    startIcon={<CloudUpload />}
+                    sx={{
+                      borderColor: '#800000',
+                      color: '#800000',
+                      '&:hover': {
+                        borderColor: '#800000',
+                        backgroundColor: 'rgba(128, 0, 0, 0.04)'
+                      }
+                    }}
+                  >
+                    Choose Photo
+                  </Button>
+                </label>
+                
+                {photoPreview && (
+                  <Box sx={{ mt: 2, position: 'relative', display: 'inline-block' }}>
+                    <img
+                      src={photoPreview}
+                      alt="Preview"
+                      style={{
+                        maxWidth: '300px',
+                        maxHeight: '300px',
+                        objectFit: 'cover',
+                        borderRadius: '8px',
+                        border: '2px solid #800000'
+                      }}
+                    />
+                    <IconButton
+                      onClick={removePhoto}
+                      sx={{
+                        position: 'absolute',
+                        top: -10,
+                        right: -10,
+                        backgroundColor: 'error.main',
+                        color: 'white',
+                        '&:hover': {
+                          backgroundColor: 'error.dark'
+                        }
+                      }}
+                      size="small"
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Box>
+                )}
+              </Box>
               <DialogActions>
                 <Button 
                   onClick={() => setFormModalOpen(false)} 
@@ -899,11 +1103,24 @@ export default function Announcements() {
             <Box>
               <Typography variant="h6" fontWeight={700}>{viewAnnouncement.title}</Typography>
               <Divider sx={{ my: 1 }} />
-              <Typography><b>Category:</b> {viewAnnouncement.category}</Typography>
               <Typography><b>Audience:</b> {viewAnnouncement.audience}</Typography>
-              <Typography><b>Priority:</b> {viewAnnouncement.priority}</Typography>
               <Typography><b>Date:</b> {viewAnnouncement.date ? new Date(viewAnnouncement.date).toLocaleDateString() : ''}</Typography>
               <Typography sx={{ mt: 2 }}>{viewAnnouncement.message}</Typography>
+              {viewAnnouncement.photoUrl && (
+                <Box sx={{ mt: 2 }}>
+                  <img
+                    src={viewAnnouncement.photoUrl}
+                    alt="Announcement"
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '500px',
+                      objectFit: 'cover',
+                      borderRadius: '8px',
+                      border: '1px solid #e0e0e0'
+                    }}
+                  />
+                </Box>
+              )}
             </Box>
           )}
         </DialogContent>
@@ -917,15 +1134,9 @@ export default function Announcements() {
           {editAnnouncement && (
             <Box component="form" onSubmit={e => { e.preventDefault(); handleEditSave(editAnnouncement); }}>
               <TextField label="Title" value={editAnnouncement.title} onChange={e => setEditAnnouncement({ ...editAnnouncement, title: e.target.value })} fullWidth sx={{ mb: 1 }} />
-              <TextField label="Message" value={editAnnouncement.message} onChange={e => setEditAnnouncement({ ...editAnnouncement, message: e.target.value })} fullWidth multiline minRows={3} sx={{ mb: 1 }} />
-              <TextField label="Category" value={editAnnouncement.category} onChange={e => setEditAnnouncement({ ...editAnnouncement, category: e.target.value })} select fullWidth sx={{ mb: 1 }}>
-                {categories.map((cat) => <MenuItem key={cat} value={cat}>{cat}</MenuItem>)}
-              </TextField>
+              <TextField label="Message" value={editAnnouncement.message} onChange={e => setEditAnnouncement({ ...editAnnouncement, message: e.target.value })} fullWidth multiline minRows={1} sx={{ mb: 1 }} />
               <TextField label="Audience" value={editAnnouncement.audience} onChange={e => setEditAnnouncement({ ...editAnnouncement, audience: e.target.value })} select fullWidth sx={{ mb: 1 }}>
                 {audiences.map((aud) => <MenuItem key={aud} value={aud}>{aud}</MenuItem>)}
-              </TextField>
-              <TextField label="Priority" value={editAnnouncement.priority} onChange={e => setEditAnnouncement({ ...editAnnouncement, priority: e.target.value })} select fullWidth sx={{ mb: 1 }}>
-                {priorities.map((pri) => <MenuItem key={pri} value={pri}>{pri}</MenuItem>)}
               </TextField>
               <TextField label="Date" type="date" value={editAnnouncement.date} onChange={e => setEditAnnouncement({ ...editAnnouncement, date: e.target.value })} InputLabelProps={{ shrink: true }} fullWidth sx={{ mb: 1 }} />
               <DialogActions>

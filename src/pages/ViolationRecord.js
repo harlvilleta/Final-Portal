@@ -770,10 +770,10 @@ School Administration
             <Grid item xs={12} sm={2}>
               <TextField label="Classification" name="classification" value={form.classification} onChange={handleFormChange} select fullWidth required helperText="Select classification">
                 <MenuItem value="">Select</MenuItem>
-                <MenuItem value="Minor">Minor</MenuItem>
-                <MenuItem value="Major">Major</MenuItem>
-                <MenuItem value="Serious">Serious</MenuItem>
-                <MenuItem value="Grave">Grave</MenuItem>
+                <MenuItem value="Academic">Academic</MenuItem>
+                <MenuItem value="Behavioral">Behavioral</MenuItem>
+                <MenuItem value="Policy/Rules">Policy/Rules</MenuItem>
+                <MenuItem value="Other">Other</MenuItem>
               </TextField>
             </Grid>
             <Grid item xs={12} sm={2}>
@@ -1409,10 +1409,10 @@ School Administration
               <TextField label="Student ID" value={editViolation.studentId} onChange={e => setEditViolation({ ...editViolation, studentId: e.target.value })} fullWidth sx={{ mb: 1 }} />
               <TextField label="Violation" value={editViolation.violation} onChange={e => setEditViolation({ ...editViolation, violation: e.target.value })} fullWidth sx={{ mb: 1 }} />
               <TextField label="Classification" value={editViolation.classification} onChange={e => setEditViolation({ ...editViolation, classification: e.target.value })} select fullWidth sx={{ mb: 1 }}>
-                <MenuItem value="Minor">Minor</MenuItem>
-                <MenuItem value="Major">Major</MenuItem>
-                <MenuItem value="Serious">Serious</MenuItem>
-                <MenuItem value="Grave">Grave</MenuItem>
+                <MenuItem value="Academic">Academic</MenuItem>
+                <MenuItem value="Behavioral">Behavioral</MenuItem>
+                <MenuItem value="Policy/Rules">Policy/Rules</MenuItem>
+                <MenuItem value="Other">Other</MenuItem>
               </TextField>
               <TextField label="Severity" value={editViolation.severity} onChange={e => setEditViolation({ ...editViolation, severity: e.target.value })} select fullWidth sx={{ mb: 1 }}>
                 <MenuItem value="Low">Low</MenuItem>

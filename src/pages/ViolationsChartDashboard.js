@@ -85,23 +85,6 @@ export default function ViolationsChartDashboard() {
   
   const chartData = useMemo(() => monthlyData, [monthlyData]);
 
-  if (loading) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <IconButton onClick={handleBack} sx={{ mr: 2 }}>
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000' }}>
-            Violations Dashboard
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-          <CircularProgress size={60} />
-        </Box>
-      </Box>
-    );
-  }
 
   if (error) {
     return (

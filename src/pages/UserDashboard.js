@@ -156,7 +156,7 @@ function UserOverview({ currentUser }) {
     };
   }, [currentUser]);
 
-  const recentViolations = userViolations?.slice(0, 3) || [];
+  const recentAnnouncements = announcements?.slice(0, 3) || [];
   const recentNotifications = notifications?.slice(0, 5) || [];
 
   // Get user display info
@@ -210,113 +210,6 @@ function UserOverview({ currentUser }) {
       </Box>
 
 
-      {/* Statistics Cards */}
-      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 1 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            p: 2, 
-            boxShadow: 3, 
-            borderRadius: 2,
-            borderLeft: '4px solid #800000',
-            background: 'transparent',
-            cursor: 'pointer',
-            transition: 'box-shadow 0.2s, background 0.2s',
-            '&:hover': {
-              boxShadow: 6,
-              background: 'transparent',
-            },
-          }}>
-            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
-                {stats.totalViolations.toLocaleString()}
-              </Typography>
-              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
-                Total Violations
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card onClick={() => navigate('/announcements')} sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            p: 2, 
-            boxShadow: 3, 
-            borderRadius: 2,
-            borderLeft: '4px solid #800000',
-            background: 'transparent',
-            cursor: 'pointer',
-            transition: 'box-shadow 0.2s, background 0.2s',
-            '&:hover': {
-              boxShadow: 6,
-              background: 'transparent',
-            },
-          }}>
-            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
-                {announcementCount.toLocaleString()}
-              </Typography>
-              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
-                Announcements
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            p: 2, 
-            boxShadow: 3, 
-            borderRadius: 2,
-            borderLeft: '4px solid #800000',
-            background: 'transparent',
-            cursor: 'pointer',
-            transition: 'box-shadow 0.2s, background 0.2s',
-            '&:hover': {
-              boxShadow: 6,
-              background: 'transparent',
-            },
-          }}>
-            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
-                {stats.pendingViolations.toLocaleString()}
-              </Typography>
-              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
-                Pending
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            p: 2, 
-            boxShadow: 3, 
-            borderRadius: 2,
-            borderLeft: '4px solid #800000',
-            background: 'transparent',
-            cursor: 'pointer',
-            transition: 'box-shadow 0.2s, background 0.2s',
-            '&:hover': {
-              boxShadow: 6,
-              background: 'transparent',
-            },
-          }}>
-            <CardContent sx={{ flex: 1, p: '8px !important', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
-                {stats.unreadNotifications.toLocaleString()}
-              </Typography>
-              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
-                Unread Notifications
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
 
       {/* Main Content */}
       <Grid container spacing={3}>
@@ -422,31 +315,31 @@ function UserOverview({ currentUser }) {
           </Card>
         </Grid>
 
-        {/* Recent Violations */}
+        {/* Active Announcements */}
         <Grid item xs={12} lg={6}>
           <Card sx={{ 
             borderRadius: 2,
             boxShadow: 3,
             height: 'fit-content',
-            borderLeft: '4px solid #800000',
+            borderLeft: '4px solid #1976d2',
             bgcolor: theme.palette.mode === 'dark' ? '#1a1a1a' : 'transparent'
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#2d3436' }}>
-                  Recent Violations
+                  Active Announcements
                 </Typography>
                 <Button 
                   size="small" 
                   component={Link} 
-                  to="/violations"
+                  to="/announcements"
                   sx={{ 
                     textTransform: 'none',
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
-                    borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#1976d2',
+                    borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#1976d2',
                     '&:hover': {
-                      borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#6b0000',
-                      backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#80000010'
+                      borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#1565c0',
+                      backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#1976d210'
                     }
                   }}
                   variant="outlined"
@@ -455,51 +348,50 @@ function UserOverview({ currentUser }) {
                 </Button>
               </Box>
               
-              {recentViolations.length > 0 ? (
+              {recentAnnouncements.length > 0 ? (
                 <List>
-                  {recentViolations.map((violation, index) => (
-                    <React.Fragment key={violation.id}>
+                  {recentAnnouncements.map((announcement, index) => (
+                    <React.Fragment key={announcement.id}>
                       <ListItem sx={{ px: 0, py: 1 }}>
                         <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: 'error.main', width: 40, height: 40 }}>
-                            <Warning sx={{ fontSize: 20 }} />
+                          <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
+                            <Announcement sx={{ fontSize: 20 }} />
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
                           primary={
                             <Typography variant="subtitle2" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>
-                              {violation.violation}
+                              {announcement.title}
                             </Typography>
                           }
                           secondary={
                             <Box>
                               <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 0.5 }}>
-                                Date: {violation.date} • Classification: {violation.classification}
-                                {violation.severity && ` • Severity: ${violation.severity}`}
+                                {announcement.message?.substring(0, 100)}{announcement.message?.length > 100 ? '...' : ''}
                               </Typography>
                               <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
-                                {violation.createdAt ? new Date(violation.createdAt).toLocaleDateString() : violation.date}
+                                {announcement.createdAt ? new Date(announcement.createdAt).toLocaleDateString() : 'Recently'}
                               </Typography>
                             </Box>
                           }
                         />
                         <Chip 
-                          label={violation.status || 'Pending'} 
+                          label={announcement.priority || 'Normal'} 
                           size="small"
-                          color={violation.status === 'Solved' ? 'success' : 
-                                 violation.status === 'Denied' ? 'error' : 'warning'}
+                          color={announcement.priority === 'High' ? 'error' : 
+                                 announcement.priority === 'Medium' ? 'warning' : 'default'}
                           sx={{ fontWeight: 500 }}
                         />
                       </ListItem>
-                      {index < recentViolations.length - 1 && <Divider />}
+                      {index < recentAnnouncements.length - 1 && <Divider />}
                     </React.Fragment>
                   ))}
                 </List>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <Warning sx={{ fontSize: 48, color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 1 }} />
+                  <Announcement sx={{ fontSize: 48, color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 1 }} />
                   <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
-                    No violations recorded yet
+                    No announcements available
                   </Typography>
                 </Box>
               )}
