@@ -416,59 +416,57 @@ export default function TeacherRequest() {
         </Grid>
 
         {/* Search Bar */}
-        <Paper sx={{ p: 2, mb: 3, mt: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <TextField
-              placeholder="Search by teacher name or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              size="small"
-              sx={{
-                maxWidth: 400,
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: '#800000',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#800000',
-                  },
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, mt: 3 }}>
+          <TextField
+            placeholder="Search by teacher name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            size="small"
+            sx={{
+              maxWidth: 400,
+              '& .MuiOutlinedInput-root': {
+                '&:hover fieldset': {
+                  borderColor: '#800000',
                 },
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search color="action" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            {searchTerm && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => setSearchTerm('')}
-                sx={{
-                  minWidth: 'auto',
-                  px: 2,
-                  color: '#666',
-                  borderColor: '#ddd',
-                  '&:hover': {
-                    bgcolor: '#800000',
-                    color: '#fff',
-                    borderColor: '#800000'
-                  }
-                }}
-              >
-                Clear
-              </Button>
-            )}
-          </Box>
+                '&.Mui-focused fieldset': {
+                  borderColor: '#800000',
+                },
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search color="action" />
+                </InputAdornment>
+              ),
+            }}
+          />
           {searchTerm && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Showing {filteredRequests.length} result(s) for "{searchTerm}"
-            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setSearchTerm('')}
+              sx={{
+                minWidth: 'auto',
+                px: 2,
+                color: '#666',
+                borderColor: '#ddd',
+                '&:hover': {
+                  bgcolor: '#800000',
+                  color: '#fff',
+                  borderColor: '#800000'
+                }
+              }}
+            >
+              Clear
+            </Button>
           )}
-        </Paper>
+        </Box>
+        {searchTerm && (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Showing {filteredRequests.length} result(s) for "{searchTerm}"
+          </Typography>
+        )}
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
@@ -522,9 +520,6 @@ export default function TeacherRequest() {
                         <Box>
                           <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.875rem', lineHeight: 1.2 }}>
                             {request.fullName}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}>
-                            ID: {request.userId?.substring(0, 8)}...
                           </Typography>
                         </Box>
                       </Box>

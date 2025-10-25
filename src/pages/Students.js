@@ -5,11 +5,12 @@ import {
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Stack, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText,
   IconButton, Tooltip, Chip, InputAdornment, CircularProgress, useTheme, Tabs, Tab
 } from "@mui/material";
-import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete, Search, CloudUpload, PictureAsPdf } from "@mui/icons-material";
+import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete, Search, CloudUpload, PictureAsPdf, Close, ArrowBack } from "@mui/icons-material";
 import { db, storage, logActivity } from "../firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, where, query, onSnapshot, orderBy, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { validateStudentId } from "../utils/studentValidation";
+import StudentImport from "./StudentImport";
 
 const courses = ["BSIT", "BSBA", "BSCRIM", "BSHTM", "BEED", "BSED", "BSHM"];
 const years = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
@@ -1420,7 +1421,7 @@ function CourseDashboard({
                 <TableCell sx={{ 
                   bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#1976d2', // Blue color for Student
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '140px',
@@ -1631,6 +1632,7 @@ function StudentList({
   const [courseFilter, setCourseFilter] = useState('all'); // 'all' or specific course name
   const [openViolation, setOpenViolation] = useState(false);
   const [activeTab, setActiveTab] = useState(0); // 0: All Students, 1: Unregistered, 2: Registered
+  const [openImportDialog, setOpenImportDialog] = useState(false);
   const [violation, setViolation] = useState({ 
     violation: "", 
     classification: "", 
@@ -1837,21 +1839,6 @@ function StudentList({
   const availableCourses = useMemo(() => {
     const courses = [...new Set(students.map(student => student.course).filter(course => course && course.trim() !== ''))];
     return courses.sort();
-  }, [students]);
-
-
-  const handleExport = useCallback(() => {
-    const csvRows = [
-      ["ID", "First Name", "Last Name", "Course", "Year", "Section"],
-      ...students.map(s => [
-        s.id, s.firstName, s.lastName, s.course, s.year, s.section
-      ])
-    ];
-    const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
-    const link = document.createElement("a");
-    link.href = csvContent;
-    link.download = "students.csv";
-    link.click();
   }, [students]);
 
 
@@ -2422,8 +2409,8 @@ School Administration
           </Button>
           <Button 
             variant="outlined" 
-            onClick={handleExport} 
-            disabled={students.length === 0}
+            onClick={() => setOpenImportDialog(true)}
+            startIcon={<CloudUpload />}
             sx={{ 
               bgcolor: '#ffffff', 
               color: '#000000', 
@@ -2440,14 +2427,12 @@ School Administration
                 borderColor: '#800000',
                 boxShadow: 'none'
               },
-              '&:disabled': {
-                color: '#cccccc',
-                borderColor: '#999999',
-                bgcolor: '#999999'
+              '& .MuiSvgIcon-root': {
+                fontSize: '0.875rem'
               }
             }}
           >
-          Export
+          Import
           </Button>
           <Button 
             variant="outlined" 
@@ -2528,45 +2513,6 @@ School Administration
               <MenuItem key={course} value={course}>{course}</MenuItem>
             ))}
           </TextField>
-          <TextField 
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            size="small"
-            placeholder="Search by name, course, ID, year, or section..."
-            sx={{ 
-              width: 350,
-              '& .MuiOutlinedInput-root': {
-                '&:hover fieldset': {
-                  borderColor: '#1976d2',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#1976d2',
-                  borderWidth: 2,
-                },
-              }
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search sx={{ fontSize: 18, color: search.trim() ? '#1976d2' : 'text.secondary' }} />
-                </InputAdornment>
-              ),
-              endAdornment: search.trim() && (
-                <InputAdornment position="end">
-                  <IconButton
-                    size="small"
-                    onClick={() => setSearch("")}
-                    sx={{ 
-                      color: 'text.secondary',
-                      '&:hover': { color: '#1976d2' }
-                    }}
-                  >
-                    ✕
-                  </IconButton>
-                </InputAdornment>
-              )
-            }}
-          />
         </Stack>
       </Stack>
       
@@ -2668,6 +2614,59 @@ School Administration
         }}>
           <Table stickyHeader>
             <TableHead>
+              {/* Search Bar Row */}
+              <TableRow>
+                <TableCell 
+                  colSpan={6} 
+                  sx={{ 
+                    bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#fafafa',
+                    padding: '12px 16px',
+                    borderBottom: 'none'
+                  }}
+                >
+                  <TextField 
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    size="small"
+                    placeholder="Search by name, course, ID, year, or section..."
+                    sx={{ 
+                      width: '300px',
+                      bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#ffffff',
+                      '& .MuiOutlinedInput-root': {
+                        '&:hover fieldset': {
+                          borderColor: '#1976d2',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#1976d2',
+                          borderWidth: 2,
+                        },
+                      }
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search sx={{ fontSize: 18, color: search.trim() ? '#1976d2' : 'text.secondary' }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: search.trim() && (
+                        <InputAdornment position="end">
+                          <IconButton
+                            size="small"
+                            onClick={() => setSearch("")}
+                            sx={{ 
+                              color: 'text.secondary',
+                              '&:hover': { color: '#1976d2' }
+                            }}
+                          >
+                            ✕
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                </TableCell>
+              </TableRow>
+              {/* Header Row */}
               <TableRow>
                 <TableCell sx={{ 
                   bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
@@ -2799,11 +2798,7 @@ School Administration
                         fontFamily: 'monospace',
                         cursor: 'help'
                       }}>
-                        {student.studentId || student.id ? 
-                          (student.studentId || student.id).length > 10 ? 
-                            `${(student.studentId || student.id).substring(0, 10)}...` : 
-                            (student.studentId || student.id) : 
-                          'N/A'}
+                        {student.studentId || student.id || 'N/A'}
                       </Typography>
                     </Tooltip>
                   </TableCell>
@@ -2900,7 +2895,16 @@ School Administration
         </TableContainer>
       )}
       <Dialog open={openViolation} onClose={() => setOpenViolation(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Add Violation for {currentStudent && `${currentStudent.firstName} ${currentStudent.lastName}`}</DialogTitle>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">
+              Add Violation for {currentStudent && `${currentStudent.firstName} ${currentStudent.lastName}`}
+            </Typography>
+            <IconButton onClick={() => setOpenViolation(false)} size="small">
+              <Close />
+            </IconButton>
+          </Box>
+        </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12} sm={6}>
@@ -3057,6 +3061,14 @@ School Administration
           </Button>
         </DialogActions>
       </Dialog>
+      
+      {/* Student Import Dialog */}
+      <StudentImport 
+        open={openImportDialog} 
+        onClose={() => setOpenImportDialog(false)}
+        onImportSuccess={handleRefresh}
+      />
+      
       <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
         <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
@@ -3088,7 +3100,7 @@ function EditStudentForm({ student, onClose, onSuccess }) {
   const theme = useTheme();
   const [formKey, setFormKey] = useState(0); // Force re-render key
   const [profile, setProfile] = useState({
-    id: student.id || "",
+    id: student.studentId || student.id || "",
     lastName: student.lastName || "",
     firstName: student.firstName || "",
     middleInitial: student.middleInitial || "",
@@ -3155,7 +3167,7 @@ function EditStudentForm({ student, onClose, onSuccess }) {
   const resetForm = () => {
     console.log('🔄 Resetting EditStudentForm');
     setProfile({
-      id: student.id || "",
+      id: student.studentId || student.id || "",
       lastName: student.lastName || "",
       firstName: student.firstName || "",
       middleInitial: student.middleInitial || "",
@@ -3401,7 +3413,13 @@ function EditStudentForm({ student, onClose, onSuccess }) {
             </TextField>
           </Grid>
           <Grid item xs={12} sm={4}>
-            <TextField fullWidth label="Section" name="section" value={profile.section} onChange={handleChange} />
+            <TextField fullWidth label="Section" name="section" value={profile.section} onChange={handleChange} select>
+              <MenuItem value="A">A</MenuItem>
+              <MenuItem value="B">B</MenuItem>
+              <MenuItem value="C">C</MenuItem>
+              <MenuItem value="D">D</MenuItem>
+              <MenuItem value="E">E</MenuItem>
+            </TextField>
           </Grid>
           <Grid item xs={12}>
             <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>Profile Image</Typography>
@@ -3523,7 +3541,14 @@ export default function Students() {
       </Routes>
       {/* Add Student Modal */}
       <Dialog open={openAddStudent} onClose={() => setOpenAddStudent(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Add Student</DialogTitle>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">Add Student</Typography>
+            <IconButton onClick={() => setOpenAddStudent(false)} size="small">
+              <Close />
+            </IconButton>
+          </Box>
+        </DialogTitle>
         <DialogContent>
           <AddStudent onClose={() => setOpenAddStudent(false)} isModal={true} />
         </DialogContent>
@@ -3531,8 +3556,15 @@ export default function Students() {
       {/* Violation Record Modal */}
       <Dialog open={openViolationRecord} onClose={() => setOpenViolationRecord(false)} maxWidth="lg" fullWidth>
         <DialogTitle>
-          Violation Record for {currentStudent && `${currentStudent.firstName} ${currentStudent.lastName}`} 
-          {violationRecords.length > 0 && ` (${violationRecords.length} violation${violationRecords.length > 1 ? 's' : ''})`}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">
+              Violation Record for {currentStudent && `${currentStudent.firstName} ${currentStudent.lastName}`} 
+              {violationRecords.length > 0 && ` (${violationRecords.length} violation${violationRecords.length > 1 ? 's' : ''})`}
+            </Typography>
+            <IconButton onClick={() => setOpenViolationRecord(false)} size="small">
+              <Close />
+            </IconButton>
+          </Box>
         </DialogTitle>
         <DialogContent>
           {violationRecords.length === 0 ? (
@@ -3641,7 +3673,14 @@ export default function Students() {
         }}
       >
         <DialogTitle sx={{ pb: 1 }}>
-          Student Details - {studentToView && `${studentToView.firstName} ${studentToView.lastName}`}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">
+              Student Details - {studentToView && `${studentToView.firstName} ${studentToView.lastName}`}
+            </Typography>
+            <IconButton onClick={() => setOpenViewDetails(false)} size="small">
+              <Close />
+            </IconButton>
+          </Box>
         </DialogTitle>
         <DialogContent 
           sx={{ 
@@ -3881,7 +3920,14 @@ export default function Students() {
       {/* Edit Student Modal */}
       <Dialog open={openEditStudent} onClose={() => setOpenEditStudent(false)} maxWidth="md" fullWidth>
         <DialogTitle>
-          Edit Student - {studentToEdit && `${studentToEdit.firstName} ${studentToEdit.lastName}`}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">
+              Edit Student - {studentToEdit && `${studentToEdit.firstName} ${studentToEdit.lastName}`}
+            </Typography>
+            <IconButton onClick={() => setOpenEditStudent(false)} size="small">
+              <Close />
+            </IconButton>
+          </Box>
         </DialogTitle>
         <DialogContent>
           {studentToEdit && (
@@ -3905,7 +3951,14 @@ export default function Students() {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Violation Evidence Image</DialogTitle>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">Violation Evidence Image</Typography>
+            <IconButton onClick={() => setOpenViolationImagePreview(false)} size="small">
+              <Close />
+            </IconButton>
+          </Box>
+        </DialogTitle>
         <DialogContent>
           {previewViolationImage && (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}>

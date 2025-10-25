@@ -97,7 +97,7 @@ export default function Sidebar() {
       sx={{
         width: 230,
         flexShrink: 0,
-        [`& .MuiDrawer-paper`]: { width: 230, boxSizing: "border-box", bgcolor: "#2d3436", color: "#fff", display: 'flex', flexDirection: 'column', overflowX: 'hidden' }
+        [`& .MuiDrawer-paper`]: { width: 230, boxSizing: "border-box", bgcolor: "#8B0000", color: "#fff", display: 'flex', flexDirection: 'column', overflowX: 'hidden' }
       }}
     >
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -144,10 +144,10 @@ export default function Sidebar() {
                 mb: 1,
                 mt: index === 0 ? 0.5 : 0, // Minimal top margin for Overview
                 borderRadius: 2,
-                bgcolor: isItemSelected(item) ? '#636e72' : 'transparent',
+                bgcolor: isItemSelected(item) ? '#A52A2A' : 'transparent',
                 color: isItemSelected(item) ? '#fff' : '#e8e8e8',
                 '&:hover': {
-                  bgcolor: isItemSelected(item) ? '#636e72' : '#4a5568',
+                  bgcolor: isItemSelected(item) ? '#A52A2A' : '#8B0000',
                   transform: 'translateX(4px)',
                   boxShadow: 2,
                   color: '#fff'
@@ -181,10 +181,10 @@ export default function Sidebar() {
                         pl: 4,
                         borderRadius: 2,
                         mb: 0.5,
-                        bgcolor: isSubItemSelected(subItem) ? '#636e72' : 'transparent',
+                        bgcolor: isSubItemSelected(subItem) ? '#A52A2A' : 'transparent',
                         color: isSubItemSelected(subItem) ? '#fff' : '#e8e8e8',
                         '&:hover': {
-                          bgcolor: isSubItemSelected(subItem) ? '#636e72' : '#4a5568',
+                          bgcolor: isSubItemSelected(subItem) ? '#A52A2A' : '#8B0000',
                           transform: 'translateX(4px)',
                           boxShadow: 2,
                           color: '#fff'

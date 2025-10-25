@@ -77,6 +77,9 @@ export default function TeacherDashboard() {
         } catch (error) {
           console.error('Error fetching user profile:', error);
         }
+      } else {
+        // If no user, set loading to false immediately
+        setLoading(false);
       }
     });
 
@@ -84,15 +87,50 @@ export default function TeacherDashboard() {
   }, []);
 
   useEffect(() => {
-    if (!currentUser?.email) return;
+    if (!currentUser?.email) {
+      setLoading(false);
+      return;
+    }
+
+    let dataLoadedCount = 0;
+    const totalDataSources = 4; // violations, announcements, notifications, meetings
+    let hasSetLoading = false;
+
+    const checkAndSetLoading = () => {
+      dataLoadedCount++;
+      if (dataLoadedCount >= totalDataSources && !hasSetLoading) {
+        hasSetLoading = true;
+        setLoading(false);
+      }
+    };
+
+    // Add timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      if (!hasSetLoading) {
+        hasSetLoading = true;
+        setLoading(false);
+        console.log('Loading timeout reached, dashboard will display with available data');
+      }
+    }, 10000); // 10 second timeout
+
+    // Fallback: Set loading to false after a shorter timeout if no data loads
+    const fallbackTimeout = setTimeout(() => {
+      if (!hasSetLoading) {
+        hasSetLoading = true;
+        setLoading(false);
+        console.log('Fallback timeout: Dashboard loading completed with partial data');
+      }
+    }, 5000); // 5 second fallback
 
     // Fetch violations
     const violationsQuery = query(collection(db, 'violations'));
     const violationsUnsubscribe = onSnapshot(violationsQuery, (snapshot) => {
       const violationsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setViolations(violationsData);
+      checkAndSetLoading();
     }, (error) => {
       console.error('Error fetching violations:', error);
+      checkAndSetLoading();
     });
 
     // Fetch announcements
@@ -106,8 +144,10 @@ export default function TeacherDashboard() {
         return bd - ad;
       });
       setAnnouncements(announcementsData);
+      checkAndSetLoading();
     }, (error) => {
       console.error('Error fetching announcements:', error);
+      checkAndSetLoading();
     });
 
     // Fetch notifications
@@ -118,8 +158,10 @@ export default function TeacherDashboard() {
     const notificationsUnsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
       const notificationsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setNotifications(notificationsData);
+      checkAndSetLoading();
     }, (error) => {
       console.error('Error fetching notifications:', error);
+      checkAndSetLoading();
     });
 
     // Meetings count where teacher is involved
@@ -140,6 +182,10 @@ export default function TeacherDashboard() {
           idSet.clear();
           local.forEach(id => idSet.add(id));
           setMeetingsCount(idSet.size);
+          checkAndSetLoading();
+        }, (error) => {
+          console.error('Error fetching meetings (participants):', error);
+          checkAndSetLoading();
         });
       }
 
@@ -193,11 +239,12 @@ export default function TeacherDashboard() {
 
     } catch (e) {
       console.error('Error setting up meetings listeners:', e);
+      checkAndSetLoading();
     }
 
-    setLoading(false);
-
     return () => {
+      clearTimeout(loadingTimeout);
+      clearTimeout(fallbackTimeout);
       violationsUnsubscribe();
       announcementsUnsubscribe();
       notificationsUnsubscribe();

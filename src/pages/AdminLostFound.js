@@ -100,6 +100,13 @@ export default function AdminLostFound() {
   const [feedSearch, setFeedSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState({ type: null, status: null });
   const [itemTypeFilter, setItemTypeFilter] = useState('all'); // 'all', 'lost', 'found'
+  const [resolveModal, setResolveModal] = useState({ open: false, item: null, type: '' });
+  const [resolveForm, setResolveForm] = useState({
+    claimedBy: '',
+    contactNumber: '',
+    address: '',
+    notes: ''
+  });
 
   // Combine all items for feed display
   useEffect(() => {
@@ -428,14 +435,33 @@ export default function AdminLostFound() {
   };
 
 
-  const handleResolve = async (type, id) => {
+  const handleResolveClick = (type, item) => {
+    setResolveModal({ open: true, item, type });
+    setResolveForm({
+      claimedBy: item.claimedBy || '',
+      contactNumber: item.contactNumber || '',
+      address: item.address || '',
+      notes: item.resolutionNotes || ''
+    });
+  };
+
+  const handleResolveSubmit = async () => {
+    if (!resolveForm.claimedBy.trim()) {
+      setSnackbar({ open: true, message: 'Please enter the name of the person claiming the item', severity: 'error' });
+      return;
+    }
+
     try {
-      await updateDoc(doc(db, type, id), { 
+      await updateDoc(doc(db, resolveModal.type, resolveModal.item.id), { 
         resolved: true,
-        resolvedAt: new Date().toISOString()
+        resolvedAt: new Date().toISOString(),
+        claimedBy: resolveForm.claimedBy,
+        contactNumber: resolveForm.contactNumber,
+        address: resolveForm.address,
+        resolutionNotes: resolveForm.notes
       });
       
-      // Data will be automatically updated by real-time listeners
+      setResolveModal({ open: false, item: null, type: '' });
       setSnackbar({ open: true, message: 'Item marked as resolved successfully!', severity: 'success' });
     } catch (err) {
       setSnackbar({ open: true, message: 'Failed to resolve item: ' + err.message, severity: 'error' });
@@ -1039,10 +1065,13 @@ export default function AdminLostFound() {
                         {!item.resolved && (
                           <Chip label="Active" color="warning" size="small" sx={{ fontSize: '0.65rem', height: 20 }} />
                         )}
+                        {item.resolved && (
+                          <Chip label="Resolved" color="success" size="small" sx={{ fontSize: '0.65rem', height: 20 }} />
+                        )}
                         <Button
                           size="small"
                           startIcon={<CheckCircle sx={{ fontSize: '0.75rem' }} />}
-                          onClick={() => handleResolve('lost_items', item.id)}
+                          onClick={() => handleResolveClick('lost_items', item)}
                           sx={{ 
                             color: item.resolved ? '#2e7d32' : (theme.palette.mode === 'dark' ? '#cccccc' : '#333333'), 
                             '&:hover': { color: '#2e7d32' },
@@ -1051,10 +1080,78 @@ export default function AdminLostFound() {
                             px: 1
                           }}
                         >
-                          Resolve
+                          {item.resolved ? 'View Details' : 'Resolve'}
                         </Button>
                       </Box>
                     </Box>
+                    
+                    {/* Resolution Details */}
+                    {item.resolved && (item.claimedBy || item.contactNumber || item.address) && (
+                      <Box sx={{ mt: 1, p: 1.5, bgcolor: theme.palette.mode === 'dark' ? 'rgba(46, 125, 50, 0.1)' : 'rgba(46, 125, 50, 0.05)', borderRadius: 1, border: '1px solid rgba(46, 125, 50, 0.2)' }}>
+                        <Typography variant="subtitle2" sx={{ 
+                          mb: 1, 
+                          color: theme.palette.mode === 'dark' ? '#4caf50' : '#2e7d32',
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                          letterSpacing: '0.01em'
+                        }}>
+                          Resolution Details
+                        </Typography>
+                        {item.claimedBy && (
+                          <Typography variant="caption" sx={{ 
+                            display: 'block',
+                            color: theme.palette.mode === 'dark' ? '#d0d0d0' : '#444444',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            mb: 0.5
+                          }}>
+                            <strong>Claimed by:</strong> {item.claimedBy}
+                          </Typography>
+                        )}
+                        {item.contactNumber && (
+                          <Typography variant="caption" sx={{ 
+                            display: 'block',
+                            color: theme.palette.mode === 'dark' ? '#d0d0d0' : '#444444',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            mb: 0.5
+                          }}>
+                            <strong>Contact:</strong> {item.contactNumber}
+                          </Typography>
+                        )}
+                        {item.address && (
+                          <Typography variant="caption" sx={{ 
+                            display: 'block',
+                            color: theme.palette.mode === 'dark' ? '#d0d0d0' : '#444444',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            mb: 0.5
+                          }}>
+                            <strong>Address:</strong> {item.address}
+                          </Typography>
+                        )}
+                        {item.resolutionNotes && (
+                          <Typography variant="caption" sx={{ 
+                            display: 'block',
+                            color: theme.palette.mode === 'dark' ? '#d0d0d0' : '#444444',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            mb: 0.5
+                          }}>
+                            <strong>Notes:</strong> {item.resolutionNotes}
+                          </Typography>
+                        )}
+                        <Typography variant="caption" sx={{ 
+                          display: 'block',
+                          color: theme.palette.mode === 'dark' ? '#a0a0a0' : '#666666', 
+                          fontSize: '0.65rem',
+                          fontWeight: 500,
+                          letterSpacing: '0.02em'
+                        }}>
+                          Resolved on: {new Date(item.resolvedAt).toLocaleString()}
+                        </Typography>
+                      </Box>
+                    )}
                   </Paper>
                 ))}
               </Box>
@@ -1281,10 +1378,13 @@ export default function AdminLostFound() {
                         {!item.resolved && (
                           <Chip label="Active" color="warning" size="small" sx={{ fontSize: '0.65rem', height: 20 }} />
                         )}
+                        {item.resolved && (
+                          <Chip label="Resolved" color="success" size="small" sx={{ fontSize: '0.65rem', height: 20 }} />
+                        )}
                         <Button
                           size="small"
                           startIcon={<CheckCircle sx={{ fontSize: '0.75rem' }} />}
-                          onClick={() => handleResolve('found_items', item.id)}
+                          onClick={() => handleResolveClick('found_items', item)}
                           sx={{ 
                             color: item.resolved ? '#2e7d32' : (theme.palette.mode === 'dark' ? '#cccccc' : '#333333'), 
                             '&:hover': { color: '#2e7d32' },
@@ -1293,10 +1393,78 @@ export default function AdminLostFound() {
                             px: 1
                           }}
                         >
-                          Resolve
+                          {item.resolved ? 'View Details' : 'Resolve'}
                         </Button>
                       </Box>
                     </Box>
+                    
+                    {/* Resolution Details */}
+                    {item.resolved && (item.claimedBy || item.contactNumber || item.address) && (
+                      <Box sx={{ mt: 1, p: 1.5, bgcolor: theme.palette.mode === 'dark' ? 'rgba(46, 125, 50, 0.1)' : 'rgba(46, 125, 50, 0.05)', borderRadius: 1, border: '1px solid rgba(46, 125, 50, 0.2)' }}>
+                        <Typography variant="subtitle2" sx={{ 
+                          mb: 1, 
+                          color: theme.palette.mode === 'dark' ? '#4caf50' : '#2e7d32',
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                          letterSpacing: '0.01em'
+                        }}>
+                          Resolution Details
+                        </Typography>
+                        {item.claimedBy && (
+                          <Typography variant="caption" sx={{ 
+                            display: 'block',
+                            color: theme.palette.mode === 'dark' ? '#d0d0d0' : '#444444',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            mb: 0.5
+                          }}>
+                            <strong>Claimed by:</strong> {item.claimedBy}
+                          </Typography>
+                        )}
+                        {item.contactNumber && (
+                          <Typography variant="caption" sx={{ 
+                            display: 'block',
+                            color: theme.palette.mode === 'dark' ? '#d0d0d0' : '#444444',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            mb: 0.5
+                          }}>
+                            <strong>Contact:</strong> {item.contactNumber}
+                          </Typography>
+                        )}
+                        {item.address && (
+                          <Typography variant="caption" sx={{ 
+                            display: 'block',
+                            color: theme.palette.mode === 'dark' ? '#d0d0d0' : '#444444',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            mb: 0.5
+                          }}>
+                            <strong>Address:</strong> {item.address}
+                          </Typography>
+                        )}
+                        {item.resolutionNotes && (
+                          <Typography variant="caption" sx={{ 
+                            display: 'block',
+                            color: theme.palette.mode === 'dark' ? '#d0d0d0' : '#444444',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            mb: 0.5
+                          }}>
+                            <strong>Notes:</strong> {item.resolutionNotes}
+                          </Typography>
+                        )}
+                        <Typography variant="caption" sx={{ 
+                          display: 'block',
+                          color: theme.palette.mode === 'dark' ? '#a0a0a0' : '#666666', 
+                          fontSize: '0.65rem',
+                          fontWeight: 500,
+                          letterSpacing: '0.02em'
+                        }}>
+                          Resolved on: {new Date(item.resolvedAt).toLocaleString()}
+                        </Typography>
+                      </Box>
+                    )}
                   </Paper>
                 ))}
               </Box>
@@ -1664,6 +1832,115 @@ export default function AdminLostFound() {
           <Button onClick={() => setImagePreview({ open: false, image: null, title: '' })}>
             Close
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Resolve Item Modal */}
+      <Dialog 
+        open={resolveModal.open} 
+        onClose={() => setResolveModal({ open: false, item: null, type: '' })}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+          <CheckCircle sx={{ mr: 1, verticalAlign: 'middle', color: '#2e7d32' }} />
+          {resolveModal.item?.resolved ? 'View Resolution Details' : 'Resolve Item'}: {resolveModal.item?.name}
+        </DialogTitle>
+        <DialogContent sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
+          <Typography variant="body2" sx={{ mb: 2, color: theme.palette.mode === 'dark' ? '#e0e0e0' : '#333333' }}>
+            {resolveModal.item?.resolved ? 'Resolution details for this item:' : 'Please provide the details of the person claiming this item:'}
+          </Typography>
+          
+          <TextField 
+            fullWidth 
+            size="small"
+            label="Name of Person Claiming" 
+            value={resolveForm.claimedBy} 
+            onChange={e => setResolveForm(f => ({ ...f, claimedBy: e.target.value }))} 
+            sx={{ mb: 1.5, mt: 2 }} 
+            required={!resolveModal.item?.resolved}
+            disabled={resolveModal.item?.resolved}
+            placeholder="Enter the full name of the person claiming the item"
+          />
+          
+          <TextField 
+            fullWidth 
+            size="small"
+            label="Contact Number" 
+            value={resolveForm.contactNumber} 
+            onChange={e => setResolveForm(f => ({ ...f, contactNumber: e.target.value }))} 
+            sx={{ mb: 1.5 }} 
+            disabled={resolveModal.item?.resolved}
+            placeholder="Enter phone number or contact information"
+          />
+          
+          <TextField 
+            fullWidth 
+            size="small"
+            label="Address" 
+            value={resolveForm.address} 
+            onChange={e => setResolveForm(f => ({ ...f, address: e.target.value }))} 
+            sx={{ mb: 1.5 }} 
+            disabled={resolveModal.item?.resolved}
+            placeholder="Enter the address of the person claiming the item"
+          />
+          
+          <TextField 
+            fullWidth 
+            size="small"
+            label="Additional Notes (Optional)" 
+            multiline 
+            minRows={2} 
+            value={resolveForm.notes} 
+            onChange={e => setResolveForm(f => ({ ...f, notes: e.target.value }))} 
+            sx={{ mb: 1.5 }} 
+            disabled={resolveModal.item?.resolved}
+            placeholder="Any additional notes about the resolution"
+          />
+        </DialogContent>
+        <DialogActions sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
+          <Button 
+            onClick={() => setResolveModal({ open: false, item: null, type: '' })}
+            variant="outlined"
+            size="small"
+            sx={{ 
+              textTransform: 'none',
+              bgcolor: '#fff', 
+              color: '#000', 
+              borderColor: '#000', 
+              fontSize: '0.75rem',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000' 
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          {!resolveModal.item?.resolved && (
+            <Button 
+              onClick={handleResolveSubmit}
+              variant="outlined"
+              size="small"
+              disabled={loading}
+              sx={{ 
+                textTransform: 'none',
+                bgcolor: '#2e7d32', 
+                color: '#fff', 
+                borderColor: '#2e7d32', 
+                fontSize: '0.75rem',
+                '&:hover': { 
+                  bgcolor: '#1b5e20', 
+                  color: '#fff', 
+                  borderColor: '#1b5e20' 
+                }
+              }}
+              startIcon={<CheckCircle sx={{ fontSize: '0.75rem' }} />}
+            >
+              Resolve Item
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 

@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { 
   Typography, Box, Grid, TextField, MenuItem, Button, Paper, Avatar, Snackbar, Alert,
-  Card, CardContent, Divider, IconButton, Tabs, Tab, Stack, Chip, Dialog, DialogTitle, DialogContent, DialogActions, useTheme
+  Card, CardContent, Divider, IconButton, Tabs, Tab, Stack, Chip, Dialog, DialogTitle, DialogContent, DialogActions, useTheme,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, List, ListItem, ListItemText, ListItemSecondaryAction
 } from "@mui/material";
 import { 
   Person, Security, PhotoCamera, Save, Edit, Visibility, VisibilityOff,
   Email, Phone, Home, Work, ArrowBack
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import { collection, addDoc, doc, getDoc, updateDoc, setDoc, query, where, getDocs } from "firebase/firestore";
+import { collection, addDoc, doc, getDoc, updateDoc, setDoc, query, where, getDocs, orderBy, deleteDoc } from "firebase/firestore";
 import { updatePassword, updateProfile, updateEmail, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { db, auth } from "../firebase";
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -20,7 +21,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -38,6 +39,7 @@ export default function Profile() {
     birthdate: "",
     course: "",
     year: "",
+    section: "",
     sccNumber: "",
     contact: "",
     email: "",
@@ -69,6 +71,7 @@ export default function Profile() {
     birthdate: "",
     course: "",
     year: "",
+    section: "",
     sccNumber: "",
     contact: "",
     homeAddress: "",
@@ -77,6 +80,7 @@ export default function Profile() {
   });
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -84,15 +88,26 @@ export default function Profile() {
       if (user) {
         loadUserProfile(user.uid);
       }
-      setLoading(false);
     });
 
     return unsubscribe;
   }, []);
 
-  const loadUserProfile = async (uid) => {
+
+  const loadUserProfile = async (uid, retryCount = 0) => {
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second
+
     try {
-      const userDoc = await getDoc(doc(db, 'users', uid));
+      // Add timeout to prevent indefinite waiting
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Database connection timeout')), 10000); // 10 second timeout
+      });
+      
+      const userDoc = await Promise.race([
+        getDoc(doc(db, 'users', uid)),
+        timeoutPromise
+      ]);
       if (userDoc.exists()) {
         const userData = userDoc.data();
         setProfile(prev => ({
@@ -108,6 +123,7 @@ export default function Profile() {
           birthdate: userData.birthdate || "",
           course: userData.course || "",
           year: userData.year || "",
+          section: userData.section || "",
           sccNumber: userData.sccNumber || "",
           contact: userData.contact || userData.phoneNumber || "",
           fatherName: userData.fatherName || "",
@@ -120,9 +136,59 @@ export default function Profile() {
           image: userData.profilePic || null,
           role: userData.role || "Student"
         }));
+      } else {
+        // If user document doesn't exist, create a basic profile and save it
+        const basicProfile = {
+          id: uid,
+          email: currentUser?.email || "",
+          firstName: currentUser?.displayName?.split(' ')[0] || "",
+          lastName: currentUser?.displayName?.split(' ').slice(1).join(' ') || "",
+          role: "Student",
+          createdAt: new Date().toISOString()
+        };
+        
+        setProfile(prev => ({ ...prev, ...basicProfile }));
+        
+        // Automatically create the user document in the background
+        try {
+          await setDoc(doc(db, 'users', uid), basicProfile);
+          console.log('✅ User profile created automatically');
+        } catch (createError) {
+          console.log('Profile will be created on next successful connection');
+        }
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
+      
+      // Retry logic for connection timeouts
+      if (retryCount < maxRetries && (error.code === 'unavailable' || error.message.includes('timeout') || error.message.includes('Database connection timeout'))) {
+        console.log(`Retrying profile load (attempt ${retryCount + 1}/${maxRetries})...`);
+        setTimeout(() => {
+          loadUserProfile(uid, retryCount + 1);
+        }, retryDelay * (retryCount + 1));
+      } else {
+        // If all retries failed, set a basic profile to prevent blocking
+        console.log('Setting fallback profile due to connection issues');
+        const fallbackProfile = {
+          id: uid,
+          email: currentUser?.email || "",
+          firstName: currentUser?.displayName?.split(' ')[0] || "",
+          lastName: currentUser?.displayName?.split(' ').slice(1).join(' ') || "",
+          role: "Student"
+        };
+        
+        setProfile(prev => ({ ...prev, ...fallbackProfile }));
+        
+        // Try to create the profile in the background when connection is restored
+        setTimeout(async () => {
+          try {
+            await setDoc(doc(db, 'users', uid), { ...fallbackProfile, createdAt: new Date().toISOString() });
+            console.log('✅ Fallback profile saved when connection restored');
+          } catch (bgError) {
+            console.log('Will retry profile creation on next user action');
+          }
+        }, 5000);
+      }
     }
   };
 
@@ -163,6 +229,7 @@ export default function Profile() {
       reader.readAsDataURL(file);
     }
   };
+
 
   const handleSaveProfile = async () => {
     if (!currentUser) return;
@@ -205,6 +272,7 @@ export default function Profile() {
         birthdate: profile.birthdate,
         course: profile.course,
         year: profile.year,
+        section: profile.section,
         sccNumber: profile.sccNumber,
         contact: profile.contact,
         fatherName: profile.fatherName,
@@ -365,8 +433,10 @@ export default function Profile() {
       sex: profile.sex,
       age: profile.age,
       birthdate: profile.birthdate,
+      studentId: profile.studentId,
       course: profile.course,
       year: profile.year,
+      section: profile.section,
       sccNumber: profile.sccNumber,
       contact: profile.contact,
       homeAddress: profile.homeAddress,
@@ -411,8 +481,10 @@ export default function Profile() {
         sex: editProfile.sex,
         age: editProfile.age,
         birthdate: editProfile.birthdate,
+        studentId: editProfile.studentId,
         course: editProfile.course,
         year: editProfile.year,
+        section: editProfile.section,
         sccNumber: editProfile.sccNumber,
         contact: editProfile.contact,
         homeAddress: editProfile.homeAddress,
@@ -450,8 +522,10 @@ export default function Profile() {
         sex: editProfile.sex,
         age: editProfile.age,
         birthdate: editProfile.birthdate,
+        studentId: editProfile.studentId,
         course: editProfile.course,
         year: editProfile.year,
+        section: editProfile.section,
         sccNumber: editProfile.sccNumber,
         contact: editProfile.contact,
         homeAddress: editProfile.homeAddress,
@@ -469,13 +543,6 @@ export default function Profile() {
     }
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <Typography>Loading profile...</Typography>
-      </Box>
-    );
-  }
 
   return (
     <Box sx={{ 
@@ -748,6 +815,22 @@ export default function Profile() {
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Section
+                      </Typography>
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 500,
+                        p: 1.5,
+                        bgcolor: 'grey.50',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        {profile.section || 'Not provided'}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
                         Sex
                       </Typography>
                       <Typography variant="body1" sx={{ 
@@ -795,17 +878,20 @@ export default function Profile() {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        SCC Number
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary'
+                      }} gutterBottom>
+                        Student ID
                       </Typography>
                       <Typography variant="body1" sx={{ 
                         fontWeight: 500,
                         p: 1.5,
-                        bgcolor: 'grey.50',
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'grey.50',
                         borderRadius: 1,
-                        border: '1px solid #e0e0e0'
+                        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e0e0e0',
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
                       }}>
-                        {profile.sccNumber || 'Not provided'}
+                        {profile.studentId || 'Not provided'}
                       </Typography>
                     </Box>
                   </Grid>
@@ -940,6 +1026,8 @@ export default function Profile() {
         </Box>
       )}
 
+
+
       {/* Edit Profile Modal */}
       <Dialog open={openEditModal} onClose={() => setOpenEditModal(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, color: '#800000', pb: 1 }}>
@@ -1031,6 +1119,19 @@ export default function Profile() {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
+                label="Student ID"
+                name="studentId"
+                value={editProfile.studentId}
+                onChange={handleEditProfileChange}
+                fullWidth
+                size="small"
+                required
+                disabled={profile.role !== 'Admin' && profile.studentId} // Allow editing if not set, but disable if already set
+                helperText={profile.role !== 'Admin' && profile.studentId ? 'Student ID cannot be changed once set' : ''}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
                 label="Contact Number"
                 name="contact"
                 value={editProfile.contact}
@@ -1047,7 +1148,16 @@ export default function Profile() {
                 onChange={handleEditProfileChange}
                 fullWidth
                 size="small"
-              />
+                select
+              >
+                <MenuItem value="BSIT">BSIT</MenuItem>
+                <MenuItem value="BSBA">BSBA</MenuItem>
+                <MenuItem value="BSCRIM">BSCRIM</MenuItem>
+                <MenuItem value="BSHTM">BSHTM</MenuItem>
+                <MenuItem value="BEED">BEED</MenuItem>
+                <MenuItem value="BSED">BSED</MenuItem>
+                <MenuItem value="BSHM">BSHM</MenuItem>
+              </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
@@ -1057,7 +1167,33 @@ export default function Profile() {
                 onChange={handleEditProfileChange}
                 fullWidth
                 size="small"
-              />
+                select
+              >
+                <MenuItem value="1st Year">1st Year</MenuItem>
+                <MenuItem value="2nd Year">2nd Year</MenuItem>
+                <MenuItem value="3rd Year">3rd Year</MenuItem>
+                <MenuItem value="4th Year">4th Year</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Section"
+                name="section"
+                value={editProfile.section}
+                onChange={handleEditProfileChange}
+                fullWidth
+                size="small"
+                select
+              >
+                <MenuItem value="A">A</MenuItem>
+                <MenuItem value="B">B</MenuItem>
+                <MenuItem value="C">C</MenuItem>
+                <MenuItem value="D">D</MenuItem>
+                <MenuItem value="E">E</MenuItem>
+                <MenuItem value="F">F</MenuItem>
+                <MenuItem value="G">G</MenuItem>
+                <MenuItem value="H">H</MenuItem>
+              </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField

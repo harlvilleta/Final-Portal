@@ -59,7 +59,10 @@ export default function TeacherActivityScheduler() {
     date: '',
     startTime: '',
     endTime: '',
-    notes: ''
+    notes: '',
+    course: '',
+    year: '',
+    section: ''
   });
   const [conflictCheck, setConflictCheck] = useState(null);
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
@@ -78,6 +81,18 @@ export default function TeacherActivityScheduler() {
 
   const departments = [
     'BSIT', 'BSBA', 'BSCRIM', 'BSHTM', 'BEED', 'BSED', 'BSHM'
+  ];
+
+  const courses = [
+    'BSIT', 'BSBA', 'BSCRIM', 'BSHTM', 'BEED', 'BSED', 'BSHM'
+  ];
+
+  const years = [
+    '1st Year', '2nd Year', '3rd Year', '4th Year'
+  ];
+
+  const sections = [
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'
   ];
 
   const timeSlots = [
@@ -399,6 +414,9 @@ export default function TeacherActivityScheduler() {
         endTime: bookingForm.endTime,
         time: `${bookingForm.startTime} - ${bookingForm.endTime}`, // Keep for backward compatibility
         notes: bookingForm.notes || '',
+        course: bookingForm.course,
+        year: bookingForm.year,
+        section: bookingForm.section,
         teacherId: currentUser.uid,
         teacherEmail: currentUser.email,
         status: 'pending',
@@ -448,7 +466,10 @@ export default function TeacherActivityScheduler() {
         date: '',
         startTime: '',
         endTime: '',
-        notes: ''
+        notes: '',
+        course: '',
+        year: '',
+        section: ''
       });
       setConflictCheck(null);
     } catch (error) {
@@ -1136,6 +1157,58 @@ export default function TeacherActivityScheduler() {
                 onChange={(e) => handleFormChange('notes', e.target.value)}
                 placeholder="Additional details about your booking..."
               />
+            </Grid>
+            
+            {/* Course, Year, and Section Selection */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
+                Target Students (Select course, year, and section to specify which students will see this activity)
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth required size="small">
+                <InputLabel sx={{ fontSize: '0.8rem' }}>Course</InputLabel>
+                <Select
+                  size="small"
+                  value={bookingForm.course}
+                  onChange={(e) => handleFormChange('course', e.target.value)}
+                  label="Course"
+                >
+                  {courses.map(course => (
+                    <MenuItem key={course} value={course}>{course}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth required size="small">
+                <InputLabel sx={{ fontSize: '0.8rem' }}>Year Level</InputLabel>
+                <Select
+                  size="small"
+                  value={bookingForm.year}
+                  onChange={(e) => handleFormChange('year', e.target.value)}
+                  label="Year Level"
+                >
+                  {years.map(year => (
+                    <MenuItem key={year} value={year}>{year}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth required size="small">
+                <InputLabel sx={{ fontSize: '0.8rem' }}>Section</InputLabel>
+                <Select
+                  size="small"
+                  value={bookingForm.section}
+                  onChange={(e) => handleFormChange('section', e.target.value)}
+                  label="Section"
+                >
+                  {sections.map(section => (
+                    <MenuItem key={section} value={section}>{section}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={12}>
               <Button

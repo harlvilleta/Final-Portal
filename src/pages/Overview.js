@@ -60,36 +60,86 @@ export default function Overview() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch data in parallel for better performance
-    Promise.all([
-      fetchOverviewData(),
-      fetchRecentActivity()
-    ]);
+    let isMounted = true;
+    let timeoutId = null;
     
-    // Get current user and their profile
+    const loadDashboardData = async () => {
+      if (!isMounted) return;
+      
+      setLoading(true);
+      try {
+        // Add timeout to prevent infinite loading
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error('Dashboard loading timeout')), 15000); // 15 second timeout
+        });
+        
+        // Fetch data in parallel for better performance
+        await Promise.race([
+          Promise.all([
+            fetchOverviewData(),
+            fetchRecentActivity()
+          ]),
+          timeoutPromise
+        ]);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        if (isMounted) {
+          // Set default values if loading fails
+          setStats({
+            students: 0,
+            violations: 0,
+            activities: 0,
+            announcements: 0
+          });
+          setRecentActivity([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+    
+    // Get current user and their profile first
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (!isMounted) return;
+      
       setCurrentUser(user);
       
       if (user) {
         try {
           // Fetch user profile from Firestore
           const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
+          if (userDoc.exists() && isMounted) {
             setUserProfile(userDoc.data());
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);
         }
+        
+        // Load dashboard data after user is authenticated
+        loadDashboardData();
+      } else {
+        // If no user, still try to load dashboard data (for public stats)
+        loadDashboardData();
       }
     });
-    return unsubscribe;
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      unsubscribe();
+    };
   }, []);
 
 
-  const fetchOverviewData = async () => {
+  const fetchOverviewData = async (retryCount = 0) => {
+    const maxRetries = 3;
+    
     try {
-      setLoading(true);
-      
       // Optimize: Use count queries instead of fetching all documents
       const [studentsSnapshot, usersSnapshot, violationsSnapshot, activitiesSnapshot, announcementsSnapshot] = await Promise.allSettled([
         getDocs(collection(db, "students")),
@@ -123,8 +173,21 @@ export default function Overview() {
 
     } catch (error) {
       console.error("Error fetching overview data:", error);
-    } finally {
-      setLoading(false);
+      
+      // Retry logic for network errors
+      if (retryCount < maxRetries && (error.code === 'unavailable' || error.code === 'deadline-exceeded')) {
+        console.log(`Retrying fetchOverviewData (attempt ${retryCount + 1}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+        return fetchOverviewData(retryCount + 1);
+      }
+      
+      // Set default stats if all retries failed
+      setStats({
+        students: 0,
+        violations: 0,
+        activities: 0,
+        announcements: 0
+      });
     }
   };
 
@@ -293,7 +356,9 @@ export default function Overview() {
     };
   };
 
-  const fetchRecentActivity = async () => {
+  const fetchRecentActivity = async (retryCount = 0) => {
+    const maxRetries = 3;
+    
     setActivityLoading(true);
     try {
       // Optimize: Fetch all activities in parallel with reduced limits
@@ -348,6 +413,14 @@ export default function Overview() {
       setRecentActivity(sortedActivities);
     } catch (e) {
       console.log("Error fetching recent activity:", e);
+      
+      // Retry logic for network errors
+      if (retryCount < maxRetries && (e.code === 'unavailable' || e.code === 'deadline-exceeded')) {
+        console.log(`Retrying fetchRecentActivity (attempt ${retryCount + 1}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+        return fetchRecentActivity(retryCount + 1);
+      }
+      
       setRecentActivity([]);
     } finally {
       setActivityLoading(false);
@@ -433,13 +506,61 @@ export default function Overview() {
 
   const userInfo = getUserDisplayInfo();
 
-  // Removed loading screen per requirements
+  // Show loading screen while data is being fetched
+  if (loading) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '50vh',
+        flexDirection: 'column',
+        gap: 2
+      }}>
+        <CircularProgress size={60} />
+        <Typography variant="h6" color="text.secondary">
+          Loading dashboard...
+        </Typography>
+      </Box>
+    );
+  }
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        fetchOverviewData(),
+        fetchRecentActivity()
+      ]);
+    } catch (error) {
+      console.error('Error refreshing dashboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Box sx={{ p: { xs: 0.5, sm: 1 }, pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
-      <Typography variant="h4" gutterBottom sx={{ color: isDark ? '#ffffff' : '#800000', mb: 2, mt: 1 }}>
-        Dashboard Overview
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4" gutterBottom sx={{ color: isDark ? '#ffffff' : '#800000', mb: 0, mt: 1 }}>
+          Dashboard Overview
+        </Typography>
+        <Button
+          variant="outlined"
+          onClick={handleRefresh}
+          disabled={loading}
+          sx={{
+            color: isDark ? '#ffffff' : '#800000',
+            borderColor: isDark ? '#ffffff' : '#800000',
+            '&:hover': {
+              bgcolor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(128, 0, 0, 0.1)',
+              borderColor: isDark ? '#ffffff' : '#800000'
+            }
+          }}
+        >
+          {loading ? 'Refreshing...' : 'Refresh'}
+        </Button>
+      </Box>
       
       {/* Statistics Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>

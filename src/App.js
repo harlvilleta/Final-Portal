@@ -62,6 +62,7 @@ import ClassroomManager from "./components/ClassroomManager";
 import TeacherStudentsView from "./components/TeacherStudentsView";
 import ClassroomDashboard from "./pages/ClassroomDashboard";
 import StudentClassroom from "./pages/StudentClassroom";
+import StudentActivities from "./pages/StudentActivities";
 import EditProfile from "./pages/EditProfile";
 
 // Header component for admin dashboard
@@ -725,7 +726,7 @@ function App() {
                         <Route path="/user-dashboard" element={<UserDashboard currentUser={currentUser} userProfile={userProfile} />} />
                         <Route path="/violations" element={<UserViolations currentUser={currentUser} />} />
                         <Route path="/announcements" element={<UserAnnouncements />} />
-                        <Route path="/activity" element={<ActivitiesView />} />
+                        <Route path="/activity" element={<StudentActivities />} />
                         <Route path="/lost-found" element={<UserLostFound currentUser={currentUser} />} />
                         <Route path="/receipt-submission" element={<ReceiptSubmission />} />
                         <Route path="/receipt-history" element={<ReceiptHistory />} />

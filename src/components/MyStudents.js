@@ -535,13 +535,20 @@ export default function MyStudents() {
                 ))}
               </Select>
             </FormControl>
-            <TextField
-              fullWidth
-              label="Section"
-              value={editForm.section}
-              onChange={(e) => setEditForm({ ...editForm, section: e.target.value })}
-              margin="normal"
-            />
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Section</InputLabel>
+              <Select
+                value={editForm.section}
+                onChange={(e) => setEditForm({ ...editForm, section: e.target.value })}
+                label="Section"
+              >
+                <MenuItem value="A">A</MenuItem>
+                <MenuItem value="B">B</MenuItem>
+                <MenuItem value="C">C</MenuItem>
+                <MenuItem value="D">D</MenuItem>
+                <MenuItem value="E">E</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
         </DialogContent>
         <DialogActions>

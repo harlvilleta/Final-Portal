@@ -67,7 +67,7 @@ export default function UserSidebar({ currentUser, userProfile }) {
         '& .MuiDrawer-paper': {
           width: 230,
           boxSizing: 'border-box',
-          bgcolor: '#2d3436',
+          bgcolor: '#8B0000',
           color: '#fff',
           borderRight: '1px solid #636e72',
           overflowX: 'hidden',
@@ -115,10 +115,10 @@ export default function UserSidebar({ currentUser, userProfile }) {
             sx={{
               mb: 1,
               borderRadius: 2,
-              bgcolor: location.pathname === item.path ? '#636e72' : 'transparent',
+              bgcolor: location.pathname === item.path ? '#A52A2A' : 'transparent',
               color: location.pathname === item.path ? '#fff' : '#b2bec3',
               '&:hover': {
-                bgcolor: location.pathname === item.path ? '#636e72' : '#4a5568',
+                bgcolor: location.pathname === item.path ? '#A52A2A' : '#8B0000',
                 transform: 'translateX(4px)',
                 boxShadow: 2
               },
