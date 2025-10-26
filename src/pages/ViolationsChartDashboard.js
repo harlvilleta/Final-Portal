@@ -93,7 +93,15 @@ export default function ViolationsChartDashboard() {
           <IconButton onClick={handleBack} sx={{ mr: 2 }}>
             <ArrowBack />
           </IconButton>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000' }}>
+          <Typography variant="h4" sx={{ 
+            fontWeight: 700, 
+            background: 'linear-gradient(45deg, #800000, #A52A2A, #8B0000)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            mb: 2, 
+            mt: 1 
+          }}>
             Violations Dashboard
           </Typography>
         </Box>
@@ -111,7 +119,15 @@ export default function ViolationsChartDashboard() {
         <IconButton onClick={handleBack} sx={{ mr: 2 }}>
           <ArrowBack />
         </IconButton>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#000000', mb: 2, mt: 1 }}>
+        <Typography variant="h4" sx={{ 
+          fontWeight: 700, 
+          background: 'linear-gradient(45deg, #800000, #A52A2A, #8B0000)',
+          backgroundClip: 'text',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          mb: 2, 
+          mt: 1
+        }}>
           Violations Dashboard
         </Typography>
       </Box>
@@ -119,48 +135,68 @@ export default function ViolationsChartDashboard() {
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 1 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
-            <CardContent>
-              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#000000' }}>
+          <Card sx={{ bgcolor: 'transparent', borderLeft: '4px solid #800000' }}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} sx={{ 
+                background: 'linear-gradient(45deg, #800000, #A52A2A, #8B0000)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
                 {totalViolations}
               </Typography>
-              <Typography variant="body2" sx={{ color: isDark ? '#ffffff' : '#000000' }}>
+              <Typography variant="body2" sx={{ color: '#000000' }}>
                 Total Violations ({new Date().getFullYear()})
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
-            <CardContent>
-              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#000000' }}>
+          <Card sx={{ bgcolor: 'transparent', borderLeft: '4px solid #800000' }}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} sx={{ 
+                background: 'linear-gradient(45deg, #800000, #A52A2A, #8B0000)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
                 {Math.round(averagePerMonth)}
               </Typography>
-              <Typography variant="body2" sx={{ color: isDark ? '#ffffff' : '#000000' }}>
+              <Typography variant="body2" sx={{ color: '#000000' }}>
                 Average per Month
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
-            <CardContent>
-              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#000000' }}>
+          <Card sx={{ bgcolor: 'transparent', borderLeft: '4px solid #800000' }}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} sx={{ 
+                background: 'linear-gradient(45deg, #800000, #A52A2A, #8B0000)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
                 {peakMonth.count}
               </Typography>
-              <Typography variant="body2" sx={{ color: isDark ? '#ffffff' : '#000000' }}>
+              <Typography variant="body2" sx={{ color: '#000000' }}>
                 Peak Month: {peakMonth.month}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#80000015', borderLeft: '4px solid #800000' }}>
-            <CardContent>
-              <Typography variant="h4" fontWeight={700} sx={{ color: isDark ? '#ffffff' : '#000000' }}>
+          <Card sx={{ bgcolor: 'transparent', borderLeft: '4px solid #800000' }}>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <Typography variant="h4" fontWeight={700} sx={{ 
+                background: 'linear-gradient(45deg, #800000, #A52A2A, #8B0000)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
                 {monthsWithViolations}
               </Typography>
-              <Typography variant="body2" sx={{ color: isDark ? '#ffffff' : '#000000' }}>
+              <Typography variant="body2" sx={{ color: '#000000' }}>
                 Months with Violations
               </Typography>
             </CardContent>
@@ -229,7 +265,13 @@ export default function ViolationsChartDashboard() {
 
       {/* Monthly Breakdown */}
       <Box sx={{ mb: 1 }}>
-        <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, color: isDark ? '#ffffff' : '#000000' }}>
+        <Typography variant="subtitle1" gutterBottom sx={{ 
+          fontWeight: 600, 
+          background: 'linear-gradient(45deg, #800000, #A52A2A, #8B0000)',
+          backgroundClip: 'text',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent'
+        }}>
           Monthly Breakdown
         </Typography>
         <Grid container spacing={1}>
@@ -242,7 +284,13 @@ export default function ViolationsChartDashboard() {
                 height: 'fit-content'
               }}>
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                  <Typography variant="subtitle1" fontWeight={600} sx={{ color: isDark ? '#ffffff' : '#000000', fontSize: '1rem' }}>
+                  <Typography variant="subtitle1" fontWeight={600} sx={{ 
+                    background: 'linear-gradient(45deg, #800000, #A52A2A, #8B0000)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    fontSize: '1rem' 
+                  }}>
                     {month.count}
                   </Typography>
                   <Typography variant="caption" sx={{ fontSize: '0.7rem', color: isDark ? '#ffffff' : '#000000' }}>

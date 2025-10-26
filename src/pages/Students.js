@@ -1429,12 +1429,12 @@ function CourseDashboard({
           <Table>
             <TableHead>
               <TableRow sx={{ 
-                bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#fafafa' 
+                bgcolor: '#800000' 
               }}>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: '#1976d2', // Blue color for Student
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '140px',
@@ -1443,9 +1443,9 @@ function CourseDashboard({
                   Student
                 </TableCell>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '120px',
@@ -1454,9 +1454,9 @@ function CourseDashboard({
                   Student ID
                 </TableCell>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '100px',
@@ -1465,9 +1465,9 @@ function CourseDashboard({
                   Course
                 </TableCell>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '120px',
@@ -1476,9 +1476,9 @@ function CourseDashboard({
                   Year & Section
                 </TableCell>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '100px',
@@ -1487,9 +1487,9 @@ function CourseDashboard({
                   Status
                 </TableCell>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '120px',
@@ -2628,16 +2628,16 @@ School Administration
               value={search}
               onChange={e => setSearch(e.target.value)}
               size="small"
-              placeholder="Search by name, course, ID, year, or section..."
+              placeholder="Search students..."
               sx={{ 
-                width: '300px',
+                width: '200px',
                 bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#ffffff',
                 '& .MuiOutlinedInput-root': {
                   '&:hover fieldset': {
-                    borderColor: '#1976d2',
+                    borderColor: '#800000',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#1976d2',
+                    borderColor: '#800000',
                     borderWidth: 2,
                   },
                 }
@@ -2645,7 +2645,7 @@ School Administration
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Search sx={{ fontSize: 18, color: search.trim() ? '#1976d2' : 'text.secondary' }} />
+                    <Search sx={{ fontSize: 18, color: search.trim() ? '#800000' : 'text.secondary' }} />
                   </InputAdornment>
                 ),
                 endAdornment: search.trim() && (
@@ -2655,7 +2655,7 @@ School Administration
                       onClick={() => setSearch("")}
                       sx={{ 
                         color: 'text.secondary',
-                        '&:hover': { color: '#1976d2' }
+                        '&:hover': { color: '#800000' }
                       }}
                     >
                       ✕
@@ -2674,10 +2674,10 @@ School Administration
                 minWidth: 200,
                 '& .MuiOutlinedInput-root': {
                   '&:hover fieldset': {
-                    borderColor: '#1976d2',
+                    borderColor: '#800000',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#1976d2',
+                    borderColor: '#800000',
                     borderWidth: 2,
                   },
                 }
@@ -3466,61 +3466,103 @@ function EditStudentForm({ student, onClose, onSuccess }) {
               <MenuItem value="E">E</MenuItem>
             </TextField>
           </Grid>
-          <Grid item xs={12}>
-            <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>Profile Image</Typography>
-          </Grid>
           <Grid item xs={12} sm={6}>
-            <Button 
-              variant="contained" 
-              component="label" 
-              startIcon={<CloudUpload />}
-              sx={{ 
-                mt: 2,
-                backgroundColor: 'white',
-                color: 'black',
-                border: '1px solid #ccc',
-                '&:hover': {
-                  backgroundColor: '#1976d2',
-                  color: 'white',
-                  border: '1px solid #1976d2'
-                }
-              }}
-            >
-              Update Profile Image
-              <input type="file" accept="image/*" hidden onChange={handleImage} />
-            </Button>
-            {profile.image && (
-              <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar src={profile.image} sx={{ width: 80, height: 80 }} />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Button 
+                  variant="outlined" 
+                  component="label" 
+                  startIcon={<CloudUpload />}
+                  sx={{ 
+                    bgcolor: '#ffffff', 
+                    color: '#000000', 
+                    borderColor: '#000000', 
+                    fontSize: '0.75rem',
+                    fontWeight: 400,
+                    textTransform: 'none',
+                    padding: '6px 12px',
+                    minHeight: '32px',
+                    boxShadow: 'none',
+                    '&:hover': { 
+                      bgcolor: '#800000', 
+                      color: '#fff', 
+                      borderColor: '#800000',
+                      boxShadow: 'none'
+                    }
+                  }}
+                >
+                  Update Profile Image
+                  <input type="file" accept="image/*" hidden onChange={handleImage} />
+                </Button>
+                {profile.image && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar src={profile.image} sx={{ width: 40, height: 40 }} />
+                  </Box>
+                )}
               </Box>
-            )}
-          </Grid>
-          <Grid item xs={12}>
-            <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-              <Button 
-                type="submit" 
-                variant="contained" 
-                color="primary" 
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Updating..." : "Update Student"}
-              </Button>
-              <Button 
-                variant="outlined" 
-                onClick={resetForm}
-                disabled={isSubmitting}
-                sx={{ color: '#666', borderColor: '#666' }}
-              >
-                🔄 Reset
-              </Button>
-              <Button 
-                variant="outlined" 
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-            </Stack>
+              <Stack direction="row" spacing={0.5} sx={{ alignSelf: 'flex-end' }}>
+                <Button 
+                  type="submit" 
+                  variant="outlined"
+                  disabled={isSubmitting}
+                  sx={{ 
+                    color: '#666666',
+                    padding: '4px',
+                    fontSize: '0.75rem',
+                    fontWeight: 400,
+                    textTransform: 'none',
+                    minHeight: '32px',
+                    boxShadow: 'none',
+                    '&:hover': { 
+                      color: '#f57c00',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(245, 124, 0, 0.1)' : 'rgba(245, 124, 0, 0.04)'
+                    }
+                  }}
+                >
+                  {isSubmitting ? "Updating..." : "Update Student"}
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  onClick={resetForm}
+                  disabled={isSubmitting}
+                  sx={{ 
+                    color: '#666666',
+                    padding: '4px',
+                    fontSize: '0.75rem',
+                    fontWeight: 400,
+                    textTransform: 'none',
+                    minHeight: '32px',
+                    boxShadow: 'none',
+                    '&:hover': { 
+                      color: '#1976d2',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.1)' : 'rgba(25, 118, 210, 0.04)'
+                    }
+                  }}
+                >
+                  🔄 Reset
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                  sx={{ 
+                    color: '#666666',
+                    padding: '4px',
+                    fontSize: '0.75rem',
+                    fontWeight: 400,
+                    textTransform: 'none',
+                    minHeight: '32px',
+                    boxShadow: 'none',
+                    '&:hover': { 
+                      color: '#d32f2f',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(211, 47, 47, 0.1)' : 'rgba(211, 47, 47, 0.04)'
+                    }
+                  }}
+                >
+                  Cancel
+                </Button>
+              </Stack>
+            </Box>
           </Grid>
         </Grid>
       </form>
@@ -3708,18 +3750,12 @@ export default function Students() {
       <Dialog 
         open={openViewDetails} 
         onClose={() => setOpenViewDetails(false)} 
-        maxWidth="sm" 
-        fullWidth
-        PaperProps={{
-          sx: {
-            maxHeight: '90vh',
-            overflow: 'hidden'
-          }
-        }}
+        maxWidth="md"
+        fullWidth={false}
       >
-        <DialogTitle sx={{ pb: 1 }}>
+        <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">
+            <Typography variant="h6" sx={{ color: '#800000' }}>
               Student Details - {studentToView && `${studentToView.firstName} ${studentToView.lastName}`}
             </Typography>
             <IconButton onClick={() => setOpenViewDetails(false)} size="small">
@@ -3727,17 +3763,7 @@ export default function Students() {
             </IconButton>
           </Box>
         </DialogTitle>
-        <DialogContent 
-          sx={{ 
-            overflow: 'hidden',
-            p: 2,
-            '&::-webkit-scrollbar': {
-              display: 'none'
-            },
-            msOverflowStyle: 'none',
-            scrollbarWidth: 'none'
-          }}
-        >
+        <DialogContent>
           {studentToView && (
             <Box>
               <Grid container spacing={1.5}>
@@ -3957,16 +3983,60 @@ export default function Students() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => window.print()} color="info">Print</Button>
-          <Button onClick={() => setOpenViewDetails(false)}>Close</Button>
+          <Button 
+            onClick={() => window.print()}
+            variant="outlined"
+            sx={{ 
+              bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff', 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+              borderColor: theme.palette.mode === 'dark' ? '#666666' : '#000000', 
+              fontSize: '0.75rem',
+              fontWeight: 400,
+              textTransform: 'none',
+              padding: '6px 12px',
+              minHeight: '32px',
+              boxShadow: 'none',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000',
+                boxShadow: 'none'
+              }
+            }}
+          >
+            Print
+          </Button>
+          <Button 
+            onClick={() => setOpenViewDetails(false)}
+            variant="outlined"
+            sx={{ 
+              bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff', 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+              borderColor: theme.palette.mode === 'dark' ? '#666666' : '#000000', 
+              fontSize: '0.75rem',
+              fontWeight: 400,
+              textTransform: 'none',
+              padding: '6px 12px',
+              minHeight: '32px',
+              boxShadow: 'none',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000',
+                boxShadow: 'none'
+              }
+            }}
+          >
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
 
       {/* Edit Student Modal */}
-      <Dialog open={openEditStudent} onClose={() => setOpenEditStudent(false)} maxWidth="md" fullWidth>
+      <Dialog open={openEditStudent} onClose={() => setOpenEditStudent(false)} maxWidth="md" fullWidth={false}>
         <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">
+            <Typography variant="h6" sx={{ color: '#800000' }}>
               Edit Student - {studentToEdit && `${studentToEdit.firstName} ${studentToEdit.lastName}`}
             </Typography>
             <IconButton onClick={() => setOpenEditStudent(false)} size="small">

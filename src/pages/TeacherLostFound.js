@@ -512,6 +512,7 @@ export default function TeacherLostFound({ currentUser: propCurrentUser, userPro
               placeholder="Search posts..." 
                   value={lostSearch}
                   onChange={e => setLostSearch(e.target.value)}
+                  size="small"
               InputProps={{
                 startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />
               }}

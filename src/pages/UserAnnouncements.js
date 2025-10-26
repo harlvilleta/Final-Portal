@@ -74,6 +74,7 @@ export default function UserAnnouncements() {
               <Card sx={{ 
                 bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
                 border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+                borderLeft: '4px solid #800000',
                 borderRadius: 2,
                 boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)',
                 '&:hover': {
@@ -90,12 +91,8 @@ export default function UserAnnouncements() {
                       </Typography>
                       <Chip 
                         label={a.category || 'General'} 
-                        color="default" 
+                        color="secondary" 
                         size="small"
-                        sx={{ 
-                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                          color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
-                        }}
                       />
                     </Stack>
                   }

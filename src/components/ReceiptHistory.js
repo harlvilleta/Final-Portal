@@ -144,26 +144,48 @@ export default function ReceiptHistory() {
         borderRadius: 2,
         boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Receipt sx={{ fontSize: 28, color: theme.palette.mode === 'dark' ? '#ffffff' : 'primary.main', mr: 2 }} />
-            <Typography variant="h4" sx={{ 
-              color: theme.palette.mode === 'dark' ? '#ffffff' : 'primary.main',
-              fontWeight: 600
-            }}>
-              My Receipt Submissions
-            </Typography>
-          </Box>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          mb: 3,
+          p: 2,
+          borderRadius: 2,
+          background: theme.palette.mode === 'dark' 
+            ? 'rgba(255, 255, 255, 0.05)' 
+            : 'rgba(255, 255, 255, 0.8)',
+          border: theme.palette.mode === 'dark' 
+            ? '1px solid rgba(255, 255, 255, 0.1)' 
+            : '1px solid rgba(0, 0, 0, 0.08)',
+          boxShadow: theme.palette.mode === 'dark' 
+            ? '0 2px 8px rgba(0, 0, 0, 0.3)' 
+            : '0 2px 8px rgba(0, 0, 0, 0.1)'
+        }}>
+          <Typography variant="h4" sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#8B0000',
+            fontWeight: 700,
+            letterSpacing: '-0.5px'
+          }}>
+            My Receipt Submissions
+          </Typography>
           <Button
             variant="outlined"
             startIcon={<Refresh />}
             onClick={fetchSubmissions}
+            size="small"
             sx={{
-              color: theme.palette.mode === 'dark' ? '#ffffff' : 'primary.main',
-              borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'primary.main',
+              borderRadius: 1,
+              px: 2,
+              py: 0.5,
+              fontWeight: 600,
+              textTransform: 'none',
+              fontSize: '0.85rem',
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+              borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
               '&:hover': {
-                borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'primary.dark',
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'primary.light'
+                bgcolor: '#800000',
+                color: '#ffffff',
+                borderColor: '#800000'
               }
             }}
           >
@@ -179,10 +201,146 @@ export default function ReceiptHistory() {
 
         {/* Simple Status Filter */}
         <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
-          <Button variant={statusFilter === 'all' ? 'contained' : 'outlined'} onClick={() => { setStatusFilter('all'); setPage(0); }}>All</Button>
-          <Button variant={statusFilter === 'pending' ? 'contained' : 'outlined'} onClick={() => { setStatusFilter('pending'); setPage(0); }}>Pending</Button>
-          <Button variant={statusFilter === 'approved' ? 'contained' : 'outlined'} onClick={() => { setStatusFilter('approved'); setPage(0); }}>Approved</Button>
-          <Button variant={statusFilter === 'rejected' ? 'contained' : 'outlined'} onClick={() => { setStatusFilter('rejected'); setPage(0); }}>Rejected</Button>
+          <Button 
+            variant={statusFilter === 'all' ? 'contained' : 'outlined'} 
+            onClick={() => { setStatusFilter('all'); setPage(0); }}
+            sx={{
+              borderRadius: 3,
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: 'none',
+              fontSize: '0.95rem',
+              ...(statusFilter === 'all' ? {
+                background: 'linear-gradient(45deg, #8B0000, #A52A2A)',
+                color: '#ffffff',
+                boxShadow: '0 4px 12px rgba(139, 0, 0, 0.3)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #660000, #8B0000)',
+                  boxShadow: '0 6px 16px rgba(139, 0, 0, 0.4)',
+                  transform: 'translateY(-2px)'
+                }
+              } : {
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#8B0000',
+                borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : '#8B0000',
+                '&:hover': {
+                  borderColor: '#A52A2A',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(139, 0, 0, 0.1)' : 'rgba(139, 0, 0, 0.05)',
+                  color: '#A52A2A',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(139, 0, 0, 0.2)'
+                }
+              }),
+              transition: 'all 0.2s ease-in-out'
+            }}
+          >
+            All
+          </Button>
+          <Button 
+            variant={statusFilter === 'pending' ? 'contained' : 'outlined'} 
+            onClick={() => { setStatusFilter('pending'); setPage(0); }}
+            sx={{
+              borderRadius: 3,
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: 'none',
+              fontSize: '0.95rem',
+              ...(statusFilter === 'pending' ? {
+                background: 'linear-gradient(45deg, #8B0000, #A52A2A)',
+                color: '#ffffff',
+                boxShadow: '0 4px 12px rgba(139, 0, 0, 0.3)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #660000, #8B0000)',
+                  boxShadow: '0 6px 16px rgba(139, 0, 0, 0.4)',
+                  transform: 'translateY(-2px)'
+                }
+              } : {
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#8B0000',
+                borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : '#8B0000',
+                '&:hover': {
+                  borderColor: '#A52A2A',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(139, 0, 0, 0.1)' : 'rgba(139, 0, 0, 0.05)',
+                  color: '#A52A2A',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(139, 0, 0, 0.2)'
+                }
+              }),
+              transition: 'all 0.2s ease-in-out'
+            }}
+          >
+            Pending
+          </Button>
+          <Button 
+            variant={statusFilter === 'approved' ? 'contained' : 'outlined'} 
+            onClick={() => { setStatusFilter('approved'); setPage(0); }}
+            sx={{
+              borderRadius: 3,
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: 'none',
+              fontSize: '0.95rem',
+              ...(statusFilter === 'approved' ? {
+                background: 'linear-gradient(45deg, #8B0000, #A52A2A)',
+                color: '#ffffff',
+                boxShadow: '0 4px 12px rgba(139, 0, 0, 0.3)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #660000, #8B0000)',
+                  boxShadow: '0 6px 16px rgba(139, 0, 0, 0.4)',
+                  transform: 'translateY(-2px)'
+                }
+              } : {
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#8B0000',
+                borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : '#8B0000',
+                '&:hover': {
+                  borderColor: '#A52A2A',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(139, 0, 0, 0.1)' : 'rgba(139, 0, 0, 0.05)',
+                  color: '#A52A2A',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(139, 0, 0, 0.2)'
+                }
+              }),
+              transition: 'all 0.2s ease-in-out'
+            }}
+          >
+            Approved
+          </Button>
+          <Button 
+            variant={statusFilter === 'rejected' ? 'contained' : 'outlined'} 
+            onClick={() => { setStatusFilter('rejected'); setPage(0); }}
+            sx={{
+              borderRadius: 3,
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: 'none',
+              fontSize: '0.95rem',
+              ...(statusFilter === 'rejected' ? {
+                background: 'linear-gradient(45deg, #8B0000, #A52A2A)',
+                color: '#ffffff',
+                boxShadow: '0 4px 12px rgba(139, 0, 0, 0.3)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #660000, #8B0000)',
+                  boxShadow: '0 6px 16px rgba(139, 0, 0, 0.4)',
+                  transform: 'translateY(-2px)'
+                }
+              } : {
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#8B0000',
+                borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : '#8B0000',
+                '&:hover': {
+                  borderColor: '#A52A2A',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(139, 0, 0, 0.1)' : 'rgba(139, 0, 0, 0.05)',
+                  color: '#A52A2A',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(139, 0, 0, 0.2)'
+                }
+              }),
+              transition: 'all 0.2s ease-in-out'
+            }}
+          >
+            Rejected
+          </Button>
         </Box>
 
         {/* Submissions List */}
@@ -201,14 +359,73 @@ export default function ReceiptHistory() {
             <TableContainer component={Paper}>
               <Table>
                 <TableHead>
-                  <TableRow>
-                    <TableCell>Receipt Type</TableCell>
-                    <TableCell>Amount</TableCell>
-                    <TableCell>Description</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Submitted</TableCell>
-                    <TableCell>Reviewed</TableCell>
-                    <TableCell>Actions</TableCell>
+                  <TableRow sx={{ 
+                    bgcolor: '#800000',
+                    background: '#800000'
+                  }}>
+                    <TableCell sx={{ 
+                      bgcolor: '#800000',
+                      color: '#ffffff',
+                      fontWeight: 'bold',
+                      borderBottom: '1px solid #e0e0e0',
+                      border: '1px solid #e0e0e0'
+                    }}>
+                      Receipt Type
+                    </TableCell>
+                    <TableCell sx={{ 
+                      bgcolor: '#800000',
+                      color: '#ffffff',
+                      fontWeight: 'bold',
+                      borderBottom: '1px solid #e0e0e0',
+                      border: '1px solid #e0e0e0'
+                    }}>
+                      Amount
+                    </TableCell>
+                    <TableCell sx={{ 
+                      bgcolor: '#800000',
+                      color: '#ffffff',
+                      fontWeight: 'bold',
+                      borderBottom: '1px solid #e0e0e0',
+                      border: '1px solid #e0e0e0'
+                    }}>
+                      Description
+                    </TableCell>
+                    <TableCell sx={{ 
+                      bgcolor: '#800000',
+                      color: '#ffffff',
+                      fontWeight: 'bold',
+                      borderBottom: '1px solid #e0e0e0',
+                      border: '1px solid #e0e0e0'
+                    }}>
+                      Status
+                    </TableCell>
+                    <TableCell sx={{ 
+                      bgcolor: '#800000',
+                      color: '#ffffff',
+                      fontWeight: 'bold',
+                      borderBottom: '1px solid #e0e0e0',
+                      border: '1px solid #e0e0e0'
+                    }}>
+                      Submitted
+                    </TableCell>
+                    <TableCell sx={{ 
+                      bgcolor: '#800000',
+                      color: '#ffffff',
+                      fontWeight: 'bold',
+                      borderBottom: '1px solid #e0e0e0',
+                      border: '1px solid #e0e0e0'
+                    }}>
+                      Reviewed
+                    </TableCell>
+                    <TableCell sx={{ 
+                      bgcolor: '#800000',
+                      color: '#ffffff',
+                      fontWeight: 'bold',
+                      borderBottom: '1px solid #e0e0e0',
+                      border: '1px solid #e0e0e0'
+                    }}>
+                      Actions
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -233,12 +450,40 @@ export default function ReceiptHistory() {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Chip
-                          icon={statusIcons[submission.status]}
-                          label={submission.status}
-                          color={statusColors[submission.status]}
-                          size="small"
-                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box sx={{ 
+                            width: 20, 
+                            height: 20, 
+                            bgcolor: 'transparent', 
+                            borderRadius: 1, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}>
+                            {submission.status === 'approved' ? (
+                              <CheckCircle sx={{ fontSize: 14, color: '#4caf50' }} />
+                            ) : submission.status === 'rejected' ? (
+                              <Cancel sx={{ fontSize: 14, color: '#f44336' }} />
+                            ) : submission.status === 'pending' ? (
+                              <Schedule sx={{ fontSize: 14, color: '#ff9800' }} />
+                            ) : (
+                              <Schedule sx={{ fontSize: 14, color: '#9e9e9e' }} />
+                            )}
+                          </Box>
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: submission.status === 'pending' ? '#ff9800' : 
+                                    submission.status === 'approved' ? '#4caf50' : 
+                                    submission.status === 'rejected' ? '#f44336' : '#000',
+                              fontWeight: 500,
+                              textTransform: 'capitalize'
+                            }}
+                          >
+                            {submission.status}
+                          </Typography>
+                        </Box>
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
@@ -266,7 +511,12 @@ export default function ReceiptHistory() {
                           <IconButton
                             size="small"
                             onClick={() => handleViewImage(submission.receiptImage)}
-                            color="primary"
+                            sx={{
+                              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                              '&:hover': {
+                                color: '#1976d2'
+                              }
+                            }}
                           >
                             <Visibility />
                           </IconButton>

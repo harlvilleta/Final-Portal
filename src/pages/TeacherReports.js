@@ -616,6 +616,7 @@ export default function TeacherReports() {
             placeholder="Search by student name, ID, or violation type..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            size="small"
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -718,13 +719,13 @@ export default function TeacherReports() {
           <TableContainer component={Paper} elevation={2}>
             <Table>
               <TableHead>
-                <TableRow sx={{ bgcolor: 'primary.main' }}>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Date Reported</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Student</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Violation Type</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Severity</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Actions</TableCell>
+                <TableRow sx={{ bgcolor: '#800000' }}>
+                  <TableCell sx={{ bgcolor: '#800000', color: '#ffffff', fontWeight: 600 }}>Date Reported</TableCell>
+                  <TableCell sx={{ bgcolor: '#800000', color: '#ffffff', fontWeight: 600 }}>Student</TableCell>
+                  <TableCell sx={{ bgcolor: '#800000', color: '#ffffff', fontWeight: 600 }}>Violation Type</TableCell>
+                  <TableCell sx={{ bgcolor: '#800000', color: '#ffffff', fontWeight: 600 }}>Severity</TableCell>
+                  <TableCell sx={{ bgcolor: '#800000', color: '#ffffff', fontWeight: 600 }}>Status</TableCell>
+                  <TableCell sx={{ bgcolor: '#800000', color: '#ffffff', fontWeight: 600 }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

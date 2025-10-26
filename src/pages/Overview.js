@@ -3,7 +3,7 @@ import {
   Typography, Box, Grid, Card, CardContent, Paper, CircularProgress, List, ListItem, ListItemText, 
   Divider, Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert,
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Avatar, Chip, IconButton, Tooltip,
-  useTheme
+  Pagination, useTheme
 } from "@mui/material";
 import { useTheme as useCustomTheme } from "../contexts/ThemeContext";
 import PeopleIcon from '@mui/icons-material/People';
@@ -56,6 +56,10 @@ export default function Overview() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  
+  // Pagination state for Recent Activity
+  const [currentPage, setCurrentPage] = useState(1);
+  const activitiesPerPage = 8;
   
   const navigate = useNavigate();
 
@@ -506,7 +510,15 @@ export default function Overview() {
 
   const userInfo = getUserDisplayInfo();
 
+  // Pagination logic for Recent Activity
+  const totalPages = Math.ceil(recentActivity.length / activitiesPerPage);
+  const startIndex = (currentPage - 1) * activitiesPerPage;
+  const endIndex = startIndex + activitiesPerPage;
+  const currentActivities = recentActivity.slice(startIndex, endIndex);
 
+  const handlePageChange = (event, value) => {
+    setCurrentPage(value);
+  };
 
   return (
     <Box sx={{ p: { xs: 0.5, sm: 1 }, pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
@@ -653,13 +665,26 @@ export default function Overview() {
       {/* Recent Activity Section */}
       <Grid container spacing={3} sx={{ mt: 6, justifyContent: 'center' }}>
         <Grid item xs={12} md={11} lg={10}>
-          <Paper sx={{ p: 3, boxShadow: 2 }}>
+          <Paper sx={{ 
+            p: 3, 
+            boxShadow: 2,
+            border: '2px solid #800000',
+            background: 'linear-gradient(135deg, rgba(128, 0, 0, 0.02), rgba(160, 82, 45, 0.02))',
+            '&:hover': {
+              borderColor: '#A0522D',
+              boxShadow: 3
+            }
+          }}>
             <Typography 
               variant="h6" 
               sx={{ 
                 mb: 3, 
                 fontWeight: 700, 
-                color: isDark ? '#ffffff' : '#000000'
+                background: 'linear-gradient(45deg, #800000, #A0522D, #8B4513)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textShadow: '0 2px 4px rgba(128, 0, 0, 0.3)'
               }}
             >
               Recent Activity
@@ -690,16 +715,17 @@ export default function Overview() {
                 </Typography>
               </Box>
             ) : (
-              <List sx={{ 
-                maxHeight: 500, 
-                overflow: 'auto',
-                '& .MuiListItem-root': {
-                  color: isDark ? '#ffffff' : '#000000',
-                  padding: '12px 0',
-                  borderBottom: `1px solid ${isDark ? '#404040' : '#e0e0e0'}`
-                }
-              }}>
-                {recentActivity.map((item, idx) => (
+              <>
+                <List sx={{ 
+                  maxHeight: 500, 
+                  overflow: 'auto',
+                  '& .MuiListItem-root': {
+                    color: isDark ? '#ffffff' : '#000000',
+                    padding: '12px 0',
+                    borderBottom: `1px solid ${isDark ? '#404040' : '#e0e0e0'}`
+                  }
+                }}>
+                  {currentActivities.map((item, idx) => (
                   <ListItem 
                     key={`${item.type}-${item.id}-${idx}`}
                     sx={{ 
@@ -752,7 +778,40 @@ export default function Overview() {
                     />
                   </ListItem>
                 ))}
-              </List>
+                </List>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    mt: 3,
+                    '& .MuiPaginationItem-root': {
+                      color: isDark ? '#ffffff' : '#000000',
+                      '&.Mui-selected': {
+                        backgroundColor: '#800000',
+                        color: '#ffffff',
+                        '&:hover': {
+                          backgroundColor: '#A0522D'
+                        }
+                      },
+                      '&:hover': {
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(128,0,0,0.1)'
+                      }
+                    }
+                  }}>
+                    <Pagination
+                      count={totalPages}
+                      page={currentPage}
+                      onChange={handlePageChange}
+                      color="primary"
+                      size="medium"
+                      showFirstButton
+                      showLastButton
+                    />
+                  </Box>
+                )}
+              </>
             )}
           </Paper>
         </Grid>

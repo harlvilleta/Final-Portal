@@ -213,6 +213,106 @@ function UserOverview({ currentUser }) {
 
       {/* Main Content */}
       <Grid container spacing={3}>
+        {/* Active Announcements */}
+        <Grid item xs={12} lg={6}>
+          <Card sx={{ 
+            borderRadius: 2,
+            boxShadow: 3,
+            height: 'fit-content',
+            borderLeft: '4px solid #800000',
+            bgcolor: theme.palette.mode === 'dark' ? '#1a1a1a' : 'transparent'
+          }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
+                  Active Announcements
+                </Typography>
+                <Button 
+                  size="small" 
+                  component={Link} 
+                  to="/announcements"
+                  sx={{ 
+                    textTransform: 'none',
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                    borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                    '&:hover': {
+                      backgroundColor: 'rgba(128, 0, 0, 0.1)',
+                      borderColor: '#800000',
+                      color: '#800000',
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 4px 8px rgba(128, 0, 0, 0.2)'
+                    },
+                    transition: 'all 0.2s ease-in-out'
+                  }}
+                  variant="outlined"
+                >
+                  View All
+                </Button>
+              </Box>
+              
+              {recentAnnouncements.length > 0 ? (
+                <List>
+                  {recentAnnouncements.map((announcement, index) => (
+                    <React.Fragment key={announcement.id}>
+                      <ListItem sx={{ 
+                        px: 0, 
+                        py: 1,
+                        '&:hover': {
+                          backgroundColor: 'transparent'
+                        }
+                      }}>
+                        <ListItemAvatar>
+                          <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
+                            <Announcement sx={{ fontSize: 20 }} />
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Typography variant="subtitle2" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>
+                              {announcement.title}
+                            </Typography>
+                          }
+                          secondary={
+                            <Box>
+                              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 0.5 }}>
+                                {announcement.message?.substring(0, 100)}{announcement.message?.length > 100 ? '...' : ''}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
+                                {announcement.createdAt ? new Date(announcement.createdAt).toLocaleDateString() : 'Recently'}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                        <Chip 
+                          label={announcement.priority || 'Normal'} 
+                          size="small"
+                          color={announcement.priority === 'High' ? 'warning' : 
+                                 announcement.priority === 'Urgent' ? 'error' : 'default'}
+                          sx={{ 
+                            fontWeight: 500,
+                            color: announcement.priority === 'High' ? '#ff9800' : 
+                                   announcement.priority === 'Urgent' ? '#f44336' : '#4caf50',
+                            borderColor: announcement.priority === 'High' ? '#ff9800' : 
+                                        announcement.priority === 'Urgent' ? '#f44336' : '#4caf50'
+                          }}
+                        />
+                      </ListItem>
+                      {index < recentAnnouncements.length - 1 && <Divider />}
+                    </React.Fragment>
+                  ))}
+                </List>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <Announcement sx={{ fontSize: 48, color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 1 }} />
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
+                    No announcements available
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
         {/* Recent Notifications */}
         <Grid item xs={12} lg={6}>
           <Card sx={{ 
@@ -245,9 +345,13 @@ function UserOverview({ currentUser }) {
                     color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
                     borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
                     '&:hover': {
-                      borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#6b0000',
-                      backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#80000010'
-                    }
+                      backgroundColor: 'rgba(128, 0, 0, 0.1)',
+                      borderColor: '#800000',
+                      color: '#800000',
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 4px 8px rgba(128, 0, 0, 0.2)'
+                    },
+                    transition: 'all 0.2s ease-in-out'
                   }}
                   variant="outlined"
                   component={Link} 
@@ -261,7 +365,13 @@ function UserOverview({ currentUser }) {
                 <List>
                   {recentNotifications.map((notification, index) => (
                     <React.Fragment key={notification.id}>
-                      <ListItem sx={{ px: 0, py: 1 }}>
+                      <ListItem sx={{ 
+                        px: 0, 
+                        py: 1,
+                        '&:hover': {
+                          backgroundColor: 'transparent'
+                        }
+                      }}>
                         <ListItemAvatar>
                           <Avatar sx={{ 
                             bgcolor: notification.read ? 'grey.300' : 
@@ -270,7 +380,7 @@ function UserOverview({ currentUser }) {
                             width: 40, 
                             height: 40
                           }}>
-                            {notification.type === 'violation' ? <Warning sx={{ fontSize: 20 }} /> : <Announcement sx={{ fontSize: 20 }} />}
+                            {notification.type === 'violation' ? <Warning sx={{ fontSize: 20 }} color="error" /> : <Announcement sx={{ fontSize: 20 }} color="primary" />}
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
@@ -308,90 +418,6 @@ function UserOverview({ currentUser }) {
                   <Campaign sx={{ fontSize: 48, color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 1 }} />
                   <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                     No notifications yet
-                  </Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Active Announcements */}
-        <Grid item xs={12} lg={6}>
-          <Card sx={{ 
-            borderRadius: 2,
-            boxShadow: 3,
-            height: 'fit-content',
-            borderLeft: '4px solid #1976d2',
-            bgcolor: theme.palette.mode === 'dark' ? '#1a1a1a' : 'transparent'
-          }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#2d3436' }}>
-                  Active Announcements
-                </Typography>
-                <Button 
-                  size="small" 
-                  component={Link} 
-                  to="/announcements"
-                  sx={{ 
-                    textTransform: 'none',
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#1976d2',
-                    borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#1976d2',
-                    '&:hover': {
-                      borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#1565c0',
-                      backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#1976d210'
-                    }
-                  }}
-                  variant="outlined"
-                >
-                  View All
-                </Button>
-              </Box>
-              
-              {recentAnnouncements.length > 0 ? (
-                <List>
-                  {recentAnnouncements.map((announcement, index) => (
-                    <React.Fragment key={announcement.id}>
-                      <ListItem sx={{ px: 0, py: 1 }}>
-                        <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
-                            <Announcement sx={{ fontSize: 20 }} />
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={
-                            <Typography variant="subtitle2" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>
-                              {announcement.title}
-                            </Typography>
-                          }
-                          secondary={
-                            <Box>
-                              <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 0.5 }}>
-                                {announcement.message?.substring(0, 100)}{announcement.message?.length > 100 ? '...' : ''}
-                              </Typography>
-                              <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
-                                {announcement.createdAt ? new Date(announcement.createdAt).toLocaleDateString() : 'Recently'}
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                        <Chip 
-                          label={announcement.priority || 'Normal'} 
-                          size="small"
-                          color={announcement.priority === 'High' ? 'error' : 
-                                 announcement.priority === 'Medium' ? 'warning' : 'default'}
-                          sx={{ fontWeight: 500 }}
-                        />
-                      </ListItem>
-                      {index < recentAnnouncements.length - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
-                </List>
-              ) : (
-                <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <Announcement sx={{ fontSize: 48, color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 1 }} />
-                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
-                    No announcements available
                   </Typography>
                 </Box>
               )}

@@ -330,13 +330,13 @@ export default function ActivitiesView() {
       </Box>
 
       {/* Search Bar with proper spacing */}
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: 3, maxWidth: 250 }}>
         <TextField 
           placeholder="Search activities..." 
           value={search} 
           onChange={e => setSearch(e.target.value)} 
           size="small"
-          sx={{ width: { xs: '100%', sm: 320 } }} 
+          fullWidth
         />
       </Box>
       
@@ -359,13 +359,13 @@ export default function ActivitiesView() {
                   cursor: 'pointer',
                   transition: 'all 0.3s ease-in-out',
                   borderLeft: '4px solid',
-                  borderLeftColor: act.completed ? '#9e9e9e' : '#ff9800',
+                  borderLeftColor: act.completed ? '#8B4513' : '#800000',
                   display: 'flex',
                   flexDirection: 'column',
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: 4,
-                    borderLeftColor: act.completed ? '#757575' : '#f57c00'
+                    borderLeftColor: act.completed ? '#A0522D' : '#A52A2A'
                   }
                 }}
                 onClick={() => setViewActivity(act)}

@@ -80,7 +80,74 @@ export default function Profile() {
   });
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [connectionStatus, setConnectionStatus] = useState('connected'); // 'connected', 'connecting', 'disconnected'
+  const [retryCount, setRetryCount] = useState(0);
   
+  // Helper function for database operations with timeout and retry
+  const dbOperation = async (operation, operationName = 'Database operation', maxRetries = 3) => {
+    const timeoutDuration = 15000; // 15 seconds timeout
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        setConnectionStatus('connecting');
+        
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Database connection timeout. Please check your internet connection.')), timeoutDuration);
+        });
+        
+        const result = await Promise.race([operation(), timeoutPromise]);
+        setConnectionStatus('connected');
+        setRetryCount(0);
+        return result;
+        
+      } catch (error) {
+        console.error(`${operationName} attempt ${attempt} failed:`, error);
+        
+        if (attempt === maxRetries) {
+          setConnectionStatus('disconnected');
+          setRetryCount(attempt);
+          
+          // Show user-friendly error message
+          setSnackbar({
+            open: true,
+            message: 'Database connection failed. Please check your internet connection and try again.',
+            severity: 'error'
+          });
+          
+          throw error;
+        } else {
+          // Wait before retrying (exponential backoff)
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`Retrying ${operationName} in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+  };
+
+  // Function to handle retry connection
+  const handleRetryConnection = async () => {
+    if (!currentUser) return;
+    
+    setConnectionStatus('connecting');
+    setRetryCount(0);
+    
+    try {
+      await loadUserProfile(currentUser.uid);
+      setSnackbar({
+        open: true,
+        message: 'Connection restored successfully!',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Retry failed:', error);
+      setSnackbar({
+        open: true,
+        message: 'Connection retry failed. Please check your internet connection.',
+        severity: 'error'
+      });
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -93,21 +160,38 @@ export default function Profile() {
     return unsubscribe;
   }, []);
 
+  // Periodic connection check
+  useEffect(() => {
+    if (connectionStatus === 'disconnected') {
+      const interval = setInterval(async () => {
+        try {
+          // Try a simple database operation to check connection
+          await dbOperation(
+            () => getDoc(doc(db, 'users', currentUser?.uid || 'test')),
+            'Connection check',
+            1 // Only 1 retry for connection check
+          );
+          // If successful, reload profile
+          if (currentUser) {
+            await loadUserProfile(currentUser.uid);
+          }
+        } catch (error) {
+          // Connection still not available, do nothing
+        }
+      }, 10000); // Check every 10 seconds
 
-  const loadUserProfile = async (uid, retryCount = 0) => {
-    const maxRetries = 3;
-    const retryDelay = 1000; // 1 second
+      return () => clearInterval(interval);
+    }
+  }, [connectionStatus, currentUser]);
 
+
+  const loadUserProfile = async (uid) => {
     try {
-      // Add timeout to prevent indefinite waiting
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Database connection timeout')), 10000); // 10 second timeout
-      });
+      const userDoc = await dbOperation(
+        () => getDoc(doc(db, 'users', uid)),
+        'Load user profile'
+      );
       
-      const userDoc = await Promise.race([
-        getDoc(doc(db, 'users', uid)),
-        timeoutPromise
-      ]);
       if (userDoc.exists()) {
         const userData = userDoc.data();
         setProfile(prev => ({
@@ -151,7 +235,10 @@ export default function Profile() {
         
         // Automatically create the user document in the background
         try {
-          await setDoc(doc(db, 'users', uid), basicProfile);
+          await dbOperation(
+            () => setDoc(doc(db, 'users', uid), basicProfile),
+            'Create user profile'
+          );
           console.log('✅ User profile created automatically');
         } catch (createError) {
           console.log('Profile will be created on next successful connection');
@@ -160,35 +247,29 @@ export default function Profile() {
     } catch (error) {
       console.error('Error loading user profile:', error);
       
-      // Retry logic for connection timeouts
-      if (retryCount < maxRetries && (error.code === 'unavailable' || error.message.includes('timeout') || error.message.includes('Database connection timeout'))) {
-        console.log(`Retrying profile load (attempt ${retryCount + 1}/${maxRetries})...`);
-        setTimeout(() => {
-          loadUserProfile(uid, retryCount + 1);
-        }, retryDelay * (retryCount + 1));
-      } else {
-        // If all retries failed, set a basic profile to prevent blocking
-        console.log('Setting fallback profile due to connection issues');
-        const fallbackProfile = {
-          id: uid,
-          email: currentUser?.email || "",
-          firstName: currentUser?.displayName?.split(' ')[0] || "",
-          lastName: currentUser?.displayName?.split(' ').slice(1).join(' ') || "",
-          role: "Student"
-        };
-        
-        setProfile(prev => ({ ...prev, ...fallbackProfile }));
-        
-        // Try to create the profile in the background when connection is restored
-        setTimeout(async () => {
-          try {
-            await setDoc(doc(db, 'users', uid), { ...fallbackProfile, createdAt: new Date().toISOString() });
-            console.log('✅ Fallback profile saved when connection restored');
-          } catch (bgError) {
-            console.log('Will retry profile creation on next user action');
-          }
-        }, 5000);
-      }
+      // Set a fallback profile to prevent blocking the UI
+      const fallbackProfile = {
+        id: uid,
+        email: currentUser?.email || "",
+        firstName: currentUser?.displayName?.split(' ')[0] || "",
+        lastName: currentUser?.displayName?.split(' ').slice(1).join(' ') || "",
+        role: "Student"
+      };
+      
+      setProfile(prev => ({ ...prev, ...fallbackProfile }));
+      
+      // Try to create the profile in the background when connection is restored
+      setTimeout(async () => {
+        try {
+          await dbOperation(
+            () => setDoc(doc(db, 'users', uid), { ...fallbackProfile, createdAt: new Date().toISOString() }),
+            'Create fallback profile'
+          );
+          console.log('✅ Fallback profile saved when connection restored');
+        } catch (bgError) {
+          console.log('Will retry profile creation on next user action');
+        }
+      }, 5000);
     }
   };
 
@@ -261,32 +342,35 @@ export default function Profile() {
       }
 
       // Update Firestore user document
-      await setDoc(doc(db, 'users', currentUser.uid), {
-        email: profile.email,
-        fullName: fullName,
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        middleInitial: profile.middleInitial,
-        sex: profile.sex,
-        age: profile.age,
-        birthdate: profile.birthdate,
-        course: profile.course,
-        year: profile.year,
-        section: profile.section,
-        sccNumber: profile.sccNumber,
-        contact: profile.contact,
-        fatherName: profile.fatherName,
-        fatherOccupation: profile.fatherOccupation,
-        motherName: profile.motherName,
-        motherOccupation: profile.motherOccupation,
-        guardian: profile.guardian,
-        guardianContact: profile.guardianContact,
-        homeAddress: profile.homeAddress,
-        profilePic: imageURL,
-        role: profile.role || 'Student',
-        studentId: profile.studentId, // Ensure studentId is included
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
+      await dbOperation(
+        () => setDoc(doc(db, 'users', currentUser.uid), {
+          email: profile.email,
+          fullName: fullName,
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          middleInitial: profile.middleInitial,
+          sex: profile.sex,
+          age: profile.age,
+          birthdate: profile.birthdate,
+          course: profile.course,
+          year: profile.year,
+          section: profile.section,
+          sccNumber: profile.sccNumber,
+          contact: profile.contact,
+          fatherName: profile.fatherName,
+          fatherOccupation: profile.fatherOccupation,
+          motherName: profile.motherName,
+          motherOccupation: profile.motherOccupation,
+          guardian: profile.guardian,
+          guardianContact: profile.guardianContact,
+          homeAddress: profile.homeAddress,
+          profilePic: imageURL,
+          role: profile.role || 'Student',
+          studentId: profile.studentId, // Ensure studentId is included
+          updatedAt: new Date().toISOString()
+        }, { merge: true }),
+        'Save user profile'
+      );
 
       // 🔄 SYNC WITH ADMIN STUDENT LIST
       // If this is a student, also update their record in the admin's students collection
@@ -295,75 +379,85 @@ export default function Profile() {
           console.log('🔄 Syncing student profile with admin records...');
           
           // Find the student record in the admin's students collection
-          const studentsQuery = query(
-            collection(db, 'students'),
-            where('id', '==', profile.studentId)
+          const studentsSnapshot = await dbOperation(
+            () => {
+              const studentsQuery = query(
+                collection(db, 'students'),
+                where('id', '==', profile.studentId)
+              );
+              return getDocs(studentsQuery);
+            },
+            'Find student record'
           );
-          
-          const studentsSnapshot = await getDocs(studentsQuery);
           
           if (!studentsSnapshot.empty) {
             // Update the existing student record in admin's collection
             const studentDoc = studentsSnapshot.docs[0];
-            await updateDoc(doc(db, 'students', studentDoc.id), {
-              firstName: profile.firstName,
-              lastName: profile.lastName,
-              middleInitial: profile.middleInitial,
-              sex: profile.sex,
-              age: profile.age,
-              birthdate: profile.birthdate,
-              course: profile.course,
-              year: profile.year,
-              sccNumber: profile.sccNumber,
-              contact: profile.contact,
-              fatherName: profile.fatherName,
-              fatherOccupation: profile.fatherOccupation,
-              motherName: profile.motherName,
-              motherOccupation: profile.motherOccupation,
-              guardian: profile.guardian,
-              guardianContact: profile.guardianContact,
-              homeAddress: profile.homeAddress,
-              profilePic: imageURL,
-              email: profile.email,
-              isRegistered: true,
-              registeredUserId: currentUser.uid,
-              lastUpdated: new Date().toISOString(),
-              updatedBy: 'student'
-            });
+            await dbOperation(
+              () => updateDoc(doc(db, 'students', studentDoc.id), {
+                firstName: profile.firstName,
+                lastName: profile.lastName,
+                middleInitial: profile.middleInitial,
+                sex: profile.sex,
+                age: profile.age,
+                birthdate: profile.birthdate,
+                course: profile.course,
+                year: profile.year,
+                sccNumber: profile.sccNumber,
+                contact: profile.contact,
+                fatherName: profile.fatherName,
+                fatherOccupation: profile.fatherOccupation,
+                motherName: profile.motherName,
+                motherOccupation: profile.motherOccupation,
+                guardian: profile.guardian,
+                guardianContact: profile.guardianContact,
+                homeAddress: profile.homeAddress,
+                profilePic: imageURL,
+                email: profile.email,
+                isRegistered: true,
+                registeredUserId: currentUser.uid,
+                lastUpdated: new Date().toISOString(),
+                updatedBy: 'student'
+              }),
+              'Update student record'
+            );
             
             console.log('✅ Student record synced with admin list successfully');
           } else {
             console.log('⚠️ Student record not found in admin collection, creating new record...');
             
             // Create a new student record in admin's collection if not found
-            await addDoc(collection(db, 'students'), {
-              id: profile.studentId,
-              firstName: profile.firstName,
-              lastName: profile.lastName,
-              middleInitial: profile.middleInitial,
-              sex: profile.sex,
-              age: profile.age,
-              birthdate: profile.birthdate,
-              course: profile.course,
-              year: profile.year,
-              sccNumber: profile.sccNumber,
-              contact: profile.contact,
-              fatherName: profile.fatherName,
-              fatherOccupation: profile.fatherOccupation,
-              motherName: profile.motherName,
-              motherOccupation: profile.motherOccupation,
-              guardian: profile.guardian,
-              guardianContact: profile.guardianContact,
-              homeAddress: profile.homeAddress,
-              profilePic: imageURL,
-              email: profile.email,
-              isRegistered: true,
-              registeredUserId: currentUser.uid,
-              registeredAt: new Date().toISOString(),
-              createdAt: new Date().toISOString(),
-              lastUpdated: new Date().toISOString(),
-              updatedBy: 'student'
-            });
+            await dbOperation(
+              () => addDoc(collection(db, 'students'), {
+                id: profile.studentId,
+                firstName: profile.firstName,
+                lastName: profile.lastName,
+                middleInitial: profile.middleInitial,
+                sex: profile.sex,
+                age: profile.age,
+                birthdate: profile.birthdate,
+                course: profile.course,
+                year: profile.year,
+                sccNumber: profile.sccNumber,
+                contact: profile.contact,
+                fatherName: profile.fatherName,
+                fatherOccupation: profile.fatherOccupation,
+                motherName: profile.motherName,
+                motherOccupation: profile.motherOccupation,
+                guardian: profile.guardian,
+                guardianContact: profile.guardianContact,
+                homeAddress: profile.homeAddress,
+                profilePic: imageURL,
+                email: profile.email,
+                isRegistered: true,
+                registeredUserId: currentUser.uid,
+                registeredAt: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                lastUpdated: new Date().toISOString(),
+                updatedBy: 'student'
+              }),
+              'Create student record'
+            );
             
             console.log('✅ New student record created in admin collection');
           }
@@ -544,383 +638,868 @@ export default function Profile() {
 
   return (
     <Box sx={{ 
+      minHeight: '100vh',
+      background: theme.palette.mode === 'dark' 
+        ? 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #2a2a2a 100%)'
+        : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%)',
       pt: { xs: 2, sm: 3 }, 
       pl: { xs: 2, sm: 3, md: 4 }, 
       pr: { xs: 2, sm: 3, md: 4 }, 
-      pb: 3,
-      bgcolor: theme.palette.mode === 'dark' ? '#1a1a1a' : 'transparent'
+      pb: 3
     }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+      {/* Header Section */}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        mb: 4,
+        position: 'relative',
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          bottom: -16,
+          left: 0,
+          right: 0,
+          height: '2px',
+          background: 'linear-gradient(90deg, #800000 0%, #ff6b6b 50%, #800000 100%)',
+          borderRadius: '1px'
+        }
+      }}>
         <IconButton 
           onClick={() => navigate('/options')}
           sx={{ 
-            mr: 2,
-            color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-            '&:hover': {
+            mr: 3,
+            p: 1.5,
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
               bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(128, 0, 0, 0.1)',
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000'
+            border: `2px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(128, 0, 0, 0.2)'}`,
+            borderRadius: 2,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              bgcolor: '#800000',
+              color: 'white',
+              borderColor: '#800000',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 8px 25px rgba(128, 0, 0, 0.3)'
             }
           }}
         >
           <ArrowBack />
         </IconButton>
-        <Typography variant="h4" fontWeight={700} sx={{ 
-          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000'
+        <Box sx={{ flexGrow: 1 }}>
+          <Typography variant="h4" fontWeight={800} sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+            mb: 0.5,
+            background: theme.palette.mode === 'dark' 
+              ? 'linear-gradient(45deg, #ffffff 30%, #e0e0e0 90%)'
+              : 'linear-gradient(45deg, #800000 30%, #ff6b6b 90%)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
         }}>
           Account Settings
         </Typography>
+          <Typography variant="body1" sx={{ 
+            color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+            fontWeight: 500
+          }}>
+            Manage your profile and security settings
+          </Typography>
+        </Box>
+        
+        {/* Connection Status Indicator */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            bgcolor: connectionStatus === 'connected' ? '#4caf50' : 
+                    connectionStatus === 'connecting' ? '#ff9800' : '#f44336',
+            animation: connectionStatus === 'connecting' ? 'pulse 1.5s infinite' : 'none',
+            '@keyframes pulse': {
+              '0%': { opacity: 1 },
+              '50%': { opacity: 0.5 },
+              '100%': { opacity: 1 }
+            }
+          }} />
+          <Typography variant="caption" sx={{
+            color: connectionStatus === 'connected' ? '#4caf50' : 
+                   connectionStatus === 'connecting' ? '#ff9800' : '#f44336',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
+            {connectionStatus === 'connected' ? 'Connected' : 
+             connectionStatus === 'connecting' ? 'Connecting...' : 'Disconnected'}
+          </Typography>
+          {connectionStatus === 'disconnected' && (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={handleRetryConnection}
+              sx={{
+                ml: 1,
+                fontSize: '0.75rem',
+                py: 0.5,
+                px: 1,
+                minWidth: 'auto',
+                borderColor: '#f44336',
+                color: '#f44336',
+                '&:hover': {
+                  bgcolor: '#f44336',
+                  color: 'white'
+                }
+              }}
+            >
+              Retry
+            </Button>
+          )}
+        </Box>
       </Box>
 
+      {/* Enhanced Tabs Section */}
       <Paper sx={{ 
-        mb: 3,
-        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
-        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
-        borderRadius: 2,
-        boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+        mb: 4,
+        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.95)',
+        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(0, 0, 0, 0.12)',
+        borderRadius: 3,
+        boxShadow: theme.palette.mode === 'dark' 
+          ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+          : '0 8px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+        backdropFilter: 'blur(20px)',
+        overflow: 'hidden',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent 0%, rgba(128, 0, 0, 0.3) 50%, transparent 100%)'
+        }
       }}>
         <Tabs 
           value={activeTab} 
           onChange={(e, newValue) => setActiveTab(newValue)}
           sx={{
+            px: 2,
+            pt: 1,
             '& .MuiTab-root': {
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-              fontWeight: 400,
+              color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+              fontWeight: 600,
               textTransform: 'none',
+              fontSize: '1rem',
+              py: 2,
+              px: 3,
+              mx: 0.5,
+              borderRadius: 2,
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(135deg, rgba(128, 0, 0, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%)',
+                opacity: 0,
+                transition: 'opacity 0.3s ease'
+              },
               '&.Mui-selected': {
                 color: '#ffffff',
                 fontWeight: 700,
-                backgroundColor: '#800000',
-                borderRadius: '4px 4px 0 0'
+                background: 'linear-gradient(135deg, #800000 0%, #ff6b6b 100%)',
+                boxShadow: '0 4px 20px rgba(128, 0, 0, 0.3)',
+                transform: 'translateY(-2px)',
+                '&::before': {
+                  opacity: 0
+                }
               },
               '&:hover': {
-                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(128, 0, 0, 0.1)',
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000'
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.08)',
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                transform: 'translateY(-1px)',
+                '&::before': {
+                  opacity: 1
+                }
               }
             },
             '& .MuiTabs-indicator': {
-              backgroundColor: '#800000',
-              height: 3
+              display: 'none'
             }
           }}
         >
-          <Tab icon={<Person />} label="Profile Information" />
-          <Tab icon={<Security />} label="Security" />
+          <Tab 
+            icon={<Person sx={{ fontSize: '1.2rem', mb: 0.5 }} />} 
+            label="Profile Information"
+            sx={{ flexDirection: 'column', gap: 0.5 }}
+          />
+          <Tab 
+            icon={<Security sx={{ fontSize: '1.2rem', mb: 0.5 }} />} 
+            label="Security Settings"
+            sx={{ flexDirection: 'column', gap: 0.5 }}
+          />
         </Tabs>
       </Paper>
 
       {activeTab === 0 && (
         <Grid container spacing={3}>
-          {/* Profile Picture Section */}
+          {/* Enhanced Profile Picture Section */}
           <Grid item xs={12} md={4}>
             <Card sx={{
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
-              border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
-              borderRadius: 2,
-              boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.95)',
+              border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(0, 0, 0, 0.12)',
+              borderRadius: 4,
+              boxShadow: theme.palette.mode === 'dark' 
+                ? '0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                : '0 12px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+              backdropFilter: 'blur(20px)',
+              overflow: 'hidden',
+              position: 'relative',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: theme.palette.mode === 'dark' 
+                  ? '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                  : '0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.08)'
+              },
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '3px',
+                background: 'linear-gradient(90deg, #800000 0%, #ff6b6b 50%, #800000 100%)'
+              }
             }}>
-              <CardContent sx={{ textAlign: 'center' }}>
+              <CardContent sx={{ textAlign: 'center', p: 4 }}>
+                <Box sx={{ position: 'relative', display: 'inline-block', mb: 3 }}>
                 <Avatar 
                   src={profile.image} 
                   sx={{ 
-                    width: 120, 
-                    height: 120, 
-                    fontSize: '3rem',
+                      width: 140, 
+                      height: 140, 
+                      fontSize: '3.5rem',
                     bgcolor: 'primary.main',
-                    mb: 2,
                     mx: 'auto',
-                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)'
+                      background: 'linear-gradient(135deg, #800000 0%, #ff6b6b 100%)',
+                      border: `4px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(128, 0, 0, 0.2)'}`,
+                      boxShadow: '0 8px 32px rgba(128, 0, 0, 0.3)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'scale(1.05)',
+                        boxShadow: '0 12px 40px rgba(128, 0, 0, 0.4)'
+                      }
                   }}
                 >
                   {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}
                 </Avatar>
-                <Typography variant="h6" gutterBottom sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
+                  <Box sx={{
+                    position: 'absolute',
+                    top: -8,
+                    right: -8,
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    bgcolor: '#4caf50',
+                    border: `3px solid ${theme.palette.mode === 'dark' ? '#1a1a1a' : '#ffffff'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Box sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      bgcolor: '#ffffff'
+                    }} />
+                  </Box>
+                </Box>
+                
+                <Typography variant="h5" fontWeight={700} gutterBottom sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                  mb: 1,
+                  background: theme.palette.mode === 'dark' 
+                    ? 'linear-gradient(45deg, #ffffff 30%, #e0e0e0 90%)'
+                    : 'linear-gradient(45deg, #800000 30%, #ff6b6b 90%)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
                 }}>
                   {profile.firstName} {profile.lastName}
                 </Typography>
-                <Typography variant="body2" sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary'
+                
+                <Typography variant="body1" sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                  mb: 2,
+                  fontWeight: 500
                 }}>
                   {profile.email}
                 </Typography>
+                
                 <Chip 
                   label={profile.role || "Student"} 
-                  color="primary" 
-                  variant="outlined" 
-                  sx={{ mt: 1 }}
+                  sx={{ 
+                    mb: 3,
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.2)' : 'rgba(128, 0, 0, 0.1)',
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                    border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.3)' : 'rgba(128, 0, 0, 0.3)'}`,
+                    fontWeight: 600,
+                    px: 2,
+                    py: 0.5
+                  }}
                 />
-                <Box sx={{ mt: 3 }}>
+                
                   <Button 
-                    variant="outlined" 
-                    startIcon={<Edit />}
+                  variant="contained" 
+                  startIcon={<Edit sx={{ fontSize: '1.1rem' }} />}
                     onClick={handleOpenEditModal}
                     sx={{ 
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : '#000000',
-                      fontWeight: 600,
+                    background: 'linear-gradient(135deg, #800000 0%, #ff6b6b 100%)',
+                    color: 'white',
+                    fontWeight: 700,
                       textTransform: 'none',
-                      px: 3,
+                    px: 4,
+                    py: 1.5,
+                    borderRadius: 3,
+                    boxShadow: '0 4px 20px rgba(128, 0, 0, 0.3)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       '&:hover': {
-                        bgcolor: '#800000',
-                        color: 'white',
-                        borderColor: '#800000'
+                      background: 'linear-gradient(135deg, #6b0000 0%, #e55a5a 100%)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 30px rgba(128, 0, 0, 0.4)'
                       }
                     }}
                   >
                     Edit Profile
                   </Button>
-                </Box>
               </CardContent>
             </Card>
           </Grid>
 
-          {/* Profile Information Display */}
+          {/* Enhanced Profile Information Display */}
           <Grid item xs={12} md={8}>
             <Card sx={{
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
-              border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
-              borderRadius: 2,
-              boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.95)',
+              border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(0, 0, 0, 0.12)',
+              borderRadius: 4,
+              boxShadow: theme.palette.mode === 'dark' 
+                ? '0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                : '0 12px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+              backdropFilter: 'blur(20px)',
+              overflow: 'hidden',
+              position: 'relative',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: theme.palette.mode === 'dark' 
+                  ? '0 16px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                  : '0 16px 50px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.08)'
+              },
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '3px',
+                background: 'linear-gradient(90deg, #800000 0%, #ff6b6b 50%, #800000 100%)'
+              }
             }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ 
+              <CardContent sx={{ p: 4 }}>
+                <Box sx={{ 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: 1,
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
+                  gap: 2,
+                  mb: 4,
+                  pb: 2,
+                  borderBottom: `2px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(128, 0, 0, 0.1)'}`
                 }}>
-                  <Person /> Personal Information
+                  <Box sx={{
+                    p: 1.5,
+                    borderRadius: 2,
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.2)' : 'rgba(128, 0, 0, 0.1)',
+                    color: '#800000'
+                  }}>
+                    <Person sx={{ fontSize: '1.5rem' }} />
+                  </Box>
+                  <Typography variant="h5" fontWeight={700} sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                    background: theme.palette.mode === 'dark' 
+                      ? 'linear-gradient(45deg, #ffffff 30%, #e0e0e0 90%)'
+                      : 'linear-gradient(45deg, #800000 30%, #ff6b6b 90%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}>
+                    Personal Information
                 </Typography>
-                <Grid container spacing={2}>
+                </Box>
+                <Grid container spacing={3}>
                   <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" sx={{ 
-                        color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary'
-                      }} gutterBottom>
+                    <Box sx={{
+                      mb: 1.5,
+                      p: 1,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      borderRadius: 1.5,
+                      border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(128, 0, 0, 0.08)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: theme.palette.mode === 'dark'
+                          ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+                          : '0 2px 8px rgba(128, 0, 0, 0.06)'
+                      }
+                    }}>
+                      <Typography variant="body2" sx={{
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                        fontWeight: 600,
+                        mb: 0.5,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        fontSize: '0.7rem'
+                      }}>
                         First Name
                       </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'grey.50',
-                        borderRadius: 1,
-                        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e0e0e0',
-                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
+                      <Typography variant="body2" sx={{
+                        fontWeight: 600,
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                        fontSize: '1rem'
                       }}>
-                        {profile.firstName || 'Not provided'}
+                        {profile.firstName || ''}
                       </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" sx={{ 
-                        color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary'
-                      }} gutterBottom>
+                    <Box sx={{ 
+                      mb: 1.5,
+                      p: 1,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      borderRadius: 1.5,
+                      border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(128, 0, 0, 0.08)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: theme.palette.mode === 'dark'
+                          ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+                          : '0 2px 8px rgba(128, 0, 0, 0.06)'
+                      }
+                    }}>
+                      <Typography variant="body2" sx={{
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                        fontWeight: 600,
+                        mb: 0.5,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        fontSize: '0.7rem'
+                      }}>
                         Last Name
                       </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'grey.50',
-                        borderRadius: 1,
-                        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e0e0e0',
-                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
+                      <Typography variant="body2" sx={{
+                        fontWeight: 600,
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                        fontSize: '1rem'
                       }}>
-                        {profile.lastName || 'Not provided'}
+                        {profile.lastName || ''}
                       </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Box sx={{ 
+                      mb: 1.5,
+                      p: 1,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      borderRadius: 1.5,
+                      border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(128, 0, 0, 0.08)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: theme.palette.mode === 'dark'
+                          ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+                          : '0 2px 8px rgba(128, 0, 0, 0.06)'
+                      }
+                    }}>
+                      <Typography variant="body2" sx={{
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                        fontWeight: 600,
+                        mb: 0.5,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        fontSize: '0.7rem'
+                      }}>
                         Middle Initial
                       </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
+                      <Typography variant="body2" sx={{
+                        fontWeight: 600,
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                        fontSize: '1rem'
                       }}>
-                        {profile.middleInitial || 'Not provided'}
+                        {profile.middleInitial || ''}
                       </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Box sx={{ 
+                      mb: 1.5,
+                      p: 1,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      borderRadius: 1.5,
+                      border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(128, 0, 0, 0.08)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: theme.palette.mode === 'dark'
+                          ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+                          : '0 2px 8px rgba(128, 0, 0, 0.06)'
+                      }
+                    }}>
+                      <Typography variant="body2" sx={{
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                        fontWeight: 600,
+                        mb: 0.5,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        fontSize: '0.7rem'
+                      }}>
                         Email Address
                       </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
+                      <Typography variant="body2" sx={{
+                        fontWeight: 600,
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                        fontSize: '1rem'
                       }}>
-                        {profile.email || 'Not provided'}
+                        {profile.email || ''}
                       </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Box sx={{ 
+                      mb: 1.5,
+                      p: 1,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      borderRadius: 1.5,
+                      border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(128, 0, 0, 0.08)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: theme.palette.mode === 'dark' 
+                          ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+                          : '0 2px 8px rgba(128, 0, 0, 0.06)'
+                      }
+                    }}>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                        fontWeight: 600,
+                        mb: 0.5,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        fontSize: '0.7rem'
+                      }}>
                         Contact Number
                       </Typography>
                       <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
+                        fontWeight: 600,
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                        fontSize: '1rem'
                       }}>
-                        {profile.contact || 'Not provided'}
+                        {profile.contact || ''}
                       </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Box sx={{ 
+                      mb: 1.5,
+                      p: 1,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      borderRadius: 1.5,
+                      border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(128, 0, 0, 0.08)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: theme.palette.mode === 'dark' 
+                          ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+                          : '0 2px 8px rgba(128, 0, 0, 0.06)'
+                      }
+                    }}>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                        fontWeight: 600,
+                        mb: 0.5,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        fontSize: '0.7rem'
+                      }}>
                         Course
                       </Typography>
                       <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
+                        fontWeight: 600,
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                        fontSize: '1rem'
                       }}>
-                        {profile.course || 'Not provided'}
+                        {profile.course || ''}
                       </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Box sx={{ 
+                      mb: 1.5,
+                      p: 1,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      borderRadius: 1.5,
+                      border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(128, 0, 0, 0.08)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: theme.palette.mode === 'dark' 
+                          ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+                          : '0 2px 8px rgba(128, 0, 0, 0.06)'
+                      }
+                    }}>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                        fontWeight: 600,
+                        mb: 0.5,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        fontSize: '0.7rem'
+                      }}>
                         Year Level
                       </Typography>
                       <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
+                        fontWeight: 600,
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                        fontSize: '1rem'
                       }}>
-                        {profile.year || 'Not provided'}
+                        {profile.year || ''}
                       </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Box sx={{ 
+                      mb: 1.5,
+                      p: 1,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      borderRadius: 1.5,
+                      border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(128, 0, 0, 0.08)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: theme.palette.mode === 'dark' 
+                          ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+                          : '0 2px 8px rgba(128, 0, 0, 0.06)'
+                      }
+                    }}>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                        fontWeight: 600,
+                        mb: 0.5,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        fontSize: '0.7rem'
+                      }}>
                         Section
                       </Typography>
                       <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
+                        fontWeight: 600,
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                        fontSize: '1rem'
                       }}>
-                        {profile.section || 'Not provided'}
+                        {profile.section || ''}
                       </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Box sx={{ 
+                      mb: 1.5,
+                      p: 1,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      borderRadius: 1.5,
+                      border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(128, 0, 0, 0.08)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: theme.palette.mode === 'dark' 
+                          ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+                          : '0 2px 8px rgba(128, 0, 0, 0.06)'
+                      }
+                    }}>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                        fontWeight: 600,
+                        mb: 0.5,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        fontSize: '0.7rem'
+                      }}>
                         Sex
                       </Typography>
                       <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
+                        fontWeight: 600,
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                        fontSize: '1rem'
                       }}>
-                        {profile.sex || 'Not provided'}
+                        {profile.sex || ''}
                       </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Box sx={{ 
+                      mb: 1.5,
+                      p: 1,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      borderRadius: 1.5,
+                      border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(128, 0, 0, 0.08)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: theme.palette.mode === 'dark' 
+                          ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+                          : '0 2px 8px rgba(128, 0, 0, 0.06)'
+                      }
+                    }}>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                        fontWeight: 600,
+                        mb: 0.5,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        fontSize: '0.7rem'
+                      }}>
                         Age
                       </Typography>
                       <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
+                        fontWeight: 600,
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                        fontSize: '1rem'
                       }}>
-                        {profile.age || 'Not provided'}
+                        {profile.age || ''}
                       </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Box sx={{ 
+                      mb: 1.5,
+                      p: 1,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      borderRadius: 1.5,
+                      border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(128, 0, 0, 0.08)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: theme.palette.mode === 'dark' 
+                          ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+                          : '0 2px 8px rgba(128, 0, 0, 0.06)'
+                      }
+                    }}>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                        fontWeight: 600,
+                        mb: 0.5,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        fontSize: '0.7rem'
+                      }}>
                         Birthday
                       </Typography>
                       <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
+                        fontWeight: 600,
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                        fontSize: '1rem'
                       }}>
-                        {profile.birthdate ? new Date(profile.birthdate).toLocaleDateString() : 'Not provided'}
+                        {profile.birthdate ? new Date(profile.birthdate).toLocaleDateString() : ''}
                       </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
+                    <Box sx={{ 
+                      mb: 1.5,
+                      p: 1,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      borderRadius: 1.5,
+                      border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(128, 0, 0, 0.08)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: theme.palette.mode === 'dark' 
+                          ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+                          : '0 2px 8px rgba(128, 0, 0, 0.06)'
+                      }
+                    }}>
                       <Typography variant="body2" sx={{ 
-                        color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary'
-                      }} gutterBottom>
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                        fontWeight: 600,
+                        mb: 0.5,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        fontSize: '0.7rem'
+                      }}>
                         Student ID
                       </Typography>
                       <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'grey.50',
-                        borderRadius: 1,
-                        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e0e0e0',
-                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
+                        fontWeight: 600,
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                        fontSize: '1rem'
                       }}>
-                        {profile.studentId || 'Not provided'}
+                        {profile.studentId || ''}
                       </Typography>
                     </Box>
                   </Grid>
-                </Grid>
-
-                <Divider sx={{ my: 3 }} />
-
-                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Home /> Address Information
-                </Typography>
-                <Grid container spacing={2}>
                   <Grid item xs={12}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Box sx={{ 
+                      mb: 1.5,
+                      p: 1,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      borderRadius: 1.5,
+                      border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(128, 0, 0, 0.08)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: theme.palette.mode === 'dark'
+                          ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+                          : '0 2px 8px rgba(128, 0, 0, 0.06)'
+                      }
+                    }}>
+                      <Typography variant="body2" sx={{
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                        fontWeight: 600,
+                        mb: 0.5,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        fontSize: '0.7rem'
+                      }}>
                         Home Address
                       </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0',
-                        minHeight: '60px',
+                      <Typography variant="body2" sx={{
+                        fontWeight: 600,
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                        fontSize: '1rem',
+                        lineHeight: 1.5,
+                        minHeight: '40px',
                         display: 'flex',
-                        alignItems: 'center'
+                        alignItems: 'flex-start'
                       }}>
-                        {profile.homeAddress || 'Not provided'}
+                        {profile.homeAddress || ''}
                       </Typography>
                     </Box>
                   </Grid>
                 </Grid>
+
               </CardContent>
             </Card>
           </Grid>
@@ -929,16 +1508,56 @@ export default function Profile() {
 
       {activeTab === 1 && (
         <Box sx={{ 
-          maxWidth: 400, 
+          maxWidth: 500, 
           mx: 'auto',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center'
         }}>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-            <Security /> Change Password
-          </Typography>
-          <Stack spacing={2} sx={{ width: '100%' }}>
+          <Card sx={{
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.95)',
+            border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(0, 0, 0, 0.12)',
+            borderRadius: 4,
+            boxShadow: theme.palette.mode === 'dark' 
+              ? '0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+              : '0 12px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+            backdropFilter: 'blur(20px)',
+            overflow: 'hidden',
+            position: 'relative',
+            width: '100%',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '3px',
+              background: 'linear-gradient(90deg, #800000 0%, #ff6b6b 50%, #800000 100%)'
+            }
+          }}>
+            <CardContent sx={{ p: 4 }}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: 2,
+                mb: 4,
+                pb: 2,
+                borderBottom: `2px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(128, 0, 0, 0.1)'}`
+              }}>
+                <Security sx={{ 
+                  fontSize: '1.5rem',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000'
+                }} />
+                <Typography variant="h5" gutterBottom fontWeight={700} sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                  mb: 2,
+                  mt: 1
+                }}>
+                  Change Password
+                </Typography>
+              </Box>
+              <Stack spacing={3} sx={{ width: '100%' }}>
             <TextField
               label="Current Password"
               name="currentPassword"
@@ -946,12 +1565,32 @@ export default function Profile() {
               value={passwordForm.currentPassword}
               onChange={handlePasswordChange}
               fullWidth
+                  size="large"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)'
+                      },
+                      '&.Mui-focused': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        boxShadow: '0 0 0 2px rgba(128, 0, 0, 0.2)'
+                      }
+                    }
+                  }}
               InputProps={{
                 endAdornment: (
                   <IconButton
                     size="small"
                     onClick={() => setShowPassword(!showPassword)}
                     edge="end"
+                        sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                          '&:hover': {
+                            color: '#1976d2'
+                          }
+                        }}
                   >
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -965,12 +1604,32 @@ export default function Profile() {
               value={passwordForm.newPassword}
               onChange={handlePasswordChange}
               fullWidth
+                  size="large"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)'
+                      },
+                      '&.Mui-focused': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        boxShadow: '0 0 0 2px rgba(128, 0, 0, 0.2)'
+                      }
+                    }
+                  }}
               InputProps={{
                 endAdornment: (
                   <IconButton
                     size="small"
                     onClick={() => setShowNewPassword(!showNewPassword)}
                     edge="end"
+                        sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                          '&:hover': {
+                            color: '#1976d2'
+                          }
+                        }}
                   >
                     {showNewPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -984,12 +1643,32 @@ export default function Profile() {
               value={passwordForm.confirmPassword}
               onChange={handlePasswordChange}
               fullWidth
+                  size="large"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.02)',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)'
+                      },
+                      '&.Mui-focused': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.05)',
+                        boxShadow: '0 0 0 2px rgba(128, 0, 0, 0.2)'
+                      }
+                    }
+                  }}
               InputProps={{
                 endAdornment: (
                   <IconButton
                     size="small"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     edge="end"
+                        sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                          '&:hover': {
+                            color: '#1976d2'
+                          }
+                        }}
                   >
                     {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -997,30 +1676,44 @@ export default function Profile() {
               }}
             />
           </Stack>
-          <Typography variant="body2" color="textSecondary" sx={{ mt: 2, textAlign: 'center' }}>
+              
+              <Typography variant="body2" sx={{ 
+                mt: 3, 
+                textAlign: 'center',
+                color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                fontWeight: 500
+              }}>
             Password must be at least 6 characters long.
           </Typography>
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+              
+              <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
             <Button 
-              variant="outlined" 
-              size="small"
+                  variant="contained"
+                  size="medium"
               onClick={handleChangePassword}
               disabled={saving || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword || passwordSuccess}
-              startIcon={<Security />}
               sx={{
-                color: passwordSuccess ? '#4caf50' : 'black',
-                borderColor: passwordSuccess ? '#4caf50' : 'black',
-                fontWeight: 600,
-                '&:hover': {
                   bgcolor: passwordSuccess ? '#4caf50' : '#800000',
                   color: 'white',
-                  borderColor: passwordSuccess ? '#4caf50' : '#800000'
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    px: 3,
+                    py: 1,
+                    borderRadius: 1,
+                    '&:hover': {
+                      bgcolor: passwordSuccess ? '#388e3c' : '#6b0000'
+                    },
+                    '&:disabled': {
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                      color: theme.palette.mode === 'dark' ? '#666666' : '#999999'
                 }
               }}
             >
               {saving ? 'Changing Password...' : passwordSuccess ? 'Password Changed!' : 'Change Password'}
             </Button>
           </Box>
+            </CardContent>
+          </Card>
         </Box>
       )}
 
@@ -1028,7 +1721,7 @@ export default function Profile() {
 
       {/* Edit Profile Modal */}
       <Dialog open={openEditModal} onClose={() => setOpenEditModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, color: '#800000', pb: 1 }}>
+        <DialogTitle sx={{ fontWeight: 700, color: '#800000', pb: 1, fontSize: '1.1rem' }}>
           Edit Profile
         </DialogTitle>
         <DialogContent sx={{ pt: 1 }}>
@@ -1092,6 +1785,14 @@ export default function Profile() {
                 fullWidth
                 size="small"
                 required
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -1103,6 +1804,14 @@ export default function Profile() {
                 fullWidth
                 size="small"
                 required
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -1113,6 +1822,14 @@ export default function Profile() {
                 onChange={handleEditProfileChange}
                 fullWidth
                 size="small"
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -1126,6 +1843,17 @@ export default function Profile() {
                 required
                 disabled={profile.role !== 'Admin' && profile.studentId} // Allow editing if not set, but disable if already set
                 helperText={profile.role !== 'Admin' && profile.studentId ? 'Student ID cannot be changed once set' : ''}
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiFormHelperText-root': {
+                    fontSize: '0.75rem'
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -1136,6 +1864,14 @@ export default function Profile() {
                 onChange={handleEditProfileChange}
                 fullWidth
                 size="small"
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -1147,6 +1883,14 @@ export default function Profile() {
                 fullWidth
                 size="small"
                 select
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               >
                 <MenuItem value="BSIT">BSIT</MenuItem>
                 <MenuItem value="BSBA">BSBA</MenuItem>
@@ -1166,6 +1910,14 @@ export default function Profile() {
                 fullWidth
                 size="small"
                 select
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               >
                 <MenuItem value="1st Year">1st Year</MenuItem>
                 <MenuItem value="2nd Year">2nd Year</MenuItem>
@@ -1182,6 +1934,14 @@ export default function Profile() {
                 fullWidth
                 size="small"
                 select
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               >
                 <MenuItem value="A">A</MenuItem>
                 <MenuItem value="B">B</MenuItem>
@@ -1203,6 +1963,14 @@ export default function Profile() {
                 size="small"
                 type="date"
                 InputLabelProps={{ shrink: true }}
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -1214,6 +1982,14 @@ export default function Profile() {
                 fullWidth
                 size="small"
                 select
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               >
                 <MenuItem value="Male">Male</MenuItem>
                 <MenuItem value="Female">Female</MenuItem>
@@ -1230,6 +2006,14 @@ export default function Profile() {
                 size="small"
                 type="number"
                 inputProps={{ min: 1, max: 150 }}
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -1240,6 +2024,14 @@ export default function Profile() {
                 onChange={handleEditProfileChange}
                 fullWidth
                 size="small"
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               />
             </Grid>
             {profile.role === 'Admin' && (
@@ -1253,6 +2045,14 @@ export default function Profile() {
                   fullWidth
                   size="small"
                   required
+                  sx={{
+                    '& .MuiInputBase-input': {
+                      fontSize: '0.875rem'
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '0.875rem'
+                    }
+                  }}
                 />
               </Grid>
             )}
@@ -1266,6 +2066,14 @@ export default function Profile() {
                 size="small"
                 multiline
                 rows={2}
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               />
             </Grid>
           </Grid>
@@ -1278,6 +2086,7 @@ export default function Profile() {
             sx={{
               color: 'black',
               borderColor: 'black',
+              fontSize: '0.875rem',
               '&:hover': {
                 bgcolor: 'rgba(0,0,0,0.1)',
                 borderColor: 'black'
@@ -1294,6 +2103,7 @@ export default function Profile() {
             size="small"
             sx={{
               bgcolor: '#800000',
+              fontSize: '0.875rem',
               '&:hover': {
                 bgcolor: '#a00000'
               }
