@@ -25,9 +25,11 @@ import Register from './pages/Register';
 import UserDashboard from './pages/UserDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { auth, db } from './firebase';
+import { auth, db, retryConnection, checkConnectionHealth, initializeConnection } from './firebase';
 import { getDoc, doc, setDoc, collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
 import { saveAuthState, getAuthState, clearAuthState, isAuthStateValid } from './utils/authPersistence';
+import { addConnectionListener, getConnectionStatus } from './utils/connectionMonitor';
+import ConnectionStatus from './components/ConnectionStatus';
 import AnnouncementReport from "./pages/AnnouncementReport";
 import UserViolations from "./pages/UserViolations";
 import UserAnnouncements from "./pages/UserAnnouncements";
@@ -201,6 +203,7 @@ function AdminHeader({ currentUser, userProfile }) {
             </Badge>
           </IconButton>
         </Tooltip>
+        <ConnectionStatus />
         <ProfileDropdown 
           currentUser={currentUser} 
           userProfile={userProfile}
@@ -370,6 +373,7 @@ function UserHeader({ currentUser, userProfile }) {
             </Badge>
           </IconButton>
         </Tooltip>
+        <ConnectionStatus />
         <ProfileDropdown 
           currentUser={currentUser} 
           userProfile={userProfile}
@@ -391,8 +395,14 @@ function App() {
   const [forceLogin, setForceLogin] = useState(false);
   const [authInitialized, setAuthInitialized] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState(getConnectionStatus());
 
   useEffect(() => {
+    // Set up connection status monitoring
+    const removeConnectionListener = addConnectionListener((status) => {
+      setConnectionStatus(getConnectionStatus());
+    });
+
     // Check for stored auth state on page load
     const checkStoredAuth = () => {
       try {
@@ -457,11 +467,20 @@ function App() {
         setIsRefreshing(true);
         
         try {
-          // Fetch user profile and role with shorter timeout
-          const userDoc = await Promise.race([
-            getDoc(doc(db, 'users', user.uid)),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
-          ]);
+          // Check connection health first
+          const isHealthy = await checkConnectionHealth();
+          if (!isHealthy) {
+            console.warn('Connection health check failed, attempting to reinitialize...');
+            await initializeConnection();
+          }
+
+          // Fetch user profile and role with retry mechanism
+          const userDoc = await retryConnection(async () => {
+            return await Promise.race([
+              getDoc(doc(db, 'users', user.uid)),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+            ]);
+          });
           
           if (userDoc.exists()) {
             const userData = userDoc.data();
@@ -488,7 +507,9 @@ function App() {
             };
             
             try {
-              await setDoc(doc(db, 'users', user.uid), defaultUserData);
+              await retryConnection(async () => {
+                await setDoc(doc(db, 'users', user.uid), defaultUserData);
+              });
               setUserProfile(defaultUserData);
               setUserRole('Student');
               setLoading(false);
@@ -497,7 +518,7 @@ function App() {
               // Save auth state to localStorage
               saveAuthState(user, defaultUserData, 'Student');
             } catch (createError) {
-              console.error('Failed to create user document:', createError);
+              console.error('Failed to create user document after retries:', createError);
               setAuthError('Failed to create user profile. Please try again.');
               setLoading(false);
               setIsRefreshing(false);
@@ -506,8 +527,10 @@ function App() {
           }
         } catch (error) {
           console.error('Error fetching user document:', error);
-          if (error.message === 'Timeout') {
-            setAuthError('Database connection timeout. Please refresh the page.');
+          if (error.message.includes('Timeout') || error.message.includes('Connection failed')) {
+            setAuthError('Database connection timeout. Please check your internet connection and refresh the page.');
+          } else if (error.message.includes('permission-denied')) {
+            setAuthError('Access denied. Please contact your administrator.');
           } else {
             setAuthError('Failed to load user profile. Please try again.');
           }
@@ -535,6 +558,7 @@ function App() {
       isMounted = false;
       clearTimeout(loadingTimeout);
       unsubscribe();
+      removeConnectionListener();
     };
   }, [authInitialized]);
 
@@ -544,9 +568,10 @@ function App() {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
         <CircularProgress size={40} sx={{ mb: 1 }} />
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           {isRefreshing ? 'Refreshing...' : 'Loading...'}
         </Typography>
+        <ConnectionStatus showDetails={true} />
       </Box>
     );
   }
@@ -574,7 +599,7 @@ function App() {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
         <CircularProgress size={40} sx={{ mb: 1 }} />
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           {isRefreshing ? 'Restoring your dashboard...' : 'Setting up dashboard...'}
         </Typography>
         {authError && (
@@ -582,6 +607,7 @@ function App() {
             {authError}
           </Alert>
         )}
+        <ConnectionStatus showDetails={true} />
       </Box>
     );
   }
@@ -755,6 +781,7 @@ function App() {
                       {authError}
                     </Alert>
                   )}
+                  <ConnectionStatus showDetails={true} />
                 </Box>
               )
             } />

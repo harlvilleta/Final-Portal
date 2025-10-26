@@ -1,8 +1,9 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { addDoc, collection } from "firebase/firestore";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { FIREBASE_OPTIMIZATION_CONFIG, performanceTracker, shouldRetry, getRetryDelay } from "./config/firebaseOptimization";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDgLOZTM2lAPIdGBVQtzvoAXvXHyWn9boA",
@@ -23,19 +24,74 @@ setPersistence(auth, browserLocalPersistence).catch((error) => {
   console.error('Failed to set auth persistence:', error);
 });
 
+// Connection retry mechanism with exponential backoff
+export const retryConnection = async (operation, maxRetries = FIREBASE_OPTIMIZATION_CONFIG.connection.maxRetries, baseDelay = FIREBASE_OPTIMIZATION_CONFIG.connection.baseDelay) => {
+  const operationId = `retry_${Date.now()}_${Math.random()}`;
+  performanceTracker.startTimer(operationId);
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await operation();
+      performanceTracker.endTimer(operationId);
+      return result;
+    } catch (error) {
+      console.warn(`Connection attempt ${attempt} failed:`, error.message);
+      
+      // Check if error is retryable
+      if (!shouldRetry(error)) {
+        performanceTracker.endTimer(operationId);
+        throw error;
+      }
+      
+      if (attempt === maxRetries) {
+        performanceTracker.endTimer(operationId);
+        throw new Error(`Connection failed after ${maxRetries} attempts: ${error.message}`);
+      }
+      
+      // Use optimized retry delay
+      const delay = getRetryDelay(attempt, baseDelay);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+};
 
+// Connection health check
+export const checkConnectionHealth = async () => {
+  try {
+    await enableNetwork(db);
+    return true;
+  } catch (error) {
+    console.error('Connection health check failed:', error);
+    return false;
+  }
+};
 
-// Helper to log activity
+// Initialize connection with retry
+export const initializeConnection = async () => {
+  try {
+    await retryConnection(async () => {
+      await enableNetwork(db);
+    });
+    return true;
+  } catch (error) {
+    console.error('Failed to initialize connection:', error);
+    return false;
+  }
+};
+
+// Helper to log activity with retry mechanism
 export async function logActivity({ message, type, user }) {
   try {
-    await addDoc(collection(db, "activity_log"), {
-      message,
-      type,
-      user: user || null,
-      timestamp: new Date().toISOString(),
+    await retryConnection(async () => {
+      await addDoc(collection(db, "activity_log"), {
+        message,
+        type,
+        user: user || null,
+        timestamp: new Date().toISOString(),
+      });
     });
   } catch (e) {
     // Optionally handle/log error
-    // console.error('Failed to log activity:', e);
+    console.warn('Failed to log activity after retries:', e);
   }
 } 
