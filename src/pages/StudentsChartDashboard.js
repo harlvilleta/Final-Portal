@@ -227,56 +227,6 @@ export default function StudentsChartDashboard() {
         </Grid>
       </Grid>
 
-      {/* Overview Comparison */}
-      <Box sx={{ mb: 1 }}>
-        <Typography variant="subtitle1" gutterBottom sx={{ 
-          fontWeight: 600, 
-          color: isDark ? '#ffffff' : '#800000',
-          textShadow: isDark ? '0 1px 2px rgba(0, 0, 0, 0.3)' : 'none'
-        }}>
-          Last 6 Months (Overview Data)
-        </Typography>
-        <Typography variant="caption" sx={{ 
-          mb: 1.5, 
-          color: isDark ? '#ffffff' : '#666666',
-          fontWeight: 500,
-          textShadow: isDark ? '0 1px 2px rgba(0, 0, 0, 0.3)' : 'none'
-        }}>
-          This shows the same data as displayed in the Overview dashboard
-        </Typography>
-        <Grid container spacing={1}>
-          {monthlyData.slice(-6).map((month, index) => (
-            <Grid item xs={6} sm={4} md={2} key={month.month}>
-              <Card sx={{ 
-                textAlign: 'center', 
-                background: 'linear-gradient(135deg, rgba(128, 0, 0, 0.1) 0%, rgba(128, 0, 0, 0.05) 100%)',
-                border: '1px solid rgba(128, 0, 0, 0.2)',
-                borderLeft: '4px solid #800000',
-                height: 'fit-content',
-                boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.2)' : '0 2px 4px rgba(128, 0, 0, 0.1)'
-              }}>
-                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                  <Typography variant="subtitle1" fontWeight={600} sx={{ 
-                    color: isDark ? '#ffffff' : '#800000', 
-                    fontSize: '1rem',
-                    textShadow: isDark ? '0 1px 2px rgba(0, 0, 0, 0.3)' : 'none'
-                  }}>
-                    {month.count}
-                  </Typography>
-                  <Typography variant="caption" sx={{ 
-                    fontSize: '0.7rem', 
-                    color: isDark ? '#ffffff' : '#666666',
-                    fontWeight: 500,
-                    textShadow: isDark ? '0 1px 2px rgba(0, 0, 0, 0.3)' : 'none'
-                  }}>
-                    {month.month}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
 
       {/* Monthly Chart */}
       <Paper sx={{ 

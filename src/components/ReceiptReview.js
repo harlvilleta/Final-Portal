@@ -376,82 +376,54 @@ export default function ReceiptReview() {
             <TableContainer component={Paper}>
               <Table>
                 <TableHead>
-                  <TableRow>
+                  <TableRow sx={{ 
+                    bgcolor: '#800000' 
+                  }}>
                     <TableCell sx={{
-                      fontWeight: 700,
-                      fontSize: '1rem',
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#8B0000',
-                      background: theme.palette.mode === 'dark' 
-                        ? 'linear-gradient(135deg, rgba(139, 0, 0, 0.1), rgba(165, 42, 42, 0.05))' 
-                        : 'linear-gradient(135deg, rgba(139, 0, 0, 0.05), rgba(165, 42, 42, 0.02))',
-                      borderBottom: `2px solid ${theme.palette.mode === 'dark' ? '#A52A2A' : '#8B0000'}`,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
+                      bgcolor: '#800000',
+                      color: '#ffffff', 
+                      fontWeight: 600,
+                      borderBottom: '2px solid #e0e0e0'
                     }}>
                       Student
                     </TableCell>
                     <TableCell sx={{
-                      fontWeight: 700,
-                      fontSize: '1rem',
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#8B0000',
-                      background: theme.palette.mode === 'dark' 
-                        ? 'linear-gradient(135deg, rgba(139, 0, 0, 0.1), rgba(165, 42, 42, 0.05))' 
-                        : 'linear-gradient(135deg, rgba(139, 0, 0, 0.05), rgba(165, 42, 42, 0.02))',
-                      borderBottom: `2px solid ${theme.palette.mode === 'dark' ? '#A52A2A' : '#8B0000'}`,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
+                      bgcolor: '#800000',
+                      color: '#ffffff', 
+                      fontWeight: 600,
+                      borderBottom: '2px solid #e0e0e0'
                     }}>
                       Receipt Type
                     </TableCell>
                     <TableCell sx={{
-                      fontWeight: 700,
-                      fontSize: '1rem',
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#8B0000',
-                      background: theme.palette.mode === 'dark' 
-                        ? 'linear-gradient(135deg, rgba(139, 0, 0, 0.1), rgba(165, 42, 42, 0.05))' 
-                        : 'linear-gradient(135deg, rgba(139, 0, 0, 0.05), rgba(165, 42, 42, 0.02))',
-                      borderBottom: `2px solid ${theme.palette.mode === 'dark' ? '#A52A2A' : '#8B0000'}`,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
+                      bgcolor: '#800000',
+                      color: '#ffffff', 
+                      fontWeight: 600,
+                      borderBottom: '2px solid #e0e0e0'
                     }}>
                       Amount
                     </TableCell>
                     <TableCell sx={{
-                      fontWeight: 700,
-                      fontSize: '1rem',
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#8B0000',
-                      background: theme.palette.mode === 'dark' 
-                        ? 'linear-gradient(135deg, rgba(139, 0, 0, 0.1), rgba(165, 42, 42, 0.05))' 
-                        : 'linear-gradient(135deg, rgba(139, 0, 0, 0.05), rgba(165, 42, 42, 0.02))',
-                      borderBottom: `2px solid ${theme.palette.mode === 'dark' ? '#A52A2A' : '#8B0000'}`,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
+                      bgcolor: '#800000',
+                      color: '#ffffff', 
+                      fontWeight: 600,
+                      borderBottom: '2px solid #e0e0e0'
                     }}>
                       Status
                     </TableCell>
                     <TableCell sx={{
-                      fontWeight: 700,
-                      fontSize: '1rem',
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#8B0000',
-                      background: theme.palette.mode === 'dark' 
-                        ? 'linear-gradient(135deg, rgba(139, 0, 0, 0.1), rgba(165, 42, 42, 0.05))' 
-                        : 'linear-gradient(135deg, rgba(139, 0, 0, 0.05), rgba(165, 42, 42, 0.02))',
-                      borderBottom: `2px solid ${theme.palette.mode === 'dark' ? '#A52A2A' : '#8B0000'}`,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
+                      bgcolor: '#800000',
+                      color: '#ffffff', 
+                      fontWeight: 600,
+                      borderBottom: '2px solid #e0e0e0'
                     }}>
                       Submitted
                     </TableCell>
                     <TableCell sx={{
-                      fontWeight: 700,
-                      fontSize: '1rem',
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#8B0000',
-                      background: theme.palette.mode === 'dark' 
-                        ? 'linear-gradient(135deg, rgba(139, 0, 0, 0.1), rgba(165, 42, 42, 0.05))' 
-                        : 'linear-gradient(135deg, rgba(139, 0, 0, 0.05), rgba(165, 42, 42, 0.02))',
-                      borderBottom: `2px solid ${theme.palette.mode === 'dark' ? '#A52A2A' : '#8B0000'}`,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
+                      bgcolor: '#800000',
+                      color: '#ffffff', 
+                      fontWeight: 600,
+                      borderBottom: '2px solid #e0e0e0'
                     }}>
                       Actions
                     </TableCell>

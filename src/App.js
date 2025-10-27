@@ -20,10 +20,9 @@ import ViolationStatus from "./pages/ViolationStatus";
 import Options from "./pages/Options";
 import Announcements from "./pages/Announcements";
 import RecycleBin from "./pages/RecycleBin";
-import Login from './pages/Login';
-import Register from './pages/Register';
 import UserDashboard from './pages/UserDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
+import LandingPage from './pages/LandingPage';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { getDoc, doc, setDoc, collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
@@ -169,12 +168,7 @@ function AdminHeader({ currentUser, userProfile }) {
 
   return (
     <>
-      <AppBar position="static" sx={{ bgcolor: theme => theme.palette.mode === 'dark' ? '#424242' : '#fff', color: theme => theme.palette.mode === 'dark' ? '#ffffff' : '#333', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '32px' }}>
-        <Toolbar sx={{ display: 'flex', alignItems: 'center', width: '100%', minHeight: '32px !important' }}>
-          <Box sx={{ flex: 1 }}></Box>
-        </Toolbar>
-      </AppBar>
-      {/* Profile and Notification Icons - Outside Header Box */}
+      {/* Profile and Notification Icons - Fixed Position */}
       <Box sx={{ 
         position: 'fixed', 
         top: '4px', 
@@ -338,12 +332,7 @@ function UserHeader({ currentUser, userProfile }) {
 
   return (
     <>
-      <AppBar position="static" sx={{ bgcolor: theme => theme.palette.mode === 'dark' ? '#424242' : 'background.paper', color: theme => theme.palette.mode === 'dark' ? '#ffffff' : 'text.primary', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '32px' }}>
-        <Toolbar sx={{ display: 'flex', alignItems: 'center', width: '100%', minHeight: '32px !important' }}>
-          <Box sx={{ flex: 1 }}></Box>
-        </Toolbar>
-      </AppBar>
-      {/* Profile and Notification Icons - Outside Header Box */}
+      {/* Profile and Notification Icons - Fixed Position */}
       <Box sx={{ 
         position: 'fixed', 
         top: '4px', 
@@ -465,14 +454,15 @@ function App() {
           
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            console.log('Setting user role from database:', userData.role);
+            const role = userData.role || 'Student';
+            console.log('Setting user role from database:', role);
             setUserProfile(userData);
-            setUserRole(userData.role || 'Student');
+            setUserRole(role);
             setLoading(false);
             setIsRefreshing(false);
             clearTimeout(loadingTimeout);
             // Save auth state to localStorage
-            saveAuthState(user, userData, userData.role || 'Student');
+            saveAuthState(user, userData, role);
           } else {
             // Create default user document
             const defaultUserData = {
@@ -554,17 +544,17 @@ function App() {
   // If user is not authenticated OR forceLogin is true, show login/register forms
   if (!user || forceLogin) {
     return (
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login onLoginSuccess={() => {
-            setForceLogin(false);
-            localStorage.setItem('hasLoggedInBefore', 'true');
-          }} />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/test" element={<TestPage />} />
-          <Route path="/*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </Router>
+      <CustomThemeProvider>
+        <ThemeWrapper>
+          <Router>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/test" element={<TestPage />} />
+              <Route path="/*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Router>
+        </ThemeWrapper>
+      </CustomThemeProvider>
     );
   }
 
@@ -617,7 +607,7 @@ function App() {
             {/* Admin/Teacher Routes - Only accessible to Admin/Teacher roles */}
             <Route path="/*" element={
               (() => {
-                console.log('Routing decision:', { userRole, user: !!user });
+                console.log('Routing decision:', { userRole, user: !!user, currentUser: !!currentUser });
                 return (userRole === 'Admin' || userRole === 'Teacher');
               })() ? (
                 userRole === 'Admin' ? (
@@ -709,9 +699,8 @@ function App() {
                 )
               ) : (() => {
                 console.log('Student routing decision:', { userRole, user: !!user });
-                // Only route to student dashboard if userRole is explicitly 'Student'
-                // Don't fallback to student if userRole is null/undefined
-                return userRole === 'Student';
+                // Route to student dashboard if userRole is 'Student' or if user exists but role is not Admin/Teacher
+                return userRole === 'Student' || (user && userRole !== 'Admin' && userRole !== 'Teacher');
               })() ? (
                 <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "background.default" }}>
                   <UserHeader currentUser={currentUser} userProfile={userProfile} />
@@ -740,8 +729,8 @@ function App() {
                     </Box>
                   </Box>
                 </Box>
-              ) : (
-                // Fallback when user role is not yet determined
+              ) : user ? (
+                // If user is authenticated but role is not yet determined, show loading
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
                   <CircularProgress size={40} sx={{ mb: 2 }} />
                   <Typography variant="h6" sx={{ mb: 1 }}>
@@ -756,6 +745,9 @@ function App() {
                     </Alert>
                   )}
                 </Box>
+              ) : (
+                // If no user, redirect to login
+                <Navigate to="/login" replace />
               )
             } />
           </Routes>

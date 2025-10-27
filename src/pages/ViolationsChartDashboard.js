@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { 
   Box, Typography, Paper, IconButton, Grid, Card, CardContent, Chip,
-  CircularProgress, Alert
+  CircularProgress, Alert, ToggleButton, ToggleButtonGroup
 } from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -13,9 +13,55 @@ import { useTheme } from "../contexts/ThemeContext";
 export default function ViolationsChartDashboard() {
   const { isDark } = useTheme();
   const [monthlyData, setMonthlyData] = useState([]);
+  const [weeklyData, setWeeklyData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [timePeriod, setTimePeriod] = useState('monthly');
   const navigate = useNavigate();
+
+  const fetchWeeklyData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const weeklyData = [];
+
+      // Get the last 12 weeks
+      for (let i = 11; i >= 0; i--) {
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - (i * 7));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        const startOfWeek = new Date(weekStart);
+        startOfWeek.setHours(0, 0, 0, 0);
+        const endOfWeek = new Date(weekEnd);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        const violationsQuery = query(
+          collection(db, "violations"),
+          where("createdAt", ">=", startOfWeek),
+          where("createdAt", "<=", endOfWeek)
+        );
+
+        const snapshot = await getDocs(violationsQuery);
+        const count = snapshot.size;
+
+        weeklyData.push({
+          week: `Week ${12 - i}`,
+          weekStart: weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          weekEnd: weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          count: count,
+          fullWeek: `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+        });
+      }
+
+      setWeeklyData(weeklyData);
+    } catch (error) {
+      console.error("Error fetching weekly violations data:", error);
+      setError("Failed to load weekly violations data");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const fetchYearlyData = useCallback(async () => {
     try {
@@ -66,7 +112,8 @@ export default function ViolationsChartDashboard() {
 
   useEffect(() => {
     fetchYearlyData();
-  }, [fetchYearlyData]);
+    fetchWeeklyData();
+  }, [fetchYearlyData, fetchWeeklyData]);
 
   const handleBack = () => {
     navigate('/overview');
@@ -135,68 +182,68 @@ export default function ViolationsChartDashboard() {
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 1 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: 'transparent', borderLeft: '4px solid #800000' }}>
+          <Card sx={{ 
+            background: 'transparent',
+            borderLeft: '4px solid #800000',
+            borderRadius: 2,
+            boxShadow: 2
+          }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ 
-                background: 'linear-gradient(45deg, #800000, #A52A2A, #8B0000)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>
+              <Typography variant="h4" fontWeight={700} sx={{ color: '#800000' }}>
                 {totalViolations}
               </Typography>
-              <Typography variant="body2" sx={{ color: '#000000' }}>
+              <Typography variant="body2" color="textSecondary">
                 Total Violations ({new Date().getFullYear()})
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: 'transparent', borderLeft: '4px solid #800000' }}>
+          <Card sx={{ 
+            background: 'transparent',
+            borderLeft: '4px solid #800000',
+            borderRadius: 2,
+            boxShadow: 2
+          }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ 
-                background: 'linear-gradient(45deg, #800000, #A52A2A, #8B0000)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>
+              <Typography variant="h4" fontWeight={700} sx={{ color: '#800000' }}>
                 {Math.round(averagePerMonth)}
               </Typography>
-              <Typography variant="body2" sx={{ color: '#000000' }}>
+              <Typography variant="body2" color="textSecondary">
                 Average per Month
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: 'transparent', borderLeft: '4px solid #800000' }}>
+          <Card sx={{ 
+            background: 'transparent',
+            borderLeft: '4px solid #800000',
+            borderRadius: 2,
+            boxShadow: 2
+          }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ 
-                background: 'linear-gradient(45deg, #800000, #A52A2A, #8B0000)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>
+              <Typography variant="h4" fontWeight={700} sx={{ color: '#800000' }}>
                 {peakMonth.count}
               </Typography>
-              <Typography variant="body2" sx={{ color: '#000000' }}>
+              <Typography variant="body2" color="textSecondary">
                 Peak Month: {peakMonth.month}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: 'transparent', borderLeft: '4px solid #800000' }}>
+          <Card sx={{ 
+            background: 'transparent',
+            borderLeft: '4px solid #800000',
+            borderRadius: 2,
+            boxShadow: 2
+          }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ 
-                background: 'linear-gradient(45deg, #800000, #A52A2A, #8B0000)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>
+              <Typography variant="h4" fontWeight={700} sx={{ color: '#800000' }}>
                 {monthsWithViolations}
               </Typography>
-              <Typography variant="body2" sx={{ color: '#000000' }}>
+              <Typography variant="body2" color="textSecondary">
                 Months with Violations
               </Typography>
             </CardContent>
@@ -205,9 +252,19 @@ export default function ViolationsChartDashboard() {
       </Grid>
 
       {/* Monthly Chart */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#000000' }}>
-          Violations Reported - {new Date().getFullYear()}
+      <Paper sx={{ 
+        p: 2, 
+        mb: 1,
+        background: 'linear-gradient(135deg, rgba(128, 0, 0, 0.05) 0%, rgba(128, 0, 0, 0.02) 100%)',
+        border: '1px solid rgba(128, 0, 0, 0.2)',
+        borderLeft: '4px solid #800000'
+      }}>
+        <Typography variant="h6" gutterBottom sx={{ 
+          fontWeight: 700, 
+          color: isDark ? '#ffffff' : '#800000',
+          textShadow: isDark ? '0 1px 2px rgba(0, 0, 0, 0.3)' : 'none'
+        }}>
+          Violations Reported Trends - {new Date().getFullYear()}
         </Typography>
         <ResponsiveContainer width="100%" height={350}>
           <BarChart data={chartData}>
@@ -264,60 +321,50 @@ export default function ViolationsChartDashboard() {
       </Paper>
 
       {/* Monthly Breakdown */}
-      <Box sx={{ mb: 1 }}>
-        <Typography variant="subtitle1" gutterBottom sx={{ 
-          fontWeight: 600, 
-          background: 'linear-gradient(45deg, #800000, #A52A2A, #8B0000)',
-          backgroundClip: 'text',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent'
-        }}>
+      <Paper sx={{ 
+        p: 3,
+        background: 'linear-gradient(135deg, rgba(128, 0, 0, 0.05) 0%, rgba(128, 0, 0, 0.02) 100%)',
+        border: '1px solid rgba(128, 0, 0, 0.2)',
+        borderLeft: '4px solid #800000'
+      }}>
+        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: isDark ? '#ffffff' : '#800000' }}>
           Monthly Breakdown
         </Typography>
-        <Grid container spacing={1}>
+        <Grid container spacing={2}>
           {chartData.map((month) => (
             <Grid item xs={6} sm={4} md={2} key={month.month}>
               <Card sx={{ 
                 textAlign: 'center', 
-                bgcolor: 'transparent',
-                border: isDark ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.2)',
-                height: 'fit-content'
+                background: 'linear-gradient(135deg, rgba(128, 0, 0, 0.1) 0%, rgba(128, 0, 0, 0.05) 100%)',
+                border: '1px solid rgba(128, 0, 0, 0.2)',
+                borderLeft: '4px solid #800000',
+                boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.1)'
               }}>
-                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                  <Typography variant="subtitle1" fontWeight={600} sx={{ 
-                    background: 'linear-gradient(45deg, #800000, #A52A2A, #8B0000)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    fontSize: '1rem' 
-                  }}>
+                <CardContent sx={{ p: 2 }}>
+                  <Typography variant="h6" fontWeight={700} sx={{ color: isDark ? '#ffffff' : (month.count > averagePerMonth ? '#800000' : 'text.primary') }}>
                     {month.count}
                   </Typography>
-                  <Typography variant="caption" sx={{ fontSize: '0.7rem', color: isDark ? '#ffffff' : '#000000' }}>
+                  <Typography variant="caption" sx={{ color: isDark ? '#ffffff' : 'text.secondary' }}>
                     {month.month}
                   </Typography>
+                  {month.count > averagePerMonth && !isDark && (
+                    <Chip 
+                      label="Above Average" 
+                      size="small" 
+                      sx={{ 
+                        mt: 1, 
+                        bgcolor: '#800000', 
+                        color: 'white',
+                        fontSize: '0.7rem'
+                      }} 
+                    />
+                  )}
                 </CardContent>
               </Card>
             </Grid>
           ))}
         </Grid>
-        
-        {/* Legend */}
-        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#4caf50' }} />
-            <Typography variant="body2" sx={{ color: isDark ? '#ffffff' : '#000000' }}>
-              No Violations
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#d32f2f' }} />
-            <Typography variant="body2" sx={{ color: isDark ? '#ffffff' : '#000000' }}>
-              Has Violations
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
+      </Paper>
     </Box>
   );
 }

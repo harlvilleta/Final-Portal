@@ -530,14 +530,14 @@ export default function Overview() {
       
 
 
-      {/* Monthly Charts */}
+      {/* Monthly Charts - Side by Side */}
       <Grid container spacing={3} sx={{ mt: 2 }}>
-        {/* Students Monthly Chart */}
+        {/* Students Monthly Chart - Left Side */}
         <Grid item xs={12} md={6}>
           <Paper 
             sx={{ 
-              p: 2, 
-              height: 280, 
+              p: 3, 
+              height: 500, 
               cursor: 'pointer',
               transition: 'all 0.2s ease-in-out',
               '&:hover': {
@@ -547,19 +547,19 @@ export default function Overview() {
             }}
             onClick={() => navigate('/students-chart')}
           >
-            <Typography variant="subtitle1" gutterBottom sx={{ color: isDark ? '#ffffff' : '#000000', fontWeight: 600 }}>
+            <Typography variant="h5" gutterBottom sx={{ color: isDark ? '#ffffff' : '#000000', fontWeight: 600, mb: 3 }}>
               Students Registration (Last 6 Months)
             </Typography>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={400}>
               <LineChart data={monthlyData.students || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="month" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 14 }}
                   axisLine={{ stroke: isDark ? '#D84040' : '#800000' }}
                 />
                 <YAxis 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 14 }}
                   axisLine={{ stroke: isDark ? '#D84040' : '#800000' }}
                   domain={[0, 'dataMax + 1']}
                 />
@@ -576,10 +576,10 @@ export default function Overview() {
                   type="monotone" 
                   dataKey="count" 
                   stroke={isDark ? '#D84040' : '#800000'} 
-                  strokeWidth={3}
+                  strokeWidth={4}
                   name="Students"
-                  dot={{ fill: isDark ? '#D84040' : '#800000', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: isDark ? '#D84040' : '#800000', strokeWidth: 2 }}
+                  dot={{ fill: isDark ? '#D84040' : '#800000', strokeWidth: 2, r: 6 }}
+                  activeDot={{ r: 8, stroke: isDark ? '#D84040' : '#800000', strokeWidth: 2 }}
                   connectNulls={false}
                 />
               </LineChart>
@@ -587,35 +587,34 @@ export default function Overview() {
           </Paper>
         </Grid>
 
-        {/* Violations Monthly Chart */}
+        {/* Violations Monthly Chart - Right Side */}
         <Grid item xs={12} md={6}>
           <Paper 
             sx={{ 
-              p: 2, 
-              height: 280, 
+              p: 3, 
+              height: 500, 
               cursor: 'pointer',
-              transition: 'none',
+              transition: 'all 0.2s ease-in-out',
               '&:hover': {
-                boxShadow: 'none',
-                transform: 'none',
-                backgroundColor: 'transparent'
+                boxShadow: 4,
+                transform: 'translateY(-1px)'
               }
             }}
             onClick={() => navigate('/violations-chart')}
           >
-            <Typography variant="subtitle1" gutterBottom sx={{ color: isDark ? '#ffffff' : '#000000', fontWeight: 600 }}>
+            <Typography variant="h5" gutterBottom sx={{ color: isDark ? '#ffffff' : '#000000', fontWeight: 600, mb: 3 }}>
               Violations Reported (Last 6 Months)
             </Typography>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={400}>
               <BarChart data={monthlyData.violations || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="month" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 14 }}
                   axisLine={{ stroke: isDark ? '#D84040' : '#800000' }}
                 />
                 <YAxis 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 14 }}
                   axisLine={{ stroke: isDark ? '#D84040' : '#800000' }}
                   domain={[0, 'dataMax + 1']}
                 />
@@ -639,7 +638,7 @@ export default function Overview() {
                   dataKey="count" 
                   fill={isDark ? '#D84040' : '#800000'} 
                   name="Violations"
-                  radius={[4, 4, 0, 0]}
+                  radius={[6, 6, 0, 0]}
                   style={{
                     cursor: 'default'
                   }}
