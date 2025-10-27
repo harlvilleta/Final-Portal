@@ -356,6 +356,7 @@ function AddStudent({ onClose, isModal = false }) {
       // Prepare data for Firebase
       const dataToSave = {
         ...profile,
+        fullName: `${profile.firstName || ''} ${profile.lastName || ''}`.trim(),
         image: imageUrl || "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -647,7 +648,28 @@ function LostFound() {
         
         // Fetch from 'students' collection (manually added students)
         const studentsQuerySnapshot = await getDocs(collection(db, "students"));
-        const studentsData = studentsQuerySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const studentsData = studentsQuerySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+            email: data.email || '',
+            course: data.course || '',
+            year: data.year || '',
+            section: data.section || '',
+            studentId: data.studentId || data.id || doc.id, // Use actual studentId if available, otherwise fallback to document id
+            sex: data.sex || '',
+            age: data.age || '',
+            birthdate: data.birthdate || '',
+            contact: data.contact || '',
+            profilePic: data.profilePic || '',
+            createdAt: data.createdAt || '',
+            updatedAt: data.updatedAt || '',
+            isRegisteredUser: Boolean(data.isRegistered)
+          };
+        }).filter(student => !student.isRegistered);
         
         // Fetch from 'users' collection (registered students)
         const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
@@ -657,14 +679,19 @@ function LostFound() {
             id: doc.id,
             firstName: data.firstName || data.fullName?.split(' ')[0] || '',
             lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
+            fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
             email: data.email || '',
             course: data.course || '',
             year: data.year || '',
             section: data.section || '',
             studentId: data.studentId || '',
+            sex: data.sex || '',
+            age: data.age || '',
+            birthdate: data.birthdate || '',
+            contact: data.contact || '',
+            profilePic: data.profilePic || '',
             createdAt: data.createdAt || '',
             updatedAt: data.updatedAt || '',
-            profilePic: data.profilePic || '',
             isRegisteredUser: true // Flag to identify registered users
           };
         });
@@ -1056,7 +1083,28 @@ function CourseDashboard({
         
         // Fetch from 'students' collection (manually added students)
         const studentsQuerySnapshot = await getDocs(collection(db, "students"));
-        const studentsData = studentsQuerySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const studentsData = studentsQuerySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+            email: data.email || '',
+            course: data.course || '',
+            year: data.year || '',
+            section: data.section || '',
+            studentId: data.studentId || data.id || doc.id, // Use actual studentId if available, otherwise fallback to document id
+            sex: data.sex || '',
+            age: data.age || '',
+            birthdate: data.birthdate || '',
+            contact: data.contact || '',
+            profilePic: data.profilePic || '',
+            createdAt: data.createdAt || '',
+            updatedAt: data.updatedAt || '',
+            isRegisteredUser: Boolean(data.isRegistered)
+          };
+        }).filter(student => !student.isRegistered);
         
         // Fetch from 'users' collection (registered students)
         const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
@@ -1084,8 +1132,8 @@ function CourseDashboard({
         
         // Sort students by name
         const sortedStudents = courseStudents.sort((a, b) => {
-          const nameA = `${a.firstName || ""} ${a.lastName || ""}`.trim().toLowerCase();
-          const nameB = `${b.firstName || ""} ${b.lastName || ""}`.trim().toLowerCase();
+          const nameA = (a.fullName || `${a.firstName || ""} ${a.lastName || ""}`.trim()).toLowerCase();
+          const nameB = (b.fullName || `${b.firstName || ""} ${b.lastName || ""}`.trim()).toLowerCase();
           return nameA.localeCompare(nameB);
         });
         
@@ -1114,9 +1162,9 @@ function CourseDashboard({
     // Search filter
     const searchMatch = !search.trim() || (() => {
       const term = search.trim().toLowerCase();
-      const fullName = `${student.firstName || ""} ${student.lastName || ""}`.trim().toLowerCase();
+      const fullName = (student.fullName || `${student.firstName || ""} ${student.lastName || ""}`.trim()).toLowerCase();
       const email = (student.email || "").toLowerCase();
-      const studentId = (student.id || "").toLowerCase();
+      const studentId = (student.studentId || "").toLowerCase();
       
       return fullName.includes(term) || 
              email.includes(term) || 
@@ -1140,42 +1188,18 @@ function CourseDashboard({
     setOpenEditStudent(true);
   };
 
-  // Handle delete student - move to recycle bin
+  // Handle delete student
   const handleDeleteStudent = async (student) => {
-    if (window.confirm(`Are you sure you want to delete ${student.firstName} ${student.lastName}? This will move the student to the recycle bin.`)) {
+    if (window.confirm(`Are you sure you want to delete ${student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()}?`)) {
       try {
-        console.log("Moving student to recycle bin:", student.id);
+        await deleteDoc(doc(db, "students", student.id));
+        setSnackbar({ open: true, message: "Student deleted successfully!", severity: "success" });
         
-        if (!student.isRegisteredUser) {
-          // Move to recycle bin instead of permanent deletion
-          const studentData = {
-            ...student,
-            deletedAt: new Date().toISOString(),
-            deletedBy: 'admin', // You can get this from current user context
-            originalCollection: 'students'
-          };
-          
-          // Add to recycle bin
-          await addDoc(collection(db, "recycle_bin_students"), studentData);
-          
-          // Remove from original collection
-          await deleteDoc(doc(db, "students", student.id));
-          
-          await logActivity({ message: `Moved student to recycle bin: ${student.firstName} ${student.lastName}`, type: 'delete_student' });
-          setSnackbar({ open: true, message: "Student moved to recycle bin successfully!", severity: "success" });
-          
-          // Refresh the student list
-          setStudents(prev => prev.filter(s => s.id !== student.id));
-        } else {
-          setSnackbar({ 
-            open: true, 
-            message: "Cannot delete registered users. They must be removed from the users collection.", 
-            severity: "warning" 
-          });
-        }
+        // Refresh the student list
+        setStudents(prev => prev.filter(s => s.id !== student.id));
       } catch (error) {
-        console.error("Error moving student to recycle bin:", error);
-        setSnackbar({ open: true, message: "Error moving student to recycle bin: " + error.message, severity: "error" });
+        console.error("Error deleting student:", error);
+        setSnackbar({ open: true, message: "Error deleting student: " + error.message, severity: "error" });
       }
     }
   };
@@ -1517,7 +1541,7 @@ function CourseDashboard({
                           fontSize: '0.875rem'
                         }}
                       >
-                        {student.firstName?.charAt(0)}{student.lastName?.charAt(0)}
+                        {(student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()).charAt(0)}
                       </Avatar>
                       <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Typography variant="body2" sx={{ 
@@ -1528,7 +1552,7 @@ function CourseDashboard({
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap'
                         }}>
-                          {student.firstName} {student.lastName}
+                          {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()}
                         </Typography>
                         <Typography variant="caption" sx={{ 
                           color: 'text.secondary',
@@ -1546,7 +1570,7 @@ function CourseDashboard({
                       fontWeight: 'medium',
                       color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
                     }}>
-                      {student.studentId || student.id}
+                      {student.studentId || 'N/A'}
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ padding: '12px 16px', minWidth: '100px', maxWidth: '100px' }}>
@@ -1671,92 +1695,115 @@ function StudentList({
   }, [activeTab]);
 
   useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        console.log("Fetching students from Firebase...");
-        
-        // Fetch from 'students' collection (manually added students)
-        const studentsQuerySnapshot = await getDocs(collection(db, "students"));
-        const studentsData = studentsQuerySnapshot.docs.map(doc => {
+    console.log('🎯 Setting up real-time listeners for students...');
+    
+    // Real-time listener for unregistered students
+    const unsubStudents = onSnapshot(
+      collection(db, "students"),
+      (snapshot) => {
+        const studentsData = snapshot.docs.map(doc => {
           const data = doc.data();
           return {
             id: doc.id,
-            ...data,
-            studentId: data.id, // Map the 'id' field to 'studentId' for consistency
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+            email: data.email || '',
+            course: data.course || '',
+            year: data.year || '',
+            section: data.section || '',
+            studentId: data.studentId || data.id || doc.id, // Use actual studentId if available, otherwise fallback to document id
+            sex: data.sex || '',
+            age: data.age || '',
+            birthdate: data.birthdate || '',
+            contact: data.contact || '',
+            profilePic: data.profilePic || '',
+            createdAt: data.createdAt || '',
+            updatedAt: data.updatedAt || '',
             isRegisteredUser: Boolean(data.isRegistered) // Ensure boolean value
           };
-        });
+        }).filter(student => !student.isRegistered); // Only show unregistered students
         
-        // Fetch from 'users' collection (registered students)
-        const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
-        const registeredStudentsData = usersQuerySnapshot.docs.map(doc => {
+        console.log('📋 Unregistered students updated:', studentsData.length);
+        
+        // Update unregistered students in state
+        setStudents(prevStudents => {
+          const registeredStudents = prevStudents.filter(s => s.isRegisteredUser);
+          const allStudents = [...studentsData, ...registeredStudents];
+          
+          // Sort students by creation date (newest first)
+          const sortedStudents = allStudents.sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+            const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+            return dateB - dateA; // Descending order (newest first)
+          });
+          
+          return sortedStudents;
+        });
+      },
+      (error) => {
+        console.error('❌ Error listening to students collection:', error);
+        setLoading(false);
+      }
+    );
+    
+    // Real-time listener for registered students
+    const unsubUsers = onSnapshot(
+      query(collection(db, "users"), where("role", "==", "Student")),
+      (snapshot) => {
+        const registeredStudentsData = snapshot.docs.map(doc => {
           const data = doc.data();
           return {
             id: doc.id,
             firstName: data.firstName || data.fullName?.split(' ')[0] || '',
             lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
+            fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
             email: data.email || '',
             course: data.course || '',
             year: data.year || '',
             section: data.section || '',
             studentId: data.studentId || '',
+            sex: data.sex || '',
+            age: data.age || '',
+            birthdate: data.birthdate || '',
+            contact: data.contact || '',
+            profilePic: data.profilePic || '',
             createdAt: data.createdAt || '',
             updatedAt: data.updatedAt || '',
-            profilePic: data.profilePic || '',
             isRegisteredUser: true // Flag to identify registered users
           };
         });
         
-        // Combine both collections
-        const allStudents = [...studentsData, ...registeredStudentsData];
+        console.log('👥 Registered students updated:', registeredStudentsData.length);
         
-        // Sort students by creation date (newest first)
-        const sortedStudents = allStudents.sort((a, b) => {
-          const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-          const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-          return dateB - dateA; // Descending order (newest first)
+        // Update registered students in state
+        setStudents(prevStudents => {
+          const unregisteredStudents = prevStudents.filter(s => !s.isRegisteredUser);
+          const allStudents = [...unregisteredStudents, ...registeredStudentsData];
+          
+          // Sort students by creation date (newest first)
+          const sortedStudents = allStudents.sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+            const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+            return dateB - dateA; // Descending order (newest first)
+          });
+          
+          return sortedStudents;
         });
         
-        console.log("Students fetched successfully:", sortedStudents.length);
-        console.log("Manual students:", studentsData.length);
-        console.log("Registered students:", registeredStudentsData.length);
-        setStudents(sortedStudents);
-      } catch (error) {
-        console.error("Error fetching students:", error);
-        
-        // Try to load from localStorage as fallback
-        try {
-          const offlineStudents = JSON.parse(localStorage.getItem('offlineStudents') || '[]');
-          if (offlineStudents.length > 0) {
-            console.log("Loading students from offline storage:", offlineStudents.length);
-            setStudents(offlineStudents);
-            setSnackbar({ 
-              open: true, 
-              message: `Loaded ${offlineStudents.length} students from offline storage. Some features may be limited.`, 
-              severity: "warning" 
-            });
-          } else {
-            setStudents([]);
-            setSnackbar({ 
-              open: true, 
-              message: "Error loading students: " + error.message, 
-              severity: "error" 
-            });
-          }
-        } catch (offlineError) {
-          console.error("Error loading offline students:", offlineError);
-          setStudents([]);
-          setSnackbar({ 
-            open: true, 
-            message: "Error loading students: " + error.message, 
-            severity: "error" 
-          });
-        }
-      } finally {
+        setLoading(false);
+      },
+      (error) => {
+        console.error('❌ Error listening to users collection:', error);
         setLoading(false);
       }
+    );
+    
+    return () => {
+      console.log('🔄 Cleaning up real-time listeners...');
+      unsubStudents();
+      unsubUsers();
     };
-    fetchStudents();
   }, []);
 
   // Keyboard shortcut for search (Ctrl+F or Cmd+F)
@@ -1829,7 +1876,7 @@ function StudentList({
         // Ensure isRegisteredUser is properly defined (default to false if undefined)
         const isRegistered = Boolean(student.isRegisteredUser);
         const isUnregistered = !isRegistered;
-        console.log(`Student ${student.firstName} ${student.lastName}: isRegisteredUser=${student.isRegisteredUser}, isRegistered=${isRegistered}, isUnregistered=${isUnregistered}`);
+        console.log(`Student ${student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()}: isRegisteredUser=${student.isRegisteredUser}, isRegistered=${isRegistered}, isUnregistered=${isUnregistered}`);
         return isUnregistered;
       });
       console.log('📊 Students after unregistered filter:', filtered.length);
@@ -1840,7 +1887,7 @@ function StudentList({
       filtered = filtered.filter(student => {
         // Ensure isRegisteredUser is properly defined (default to false if undefined)
         const isRegistered = Boolean(student.isRegisteredUser);
-        console.log(`Student ${student.firstName} ${student.lastName}: isRegisteredUser=${student.isRegisteredUser}, isRegistered=${isRegistered}`);
+        console.log(`Student ${student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()}: isRegisteredUser=${student.isRegisteredUser}, isRegistered=${isRegistered}`);
         return isRegistered;
       });
       console.log('📊 Students after registered filter:', filtered.length);
@@ -1886,8 +1933,8 @@ function StudentList({
     // This is a simple approach that works across all browsers
     const printWindow = window.open('', '_blank');
     const tableData = filteredStudents.map(student => ({
-      name: `${student.firstName} ${student.lastName}`,
-      studentId: student.studentId || student.id,
+      name: student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim(),
+      studentId: student.studentId || 'N/A',
       course: student.course || 'Not Assigned',
       year: student.year || 'N/A',
       section: student.section || 'N/A',
@@ -2016,84 +2063,15 @@ function StudentList({
     setOpenEditStudent(true);
   };
 
-  // Handle delete student - move to recycle bin
+  // Handle delete student
   const handleDeleteStudent = async (student) => {
-    if (window.confirm(`Are you sure you want to delete ${student.firstName} ${student.lastName}? This will move the student to the recycle bin.`)) {
+    if (window.confirm(`Are you sure you want to delete ${student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()}?`)) {
       try {
-        console.log("Moving student to recycle bin:", student.id);
+        await deleteDoc(doc(db, "students", student.id));
+        setSnackbar({ open: true, message: "Student deleted successfully!", severity: "success" });
         
-        // Only move to recycle bin if it's not a registered user
-        if (!student.isRegisteredUser) {
-          // Move to recycle bin instead of permanent deletion
-          const studentData = {
-            ...student,
-            deletedAt: new Date().toISOString(),
-            deletedBy: 'admin', // You can get this from current user context
-            originalCollection: 'students'
-          };
-          
-          // Add to recycle bin
-          await addDoc(collection(db, "recycle_bin_students"), studentData);
-          
-          // Remove from original collection
-          await deleteDoc(doc(db, "students", student.id));
-          
-          await logActivity({ message: `Moved student to recycle bin: ${student.firstName} ${student.lastName}`, type: 'delete_student' });
-          setSnackbar({ open: true, message: "Student moved to recycle bin successfully!", severity: "success" });
-        } else {
-          setSnackbar({ 
-            open: true, 
-            message: "Cannot delete registered users. They must be removed from the users collection.", 
-            severity: "warning" 
-          });
-          return;
-        }
-        
-        // Refresh the student list with error handling
-        try {
-          // Fetch from 'students' collection (manually added students)
-          const studentsQuerySnapshot = await getDocs(collection(db, "students"));
-          const studentsData = studentsQuerySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          
-          // Fetch from 'users' collection (registered students)
-          const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
-          const registeredStudentsData = usersQuerySnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              firstName: data.firstName || data.fullName?.split(' ')[0] || '',
-              lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
-              email: data.email || '',
-              course: data.course || '',
-              year: data.year || '',
-              section: data.section || '',
-              studentId: data.studentId || '',
-              createdAt: data.createdAt || '',
-              updatedAt: data.updatedAt || '',
-              profilePic: data.profilePic || '',
-              isRegisteredUser: true
-            };
-          });
-          
-          // Combine both collections
-          const allStudents = [...studentsData, ...registeredStudentsData];
-          
-          // Sort students by creation date (newest first)
-          const sortedStudents = allStudents.sort((a, b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-            const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-            return dateB - dateA;
-          });
-          
-          setStudents(sortedStudents);
-        } catch (refreshError) {
-          console.error("Error refreshing student list:", refreshError);
-          setSnackbar({ 
-            open: true, 
-            message: "Student deleted but error refreshing list: " + refreshError.message, 
-            severity: "warning" 
-          });
-        }
+        // Refresh the student list
+        setStudents(prev => prev.filter(s => s.id !== student.id));
       } catch (error) {
         console.error("Error deleting student:", error);
         setSnackbar({ open: true, message: "Error deleting student: " + error.message, severity: "error" });
@@ -2796,7 +2774,7 @@ School Administration
                           fontSize: '0.75rem'
                         }}
                       >
-                        {student.firstName?.charAt(0)}{student.lastName?.charAt(0)}
+                        {(student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()).charAt(0)}
                       </Avatar>
                       <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Typography variant="body2" sx={{ 
@@ -2807,7 +2785,7 @@ School Administration
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap'
                         }}>
-                          {student.firstName} {student.lastName}
+                          {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()}
                         </Typography>
                         <Typography variant="caption" sx={{ 
                           color: 'text.secondary',
@@ -2820,14 +2798,14 @@ School Administration
                     </Box>
                   </TableCell>
                   <TableCell sx={{ padding: '8px 12px', minWidth: '120px', maxWidth: '120px' }}>
-                    <Tooltip title={student.studentId || student.id || 'N/A'} arrow>
+                    <Tooltip title={student.studentId || 'N/A'} arrow>
                       <Typography variant="body2" sx={{ 
                         fontSize: '0.8rem',
                         lineHeight: 1.2,
                         fontFamily: 'monospace',
                         cursor: 'help'
                       }}>
-                        {student.studentId || student.id || 'N/A'}
+                        {student.studentId || 'N/A'}
                       </Typography>
                     </Tooltip>
                   </TableCell>
@@ -3145,7 +3123,7 @@ function EditStudentForm({ student, onClose, onSuccess }) {
   const theme = useTheme();
   const [formKey, setFormKey] = useState(0); // Force re-render key
   const [profile, setProfile] = useState({
-    id: student.studentId || student.id || "",
+    id: student.studentId || "",
     lastName: student.lastName || "",
     firstName: student.firstName || "",
     middleInitial: student.middleInitial || "",
@@ -3212,7 +3190,7 @@ function EditStudentForm({ student, onClose, onSuccess }) {
   const resetForm = () => {
     console.log('🔄 Resetting EditStudentForm');
     setProfile({
-      id: student.studentId || student.id || "",
+      id: student.studentId || "",
       lastName: student.lastName || "",
       firstName: student.firstName || "",
       middleInitial: student.middleInitial || "",
@@ -3347,6 +3325,7 @@ function EditStudentForm({ student, onClose, onSuccess }) {
       // Update data in Firebase
       const dataToUpdate = {
         ...profile,
+        fullName: `${profile.firstName || ''} ${profile.lastName || ''}`.trim(),
         image: imageUrl,
         updatedAt: new Date().toISOString()
       };
@@ -3811,7 +3790,7 @@ export default function Students() {
                         display: 'block',
                         textAlign: 'center'
                       }}>
-                        {studentToView.studentId || studentToView.id || 'N/A'}
+                        {studentToView.studentId || 'N/A'}
                       </Typography>
                     </Typography>
                   </Grid>

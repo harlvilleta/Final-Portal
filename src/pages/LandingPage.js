@@ -55,11 +55,19 @@ import {
   Instagram as InstagramIcon,
   Search as SearchIcon,
   ArrowBack as ArrowBackIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTheme as useCustomTheme } from '../contexts/ThemeContext';
 import { validateStudentIdForRegistration } from '../utils/studentValidation';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '../firebase';
+import { checkEmailAvailability } from '../utils/studentValidation';
+import { createSingleUser } from '../utils/createUsers';
+import { doc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 
 export default function LandingPage() {
   const { isDark } = useCustomTheme();
@@ -74,18 +82,30 @@ export default function LandingPage() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
-  const [loginLoading, setLoginLoading] = useState(false);
   const [openRegister, setOpenRegister] = useState(false);
   const [registerForm, setRegisterForm] = useState({ 
     role: 'Student',
     email: '', 
     password: '', 
     confirmPassword: '',
+    name: '',
     studentId: '',
     fullName: ''
   });
-  const [registerLoading, setRegisterLoading] = useState(false);
   const [studentIdError, setStudentIdError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [openDashboardModal, setOpenDashboardModal] = useState(false);
+  const [openStudentModal, setOpenStudentModal] = useState(false);
+  const [openViolationModal, setOpenViolationModal] = useState(false);
+  const [openActivityModal, setOpenActivityModal] = useState(false);
+  const [openAnnouncementModal, setOpenAnnouncementModal] = useState(false);
+  const [openLostFoundModal, setOpenLostFoundModal] = useState(false);
+  const [openLearnMoreModal, setOpenLearnMoreModal] = useState(false);
+  const [openSystemInfoModal, setOpenSystemInfoModal] = useState(false);
 
   // Animation states
   const [fadeIn, setFadeIn] = useState(false);
@@ -137,13 +157,14 @@ export default function LandingPage() {
     setOpenContact(false);
   };
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    setLoginLoading(true);
     
-    // Simulate login process
-    setTimeout(() => {
-      setLoginLoading(false);
+    try {
+      // Use Firebase authentication
+      const userCredential = await signInWithEmailAndPassword(auth, loginForm.email, loginForm.password);
+      const user = userCredential.user;
+      
       setSnackbar({ 
         open: true, 
         message: 'Login successful! Redirecting to dashboard...', 
@@ -151,19 +172,56 @@ export default function LandingPage() {
       });
       setLoginForm({ email: '', password: '' });
       setOpenLogin(false);
-      // Navigate to dashboard or main app
-      navigate('/dashboard'); // Navigate to dashboard after login
-    }, 1500);
+      
+      // The App.js will automatically detect the auth state change and redirect to the appropriate dashboard
+      // No need to manually navigate here as the auth state change will trigger the routing
+      
+    } catch (error) {
+      let errorMessage = 'Login failed. Please try again.';
+      
+      switch (error.code) {
+        case 'auth/user-not-found':
+          errorMessage = 'No user found with this email address.';
+          break;
+        case 'auth/wrong-password':
+          errorMessage = 'Incorrect password. Please try again.';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address.';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many failed attempts. Please try again later.';
+          break;
+        default:
+          errorMessage = error.message;
+      }
+      
+      setSnackbar({ 
+        open: true, 
+        message: errorMessage, 
+        severity: 'error' 
+      });
+    }
   };
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     
     // Basic validation
-    if (!registerForm.email || !registerForm.password || !registerForm.confirmPassword) {
+    if (!registerForm.email || !registerForm.password || !registerForm.confirmPassword || !registerForm.name) {
       setSnackbar({ 
         open: true, 
         message: 'Please fill in all required fields', 
+        severity: 'error' 
+      });
+      return;
+    }
+
+    // Check for email errors
+    if (emailError) {
+      setSnackbar({ 
+        open: true, 
+        message: 'Please fix the email error', 
         severity: 'error' 
       });
       return;
@@ -182,6 +240,15 @@ export default function LandingPage() {
       setSnackbar({ 
         open: true, 
         message: 'Password must be at least 6 characters', 
+        severity: 'error' 
+      });
+      return;
+    }
+
+    if (registerForm.password !== registerForm.confirmPassword) {
+      setSnackbar({ 
+        open: true, 
+        message: 'Passwords do not match', 
         severity: 'error' 
       });
       return;
@@ -208,7 +275,7 @@ export default function LandingPage() {
     }
 
     if (registerForm.role === 'Teacher') {
-      if (!registerForm.fullName) {
+      if (!registerForm.name) {
         setSnackbar({ 
           open: true, 
           message: 'Please fill in your full name', 
@@ -218,28 +285,172 @@ export default function LandingPage() {
       }
     }
 
-    setRegisterLoading(true);
-    
-    // Simulate registration process
-    setTimeout(() => {
-      setRegisterLoading(false);
+    // Prevent double submission
+    if (isRegistering) {
       setSnackbar({ 
         open: true, 
-        message: 'Account created successfully! Please sign in.', 
-        severity: 'success' 
+        message: 'Registration in progress, please wait...', 
+        severity: 'warning' 
       });
-      setRegisterForm({ 
-        role: 'Student',
-        email: '', 
-        password: '', 
-        confirmPassword: '',
-        studentId: '',
-        fullName: ''
+      return;
+    }
+
+    setIsRegistering(true);
+
+    try {
+      // Prepare user data for registration
+      const userData = {
+        email: registerForm.email,
+        password: registerForm.password,
+        fullName: registerForm.name,
+        role: registerForm.role,
+        studentId: registerForm.studentId || '',
+        firstName: registerForm.name.split(' ')[0] || '',
+        lastName: registerForm.name.split(' ').slice(1).join(' ') || '',
+        course: '',
+        year: '',
+        section: '',
+        phone: '',
+        address: '',
+        registrationMethod: 'self',
+        createdBy: 'self'
+      };
+
+      console.log('Creating user with data:', userData);
+
+      // Check if this is a student registration and transfer data if needed
+      let finalUserData = userData;
+      let transferMessage = '';
+      if (registerForm.role === 'Student' && registerForm.studentId) {
+        const transferResult = await transferStudentData(registerForm.studentId, userData);
+        finalUserData = transferResult.enhancedData;
+        transferMessage = transferResult.transferMessage;
+      }
+
+      console.log('Final user data for creation:', finalUserData);
+
+      // Create the user account
+      const result = await createSingleUser(finalUserData);
+      
+      if (result.success) {
+        setSnackbar({ 
+          open: true, 
+          message: transferMessage 
+            ? `Account created successfully! ${transferMessage}` 
+            : 'Account created successfully! Please sign in.', 
+          severity: 'success' 
+        });
+        
+        // Reset form
+        setRegisterForm({ 
+          role: 'Student',
+          email: '', 
+          password: '', 
+          confirmPassword: '',
+          name: '',
+          studentId: '',
+          fullName: ''
+        });
+        setStudentIdError('');
+        setEmailError('');
+        setOpenRegister(false);
+        setOpenLogin(true); // Open login modal after registration
+      } else {
+        setSnackbar({ 
+          open: true, 
+          message: result.error || 'Failed to create account. Please try again.', 
+          severity: 'error' 
+        });
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setSnackbar({ 
+        open: true, 
+        message: error.message || 'Registration failed. Please try again.', 
+        severity: 'error' 
       });
-      setStudentIdError('');
-      setOpenRegister(false);
-      setOpenLogin(true); // Open login modal after registration
-    }, 2000);
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  // Function to transfer unregistered student data to registered user
+  const transferStudentData = async (studentId, userData) => {
+    try {
+      console.log('🔄 Checking for unregistered student with ID:', studentId);
+      
+      // Query students collection by studentId field, not document ID
+      const studentsQuery = query(
+        collection(db, 'students'),
+        where('studentId', '==', studentId),
+        where('isRegistered', '==', false)
+      );
+      const studentsSnapshot = await getDocs(studentsQuery);
+      
+      // Also check by document ID (id field) as fallback
+      const studentsByIdQuery = query(
+        collection(db, 'students'),
+        where('id', '==', studentId),
+        where('isRegistered', '==', false)
+      );
+      const studentsByIdSnapshot = await getDocs(studentsByIdQuery);
+      
+      if (!studentsSnapshot.empty || !studentsByIdSnapshot.empty) {
+        const studentDoc = (!studentsSnapshot.empty) ? studentsSnapshot.docs[0] : studentsByIdSnapshot.docs[0];
+        const studentData = studentDoc.data();
+        console.log('📋 Found unregistered student data:', studentData);
+        
+        // Update the user data with the existing student information
+        const enhancedUserData = {
+          ...userData,
+          firstName: studentData.firstName || userData.firstName,
+          lastName: studentData.lastName || userData.lastName,
+          fullName: studentData.fullName || `${studentData.firstName} ${studentData.lastName}`,
+          email: userData.email, // Use the email from registration
+          course: studentData.course || userData.course,
+          year: studentData.year || userData.year,
+          section: studentData.section || userData.section,
+          sex: studentData.sex || userData.sex,
+          contact: studentData.contact || userData.phone,
+          birthdate: studentData.birthdate || '',
+          age: studentData.age || '',
+          image: studentData.image || userData.profilePic,
+          // Transfer additional fields
+          originalStudentData: studentData,
+          transferredFromStudents: true,
+          transferDate: new Date().toISOString()
+        };
+        
+        console.log('✅ Enhanced user data with student info:', enhancedUserData);
+        
+        // Mark the student as registered in the students collection
+        await updateDoc(studentDoc.ref, {
+          isRegistered: true,
+          registeredAt: new Date().toISOString(),
+          registeredEmail: userData.email,
+          transferredToUsers: true
+        });
+        
+        console.log('✅ Marked student as registered in students collection');
+        
+        return {
+          enhancedData: enhancedUserData,
+          transferMessage: `Student data transferred from unregistered list. Student ${studentData.firstName} ${studentData.lastName} (${studentId}) is now registered.`
+        };
+      } else {
+        console.log('ℹ️ No unregistered student found with ID:', studentId);
+        return {
+          enhancedData: userData,
+          transferMessage: ''
+        };
+      }
+    } catch (error) {
+      console.error('❌ Error transferring student data:', error);
+      return {
+        enhancedData: userData,
+        transferMessage: ''
+      };
+    }
   };
 
   const handleStudentIdChange = async (e) => {
@@ -255,6 +466,26 @@ export default function LandingPage() {
       }
     } else {
       setStudentIdError('');
+    }
+  };
+
+  const handleEmailChange = async (e) => {
+    const email = e.target.value;
+    setRegisterForm({...registerForm, email: email});
+    
+    if (email && email.includes('@')) {
+      try {
+        const result = await checkEmailAvailability(email);
+        if (!result.isAvailable) {
+          setEmailError(result.error);
+        } else {
+          setEmailError('');
+        }
+      } catch (error) {
+        setEmailError('Error checking email availability. Please try again.');
+      }
+    } else {
+      setEmailError('');
     }
   };
 
@@ -281,38 +512,38 @@ export default function LandingPage() {
     {
       icon: <DashboardIcon sx={{ fontSize: 32, color: '#800000' }} />,
       title: 'Dashboard Overview',
-      description: 'Comprehensive analytics and real-time insights into student activities and system performance.',
-      action: () => navigate('/overview')
+      description: 'Comprehensive analytics and real-time insights into student activities and system performance with interactive charts and detailed reporting.',
+      action: () => setOpenDashboardModal(true)
     },
     {
       icon: <PeopleIcon sx={{ fontSize: 32, color: '#800000' }} />,
       title: 'Student Management',
-      description: 'Efficiently manage student records, registrations, and academic information.',
-      action: () => navigate('/students')
+      description: 'Complete student lifecycle management including academic records, disciplinary tracking, and seamless parent communication tools.',
+      action: () => setOpenStudentModal(true)
     },
     {
       icon: <ReportIcon sx={{ fontSize: 32, color: '#800000' }} />,
       title: 'Violation Tracking',
-      description: 'Monitor and manage student violations with detailed reporting and analytics.',
-      action: () => navigate('/violation-record')
+      description: 'Advanced disciplinary system with automated notifications, escalation procedures, and comprehensive violation history tracking for better student behavior management.',
+      action: () => setOpenViolationModal(true)
     },
     {
       icon: <EventIcon sx={{ fontSize: 32, color: '#800000' }} />,
       title: 'Activity Management',
-      description: 'Organize and track school activities, events, and student participation.',
-      action: () => navigate('/activity')
+      description: 'Organize and track school activities, events, and student participation with automated scheduling and notifications.',
+      action: () => setOpenActivityModal(true)
     },
     {
       icon: <CampaignIcon sx={{ fontSize: 32, color: '#800000' }} />,
       title: 'Announcements',
-      description: 'Broadcast important announcements and updates to the school community.',
-      action: () => navigate('/announcements')
+      description: 'Broadcast important announcements, emergency notifications, and updates to the entire school community with targeted messaging and delivery confirmation.',
+      action: () => setOpenAnnouncementModal(true)
     },
     {
       icon: <SearchIcon sx={{ fontSize: 32, color: '#800000' }} />,
       title: 'Lost and Found Management',
-      description: 'Efficiently track and manage lost items, found items, and facilitate their return to rightful owners.',
-      action: () => navigate('/lost-found')
+      description: 'Digital lost and found system for tracking misplaced items, facilitating returns, and maintaining detailed records of found objects with photo documentation.',
+      action: () => setOpenLostFoundModal(true)
     }
   ];
 
@@ -326,13 +557,13 @@ export default function LandingPage() {
     {
       title: 'Teacher',
       description: 'Access to student management, activity tracking, and educational tools.',
-      permissions: ['Student Records', 'Activity Management', 'Grade Management', 'Communication Tools'],
+      permissions: ['Student Records', 'Activity Management', 'Violation Report Management', 'Communication Tools'],
       color: '#A52A2A'
     },
     {
       title: 'Student',
       description: 'Personal dashboard with access to activities, announcements, and academic records.',
-      permissions: ['View Activities', 'Access Announcements', 'View Grades', 'Update Profile'],
+      permissions: ['View Activities', 'Access Announcements', 'View Violation', 'Update Profile'],
       color: '#8B0000'
     }
   ];
@@ -613,7 +844,8 @@ export default function LandingPage() {
                     objectFit: 'cover',
                     display: 'block',
                         filter: 'none',
-                        transition: 'all 0.3s ease'
+                        transition: 'all 0.3s ease',
+                        opacity: 0.8
                       }}
                     />
               </Paper>
@@ -651,7 +883,8 @@ export default function LandingPage() {
                     objectFit: 'cover',
                     display: 'block',
                         filter: 'none',
-                        transition: 'all 0.3s ease'
+                        transition: 'all 0.3s ease',
+                        opacity: 0.8
                       }}
                     />
               </Paper>
@@ -699,7 +932,7 @@ export default function LandingPage() {
               variant="outlined"
               size="large"
               startIcon={<InfoIcon />}
-              onClick={() => setOpenMessages(true)}
+              onClick={() => setOpenLearnMoreModal(true)}
               sx={{
                 borderColor: '#800000',
                 color: '#800000',
@@ -729,11 +962,25 @@ export default function LandingPage() {
             textAlign: 'center',
             fontWeight: 800,
             color: isDark ? '#ffffff' : '#800000',
-            mb: { xs: 2, sm: 3, md: 3 },
+            mb: { xs: 1, sm: 2, md: 2 },
             textShadow: '0 2px 4px rgba(0,0,0,0.3)',
             fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
           }}>
-            Powerful Features
+            Powerful Features & Functionality
+          </Typography>
+          
+          <Typography variant="h6" sx={{
+            textAlign: 'center',
+            fontWeight: 400,
+            color: isDark ? '#cccccc' : '#666666',
+            mb: { xs: 2, sm: 3, md: 4 },
+            fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
+            maxWidth: '800px',
+            mx: 'auto',
+            lineHeight: 1.6
+          }}>
+            Discover the comprehensive suite of tools designed to streamline school management, 
+            enhance student experiences, and empower educators with data-driven insights.
           </Typography>
           
           <Grid container spacing={{ xs: 2, sm: 2, md: 2 }}>
@@ -815,83 +1062,202 @@ export default function LandingPage() {
               Quick Access
             </Typography>
             
-            <Grid container spacing={3} justifyContent="center">
+            <Grid container spacing={4} justifyContent="center" sx={{ px: 2 }}>
               <Grid item xs={12} sm={6} md={3}>
                 <Button
-                  fullWidth
-                  variant="contained"
-                  startIcon={<SecurityIcon />}
-                  onClick={() => setOpenRoles(true)}
-                  sx={{
-                    backgroundColor: '#800000',
-                    py: 2,
-                    fontSize: '1.1rem',
-                    fontWeight: 600,
-                    '&:hover': {
-                      backgroundColor: '#A52A2A'
-                    }
+                  onClick={() => {
+                    console.log('User Roles clicked');
+                    console.log('Current openRoles state:', openRoles);
+                    setOpenRoles(true);
+                    console.log('Setting openRoles to true');
                   }}
-                >
-                  User Roles
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  startIcon={<PolicyIcon />}
-                  onClick={() => setOpenPolicy(true)}
-                  sx={{
-                    backgroundColor: '#A52A2A',
-                    py: 2,
-                    fontSize: '1.1rem',
-                    fontWeight: 600,
-                    '&:hover': {
-                      backgroundColor: '#8B0000'
-                    }
-                  }}
-                >
-                  Policies
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  startIcon={<ContactIcon />}
-                  onClick={() => setOpenContact(true)}
-                  sx={{
-                    backgroundColor: '#8B0000',
-                    py: 2,
-                    fontSize: '1.1rem',
-                    fontWeight: 600,
-                    '&:hover': {
-                      backgroundColor: '#DC143C'
-                    }
-                  }}
-                >
-                  Contact Us
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Button
-                  fullWidth
                   variant="outlined"
-                  startIcon={<InfoIcon />}
-                  onClick={() => setOpenMessages(true)}
+                  fullWidth
                   sx={{
-                    borderColor: '#800000',
-                    color: '#800000',
-                    py: 2,
-                    fontSize: '1.1rem',
-                    fontWeight: 600,
+                    p: 3,
+                    height: 'auto',
+                    minHeight: '200px',
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(128,0,0,0.05)',
+                    border: `2px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(128,0,0,0.1)'}`,
+                    borderRadius: 3,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    transition: 'all 0.3s ease',
                     '&:hover': {
-                      borderColor: '#A52A2A',
-                      backgroundColor: 'rgba(128, 0, 0, 0.1)'
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 8px 25px rgba(128,0,0,0.15)',
+                      borderColor: '#800000',
+                      backgroundColor: isDark ? 'rgba(128,0,0,0.1)' : 'rgba(128,0,0,0.08)'
+                    },
+                    '&:active': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 15px rgba(128,0,0,0.2)'
                     }
                   }}
                 >
+                  <SecurityIcon sx={{ fontSize: 40, color: '#800000', mb: 2 }} />
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 600, 
+                    color: isDark ? '#ffffff' : '#800000',
+                    mb: 1
+                  }}>
+                  User Roles
+                  </Typography>
+                  <Typography variant="body2" sx={{ 
+                    color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                    fontSize: '0.85rem'
+                  }}>
+                    Manage user permissions and access levels
+                  </Typography>
+                </Button>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Button
+                  onClick={() => {
+                    console.log('Policies clicked');
+                    setOpenPolicy(true);
+                  }}
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    p: 3,
+                    height: 'auto',
+                    minHeight: '200px',
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(128,0,0,0.05)',
+                    border: `2px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(128,0,0,0.1)'}`,
+                    borderRadius: 3,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 8px 25px rgba(128,0,0,0.15)',
+                      borderColor: '#800000',
+                      backgroundColor: isDark ? 'rgba(128,0,0,0.1)' : 'rgba(128,0,0,0.08)'
+                    },
+                    '&:active': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 15px rgba(128,0,0,0.2)'
+                    }
+                  }}
+                >
+                  <PolicyIcon sx={{ fontSize: 40, color: '#800000', mb: 2 }} />
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 600, 
+                    color: isDark ? '#ffffff' : '#800000',
+                    mb: 1
+                  }}>
+                  Policies
+                  </Typography>
+                  <Typography variant="body2" sx={{ 
+                    color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                    fontSize: '0.85rem'
+                  }}>
+                    View and manage system policies
+                  </Typography>
+                </Button>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Button
+                  onClick={() => {
+                    console.log('Contact Us clicked');
+                    setOpenContact(true);
+                  }}
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    p: 3,
+                    height: 'auto',
+                    minHeight: '200px',
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(128,0,0,0.05)',
+                    border: `2px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(128,0,0,0.1)'}`,
+                    borderRadius: 3,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 8px 25px rgba(128,0,0,0.15)',
+                      borderColor: '#800000',
+                      backgroundColor: isDark ? 'rgba(128,0,0,0.1)' : 'rgba(128,0,0,0.08)'
+                    },
+                    '&:active': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 15px rgba(128,0,0,0.2)'
+                    }
+                  }}
+                >
+                  <ContactIcon sx={{ fontSize: 40, color: '#800000', mb: 2 }} />
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 600, 
+                    color: isDark ? '#ffffff' : '#800000',
+                    mb: 1
+                  }}>
+                  Contact Us
+                  </Typography>
+                  <Typography variant="body2" sx={{ 
+                    color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                    fontSize: '0.85rem'
+                  }}>
+                    Get in touch with our support team
+                  </Typography>
+                </Button>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Button
+                  onClick={() => {
+                    console.log('System Info clicked');
+                    setOpenSystemInfoModal(true);
+                  }}
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    p: 3,
+                    height: 'auto',
+                    minHeight: '200px',
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(128,0,0,0.05)',
+                    border: `2px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(128,0,0,0.1)'}`,
+                    borderRadius: 3,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 8px 25px rgba(128,0,0,0.15)',
+                      borderColor: '#800000',
+                      backgroundColor: isDark ? 'rgba(128,0,0,0.1)' : 'rgba(128,0,0,0.08)'
+                    },
+                    '&:active': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 15px rgba(128,0,0,0.2)'
+                    }
+                  }}
+                >
+                  <InfoIcon sx={{ fontSize: 40, color: '#800000', mb: 2 }} />
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 600, 
+                    color: isDark ? '#ffffff' : '#800000',
+                    mb: 1
+                  }}>
                   System Info
+                  </Typography>
+                  <Typography variant="body2" sx={{ 
+                    color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                    fontSize: '0.85rem'
+                  }}>
+                    View system information and status
+                  </Typography>
                 </Button>
               </Grid>
             </Grid>
@@ -905,8 +1271,8 @@ export default function LandingPage() {
             py: 6,
             borderTop: '1px solid rgba(128, 0, 0, 0.2)',
             background: isDark 
-            ? 'linear-gradient(135deg, rgba(165, 42, 42, 0.8) 0%, rgba(165, 42, 42, 0.6) 50%, rgba(165, 42, 42, 0.4) 100%)'
-            : 'linear-gradient(135deg, rgba(165, 42, 42, 0.4) 0%, rgba(165, 42, 42, 0.35) 50%, rgba(165, 42, 42, 0.3) 100%)'
+            ? 'linear-gradient(135deg, rgba(139, 0, 0, 0.95) 0%, rgba(128, 0, 0, 0.9) 25%, rgba(139, 0, 0, 0.85) 50%, rgba(128, 0, 0, 0.9) 75%, rgba(139, 0, 0, 0.95) 100%)'
+            : 'linear-gradient(135deg, rgba(139, 0, 0, 0.7) 0%, rgba(128, 0, 0, 0.6) 25%, rgba(139, 0, 0, 0.5) 50%, rgba(128, 0, 0, 0.6) 75%, rgba(139, 0, 0, 0.7) 100%)'
           }}>
           <Container maxWidth="xl">
           <Grid container spacing={4}>
@@ -919,11 +1285,17 @@ export default function LandingPage() {
                   CeciServe
                 </Typography>
               </Box>
-              <Typography variant="body2" sx={{ color: isDark ? '#cccccc' : '#666666', mb: 3 }}>
+              <Typography variant="body2" sx={{ color: '#ffffff', mb: 3 }}>
                 Revolutionizing education through advanced technology and comprehensive management solutions.
               </Typography>
               <Box sx={{ display: 'flex', gap: 2 }}>
-                <IconButton sx={{ color: '#800000' }}>
+                <IconButton 
+                  sx={{ color: '#800000' }}
+                  component="a"
+                  href="https://www.facebook.com/harley.villetaii"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <FacebookIcon />
                 </IconButton>
                 <IconButton sx={{ color: '#800000' }}>
@@ -948,7 +1320,7 @@ export default function LandingPage() {
                     <EmailIcon sx={{ color: '#800000' }} />
                   </ListItemIcon>
                   <ListItemText 
-                    primary="support@eduportal.com"
+                    primary="harleyvilleta7777@gmail.com"
                     sx={{ color: isDark ? '#cccccc' : '#666666' }}
                   />
                 </ListItem>
@@ -957,7 +1329,7 @@ export default function LandingPage() {
                     <PhoneIcon sx={{ color: '#800000' }} />
                   </ListItemIcon>
                   <ListItemText 
-                    primary="+1 (555) 123-4567"
+                    primary="+2 (476) 9891"
                     sx={{ color: isDark ? '#cccccc' : '#666666' }}
                   />
                 </ListItem>
@@ -966,7 +1338,7 @@ export default function LandingPage() {
                     <LocationIcon sx={{ color: '#800000' }} />
                   </ListItemIcon>
                   <ListItemText 
-                    primary="123 Education St, Learning City, LC 12345"
+                    primary="Ward ll, Minglanilla Cebu"
                     sx={{ color: isDark ? '#cccccc' : '#666666' }}
                   />
                 </ListItem>
@@ -1041,8 +1413,8 @@ export default function LandingPage() {
           <Divider sx={{ my: 4, borderColor: 'rgba(128, 0, 0, 0.2)' }} />
           
           <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="body2" sx={{ color: isDark ? '#cccccc' : '#666666' }}>
-              © 2024 CeciServe. All rights reserved. | Student Affairs Management System
+            <Typography variant="body2" sx={{ color: '#ffffff' }}>
+              © 2025 CeciServe. All rights reserved. | Student Affairs Management System
             </Typography>
           </Box>
         </Container>
@@ -1156,6 +1528,19 @@ export default function LandingPage() {
               <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
               Automated Announcement System
             </Typography>
+            
+            <Typography variant="body1" sx={{ 
+              color: isDark ? '#e0e0e0' : '#333333',
+              fontWeight: 500,
+              fontSize: '1rem',
+              mb: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}>
+              <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+              Lost and Found Management System
+            </Typography>
           </Box>
         </DialogContent>
         <DialogActions sx={{
@@ -1166,10 +1551,14 @@ export default function LandingPage() {
           <Button 
             onClick={() => setOpenMessages(false)}
             sx={{
-              color: isDark ? '#e0e0e0' : '#333333',
-              fontWeight: 500,
+              color: '#000000',
+              fontWeight: 600,
+              border: '1px solid #000000',
+              borderRadius: 2,
               '&:hover': {
-                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)'
+                backgroundColor: '#800000',
+                color: '#ffffff',
+                border: '1px solid #800000'
               }
             }}
           >
@@ -1179,7 +1568,7 @@ export default function LandingPage() {
             variant="contained" 
             onClick={() => {
               setOpenMessages(false);
-              navigate('/dashboard');
+              setOpenLogin(true);
             }}
             sx={{ 
               backgroundColor: '#800000',
@@ -1257,7 +1646,12 @@ export default function LandingPage() {
                     </Typography>
                     <List dense>
                       {role.permissions.map((permission, idx) => (
-                        <ListItem key={idx} sx={{ py: 0.5 }}>
+                        <ListItem key={idx} sx={{ 
+                          py: 0.5,
+                          '&:hover': { 
+                            backgroundColor: 'transparent' 
+                          }
+                        }}>
                           <ListItemIcon sx={{ minWidth: 30 }}>
                             <CheckCircleIcon sx={{ fontSize: 18, color: role.color }} />
                           </ListItemIcon>
@@ -1449,7 +1843,7 @@ export default function LandingPage() {
                     <EmailIcon sx={{ color: '#800000', fontSize: 20 }} />
                   </ListItemIcon>
                   <ListItemText 
-                    primary="support@eduportal.com"
+                    primary="harleyvilleta7777@gmail.com"
                     sx={{
                       '& .MuiListItemText-primary': {
                         color: isDark ? '#ffffff' : '#2c2c2c',
@@ -1464,7 +1858,7 @@ export default function LandingPage() {
                     <PhoneIcon sx={{ color: '#800000', fontSize: 20 }} />
                   </ListItemIcon>
                   <ListItemText 
-                    primary="+1 (555) 123-4567"
+                    primary="+2 (476) 9891"
                     sx={{
                       '& .MuiListItemText-primary': {
                         color: isDark ? '#ffffff' : '#2c2c2c',
@@ -1479,7 +1873,7 @@ export default function LandingPage() {
                     <LocationIcon sx={{ color: '#800000', fontSize: 20 }} />
                   </ListItemIcon>
                   <ListItemText 
-                    primary="123 Education St, Learning City, LC 12345"
+                    primary="Ward ll, Minglanilla Cebu"
                     sx={{
                       '& .MuiListItemText-primary': {
                         color: isDark ? '#ffffff' : '#2c2c2c',
@@ -1662,7 +2056,7 @@ export default function LandingPage() {
                 </Typography>
                 <TextField
                   fullWidth
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={loginForm.password}
                   onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
                   placeholder="Enter your password"
@@ -1676,8 +2070,17 @@ export default function LandingPage() {
                       }} />
                     ),
                     endAdornment: (
-                      <IconButton size="small" sx={{ color: '#8a8d91' }}>
-                        <Box sx={{ width: 20, height: 20, border: '2px solid #8a8d91', borderRadius: '50%' }} />
+                      <IconButton
+                        size="small"
+                        onClick={() => setShowPassword(!showPassword)}
+                        sx={{ 
+                          color: '#8a8d91',
+                          '&:hover': {
+                            color: '#800000'
+                          }
+                        }}
+                      >
+                        {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                       </IconButton>
                     )
                   }}
@@ -1745,7 +2148,7 @@ export default function LandingPage() {
                 type="submit"
                 fullWidth
               variant="contained"
-                disabled={loginLoading}
+                disabled={false}
               sx={{
                 backgroundColor: '#800000',
                   borderRadius: 2,
@@ -1763,7 +2166,7 @@ export default function LandingPage() {
                 }
               }}
             >
-                {loginLoading ? 'Signing in...' : 'Sign In'}
+                Sign In
             </Button>
             
               {/* Registration Link */}
@@ -1928,6 +2331,58 @@ export default function LandingPage() {
                 </FormControl>
               </Box>
               
+              {/* Name Field */}
+              <Box sx={{ mb: 2, textAlign: 'left' }}>
+                <Typography variant="body2" sx={{ 
+                  mb: 0.5, 
+                  color: '#1c1e21',
+                  fontWeight: 600,
+                  fontSize: '13px'
+                }}>
+                  Full Name*
+                </Typography>
+                <TextField
+                  fullWidth
+                  value={registerForm.name}
+                  onChange={(e) => setRegisterForm({...registerForm, name: e.target.value})}
+                  placeholder="Enter your full name"
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <PersonIcon sx={{ 
+                        color: '#8a8d91', 
+                        mr: 1,
+                        fontSize: 20
+                      }} />
+                    )
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      backgroundColor: '#f5f6f7',
+                      border: '1px solid #dddfe2',
+                      '& fieldset': {
+                        border: 'none'
+                      },
+                      '&:hover fieldset': {
+                        border: 'none'
+                      },
+                      '&.Mui-focused fieldset': {
+                        border: '2px solid #800000'
+                      },
+                      '&.Mui-focused': {
+                          backgroundColor: '#ffffff'
+                        }
+                    },
+                    '& .MuiInputBase-input': {
+                      color: '#1c1e21',
+                      fontSize: '16px',
+                      padding: '12px 16px'
+                    }
+                  }}
+                />
+              </Box>
+              
               {/* Email Field */}
               <Box sx={{ mb: 2, textAlign: 'left' }}>
                 <Typography variant="body2" sx={{ 
@@ -1942,9 +2397,11 @@ export default function LandingPage() {
                   fullWidth
                   type="email"
                   value={registerForm.email}
-                  onChange={(e) => setRegisterForm({...registerForm, email: e.target.value})}
+                  onChange={handleEmailChange}
                   placeholder="Enter your email"
                   required
+                  error={!!emailError}
+                  helperText={emailError || "Enter your email address"}
                   InputProps={{
                     startAdornment: (
                       <EmailIcon sx={{ 
@@ -2093,7 +2550,7 @@ export default function LandingPage() {
                 </Typography>
                 <TextField
                   fullWidth
-                  type="password"
+                  type={showRegisterPassword ? "text" : "password"}
                   value={registerForm.password}
                   onChange={(e) => setRegisterForm({...registerForm, password: e.target.value})}
                   placeholder="Create a password"
@@ -2107,8 +2564,17 @@ export default function LandingPage() {
                       }} />
                     ),
                     endAdornment: (
-                      <IconButton size="small" sx={{ color: '#8a8d91' }}>
-                        <Box sx={{ width: 20, height: 20, border: '2px solid #8a8d91', borderRadius: '50%' }} />
+                      <IconButton
+                        size="small"
+                        onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                        sx={{ 
+                          color: '#8a8d91',
+                          '&:hover': {
+                            color: '#800000'
+                          }
+                        }}
+                      >
+                        {showRegisterPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                       </IconButton>
                     )
                   }}
@@ -2138,7 +2604,7 @@ export default function LandingPage() {
                   }}
                 />
               </Box>
-
+              
               {/* Confirm Password Field */}
               <Box sx={{ mb: 2, textAlign: 'left' }}>
                 <Typography variant="body2" sx={{ 
@@ -2151,7 +2617,7 @@ export default function LandingPage() {
                 </Typography>
                 <TextField
                   fullWidth
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   value={registerForm.confirmPassword}
                   onChange={(e) => setRegisterForm({...registerForm, confirmPassword: e.target.value})}
                   placeholder="Confirm your password"
@@ -2165,8 +2631,17 @@ export default function LandingPage() {
                       }} />
                     ),
                     endAdornment: (
-                      <IconButton size="small" sx={{ color: '#8a8d91' }}>
-                        <Box sx={{ width: 20, height: 20, border: '2px solid #8a8d91', borderRadius: '50%' }} />
+                      <IconButton
+                        size="small"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        sx={{ 
+                          color: '#8a8d91',
+                          '&:hover': {
+                            color: '#800000'
+                          }
+                        }}
+                      >
+                        {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                       </IconButton>
                     )
                   }}
@@ -2202,7 +2677,7 @@ export default function LandingPage() {
                 type="submit"
                 fullWidth
                 variant="contained"
-                disabled={registerLoading}
+                disabled={isRegistering}
                 sx={{
                   backgroundColor: '#800000',
                   borderRadius: 2,
@@ -2220,7 +2695,7 @@ export default function LandingPage() {
                   }
                 }}
               >
-                {registerLoading ? 'Creating Account...' : 'Create Account'}
+                {isRegistering ? 'Creating Account...' : 'Create Account'}
               </Button>
               
               {/* Sign In Link */}
@@ -2252,6 +2727,913 @@ export default function LandingPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Dashboard Feature Modal */}
+      <Dialog open={openDashboardModal} onClose={() => setOpenDashboardModal(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ 
+          backgroundColor: '#800000', 
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <DashboardIcon />
+          Dashboard Overview
+        </DialogTitle>
+        <DialogContent sx={{ 
+          p: 3,
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <Typography variant="h6" sx={{ 
+            mb: 3, 
+            color: isDark ? '#ffffff' : '#800000', 
+            fontWeight: 700,
+            fontSize: '1.25rem'
+          }}>
+            Real-Time Analytics & Insights
+          </Typography>
+          
+          <Typography variant="body1" sx={{ 
+            mb: 3, 
+            lineHeight: 1.6,
+            color: isDark ? '#e0e0e0' : '#333333',
+            fontSize: '1rem'
+          }}>
+            The Dashboard Overview provides comprehensive analytics and real-time insights into student activities and system performance. 
+            Access interactive charts, detailed reporting, and key performance indicators to make data-driven decisions.
+          </Typography>
+          
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" sx={{ 
+              mb: 2, 
+              color: isDark ? '#ffffff' : '#800000', 
+              fontWeight: 700,
+              fontSize: '1.1rem'
+            }}>
+              Key Capabilities:
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Interactive data visualization charts
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Real-time system performance metrics
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Comprehensive reporting tools
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Student activity monitoring
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)',
+          padding: '16px 24px'
+        }}>
+          <Button 
+            onClick={() => setOpenDashboardModal(false)}
+            sx={{
+              color: '#000000',
+              fontWeight: 600,
+              border: '1px solid #000000',
+              borderRadius: 2,
+              '&:hover': {
+                backgroundColor: '#800000',
+                color: '#ffffff',
+                border: '1px solid #800000'
+              }
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Student Management Feature Modal */}
+      <Dialog open={openStudentModal} onClose={() => setOpenStudentModal(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ 
+          backgroundColor: '#800000', 
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <PeopleIcon />
+          Student Management
+        </DialogTitle>
+        <DialogContent sx={{ 
+          p: 3,
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <Typography variant="h6" sx={{ 
+            mb: 3, 
+            color: isDark ? '#ffffff' : '#800000', 
+            fontWeight: 700,
+            fontSize: '1.25rem'
+          }}>
+            Complete Student Lifecycle Management
+          </Typography>
+          
+          <Typography variant="body1" sx={{ 
+            mb: 3, 
+            lineHeight: 1.6,
+            color: isDark ? '#e0e0e0' : '#333333',
+            fontSize: '1rem'
+          }}>
+            Manage the complete student lifecycle with comprehensive tools for academic records, disciplinary tracking, 
+            and seamless parent communication. Keep all student information organized and accessible.
+          </Typography>
+          
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" sx={{ 
+              mb: 2, 
+              color: isDark ? '#ffffff' : '#800000', 
+              fontWeight: 700,
+              fontSize: '1.1rem'
+            }}>
+              Key Capabilities:
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Comprehensive academic records management
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Disciplinary tracking and history
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Parent communication tools
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Student profile management
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)',
+          padding: '16px 24px'
+        }}>
+          <Button 
+            onClick={() => setOpenStudentModal(false)}
+            sx={{
+              color: '#000000',
+              fontWeight: 600,
+              border: '1px solid #000000',
+              borderRadius: 2,
+              '&:hover': {
+                backgroundColor: '#800000',
+                color: '#ffffff',
+                border: '1px solid #800000'
+              }
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Violation Tracking Feature Modal */}
+      <Dialog open={openViolationModal} onClose={() => setOpenViolationModal(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ 
+          backgroundColor: '#800000', 
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <ReportIcon />
+          Violation Tracking
+        </DialogTitle>
+        <DialogContent sx={{ 
+          p: 3,
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <Typography variant="h6" sx={{ 
+            mb: 3, 
+            color: isDark ? '#ffffff' : '#800000', 
+            fontWeight: 700,
+            fontSize: '1.25rem'
+          }}>
+            Advanced Disciplinary System
+          </Typography>
+          
+          <Typography variant="body1" sx={{ 
+            mb: 3, 
+            lineHeight: 1.6,
+            color: isDark ? '#e0e0e0' : '#333333',
+            fontSize: '1rem'
+          }}>
+            Monitor and manage student violations with an advanced disciplinary system featuring automated notifications, 
+            escalation procedures, and comprehensive violation history tracking for better student behavior management.
+          </Typography>
+          
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" sx={{ 
+              mb: 2, 
+              color: isDark ? '#ffffff' : '#800000', 
+              fontWeight: 700,
+              fontSize: '1.1rem'
+            }}>
+              Key Capabilities:
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Automated violation notifications
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Escalation procedures and workflows
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Comprehensive violation history tracking
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Behavior management analytics
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)',
+          padding: '16px 24px'
+        }}>
+          <Button 
+            onClick={() => setOpenViolationModal(false)}
+            sx={{
+              color: '#000000',
+              fontWeight: 600,
+              border: '1px solid #000000',
+              borderRadius: 2,
+              '&:hover': {
+                backgroundColor: '#800000',
+                color: '#ffffff',
+                border: '1px solid #800000'
+              }
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Activity Management Feature Modal */}
+      <Dialog open={openActivityModal} onClose={() => setOpenActivityModal(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ 
+          backgroundColor: '#800000', 
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <EventIcon />
+          Activity Management
+        </DialogTitle>
+        <DialogContent sx={{ 
+          p: 3,
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <Typography variant="h6" sx={{ 
+            mb: 3, 
+            color: isDark ? '#ffffff' : '#800000', 
+            fontWeight: 700,
+            fontSize: '1.25rem'
+          }}>
+            School Activities & Events
+          </Typography>
+          
+          <Typography variant="body1" sx={{ 
+            mb: 3, 
+            lineHeight: 1.6,
+            color: isDark ? '#e0e0e0' : '#333333',
+            fontSize: '1rem'
+          }}>
+            Organize and track school activities, events, and student participation with automated scheduling and notifications. 
+            Manage everything from planning to execution with comprehensive tools.
+          </Typography>
+          
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" sx={{ 
+              mb: 2, 
+              color: isDark ? '#ffffff' : '#800000', 
+              fontWeight: 700,
+              fontSize: '1.1rem'
+            }}>
+              Key Capabilities:
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Event planning and scheduling
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Student participation tracking
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Automated notifications
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Activity management tools
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)',
+          padding: '16px 24px'
+        }}>
+          <Button 
+            onClick={() => setOpenActivityModal(false)}
+            sx={{
+              color: '#000000',
+              fontWeight: 600,
+              border: '1px solid #000000',
+              borderRadius: 2,
+              '&:hover': {
+                backgroundColor: '#800000',
+                color: '#ffffff',
+                border: '1px solid #800000'
+              }
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Announcements Feature Modal */}
+      <Dialog open={openAnnouncementModal} onClose={() => setOpenAnnouncementModal(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ 
+          backgroundColor: '#800000', 
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <CampaignIcon />
+          Announcements
+        </DialogTitle>
+        <DialogContent sx={{ 
+          p: 3,
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <Typography variant="h6" sx={{ 
+            mb: 3, 
+            color: isDark ? '#ffffff' : '#800000', 
+            fontWeight: 700,
+            fontSize: '1.25rem'
+          }}>
+            Communication & Broadcasting
+          </Typography>
+          
+          <Typography variant="body1" sx={{ 
+            mb: 3, 
+            lineHeight: 1.6,
+            color: isDark ? '#e0e0e0' : '#333333',
+            fontSize: '1rem'
+          }}>
+            Broadcast important announcements, emergency notifications, and updates to the entire school community 
+            with targeted messaging and delivery confirmation. Keep everyone informed and connected.
+          </Typography>
+          
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" sx={{ 
+              mb: 2, 
+              color: isDark ? '#ffffff' : '#800000', 
+              fontWeight: 700,
+              fontSize: '1.1rem'
+            }}>
+              Key Capabilities:
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Emergency notification system
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Targeted messaging capabilities
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Delivery confirmation tracking
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Community-wide communication
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)',
+          padding: '16px 24px'
+        }}>
+          <Button 
+            onClick={() => setOpenAnnouncementModal(false)}
+            sx={{
+              color: '#000000',
+              fontWeight: 600,
+              border: '1px solid #000000',
+              borderRadius: 2,
+              '&:hover': {
+                backgroundColor: '#800000',
+                color: '#ffffff',
+                border: '1px solid #800000'
+              }
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Lost and Found Feature Modal */}
+      <Dialog open={openLostFoundModal} onClose={() => setOpenLostFoundModal(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ 
+          backgroundColor: '#800000', 
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <SearchIcon />
+          Lost and Found Management
+        </DialogTitle>
+        <DialogContent sx={{ 
+          p: 3,
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <Typography variant="h6" sx={{ 
+            mb: 3, 
+            color: isDark ? '#ffffff' : '#800000', 
+            fontWeight: 700,
+            fontSize: '1.25rem'
+          }}>
+            Digital Lost & Found System
+          </Typography>
+          
+          <Typography variant="body1" sx={{ 
+            mb: 3, 
+            lineHeight: 1.6,
+            color: isDark ? '#e0e0e0' : '#333333',
+            fontSize: '1rem'
+          }}>
+            Track misplaced items, facilitate returns, and maintain detailed records of found objects with photo documentation. 
+            Streamline the lost and found process with digital tools and automated matching.
+          </Typography>
+          
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" sx={{ 
+              mb: 2, 
+              color: isDark ? '#ffffff' : '#800000', 
+              fontWeight: 700,
+              fontSize: '1.1rem'
+            }}>
+              Key Capabilities:
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Photo documentation system
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Automated item matching
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Return facilitation tools
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Detailed record keeping
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)',
+          padding: '16px 24px'
+        }}>
+          <Button 
+            onClick={() => setOpenLostFoundModal(false)}
+            sx={{
+              color: '#000000',
+              fontWeight: 600,
+              border: '1px solid #000000',
+              borderRadius: 2,
+              '&:hover': {
+                backgroundColor: '#800000',
+                color: '#ffffff',
+                border: '1px solid #800000'
+              }
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Learn More Modal */}
+      <Dialog open={openLearnMoreModal} onClose={() => setOpenLearnMoreModal(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ 
+          backgroundColor: '#800000', 
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <SchoolIcon />
+          Learn More About CeciServe
+        </DialogTitle>
+        <DialogContent sx={{ 
+          p: 3,
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <Typography variant="h6" sx={{ 
+            mb: 3, 
+            color: isDark ? '#ffffff' : '#800000', 
+            fontWeight: 700,
+            fontSize: '1.25rem'
+          }}>
+            Discover CeciServe's Educational Solutions
+          </Typography>
+          
+          <Typography variant="body1" sx={{ 
+            mb: 3, 
+            lineHeight: 1.6,
+            color: isDark ? '#e0e0e0' : '#333333',
+            fontSize: '1rem'
+          }}>
+            CeciServe is a comprehensive school management system designed to revolutionize educational administration. 
+            Our platform integrates cutting-edge technology with educational best practices to create a seamless, 
+            efficient, and user-friendly experience for administrators, teachers, and students.
+          </Typography>
+          
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" sx={{ 
+              mb: 2, 
+              color: isDark ? '#ffffff' : '#800000', 
+              fontWeight: 700,
+              fontSize: '1.1rem'
+            }}>
+              Why Choose CeciServe?
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Modern, intuitive interface designed for educators
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Comprehensive feature set covering all school operations
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Scalable solution that grows with your institution
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Dedicated support and training resources
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)',
+          padding: '16px 24px'
+        }}>
+          <Button 
+            onClick={() => setOpenLearnMoreModal(false)}
+            sx={{
+              color: '#000000',
+              fontWeight: 600,
+              border: '1px solid #000000',
+              borderRadius: 2,
+              '&:hover': {
+                backgroundColor: '#800000',
+                color: '#ffffff',
+                border: '1px solid #800000'
+              }
+            }}
+          >
+            Close
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={() => {
+              setOpenLearnMoreModal(false);
+              setOpenLogin(true);
+            }}
+            sx={{ 
+              backgroundColor: '#800000',
+              fontWeight: 600,
+              '&:hover': {
+                backgroundColor: '#A52A2A'
+              }
+            }}
+          >
+            Get Started
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* System Info Modal */}
+      <Dialog open={openSystemInfoModal} onClose={() => setOpenSystemInfoModal(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ 
+          backgroundColor: '#800000', 
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <InfoIcon />
+          System Information & Technical Details
+        </DialogTitle>
+        <DialogContent sx={{ 
+          p: 3,
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <Typography variant="h6" sx={{ 
+            mb: 3, 
+            color: isDark ? '#ffffff' : '#800000', 
+            fontWeight: 700,
+            fontSize: '1.25rem'
+          }}>
+            Technical Specifications & System Requirements
+          </Typography>
+          
+          <Typography variant="body1" sx={{ 
+            mb: 3, 
+            lineHeight: 1.6,
+            color: isDark ? '#e0e0e0' : '#333333',
+            fontSize: '1rem'
+          }}>
+            CeciServe is built on modern web technologies and cloud infrastructure to ensure reliability, 
+            security, and performance. Our system is designed to handle the demands of educational institutions 
+            of all sizes with enterprise-grade security and scalability.
+          </Typography>
+          
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" sx={{ 
+              mb: 2, 
+              color: isDark ? '#ffffff' : '#800000', 
+              fontWeight: 700,
+              fontSize: '1.1rem'
+            }}>
+              System Features:
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Cloud-based architecture with 99.9% uptime guarantee
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Enterprise-grade security with data encryption
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Responsive design compatible with all devices
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: isDark ? '#e0e0e0' : '#333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <CheckCircleIcon sx={{ color: '#800000', fontSize: '1.2rem' }} />
+                Regular updates and feature enhancements
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{
+          backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+          backdropFilter: 'blur(10px)',
+          padding: '16px 24px'
+        }}>
+          <Button 
+            onClick={() => setOpenSystemInfoModal(false)}
+            sx={{
+              color: '#000000',
+              fontWeight: 600,
+              border: '1px solid #000000',
+              borderRadius: 2,
+              '&:hover': {
+                backgroundColor: '#800000',
+                color: '#ffffff',
+                border: '1px solid #800000'
+              }
+            }}
+          >
+            Close
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={() => {
+              setOpenSystemInfoModal(false);
+              setOpenContact(true);
+            }}
+            sx={{ 
+              backgroundColor: '#800000',
+              fontWeight: 600,
+              '&:hover': {
+                backgroundColor: '#A52A2A'
+              }
+            }}
+          >
+            Contact Support
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}

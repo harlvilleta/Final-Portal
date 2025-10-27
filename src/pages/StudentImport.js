@@ -52,10 +52,12 @@ function StudentImport({ open, onClose, onImportSuccess }) {
 
   // Sample Excel data template for reference
   const sampleData = {
-    headers: ['Student ID', 'First Name', 'Last Name', 'Email', 'Sex'],
+    headers: ['Student Id', 'Firt Name', 'Last Name', 'Gmail', 'Sex'],
     sampleRows: [
-      ['SCC-22-00000001', 'John', 'Doe', 'john.doe@example.com', 'Male'],
-      ['SCC-22-00000002', 'Jane', 'Smith', 'jane.smith@example.com', 'Female']
+      ['SCC-22-00000921', 'Dell', 'Amiron', 'Dell@gmail.com', 'Male'],
+      ['SCC-22-00000922', 'Max', 'Talumpong', 'T.max@gmail.com', 'Male'],
+      ['SCC-22-00000923', 'John', 'Doe', '', ''], // Example with empty optional fields
+      ['SCC-22-00000924', 'Jane', 'Smith', 'jane@email.com', ''] // Example with partial optional fields
     ]
   };
 
@@ -112,25 +114,31 @@ function StudentImport({ open, onClose, onImportSuccess }) {
     headers.forEach((header, index) => {
       const cleanHeader = header.toLowerCase().trim();
       
-      // Map Student ID (various possible names)
-      if (cleanHeader.includes('student') && cleanHeader.includes('id') || 
-          cleanHeader === 'id' || cleanHeader === 'studentid' || cleanHeader === 'student_id') {
+      // Map Student ID (various possible names including typos)
+      if ((cleanHeader.includes('student') && cleanHeader.includes('id')) || 
+          cleanHeader === 'id' || cleanHeader === 'studentid' || cleanHeader === 'student_id' ||
+          cleanHeader === 'student id' || cleanHeader === 'studentid') {
         columnMap.studentId = index;
       }
-      // Map First Name
-      else if (cleanHeader.includes('first') && cleanHeader.includes('name') || 
-               cleanHeader === 'firstname' || cleanHeader === 'first_name' || cleanHeader === 'name') {
+      // Map First Name (handle typos like "Firt Name")
+      else if ((cleanHeader.includes('first') && cleanHeader.includes('name')) || 
+               cleanHeader === 'firstname' || cleanHeader === 'first_name' || 
+               cleanHeader === 'first name' || cleanHeader === 'firt name' ||
+               cleanHeader === 'firtname' || cleanHeader === 'firt_name' ||
+               (cleanHeader.includes('firt') && cleanHeader.includes('name'))) {
         columnMap.firstName = index;
       }
       // Map Last Name
-      else if (cleanHeader.includes('last') && cleanHeader.includes('name') || 
+      else if ((cleanHeader.includes('last') && cleanHeader.includes('name')) || 
                cleanHeader === 'lastname' || cleanHeader === 'last_name' || 
-               cleanHeader === 'surname' || cleanHeader === 'family name') {
+               cleanHeader === 'last name' || cleanHeader === 'surname' || 
+               cleanHeader === 'family name' || cleanHeader === 'familyname') {
         columnMap.lastName = index;
       }
-      // Map Email
+      // Map Email (handle Gmail specifically)
       else if (cleanHeader.includes('email') || cleanHeader === 'gmail' || 
-               cleanHeader === 'e-mail' || cleanHeader === 'email address') {
+               cleanHeader === 'e-mail' || cleanHeader === 'email address' ||
+               cleanHeader === 'mail' || cleanHeader === 'e_mail') {
         columnMap.email = index;
       }
       // Map Sex/Gender
@@ -138,6 +146,21 @@ function StudentImport({ open, onClose, onImportSuccess }) {
         columnMap.sex = index;
       }
     });
+
+    // Debug: Log the column mapping
+    console.log('Column mapping:', columnMap);
+    console.log('Headers found:', headers);
+    
+    // Check if required columns are mapped
+    if (columnMap.studentId === undefined) {
+      console.warn('Student ID column not found. Available headers:', headers);
+    }
+    if (columnMap.firstName === undefined) {
+      console.warn('First Name column not found. Available headers:', headers);
+    }
+    if (columnMap.lastName === undefined) {
+      console.warn('Last Name column not found. Available headers:', headers);
+    }
 
     // Parse rows
     const students = [];
@@ -152,15 +175,20 @@ function StudentImport({ open, onClose, onImportSuccess }) {
           email: columnMap.email !== undefined ? (row[columnMap.email] || '').toString().trim() : '',
           sex: columnMap.sex !== undefined ? (row[columnMap.sex] || '').toString().trim() : ''
         };
+        
+        // Debug: Log each student being parsed
+        console.log(`Row ${index + 2}:`, student);
+        
         students.push(student);
       }
     });
 
+    console.log(`Parsed ${students.length} students from Excel`);
     return students;
   };
 
   const validateStudent = (student) => {
-    // Only Student ID and Names are required
+    // Priority validation: Student ID, First Name, and Last Name are required
     if (!student.studentId || student.studentId.trim() === '') {
       return { valid: false, error: 'Student ID is required' };
     }
@@ -170,6 +198,10 @@ function StudentImport({ open, onClose, onImportSuccess }) {
     if (!student.lastName || student.lastName.trim() === '') {
       return { valid: false, error: 'Last Name is required' };
     }
+    
+    // Email and Gender are optional - no validation needed
+    // Duplicate Student ID validation is handled in the import process
+    
     return { valid: true, error: null };
   };
 
@@ -220,14 +252,14 @@ function StudentImport({ open, onClose, onImportSuccess }) {
           continue;
         }
 
-        // Check for duplicates
+        // Check for duplicates - treat as invalid/error
         const isDuplicate = await checkDuplicate(student.studentId);
         if (isDuplicate) {
-          skippedCount++;
+          failedCount++;
           errors.push({
             row: student.rowNumber,
             student: `${student.firstName} ${student.lastName} (${student.studentId})`,
-            error: 'Student ID already exists - skipped'
+            error: 'Duplicate Student ID - Student ID must be unique'
           });
           continue;
         }
@@ -239,8 +271,8 @@ function StudentImport({ open, onClose, onImportSuccess }) {
           firstName: student.firstName,
           lastName: student.lastName,
           fullName: `${student.firstName} ${student.lastName}`,
-          email: student.email || '',
-          sex: student.sex || '',
+          email: student.email || '', // Optional field
+          sex: student.sex || '', // Optional field
           course: '',
           year: '',
           section: '',

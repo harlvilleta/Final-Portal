@@ -45,9 +45,8 @@ export default function Overview() {
       { month: 'Dec', count: 3 }
     ]
   });
-  const [loading, setLoading] = useState(false);
+  // Removed loading state
   const [recentActivity, setRecentActivity] = useState([]);
-  const [activityLoading, setActivityLoading] = useState(false);
   const [openEventModal, setOpenEventModal] = useState(false);
   const [eventForm, setEventForm] = useState({ title: '', description: '', proposedBy: '', date: '', time: '', location: '' });
   const [eventSubmitting, setEventSubmitting] = useState(false);
@@ -70,7 +69,7 @@ export default function Overview() {
     const loadDashboardData = async () => {
       if (!isMounted) return;
       
-      setLoading(true);
+      // Skip loading state
       try {
         // Add timeout to prevent infinite loading
         const timeoutPromise = new Promise((_, reject) => {
@@ -98,9 +97,7 @@ export default function Overview() {
           setRecentActivity([]);
         }
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        // Skip loading state
       }
     };
     
@@ -363,9 +360,8 @@ export default function Overview() {
   const fetchRecentActivity = async (retryCount = 0) => {
     const maxRetries = 3;
     
-    setActivityLoading(true);
     try {
-      // Optimize: Fetch all activities in parallel with reduced limits
+      // Fetch all activities in parallel
       const [activityLogSnap, notificationsSnap, violationsSnap] = await Promise.allSettled([
         getDocs(query(collection(db, "activity_log"), orderBy("timestamp", "desc"), limit(5))),
         getDocs(query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(5))),
@@ -376,58 +372,75 @@ export default function Overview() {
       
       // Process activity log data
       if (activityLogSnap.status === 'fulfilled') {
-        const activityLogData = activityLogSnap.value.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          type: 'activity_log'
-        }));
+        const activityLogData = activityLogSnap.value.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            type: 'activity_log',
+            timestamp: data.timestamp || data.createdAt || new Date(),
+            message: data.message || data.description || 'Activity logged'
+          };
+        });
         activities.push(...activityLogData);
       }
 
       // Process notifications data
       if (notificationsSnap.status === 'fulfilled') {
-        const notificationsData = notificationsSnap.value.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          type: 'notification',
-          message: doc.data().title || doc.data().message,
-          timestamp: doc.data().createdAt
-        }));
+        const notificationsData = notificationsSnap.value.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            type: 'notification',
+            message: data.title || data.message || 'New notification',
+            timestamp: data.createdAt || data.timestamp || new Date()
+          };
+        });
         activities.push(...notificationsData);
       }
 
       // Process violations data
       if (violationsSnap.status === 'fulfilled') {
-        const violationsData = violationsSnap.value.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          type: 'violation',
-          message: `Violation reported: ${doc.data().violation}`,
-          timestamp: doc.data().createdAt
-        }));
+        const violationsData = violationsSnap.value.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            type: 'violation',
+            message: `Violation reported: ${data.violation || 'Unknown violation'}`,
+            timestamp: data.createdAt || data.timestamp || new Date()
+          };
+        });
         activities.push(...violationsData);
       }
 
       // Sort all activities by timestamp and take the most recent 15
       const sortedActivities = activities
         .filter(activity => activity.timestamp)
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .sort((a, b) => {
+          const timestampA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
+          const timestampB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
+          return timestampB - timestampA;
+        })
         .slice(0, 15);
 
+      console.log('Recent activities fetched:', sortedActivities);
       setRecentActivity(sortedActivities);
-    } catch (e) {
-      console.log("Error fetching recent activity:", e);
       
-      // Retry logic for network errors
-      if (retryCount < maxRetries && (e.code === 'unavailable' || e.code === 'deadline-exceeded')) {
-        console.log(`Retrying fetchRecentActivity (attempt ${retryCount + 1}/${maxRetries})...`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
-        return fetchRecentActivity(retryCount + 1);
+    } catch (error) {
+      console.error('Error fetching recent activity:', error);
+      
+      // Retry logic
+      if (retryCount < maxRetries) {
+        console.log(`Retrying fetchRecentActivity (attempt ${retryCount + 1}/${maxRetries})`);
+        setTimeout(() => {
+          return fetchRecentActivity(retryCount + 1);
+        }, 1000 * (retryCount + 1));
+        return;
       }
       
       setRecentActivity([]);
-    } finally {
-      setActivityLoading(false);
     }
   };
 
@@ -688,20 +701,8 @@ export default function Overview() {
             >
               Recent Activity
             </Typography>
-            {activityLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
-                <CircularProgress size={24} sx={{ mr: 2 }} />
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    color: isDark ? '#ffffff' : '#333333',
-                    fontWeight: 500
-                  }}
-                >
-                  Loading recent activity...
-                </Typography>
-              </Box>
-            ) : recentActivity.length === 0 ? (
+            {/* Skip loading state - show empty state instead */}
+            {recentActivity.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 4 }}>
                 <Typography 
                   variant="body2" 

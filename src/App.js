@@ -418,14 +418,6 @@ function App() {
 
     checkExistingAuth();
 
-    // Add a shorter timeout to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
-      setLoading(false);
-      if (!userRole && user) {
-        setUserRole('Student'); // Default fallback
-      }
-    }, 3000); // Reduced timeout to 3 seconds
-
     let isMounted = true;
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -440,17 +432,34 @@ function App() {
       if (user) {
         setUser(user);
         setCurrentUser(user);
-        setLoading(true);
         setAuthError(null);
         setForceLogin(false);
-        setIsRefreshing(true);
         
+        // First check if we have stored auth state with the correct role
         try {
-          // Fetch user profile and role with shorter timeout
-          const userDoc = await Promise.race([
-            getDoc(doc(db, 'users', user.uid)),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
-          ]);
+          const storedAuth = getAuthState();
+          if (isAuthStateValid(storedAuth) && storedAuth.user?.uid === user.uid) {
+            console.log('Using stored auth state with role:', storedAuth.userRole);
+            setUserProfile(storedAuth.userProfile);
+            setUserRole(storedAuth.userRole);
+            setLoading(false);
+            setIsRefreshing(false);
+            return; // Exit early with stored role
+          }
+        } catch (error) {
+          console.error('Error checking stored auth:', error);
+        }
+        
+        // If no stored auth state, fetch from database BEFORE setting any role
+        setLoading(true);
+        try {
+          // Add timeout to prevent infinite loading
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Database timeout')), 3000);
+          });
+          
+          const userDocPromise = getDoc(doc(db, 'users', user.uid));
+          const userDoc = await Promise.race([userDocPromise, timeoutPromise]);
           
           if (userDoc.exists()) {
             const userData = userDoc.data();
@@ -460,7 +469,6 @@ function App() {
             setUserRole(role);
             setLoading(false);
             setIsRefreshing(false);
-            clearTimeout(loadingTimeout);
             // Save auth state to localStorage
             saveAuthState(user, userData, role);
           } else {
@@ -483,27 +491,39 @@ function App() {
               setUserRole('Student');
               setLoading(false);
               setIsRefreshing(false);
-              clearTimeout(loadingTimeout);
               // Save auth state to localStorage
               saveAuthState(user, defaultUserData, 'Student');
             } catch (createError) {
               console.error('Failed to create user document:', createError);
-              setAuthError('Failed to create user profile. Please try again.');
+              setUserRole('Student'); // Fallback
               setLoading(false);
               setIsRefreshing(false);
-              clearTimeout(loadingTimeout);
             }
           }
         } catch (error) {
           console.error('Error fetching user document:', error);
-          if (error.message === 'Timeout') {
-            setAuthError('Database connection timeout. Please refresh the page.');
+          if (error.message === 'Database timeout') {
+            // If database is slow, use a default role but still try to fetch in background
+            setUserRole('Student'); // Fallback
+            setLoading(false);
+            setIsRefreshing(false);
+            
+            // Try to fetch in background
+            getDoc(doc(db, 'users', user.uid)).then(userDoc => {
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                const role = userData.role || 'Student';
+                console.log('Background update: Setting user role from database:', role);
+                setUserProfile(userData);
+                setUserRole(role);
+                saveAuthState(user, userData, role);
+              }
+            }).catch(err => console.error('Background fetch failed:', err));
           } else {
-            setAuthError('Failed to load user profile. Please try again.');
+            setUserRole('Student'); // Fallback
+            setLoading(false);
+            setIsRefreshing(false);
           }
-          setLoading(false);
-          setIsRefreshing(false);
-          clearTimeout(loadingTimeout);
         }
       } else {
         // User logged out
@@ -514,7 +534,6 @@ function App() {
         setAuthError(null);
         setForceLogin(true);
         setIsRefreshing(false);
-        clearTimeout(loadingTimeout);
         setLoading(false);
         // Clear stored auth state
         clearAuthState();
@@ -523,23 +542,12 @@ function App() {
 
     return () => {
       isMounted = false;
-      clearTimeout(loadingTimeout);
       unsubscribe();
     };
   }, [authInitialized]);
 
 
-  // Show minimal loading while checking authentication
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
-        <CircularProgress size={40} sx={{ mb: 1 }} />
-        <Typography variant="body2" color="text.secondary">
-          {isRefreshing ? 'Refreshing...' : 'Loading...'}
-        </Typography>
-      </Box>
-    );
-  }
+  // Skip loading state - go directly to landing page
 
   // If user is not authenticated OR forceLogin is true, show login/register forms
   if (!user || forceLogin) {
@@ -559,19 +567,14 @@ function App() {
   }
 
 
-  // If user is authenticated but role is not determined yet, show minimal loading
+  // If user is authenticated but role is not determined yet, show brief loading
   if (!userRole && user) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
         <CircularProgress size={40} sx={{ mb: 1 }} />
         <Typography variant="body2" color="text.secondary">
-          {isRefreshing ? 'Restoring your dashboard...' : 'Setting up dashboard...'}
+          Loading dashboard...
         </Typography>
-        {authError && (
-          <Alert severity="warning" sx={{ mb: 2, maxWidth: 400 }}>
-            {authError}
-          </Alert>
-        )}
       </Box>
     );
   }

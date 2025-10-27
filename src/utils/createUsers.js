@@ -266,8 +266,8 @@ export const createSingleUser = async (userData) => {
       uid: user.uid,
       isActive: true,
       lastLogin: null,
-      registrationMethod: 'admin',
-      createdBy: 'admin'
+      registrationMethod: userData.registrationMethod || 'admin',
+      createdBy: userData.createdBy || 'admin'
     };
     
     // Add student-specific data if role is Student
@@ -278,6 +278,19 @@ export const createSingleUser = async (userData) => {
       firestoreUserData.course = userData.course;
       firestoreUserData.year = userData.year;
       firestoreUserData.section = userData.section;
+      firestoreUserData.sex = userData.sex;
+      firestoreUserData.contact = userData.contact;
+      firestoreUserData.birthdate = userData.birthdate;
+      firestoreUserData.age = userData.age;
+      firestoreUserData.image = userData.image;
+      
+      // Add transfer information if available
+      if (userData.transferredFromStudents) {
+        firestoreUserData.transferredFromStudents = true;
+        firestoreUserData.transferDate = userData.transferDate;
+        firestoreUserData.originalStudentData = userData.originalStudentData;
+      }
+      
       firestoreUserData.studentInfo = {
         studentId: userData.studentId,
         firstName: userData.firstName,
@@ -285,7 +298,13 @@ export const createSingleUser = async (userData) => {
         course: userData.course,
         year: userData.year,
         section: userData.section,
-        enrollmentDate: new Date().toISOString()
+        sex: userData.sex,
+        contact: userData.contact,
+        birthdate: userData.birthdate,
+        age: userData.age,
+        image: userData.image,
+        enrollmentDate: new Date().toISOString(),
+        transferredFromStudents: userData.transferredFromStudents || false
       };
     }
     
