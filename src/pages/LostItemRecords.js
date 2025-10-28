@@ -158,6 +158,7 @@ export default function LostItemRecords() {
           placeholder="Search lost items by name, description, location, or person..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          size="small"
           InputProps={{
             startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />
           }}

@@ -61,12 +61,7 @@ export default function TeacherHeader({ currentUser, userProfile }) {
 
   return (
     <>
-      <AppBar position="static" sx={{ bgcolor: theme => theme.palette.mode === 'dark' ? '#424242' : 'background.paper', color: theme => theme.palette.mode === 'dark' ? '#ffffff' : 'text.primary', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '32px' }}>
-        <Toolbar sx={{ display: 'flex', alignItems: 'center', width: '100%', minHeight: '32px !important' }}>
-          <Box sx={{ flex: 1 }}></Box>
-        </Toolbar>
-      </AppBar>
-      {/* Profile and Notification Icons - Outside Header Box */}
+      {/* Profile and Notification Icons - Fixed Position */}
       <Box sx={{ 
         position: 'fixed', 
         top: '4px', 

@@ -20,10 +20,9 @@ import ViolationStatus from "./pages/ViolationStatus";
 import Options from "./pages/Options";
 import Announcements from "./pages/Announcements";
 import RecycleBin from "./pages/RecycleBin";
-import Login from './pages/Login';
-import Register from './pages/Register';
 import UserDashboard from './pages/UserDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
+import LandingPage from './pages/LandingPage';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db, retryConnection, checkConnectionHealth, initializeConnection } from './firebase';
 import { getDoc, doc, setDoc, collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
@@ -171,12 +170,7 @@ function AdminHeader({ currentUser, userProfile }) {
 
   return (
     <>
-      <AppBar position="static" sx={{ bgcolor: theme => theme.palette.mode === 'dark' ? '#424242' : '#fff', color: theme => theme.palette.mode === 'dark' ? '#ffffff' : '#333', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '32px' }}>
-        <Toolbar sx={{ display: 'flex', alignItems: 'center', width: '100%', minHeight: '32px !important' }}>
-          <Box sx={{ flex: 1 }}></Box>
-        </Toolbar>
-      </AppBar>
-      {/* Profile and Notification Icons - Outside Header Box */}
+      {/* Profile and Notification Icons - Fixed Position */}
       <Box sx={{ 
         position: 'fixed', 
         top: '4px', 
@@ -341,12 +335,7 @@ function UserHeader({ currentUser, userProfile }) {
 
   return (
     <>
-      <AppBar position="static" sx={{ bgcolor: theme => theme.palette.mode === 'dark' ? '#424242' : 'background.paper', color: theme => theme.palette.mode === 'dark' ? '#ffffff' : 'text.primary', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '32px' }}>
-        <Toolbar sx={{ display: 'flex', alignItems: 'center', width: '100%', minHeight: '32px !important' }}>
-          <Box sx={{ flex: 1 }}></Box>
-        </Toolbar>
-      </AppBar>
-      {/* Profile and Notification Icons - Outside Header Box */}
+      {/* Profile and Notification Icons - Fixed Position */}
       <Box sx={{ 
         position: 'fixed', 
         top: '4px', 
@@ -439,14 +428,6 @@ function App() {
 
     checkExistingAuth();
 
-    // Add a shorter timeout to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
-      setLoading(false);
-      if (!userRole && user) {
-        setUserRole('Student'); // Default fallback
-      }
-    }, 3000); // Reduced timeout to 3 seconds
-
     let isMounted = true;
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -461,43 +442,69 @@ function App() {
       if (user) {
         setUser(user);
         setCurrentUser(user);
-        setLoading(true);
         setAuthError(null);
         setForceLogin(false);
-        setIsRefreshing(true);
         
+        // First check if we have stored auth state with the correct role
         try {
-          // Check connection health first
-          const isHealthy = await checkConnectionHealth();
-          if (!isHealthy) {
-            console.warn('Connection health check failed, attempting to reinitialize...');
-            await initializeConnection();
+          const storedAuth = getAuthState();
+          if (isAuthStateValid(storedAuth) && storedAuth.user?.uid === user.uid) {
+            console.log('Using stored auth state with role:', storedAuth.userRole);
+            setUserProfile(storedAuth.userProfile);
+            setUserRole(storedAuth.userRole);
+            setLoading(false);
+            setIsRefreshing(false);
+            return; // Exit early with stored role
           }
-
-          // Fetch user profile and role with retry mechanism
-          const userDoc = await retryConnection(async () => {
-            return await Promise.race([
-              getDoc(doc(db, 'users', user.uid)),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
-            ]);
+        } catch (error) {
+          console.error('Error checking stored auth:', error);
+        }
+        
+        // If no stored auth state, fetch from database BEFORE setting any role
+        setLoading(true);
+        try {
+          // Add timeout to prevent infinite loading
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Database timeout')), 3000);
           });
+          
+          const userDocPromise = getDoc(doc(db, 'users', user.uid));
+          const userDoc = await Promise.race([userDocPromise, timeoutPromise]);
           
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            console.log('Setting user role from database:', userData.role);
+            const role = userData.role || 'Student';
+            
+            // Fix missing studentId field for existing users
+            if (!userData.studentId && role === 'Student') {
+              console.log('🔧 Fixing missing studentId for user:', user.uid);
+              try {
+                await setDoc(doc(db, 'users', user.uid), {
+                  studentId: user.uid // Use UID as Student ID
+                }, { merge: true });
+                
+                // Update userData to include studentId
+                userData.studentId = user.uid;
+                console.log('✅ studentId added to user document');
+              } catch (updateError) {
+                console.error('❌ Failed to update studentId:', updateError);
+              }
+            }
+            
+            console.log('Setting user role from database:', role);
             setUserProfile(userData);
-            setUserRole(userData.role || 'Student');
+            setUserRole(role);
             setLoading(false);
             setIsRefreshing(false);
-            clearTimeout(loadingTimeout);
             // Save auth state to localStorage
-            saveAuthState(user, userData, userData.role || 'Student');
+            saveAuthState(user, userData, role);
           } else {
             // Create default user document
             const defaultUserData = {
               email: user.email,
               fullName: user.displayName || user.email,
               role: 'Student',
+              studentId: user.uid, // Use UID as Student ID for default users
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
               lastLogin: new Date().toISOString(),
@@ -514,29 +521,39 @@ function App() {
               setUserRole('Student');
               setLoading(false);
               setIsRefreshing(false);
-              clearTimeout(loadingTimeout);
               // Save auth state to localStorage
               saveAuthState(user, defaultUserData, 'Student');
             } catch (createError) {
-              console.error('Failed to create user document after retries:', createError);
-              setAuthError('Failed to create user profile. Please try again.');
+              console.error('Failed to create user document:', createError);
+              setUserRole('Student'); // Fallback
               setLoading(false);
               setIsRefreshing(false);
-              clearTimeout(loadingTimeout);
             }
           }
         } catch (error) {
           console.error('Error fetching user document:', error);
-          if (error.message.includes('Timeout') || error.message.includes('Connection failed')) {
-            setAuthError('Database connection timeout. Please check your internet connection and refresh the page.');
-          } else if (error.message.includes('permission-denied')) {
-            setAuthError('Access denied. Please contact your administrator.');
+          if (error.message === 'Database timeout') {
+            // If database is slow, use a default role but still try to fetch in background
+            setUserRole('Student'); // Fallback
+            setLoading(false);
+            setIsRefreshing(false);
+            
+            // Try to fetch in background
+            getDoc(doc(db, 'users', user.uid)).then(userDoc => {
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                const role = userData.role || 'Student';
+                console.log('Background update: Setting user role from database:', role);
+                setUserProfile(userData);
+                setUserRole(role);
+                saveAuthState(user, userData, role);
+              }
+            }).catch(err => console.error('Background fetch failed:', err));
           } else {
-            setAuthError('Failed to load user profile. Please try again.');
+            setUserRole('Student'); // Fallback
+            setLoading(false);
+            setIsRefreshing(false);
           }
-          setLoading(false);
-          setIsRefreshing(false);
-          clearTimeout(loadingTimeout);
         }
       } else {
         // User logged out
@@ -547,7 +564,6 @@ function App() {
         setAuthError(null);
         setForceLogin(true);
         setIsRefreshing(false);
-        clearTimeout(loadingTimeout);
         setLoading(false);
         // Clear stored auth state
         clearAuthState();
@@ -556,58 +572,38 @@ function App() {
 
     return () => {
       isMounted = false;
-      clearTimeout(loadingTimeout);
       unsubscribe();
       removeConnectionListener();
     };
   }, [authInitialized]);
 
 
-  // Show minimal loading while checking authentication
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
-        <CircularProgress size={40} sx={{ mb: 1 }} />
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {isRefreshing ? 'Refreshing...' : 'Loading...'}
-        </Typography>
-        <ConnectionStatus showDetails={true} />
-      </Box>
-    );
-  }
-
   // If user is not authenticated OR forceLogin is true, show login/register forms
   if (!user || forceLogin) {
     return (
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login onLoginSuccess={() => {
-            setForceLogin(false);
-            localStorage.setItem('hasLoggedInBefore', 'true');
-          }} />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/test" element={<TestPage />} />
-          <Route path="/*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </Router>
+      <CustomThemeProvider>
+        <ThemeWrapper>
+          <Router>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/test" element={<TestPage />} />
+              <Route path="/*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Router>
+        </ThemeWrapper>
+      </CustomThemeProvider>
     );
   }
 
 
-  // If user is authenticated but role is not determined yet, show minimal loading
+  // If user is authenticated but role is not determined yet, show brief loading
   if (!userRole && user) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
         <CircularProgress size={40} sx={{ mb: 1 }} />
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {isRefreshing ? 'Restoring your dashboard...' : 'Setting up dashboard...'}
+        <Typography variant="body2" color="text.secondary">
+          Loading dashboard...
         </Typography>
-        {authError && (
-          <Alert severity="warning" sx={{ mb: 2, maxWidth: 400 }}>
-            {authError}
-          </Alert>
-        )}
-        <ConnectionStatus showDetails={true} />
       </Box>
     );
   }
@@ -643,7 +639,7 @@ function App() {
             {/* Admin/Teacher Routes - Only accessible to Admin/Teacher roles */}
             <Route path="/*" element={
               (() => {
-                console.log('Routing decision:', { userRole, user: !!user });
+                console.log('Routing decision:', { userRole, user: !!user, currentUser: !!currentUser });
                 return (userRole === 'Admin' || userRole === 'Teacher');
               })() ? (
                 userRole === 'Admin' ? (
@@ -735,9 +731,8 @@ function App() {
                 )
               ) : (() => {
                 console.log('Student routing decision:', { userRole, user: !!user });
-                // Only route to student dashboard if userRole is explicitly 'Student'
-                // Don't fallback to student if userRole is null/undefined
-                return userRole === 'Student';
+                // Route to student dashboard if userRole is 'Student' or if user exists but role is not Admin/Teacher
+                return userRole === 'Student' || (user && userRole !== 'Admin' && userRole !== 'Teacher');
               })() ? (
                 <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "background.default" }}>
                   <UserHeader currentUser={currentUser} userProfile={userProfile} />
@@ -766,8 +761,8 @@ function App() {
                     </Box>
                   </Box>
                 </Box>
-              ) : (
-                // Fallback when user role is not yet determined
+              ) : user ? (
+                // If user is authenticated but role is not yet determined, show loading
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
                   <CircularProgress size={40} sx={{ mb: 2 }} />
                   <Typography variant="h6" sx={{ mb: 1 }}>
@@ -783,6 +778,9 @@ function App() {
                   )}
                   <ConnectionStatus showDetails={true} />
                 </Box>
+              ) : (
+                // If no user, redirect to login
+                <Navigate to="/login" replace />
               )
             } />
           </Routes>

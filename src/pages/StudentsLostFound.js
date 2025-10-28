@@ -359,6 +359,7 @@ export default function StudentsLostFound() {
           placeholder="Search reports by item name, description, or reporter name..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          size="small"
           InputProps={{
             startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />
           }}

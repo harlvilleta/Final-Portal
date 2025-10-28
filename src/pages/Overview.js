@@ -3,7 +3,7 @@ import {
   Typography, Box, Grid, Card, CardContent, Paper, CircularProgress, List, ListItem, ListItemText, 
   Divider, Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert,
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Avatar, Chip, IconButton, Tooltip,
-  useTheme
+  Pagination, useTheme
 } from "@mui/material";
 import { useTheme as useCustomTheme } from "../contexts/ThemeContext";
 import PeopleIcon from '@mui/icons-material/People';
@@ -45,9 +45,8 @@ export default function Overview() {
       { month: 'Dec', count: 3 }
     ]
   });
-  const [loading, setLoading] = useState(false);
+  // Removed loading state
   const [recentActivity, setRecentActivity] = useState([]);
-  const [activityLoading, setActivityLoading] = useState(false);
   const [openEventModal, setOpenEventModal] = useState(false);
   const [eventForm, setEventForm] = useState({ title: '', description: '', proposedBy: '', date: '', time: '', location: '' });
   const [eventSubmitting, setEventSubmitting] = useState(false);
@@ -56,6 +55,10 @@ export default function Overview() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  
+  // Pagination state for Recent Activity
+  const [currentPage, setCurrentPage] = useState(1);
+  const activitiesPerPage = 8;
   
   const navigate = useNavigate();
 
@@ -66,7 +69,7 @@ export default function Overview() {
     const loadDashboardData = async () => {
       if (!isMounted) return;
       
-      setLoading(true);
+      // Skip loading state
       try {
         // Add timeout to prevent infinite loading
         const timeoutPromise = new Promise((_, reject) => {
@@ -94,9 +97,7 @@ export default function Overview() {
           setRecentActivity([]);
         }
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        // Skip loading state
       }
     };
     
@@ -359,9 +360,8 @@ export default function Overview() {
   const fetchRecentActivity = async (retryCount = 0) => {
     const maxRetries = 3;
     
-    setActivityLoading(true);
     try {
-      // Optimize: Fetch all activities in parallel with reduced limits
+      // Fetch all activities in parallel
       const [activityLogSnap, notificationsSnap, violationsSnap] = await Promise.allSettled([
         getDocs(query(collection(db, "activity_log"), orderBy("timestamp", "desc"), limit(5))),
         getDocs(query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(5))),
@@ -372,58 +372,75 @@ export default function Overview() {
       
       // Process activity log data
       if (activityLogSnap.status === 'fulfilled') {
-        const activityLogData = activityLogSnap.value.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          type: 'activity_log'
-        }));
+        const activityLogData = activityLogSnap.value.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            type: 'activity_log',
+            timestamp: data.timestamp || data.createdAt || new Date(),
+            message: data.message || data.description || 'Activity logged'
+          };
+        });
         activities.push(...activityLogData);
       }
 
       // Process notifications data
       if (notificationsSnap.status === 'fulfilled') {
-        const notificationsData = notificationsSnap.value.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          type: 'notification',
-          message: doc.data().title || doc.data().message,
-          timestamp: doc.data().createdAt
-        }));
+        const notificationsData = notificationsSnap.value.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            type: 'notification',
+            message: data.title || data.message || 'New notification',
+            timestamp: data.createdAt || data.timestamp || new Date()
+          };
+        });
         activities.push(...notificationsData);
       }
 
       // Process violations data
       if (violationsSnap.status === 'fulfilled') {
-        const violationsData = violationsSnap.value.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          type: 'violation',
-          message: `Violation reported: ${doc.data().violation}`,
-          timestamp: doc.data().createdAt
-        }));
+        const violationsData = violationsSnap.value.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            type: 'violation',
+            message: `Violation reported: ${data.violation || 'Unknown violation'}`,
+            timestamp: data.createdAt || data.timestamp || new Date()
+          };
+        });
         activities.push(...violationsData);
       }
 
       // Sort all activities by timestamp and take the most recent 15
       const sortedActivities = activities
         .filter(activity => activity.timestamp)
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .sort((a, b) => {
+          const timestampA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
+          const timestampB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
+          return timestampB - timestampA;
+        })
         .slice(0, 15);
 
+      console.log('Recent activities fetched:', sortedActivities);
       setRecentActivity(sortedActivities);
-    } catch (e) {
-      console.log("Error fetching recent activity:", e);
       
-      // Retry logic for network errors
-      if (retryCount < maxRetries && (e.code === 'unavailable' || e.code === 'deadline-exceeded')) {
-        console.log(`Retrying fetchRecentActivity (attempt ${retryCount + 1}/${maxRetries})...`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
-        return fetchRecentActivity(retryCount + 1);
+    } catch (error) {
+      console.error('Error fetching recent activity:', error);
+      
+      // Retry logic
+      if (retryCount < maxRetries) {
+        console.log(`Retrying fetchRecentActivity (attempt ${retryCount + 1}/${maxRetries})`);
+        setTimeout(() => {
+          return fetchRecentActivity(retryCount + 1);
+        }, 1000 * (retryCount + 1));
+        return;
       }
       
       setRecentActivity([]);
-    } finally {
-      setActivityLoading(false);
     }
   };
 
@@ -506,7 +523,15 @@ export default function Overview() {
 
   const userInfo = getUserDisplayInfo();
 
+  // Pagination logic for Recent Activity
+  const totalPages = Math.ceil(recentActivity.length / activitiesPerPage);
+  const startIndex = (currentPage - 1) * activitiesPerPage;
+  const endIndex = startIndex + activitiesPerPage;
+  const currentActivities = recentActivity.slice(startIndex, endIndex);
 
+  const handlePageChange = (event, value) => {
+    setCurrentPage(value);
+  };
 
   return (
     <Box sx={{ p: { xs: 0.5, sm: 1 }, pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
@@ -518,14 +543,14 @@ export default function Overview() {
       
 
 
-      {/* Monthly Charts */}
+      {/* Monthly Charts - Side by Side */}
       <Grid container spacing={3} sx={{ mt: 2 }}>
-        {/* Students Monthly Chart */}
+        {/* Students Monthly Chart - Left Side */}
         <Grid item xs={12} md={6}>
           <Paper 
             sx={{ 
-              p: 2, 
-              height: 280, 
+              p: 3, 
+              height: 500, 
               cursor: 'pointer',
               transition: 'all 0.2s ease-in-out',
               '&:hover': {
@@ -535,19 +560,19 @@ export default function Overview() {
             }}
             onClick={() => navigate('/students-chart')}
           >
-            <Typography variant="subtitle1" gutterBottom sx={{ color: isDark ? '#ffffff' : '#000000', fontWeight: 600 }}>
+            <Typography variant="h5" gutterBottom sx={{ color: isDark ? '#ffffff' : '#000000', fontWeight: 600, mb: 3 }}>
               Students Registration (Last 6 Months)
             </Typography>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={400}>
               <LineChart data={monthlyData.students || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="month" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 14 }}
                   axisLine={{ stroke: isDark ? '#D84040' : '#800000' }}
                 />
                 <YAxis 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 14 }}
                   axisLine={{ stroke: isDark ? '#D84040' : '#800000' }}
                   domain={[0, 'dataMax + 1']}
                 />
@@ -564,10 +589,10 @@ export default function Overview() {
                   type="monotone" 
                   dataKey="count" 
                   stroke={isDark ? '#D84040' : '#800000'} 
-                  strokeWidth={3}
+                  strokeWidth={4}
                   name="Students"
-                  dot={{ fill: isDark ? '#D84040' : '#800000', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: isDark ? '#D84040' : '#800000', strokeWidth: 2 }}
+                  dot={{ fill: isDark ? '#D84040' : '#800000', strokeWidth: 2, r: 6 }}
+                  activeDot={{ r: 8, stroke: isDark ? '#D84040' : '#800000', strokeWidth: 2 }}
                   connectNulls={false}
                 />
               </LineChart>
@@ -575,35 +600,34 @@ export default function Overview() {
           </Paper>
         </Grid>
 
-        {/* Violations Monthly Chart */}
+        {/* Violations Monthly Chart - Right Side */}
         <Grid item xs={12} md={6}>
           <Paper 
             sx={{ 
-              p: 2, 
-              height: 280, 
+              p: 3, 
+              height: 500, 
               cursor: 'pointer',
-              transition: 'none',
+              transition: 'all 0.2s ease-in-out',
               '&:hover': {
-                boxShadow: 'none',
-                transform: 'none',
-                backgroundColor: 'transparent'
+                boxShadow: 4,
+                transform: 'translateY(-1px)'
               }
             }}
             onClick={() => navigate('/violations-chart')}
           >
-            <Typography variant="subtitle1" gutterBottom sx={{ color: isDark ? '#ffffff' : '#000000', fontWeight: 600 }}>
+            <Typography variant="h5" gutterBottom sx={{ color: isDark ? '#ffffff' : '#000000', fontWeight: 600, mb: 3 }}>
               Violations Reported (Last 6 Months)
             </Typography>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={400}>
               <BarChart data={monthlyData.violations || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="month" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 14 }}
                   axisLine={{ stroke: isDark ? '#D84040' : '#800000' }}
                 />
                 <YAxis 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 14 }}
                   axisLine={{ stroke: isDark ? '#D84040' : '#800000' }}
                   domain={[0, 'dataMax + 1']}
                 />
@@ -627,7 +651,7 @@ export default function Overview() {
                   dataKey="count" 
                   fill={isDark ? '#D84040' : '#800000'} 
                   name="Violations"
-                  radius={[4, 4, 0, 0]}
+                  radius={[6, 6, 0, 0]}
                   style={{
                     cursor: 'default'
                   }}
@@ -653,31 +677,32 @@ export default function Overview() {
       {/* Recent Activity Section */}
       <Grid container spacing={3} sx={{ mt: 6, justifyContent: 'center' }}>
         <Grid item xs={12} md={11} lg={10}>
-          <Paper sx={{ p: 3, boxShadow: 2 }}>
+          <Paper sx={{ 
+            p: 3, 
+            boxShadow: 2,
+            border: '2px solid #800000',
+            background: 'linear-gradient(135deg, rgba(128, 0, 0, 0.02), rgba(160, 82, 45, 0.02))',
+            '&:hover': {
+              borderColor: '#A0522D',
+              boxShadow: 3
+            }
+          }}>
             <Typography 
               variant="h6" 
               sx={{ 
                 mb: 3, 
                 fontWeight: 700, 
-                color: isDark ? '#ffffff' : '#000000'
+                background: 'linear-gradient(45deg, #800000, #A0522D, #8B4513)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textShadow: '0 2px 4px rgba(128, 0, 0, 0.3)'
               }}
             >
               Recent Activity
             </Typography>
-            {activityLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
-                <CircularProgress size={24} sx={{ mr: 2 }} />
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    color: isDark ? '#ffffff' : '#333333',
-                    fontWeight: 500
-                  }}
-                >
-                  Loading recent activity...
-                </Typography>
-              </Box>
-            ) : recentActivity.length === 0 ? (
+            {/* Skip loading state - show empty state instead */}
+            {recentActivity.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 4 }}>
                 <Typography 
                   variant="body2" 
@@ -690,16 +715,17 @@ export default function Overview() {
                 </Typography>
               </Box>
             ) : (
-              <List sx={{ 
-                maxHeight: 500, 
-                overflow: 'auto',
-                '& .MuiListItem-root': {
-                  color: isDark ? '#ffffff' : '#000000',
-                  padding: '12px 0',
-                  borderBottom: `1px solid ${isDark ? '#404040' : '#e0e0e0'}`
-                }
-              }}>
-                {recentActivity.map((item, idx) => (
+              <>
+                <List sx={{ 
+                  maxHeight: 500, 
+                  overflow: 'auto',
+                  '& .MuiListItem-root': {
+                    color: isDark ? '#ffffff' : '#000000',
+                    padding: '12px 0',
+                    borderBottom: `1px solid ${isDark ? '#404040' : '#e0e0e0'}`
+                  }
+                }}>
+                  {currentActivities.map((item, idx) => (
                   <ListItem 
                     key={`${item.type}-${item.id}-${idx}`}
                     sx={{ 
@@ -752,7 +778,40 @@ export default function Overview() {
                     />
                   </ListItem>
                 ))}
-              </List>
+                </List>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    mt: 3,
+                    '& .MuiPaginationItem-root': {
+                      color: isDark ? '#ffffff' : '#000000',
+                      '&.Mui-selected': {
+                        backgroundColor: '#800000',
+                        color: '#ffffff',
+                        '&:hover': {
+                          backgroundColor: '#A0522D'
+                        }
+                      },
+                      '&:hover': {
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(128,0,0,0.1)'
+                      }
+                    }
+                  }}>
+                    <Pagination
+                      count={totalPages}
+                      page={currentPage}
+                      onChange={handlePageChange}
+                      color="primary"
+                      size="medium"
+                      showFirstButton
+                      showLastButton
+                    />
+                  </Box>
+                )}
+              </>
             )}
           </Paper>
         </Grid>

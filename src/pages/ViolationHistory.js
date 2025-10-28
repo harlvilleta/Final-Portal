@@ -164,34 +164,41 @@ export default function ViolationHistory() {
           <Table stickyHeader>
             <TableHead>
               <TableRow sx={{ 
-                bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#f5f5f5' 
+                bgcolor: '#800000' 
               }}>
                 <TableCell sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  bgcolor: '#800000',
+                  color: '#ffffff', 
                   fontWeight: 600 
                 }}>Date</TableCell>
                 <TableCell sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  bgcolor: '#800000',
+                  color: '#ffffff', 
                   fontWeight: 600 
                 }}>Student ID</TableCell>
                 <TableCell sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  bgcolor: '#800000',
+                  color: '#ffffff', 
                   fontWeight: 600 
                 }}>Name</TableCell>
                 <TableCell sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  bgcolor: '#800000',
+                  color: '#ffffff', 
                   fontWeight: 600 
                 }}>Violation</TableCell>
                 <TableCell sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  bgcolor: '#800000',
+                  color: '#ffffff', 
                   fontWeight: 600 
                 }}>Status</TableCell>
                 <TableCell sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  bgcolor: '#800000',
+                  color: '#ffffff', 
                   fontWeight: 600 
                 }}>Location</TableCell>
                 <TableCell sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                  bgcolor: '#800000',
+                  color: '#ffffff', 
                   fontWeight: 600 
                 }}>Actions</TableCell>
               </TableRow>

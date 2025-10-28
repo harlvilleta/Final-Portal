@@ -185,15 +185,19 @@ export const validateStudentIdForRegistration = async (studentId) => {
     console.log("🔍 Validating student ID for registration:", studentId.trim());
     
     // Check if student exists in the students collection (admin-added records)
-    // Note: In the students collection, the field is called "id", not "studentId"
-    const studentsQuery = query(collection(db, "students"), where("id", "==", studentId.trim()));
+    // Look for both "studentId" field and "id" field for compatibility
+    const studentsQuery = query(collection(db, "students"), where("studentId", "==", studentId.trim()));
     const studentsSnapshot = await getDocs(studentsQuery);
+    
+    // Also check by document ID (id field) as fallback
+    const studentsByIdQuery = query(collection(db, "students"), where("id", "==", studentId.trim()));
+    const studentsByIdSnapshot = await getDocs(studentsByIdQuery);
     
     // Check if student exists in the users collection (already registered)
     const usersQuery = query(collection(db, "users"), where("studentId", "==", studentId.trim()));
     const usersSnapshot = await getDocs(usersQuery);
     
-    const existsInStudents = !studentsSnapshot.empty;
+    const existsInStudents = !studentsSnapshot.empty || !studentsByIdSnapshot.empty;
     const existsInUsers = !usersSnapshot.empty;
     
     console.log("📊 Student ID registration validation result:", { 
@@ -201,12 +205,16 @@ export const validateStudentIdForRegistration = async (studentId) => {
       existsInStudents, 
       existsInUsers,
       studentsCount: studentsSnapshot.size,
+      studentsByIdCount: studentsByIdSnapshot.size,
       usersCount: usersSnapshot.size
     });
     
     // Debug: Log the actual student records found
     if (studentsSnapshot.size > 0) {
-      console.log("🔍 Found student records:", studentsSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() })));
+      console.log("🔍 Found student records by studentId:", studentsSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() })));
+    }
+    if (studentsByIdSnapshot.size > 0) {
+      console.log("🔍 Found student records by id:", studentsByIdSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() })));
     }
     
     if (existsInUsers) {

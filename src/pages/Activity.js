@@ -174,7 +174,7 @@ function SummaryCard({ stats }) {
                 variant="h4" 
                 fontWeight={700} 
                 sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+                  color: '#800000'
                 }}
               >
                 {stats.total}
@@ -227,7 +227,7 @@ function SummaryCard({ stats }) {
                 variant="h4" 
                 fontWeight={700} 
                 sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+                  color: '#800000'
                 }}
               >
                 {stats.scheduled}
@@ -280,7 +280,7 @@ function SummaryCard({ stats }) {
                 variant="h4" 
                 fontWeight={700} 
                 sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+                  color: '#800000'
                 }}
               >
                 {stats.completed}
@@ -333,7 +333,7 @@ function SummaryCard({ stats }) {
                 variant="h4" 
                 fontWeight={700} 
                 sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+                  color: '#800000'
                 }}
               >
                 {stats.categories}

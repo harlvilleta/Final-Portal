@@ -24,7 +24,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
@@ -80,7 +80,74 @@ export default function Profile() {
   });
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [connectionStatus, setConnectionStatus] = useState('connected'); // 'connected', 'connecting', 'disconnected'
+  const [retryCount, setRetryCount] = useState(0);
   
+  // Helper function for database operations with timeout and retry
+  const dbOperation = async (operation, operationName = 'Database operation', maxRetries = 3) => {
+    const timeoutDuration = 15000; // 15 seconds timeout
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        setConnectionStatus('connecting');
+        
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Database connection timeout. Please check your internet connection.')), timeoutDuration);
+        });
+        
+        const result = await Promise.race([operation(), timeoutPromise]);
+        setConnectionStatus('connected');
+        setRetryCount(0);
+        return result;
+        
+      } catch (error) {
+        console.error(`${operationName} attempt ${attempt} failed:`, error);
+        
+        if (attempt === maxRetries) {
+          setConnectionStatus('disconnected');
+          setRetryCount(attempt);
+          
+          // Show user-friendly error message
+          setSnackbar({
+            open: true,
+            message: 'Database connection failed. Please check your internet connection and try again.',
+            severity: 'error'
+          });
+          
+          throw error;
+        } else {
+          // Wait before retrying (exponential backoff)
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`Retrying ${operationName} in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+  };
+
+  // Function to handle retry connection
+  const handleRetryConnection = async () => {
+    if (!currentUser) return;
+    
+    setConnectionStatus('connecting');
+    setRetryCount(0);
+    
+    try {
+      await loadUserProfile(currentUser.uid);
+      setSnackbar({
+        open: true,
+        message: 'Connection restored successfully!',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Retry failed:', error);
+      setSnackbar({
+        open: true,
+        message: 'Connection retry failed. Please check your internet connection.',
+        severity: 'error'
+      });
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -93,50 +160,151 @@ export default function Profile() {
     return unsubscribe;
   }, []);
 
+  // Periodic connection check
+  useEffect(() => {
+    if (connectionStatus === 'disconnected') {
+      const interval = setInterval(async () => {
+        try {
+          // Try a simple database operation to check connection
+          await dbOperation(
+            () => getDoc(doc(db, 'users', currentUser?.uid || 'test')),
+            'Connection check',
+            1 // Only 1 retry for connection check
+          );
+          // If successful, reload profile
+          if (currentUser) {
+            await loadUserProfile(currentUser.uid);
+          }
+        } catch (error) {
+          // Connection still not available, do nothing
+        }
+      }, 10000); // Check every 10 seconds
 
-  const loadUserProfile = async (uid, retryCount = 0) => {
-    const maxRetries = 3;
-    const retryDelay = 1000; // 1 second
+      return () => clearInterval(interval);
+    }
+  }, [connectionStatus, currentUser]);
 
+
+  const loadUserProfile = async (uid) => {
     try {
-      // Add timeout to prevent indefinite waiting
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Database connection timeout')), 10000); // 10 second timeout
-      });
+      console.log('🔍 Profile - Fetching data for user:', currentUser?.email);
       
-      const userDoc = await Promise.race([
-        getDoc(doc(db, 'users', uid)),
-        timeoutPromise
-      ]);
+      // First, try to get user data from the users collection
+      const userDoc = await dbOperation(
+        () => getDoc(doc(db, 'users', uid)),
+        'Load user profile'
+      );
+      
+      let userData = {};
       if (userDoc.exists()) {
-        const userData = userDoc.data();
-        setProfile(prev => ({
-          ...prev,
-          id: uid,
-          studentId: userData.studentId || "",
-          email: userData.email || currentUser?.email || "",
-          firstName: userData.firstName || userData.fullName?.split(' ')[0] || "",
-          lastName: userData.lastName || userData.fullName?.split(' ').slice(1).join(' ') || "",
-          middleInitial: userData.middleInitial || "",
-          sex: userData.sex || "",
-          age: userData.age || "",
-          birthdate: userData.birthdate || "",
-          course: userData.course || "",
-          year: userData.year || "",
-          section: userData.section || "",
-          sccNumber: userData.sccNumber || "",
-          contact: userData.contact || userData.phoneNumber || "",
-          fatherName: userData.fatherName || "",
-          fatherOccupation: userData.fatherOccupation || "",
-          motherName: userData.motherName || "",
-          motherOccupation: userData.motherOccupation || "",
-          guardian: userData.guardian || "",
-          guardianContact: userData.guardianContact || "",
-          homeAddress: userData.homeAddress || userData.address || "",
-          image: userData.profilePic || null,
-          role: userData.role || "Student"
-        }));
-      } else {
+        userData = userDoc.data();
+      }
+
+      // Fetch student data from students collection (priority) - same logic as UserDashboard
+      let studentData = {};
+      if (currentUser?.email) {
+        try {
+          // Strategy 1: Match registeredEmail field
+          let studentsSnapshot = null;
+          const studentsQuery1 = query(
+            collection(db, 'students'),
+            where('registeredEmail', '==', currentUser.email)
+          );
+          studentsSnapshot = await getDocs(studentsQuery1);
+          console.log('📚 Profile - Strategy 1 - registeredEmail match:', studentsSnapshot.size, 'documents found');
+          
+          // Strategy 2: Match email field (if no results)
+          if (studentsSnapshot.empty) {
+            const studentsQuery2 = query(
+              collection(db, 'students'),
+              where('email', '==', currentUser.email)
+            );
+            studentsSnapshot = await getDocs(studentsQuery2);
+            console.log('📚 Profile - Strategy 2 - email field match:', studentsSnapshot.size, 'documents found');
+          }
+          
+          // Strategy 3: Case-insensitive registeredEmail match (if no results)
+          if (studentsSnapshot.empty) {
+            const studentsQuery3 = query(
+              collection(db, 'students'),
+              where('registeredEmail', '==', currentUser.email.toLowerCase())
+            );
+            studentsSnapshot = await getDocs(studentsQuery3);
+            console.log('📚 Profile - Strategy 3 - Lowercase registeredEmail match:', studentsSnapshot.size, 'documents found');
+          }
+          
+          // Strategy 4: Get all students and filter client-side (if still no results)
+          if (studentsSnapshot.empty) {
+            console.log('📚 Profile - Strategy 4 - Fetching all students for client-side filtering...');
+            const allStudentsQuery = query(collection(db, 'students'));
+            const allStudentsSnapshot = await getDocs(allStudentsQuery);
+            
+            const matchingStudents = allStudentsSnapshot.docs.filter(doc => {
+              const data = doc.data();
+              return (data.registeredEmail && data.registeredEmail.toLowerCase() === currentUser.email.toLowerCase()) ||
+                     (data.email && data.email.toLowerCase() === currentUser.email.toLowerCase());
+            });
+            
+            if (matchingStudents.length > 0) {
+              console.log('📚 Profile - Strategy 4 - Found', matchingStudents.length, 'matching students');
+              studentsSnapshot = { 
+                empty: false, 
+                docs: matchingStudents,
+                size: matchingStudents.length 
+              };
+            }
+          }
+          
+          if (!studentsSnapshot.empty) {
+            const studentDoc = studentsSnapshot.docs[0];
+            studentData = studentDoc.data();
+            console.log('✅ Profile - Student data fetched from students collection:', studentData);
+          } else {
+            console.log('❌ Profile - No student data found in students collection for:', currentUser.email);
+          }
+        } catch (studentError) {
+          console.log('⚠️ Profile - Could not load student data from students collection:', studentError);
+        }
+      }
+
+      // Merge user data and student data, prioritizing student data for student-specific fields
+      const mergedData = {
+        ...userData,
+        ...studentData, // Student data takes precedence
+        // Keep user-specific fields from userData
+        email: userData.email || studentData.registeredEmail || studentData.email || currentUser?.email || "",
+        profilePic: userData.profilePic || studentData.image || null,
+        role: userData.role || "Student"
+      };
+
+      setProfile(prev => ({
+        ...prev,
+        id: uid,
+        studentId: mergedData.studentId || mergedData.id || "",
+        email: mergedData.email,
+        firstName: mergedData.firstName || mergedData.fullName?.split(' ')[0] || "",
+        lastName: mergedData.lastName || mergedData.fullName?.split(' ').slice(1).join(' ') || "",
+        middleInitial: mergedData.middleInitial || "",
+        sex: mergedData.sex || "",
+        age: mergedData.age || "",
+        birthdate: mergedData.birthdate || "",
+        course: mergedData.course || "",
+        year: mergedData.year || "",
+        section: mergedData.section || "",
+        sccNumber: mergedData.sccNumber || "",
+        contact: mergedData.contact || mergedData.phoneNumber || "",
+        fatherName: mergedData.fatherName || "",
+        fatherOccupation: mergedData.fatherOccupation || "",
+        motherName: mergedData.motherName || "",
+        motherOccupation: mergedData.motherOccupation || "",
+        guardian: mergedData.guardian || "",
+        guardianContact: mergedData.guardianContact || "",
+        homeAddress: mergedData.homeAddress || mergedData.address || "",
+        image: mergedData.profilePic || null,
+        role: mergedData.role || "Student"
+      }));
+
+      if (!userDoc.exists()) {
         // If user document doesn't exist, create a basic profile and save it
         const basicProfile = {
           id: uid,
@@ -151,7 +319,10 @@ export default function Profile() {
         
         // Automatically create the user document in the background
         try {
-          await setDoc(doc(db, 'users', uid), basicProfile);
+          await dbOperation(
+            () => setDoc(doc(db, 'users', uid), basicProfile),
+            'Create user profile'
+          );
           console.log('✅ User profile created automatically');
         } catch (createError) {
           console.log('Profile will be created on next successful connection');
@@ -160,35 +331,29 @@ export default function Profile() {
     } catch (error) {
       console.error('Error loading user profile:', error);
       
-      // Retry logic for connection timeouts
-      if (retryCount < maxRetries && (error.code === 'unavailable' || error.message.includes('timeout') || error.message.includes('Database connection timeout'))) {
-        console.log(`Retrying profile load (attempt ${retryCount + 1}/${maxRetries})...`);
-        setTimeout(() => {
-          loadUserProfile(uid, retryCount + 1);
-        }, retryDelay * (retryCount + 1));
-      } else {
-        // If all retries failed, set a basic profile to prevent blocking
-        console.log('Setting fallback profile due to connection issues');
-        const fallbackProfile = {
-          id: uid,
-          email: currentUser?.email || "",
-          firstName: currentUser?.displayName?.split(' ')[0] || "",
-          lastName: currentUser?.displayName?.split(' ').slice(1).join(' ') || "",
-          role: "Student"
-        };
-        
-        setProfile(prev => ({ ...prev, ...fallbackProfile }));
-        
-        // Try to create the profile in the background when connection is restored
-        setTimeout(async () => {
-          try {
-            await setDoc(doc(db, 'users', uid), { ...fallbackProfile, createdAt: new Date().toISOString() });
-            console.log('✅ Fallback profile saved when connection restored');
-          } catch (bgError) {
-            console.log('Will retry profile creation on next user action');
-          }
-        }, 5000);
-      }
+      // Set a fallback profile to prevent blocking the UI
+      const fallbackProfile = {
+        id: uid,
+        email: currentUser?.email || "",
+        firstName: currentUser?.displayName?.split(' ')[0] || "",
+        lastName: currentUser?.displayName?.split(' ').slice(1).join(' ') || "",
+        role: "Student"
+      };
+      
+      setProfile(prev => ({ ...prev, ...fallbackProfile }));
+      
+      // Try to create the profile in the background when connection is restored
+      setTimeout(async () => {
+        try {
+          await dbOperation(
+            () => setDoc(doc(db, 'users', uid), { ...fallbackProfile, createdAt: new Date().toISOString() }),
+            'Create fallback profile'
+          );
+          console.log('✅ Fallback profile saved when connection restored');
+        } catch (bgError) {
+          console.log('Will retry profile creation on next user action');
+        }
+      }, 5000);
     }
   };
 
@@ -261,32 +426,35 @@ export default function Profile() {
       }
 
       // Update Firestore user document
-      await setDoc(doc(db, 'users', currentUser.uid), {
-        email: profile.email,
-        fullName: fullName,
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        middleInitial: profile.middleInitial,
-        sex: profile.sex,
-        age: profile.age,
-        birthdate: profile.birthdate,
-        course: profile.course,
-        year: profile.year,
-        section: profile.section,
-        sccNumber: profile.sccNumber,
-        contact: profile.contact,
-        fatherName: profile.fatherName,
-        fatherOccupation: profile.fatherOccupation,
-        motherName: profile.motherName,
-        motherOccupation: profile.motherOccupation,
-        guardian: profile.guardian,
-        guardianContact: profile.guardianContact,
-        homeAddress: profile.homeAddress,
-        profilePic: imageURL,
-        role: profile.role || 'Student',
-        studentId: profile.studentId, // Ensure studentId is included
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
+      await dbOperation(
+        () => setDoc(doc(db, 'users', currentUser.uid), {
+          email: profile.email,
+          fullName: fullName,
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          middleInitial: profile.middleInitial,
+          sex: profile.sex,
+          age: profile.age,
+          birthdate: profile.birthdate,
+          course: profile.course,
+          year: profile.year,
+          section: profile.section,
+          sccNumber: profile.sccNumber,
+          contact: profile.contact,
+          fatherName: profile.fatherName,
+          fatherOccupation: profile.fatherOccupation,
+          motherName: profile.motherName,
+          motherOccupation: profile.motherOccupation,
+          guardian: profile.guardian,
+          guardianContact: profile.guardianContact,
+          homeAddress: profile.homeAddress,
+          profilePic: imageURL,
+          role: profile.role || 'Student',
+          studentId: profile.studentId, // Ensure studentId is included
+          updatedAt: new Date().toISOString()
+        }, { merge: true }),
+        'Save user profile'
+      );
 
       // 🔄 SYNC WITH ADMIN STUDENT LIST
       // If this is a student, also update their record in the admin's students collection
@@ -295,75 +463,85 @@ export default function Profile() {
           console.log('🔄 Syncing student profile with admin records...');
           
           // Find the student record in the admin's students collection
-          const studentsQuery = query(
-            collection(db, 'students'),
-            where('id', '==', profile.studentId)
+          const studentsSnapshot = await dbOperation(
+            () => {
+              const studentsQuery = query(
+                collection(db, 'students'),
+                where('id', '==', profile.studentId)
+              );
+              return getDocs(studentsQuery);
+            },
+            'Find student record'
           );
-          
-          const studentsSnapshot = await getDocs(studentsQuery);
           
           if (!studentsSnapshot.empty) {
             // Update the existing student record in admin's collection
             const studentDoc = studentsSnapshot.docs[0];
-            await updateDoc(doc(db, 'students', studentDoc.id), {
-              firstName: profile.firstName,
-              lastName: profile.lastName,
-              middleInitial: profile.middleInitial,
-              sex: profile.sex,
-              age: profile.age,
-              birthdate: profile.birthdate,
-              course: profile.course,
-              year: profile.year,
-              sccNumber: profile.sccNumber,
-              contact: profile.contact,
-              fatherName: profile.fatherName,
-              fatherOccupation: profile.fatherOccupation,
-              motherName: profile.motherName,
-              motherOccupation: profile.motherOccupation,
-              guardian: profile.guardian,
-              guardianContact: profile.guardianContact,
-              homeAddress: profile.homeAddress,
-              profilePic: imageURL,
-              email: profile.email,
-              isRegistered: true,
-              registeredUserId: currentUser.uid,
-              lastUpdated: new Date().toISOString(),
-              updatedBy: 'student'
-            });
+            await dbOperation(
+              () => updateDoc(doc(db, 'students', studentDoc.id), {
+                firstName: profile.firstName,
+                lastName: profile.lastName,
+                middleInitial: profile.middleInitial,
+                sex: profile.sex,
+                age: profile.age,
+                birthdate: profile.birthdate,
+                course: profile.course,
+                year: profile.year,
+                sccNumber: profile.sccNumber,
+                contact: profile.contact,
+                fatherName: profile.fatherName,
+                fatherOccupation: profile.fatherOccupation,
+                motherName: profile.motherName,
+                motherOccupation: profile.motherOccupation,
+                guardian: profile.guardian,
+                guardianContact: profile.guardianContact,
+                homeAddress: profile.homeAddress,
+                profilePic: imageURL,
+                email: profile.email,
+                isRegistered: true,
+                registeredUserId: currentUser.uid,
+                lastUpdated: new Date().toISOString(),
+                updatedBy: 'student'
+              }),
+              'Update student record'
+            );
             
             console.log('✅ Student record synced with admin list successfully');
           } else {
             console.log('⚠️ Student record not found in admin collection, creating new record...');
             
             // Create a new student record in admin's collection if not found
-            await addDoc(collection(db, 'students'), {
-              id: profile.studentId,
-              firstName: profile.firstName,
-              lastName: profile.lastName,
-              middleInitial: profile.middleInitial,
-              sex: profile.sex,
-              age: profile.age,
-              birthdate: profile.birthdate,
-              course: profile.course,
-              year: profile.year,
-              sccNumber: profile.sccNumber,
-              contact: profile.contact,
-              fatherName: profile.fatherName,
-              fatherOccupation: profile.fatherOccupation,
-              motherName: profile.motherName,
-              motherOccupation: profile.motherOccupation,
-              guardian: profile.guardian,
-              guardianContact: profile.guardianContact,
-              homeAddress: profile.homeAddress,
-              profilePic: imageURL,
-              email: profile.email,
-              isRegistered: true,
-              registeredUserId: currentUser.uid,
-              registeredAt: new Date().toISOString(),
-              createdAt: new Date().toISOString(),
-              lastUpdated: new Date().toISOString(),
-              updatedBy: 'student'
-            });
+            await dbOperation(
+              () => addDoc(collection(db, 'students'), {
+                id: profile.studentId,
+                firstName: profile.firstName,
+                lastName: profile.lastName,
+                middleInitial: profile.middleInitial,
+                sex: profile.sex,
+                age: profile.age,
+                birthdate: profile.birthdate,
+                course: profile.course,
+                year: profile.year,
+                sccNumber: profile.sccNumber,
+                contact: profile.contact,
+                fatherName: profile.fatherName,
+                fatherOccupation: profile.fatherOccupation,
+                motherName: profile.motherName,
+                motherOccupation: profile.motherOccupation,
+                guardian: profile.guardian,
+                guardianContact: profile.guardianContact,
+                homeAddress: profile.homeAddress,
+                profilePic: imageURL,
+                email: profile.email,
+                isRegistered: true,
+                registeredUserId: currentUser.uid,
+                registeredAt: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                lastUpdated: new Date().toISOString(),
+                updatedBy: 'student'
+              }),
+              'Create student record'
+            );
             
             console.log('✅ New student record created in admin collection');
           }
@@ -470,6 +648,27 @@ export default function Profile() {
   const handleSaveEditProfile = async () => {
     setSaving(true);
     try {
+      // Basic validation
+      if (!editProfile.firstName || !editProfile.lastName) {
+        setSnackbar({ open: true, message: "First name and last name are required", severity: "error" });
+        setSaving(false);
+        return;
+      }
+
+      // Email validation
+      if (!editProfile.email || !editProfile.email.trim()) {
+        setSnackbar({ open: true, message: "Email address is required", severity: "error" });
+        setSaving(false);
+        return;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(editProfile.email.trim())) {
+        setSnackbar({ open: true, message: "Please enter a valid email address", severity: "error" });
+        setSaving(false);
+        return;
+      }
+
       const userRef = doc(db, 'users', currentUser.uid);
       
       // Update Firestore document
@@ -500,8 +699,14 @@ export default function Profile() {
       await updateDoc(userRef, updateData);
 
       // Update email in Firebase Auth if it changed
-      if (editProfile.email !== profile.email && profile.role === 'Admin') {
-        await updateEmail(currentUser, editProfile.email);
+      if (editProfile.email !== profile.email) {
+        try {
+          await updateEmail(currentUser, editProfile.email);
+          console.log('✅ Email updated in Firebase Auth');
+        } catch (error) {
+          console.error('❌ Error updating email in Firebase Auth:', error);
+          // Continue with Firestore update even if Auth update fails
+        }
       }
 
       // Update profile picture in Firebase Auth if it changed
@@ -544,383 +749,781 @@ export default function Profile() {
 
   return (
     <Box sx={{ 
+      minHeight: '100vh',
+      background: theme.palette.mode === 'dark' 
+        ? 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #2a2a2a 100%)'
+        : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%)',
       pt: { xs: 2, sm: 3 }, 
       pl: { xs: 2, sm: 3, md: 4 }, 
       pr: { xs: 2, sm: 3, md: 4 }, 
-      pb: 3,
-      bgcolor: theme.palette.mode === 'dark' ? '#1a1a1a' : 'transparent'
+      pb: 3
     }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+      {/* Header Section */}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        mb: 4,
+        position: 'relative',
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          bottom: -16,
+          left: 0,
+          right: 0,
+          height: '2px',
+          background: 'linear-gradient(90deg, #800000 0%, #ff6b6b 50%, #800000 100%)',
+          borderRadius: '1px'
+        }
+      }}>
         <IconButton 
           onClick={() => navigate('/options')}
           sx={{ 
-            mr: 2,
-            color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-            '&:hover': {
+            mr: 3,
+            p: 1.5,
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
               bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(128, 0, 0, 0.1)',
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000'
+            border: `2px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(128, 0, 0, 0.2)'}`,
+            borderRadius: 2,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              bgcolor: '#800000',
+              color: 'white',
+              borderColor: '#800000',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 8px 25px rgba(128, 0, 0, 0.3)'
             }
           }}
         >
           <ArrowBack />
         </IconButton>
-        <Typography variant="h4" fontWeight={700} sx={{ 
-          color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000'
+        <Box sx={{ flexGrow: 1 }}>
+          <Typography variant="h4" fontWeight={800} sx={{ 
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+            mb: 0.5,
+            background: theme.palette.mode === 'dark' 
+              ? 'linear-gradient(45deg, #ffffff 30%, #e0e0e0 90%)'
+              : 'linear-gradient(45deg, #800000 30%, #ff6b6b 90%)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
         }}>
           Account Settings
         </Typography>
+          <Typography variant="body1" sx={{ 
+            color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+            fontWeight: 500
+          }}>
+            Manage your profile and security settings
+          </Typography>
+        </Box>
+        
+        {/* Connection Status Indicator */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            bgcolor: connectionStatus === 'connected' ? '#4caf50' : 
+                    connectionStatus === 'connecting' ? '#ff9800' : '#f44336',
+            animation: connectionStatus === 'connecting' ? 'pulse 1.5s infinite' : 'none',
+            '@keyframes pulse': {
+              '0%': { opacity: 1 },
+              '50%': { opacity: 0.5 },
+              '100%': { opacity: 1 }
+            }
+          }} />
+          <Typography variant="caption" sx={{
+            color: connectionStatus === 'connected' ? '#4caf50' : 
+                   connectionStatus === 'connecting' ? '#ff9800' : '#f44336',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
+            {connectionStatus === 'connected' ? 'Connected' : 
+             connectionStatus === 'connecting' ? 'Connecting...' : 'Disconnected'}
+          </Typography>
+          {connectionStatus === 'disconnected' && (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={handleRetryConnection}
+              sx={{
+                ml: 1,
+                fontSize: '0.75rem',
+                py: 0.5,
+                px: 1,
+                minWidth: 'auto',
+                borderColor: '#f44336',
+                color: '#f44336',
+                '&:hover': {
+                  bgcolor: '#f44336',
+                  color: 'white'
+                }
+              }}
+            >
+              Retry
+            </Button>
+          )}
+        </Box>
       </Box>
 
+      {/* Enhanced Tabs Section */}
       <Paper sx={{ 
-        mb: 3,
-        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
-        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
-        borderRadius: 2,
-        boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+        mb: 4,
+        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.95)',
+        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(0, 0, 0, 0.12)',
+        borderRadius: 3,
+        boxShadow: theme.palette.mode === 'dark' 
+          ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+          : '0 8px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+        backdropFilter: 'blur(20px)',
+        overflow: 'hidden',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent 0%, rgba(128, 0, 0, 0.3) 50%, transparent 100%)'
+        }
       }}>
         <Tabs 
           value={activeTab} 
           onChange={(e, newValue) => setActiveTab(newValue)}
           sx={{
+            px: 2,
+            pt: 1,
             '& .MuiTab-root': {
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-              fontWeight: 400,
+              color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+              fontWeight: 600,
               textTransform: 'none',
+              fontSize: '1rem',
+              py: 2,
+              px: 3,
+              mx: 0.5,
+              borderRadius: 2,
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(135deg, rgba(128, 0, 0, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%)',
+                opacity: 0,
+                transition: 'opacity 0.3s ease'
+              },
               '&.Mui-selected': {
                 color: '#ffffff',
                 fontWeight: 700,
-                backgroundColor: '#800000',
-                borderRadius: '4px 4px 0 0'
+                background: 'linear-gradient(135deg, #800000 0%, #ff6b6b 100%)',
+                boxShadow: '0 4px 20px rgba(128, 0, 0, 0.3)',
+                transform: 'translateY(-2px)',
+                '&::before': {
+                  opacity: 0
+                }
               },
               '&:hover': {
-                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(128, 0, 0, 0.1)',
-                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000'
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.08)',
+                color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                transform: 'translateY(-1px)',
+                '&::before': {
+                  opacity: 1
+                }
               }
             },
             '& .MuiTabs-indicator': {
-              backgroundColor: '#800000',
-              height: 3
+              display: 'none'
             }
           }}
         >
-          <Tab icon={<Person />} label="Profile Information" />
-          <Tab icon={<Security />} label="Security" />
+          <Tab 
+            icon={<Person sx={{ fontSize: '1.2rem', mb: 0.5 }} />} 
+            label="Profile Information"
+            sx={{ flexDirection: 'column', gap: 0.5 }}
+          />
+          <Tab 
+            icon={<Security sx={{ fontSize: '1.2rem', mb: 0.5 }} />} 
+            label="Security Settings"
+            sx={{ flexDirection: 'column', gap: 0.5 }}
+          />
         </Tabs>
       </Paper>
 
       {activeTab === 0 && (
         <Grid container spacing={3}>
-          {/* Profile Picture Section */}
+          {/* Enhanced Profile Picture Section */}
           <Grid item xs={12} md={4}>
             <Card sx={{
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
-              border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
-              borderRadius: 2,
-              boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.95)',
+              border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(0, 0, 0, 0.12)',
+              borderRadius: 4,
+              boxShadow: theme.palette.mode === 'dark' 
+                ? '0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                : '0 12px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+              backdropFilter: 'blur(20px)',
+              overflow: 'hidden',
+              position: 'relative',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: theme.palette.mode === 'dark' 
+                  ? '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                  : '0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.08)'
+              },
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '3px',
+                background: 'linear-gradient(90deg, #800000 0%, #ff6b6b 50%, #800000 100%)'
+              }
             }}>
-              <CardContent sx={{ textAlign: 'center' }}>
+              <CardContent sx={{ textAlign: 'center', p: 4 }}>
+                <Box sx={{ position: 'relative', display: 'inline-block', mb: 3 }}>
                 <Avatar 
                   src={profile.image} 
                   sx={{ 
-                    width: 120, 
-                    height: 120, 
-                    fontSize: '3rem',
+                      width: 140, 
+                      height: 140, 
+                      fontSize: '3.5rem',
                     bgcolor: 'primary.main',
-                    mb: 2,
                     mx: 'auto',
-                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)'
+                      background: 'linear-gradient(135deg, #800000 0%, #ff6b6b 100%)',
+                      border: `4px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(128, 0, 0, 0.2)'}`,
+                      boxShadow: '0 8px 32px rgba(128, 0, 0, 0.3)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'scale(1.05)',
+                        boxShadow: '0 12px 40px rgba(128, 0, 0, 0.4)'
+                      }
                   }}
                 >
                   {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}
                 </Avatar>
-                <Typography variant="h6" gutterBottom sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
+                  <Box sx={{
+                    position: 'absolute',
+                    top: -8,
+                    right: -8,
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    bgcolor: '#4caf50',
+                    border: `3px solid ${theme.palette.mode === 'dark' ? '#1a1a1a' : '#ffffff'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Box sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      bgcolor: '#ffffff'
+                    }} />
+                  </Box>
+                </Box>
+                
+                <Typography variant="h5" fontWeight={700} gutterBottom sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                  mb: 1,
+                  background: theme.palette.mode === 'dark' 
+                    ? 'linear-gradient(45deg, #ffffff 30%, #e0e0e0 90%)'
+                    : 'linear-gradient(45deg, #800000 30%, #ff6b6b 90%)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
                 }}>
                   {profile.firstName} {profile.lastName}
                 </Typography>
-                <Typography variant="body2" sx={{ 
-                  color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary'
+                
+                {/* Enhanced Gmail and Student ID Display */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: 1, 
+                  mb: 2,
+                  p: 1.5,
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.15)' : 'rgba(128, 0, 0, 0.08)',
+                  borderRadius: 2,
+                  border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.3)' : 'rgba(128, 0, 0, 0.2)'}`
                 }}>
-                  {profile.email}
-                </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" sx={{ 
+                      color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                      fontWeight: 600,
+                      fontSize: '0.8rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      minWidth: '80px'
+                    }}>
+                      Gmail:
+                    </Typography>
+                    <Typography variant="body2" sx={{ 
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                      fontWeight: 600,
+                      fontSize: '0.9rem'
+                    }}>
+                      {profile.email || 'Not provided'}
+                    </Typography>
+                  </Box>
+                  
+                  {profile.studentId && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                        fontWeight: 600,
+                        fontSize: '0.8rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        minWidth: '80px'
+                      }}>
+                        Student ID:
+                      </Typography>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                        fontWeight: 600,
+                        fontSize: '0.9rem',
+                        fontFamily: 'monospace'
+                      }}>
+                        {profile.studentId}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+                
                 <Chip 
                   label={profile.role || "Student"} 
-                  color="primary" 
-                  variant="outlined" 
-                  sx={{ mt: 1 }}
+                  sx={{ 
+                    mb: 3,
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.2)' : 'rgba(128, 0, 0, 0.1)',
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                    border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.3)' : 'rgba(128, 0, 0, 0.3)'}`,
+                    fontWeight: 600,
+                    px: 2,
+                    py: 0.5
+                  }}
                 />
-                <Box sx={{ mt: 3 }}>
+                
                   <Button 
-                    variant="outlined" 
-                    startIcon={<Edit />}
+                  variant="contained" 
+                  startIcon={<Edit sx={{ fontSize: '1.1rem' }} />}
                     onClick={handleOpenEditModal}
                     sx={{ 
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : '#000000',
-                      fontWeight: 600,
+                    background: 'linear-gradient(135deg, #800000 0%, #ff6b6b 100%)',
+                    color: 'white',
+                    fontWeight: 700,
                       textTransform: 'none',
-                      px: 3,
+                    px: 4,
+                    py: 1.5,
+                    borderRadius: 3,
+                    boxShadow: '0 4px 20px rgba(128, 0, 0, 0.3)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       '&:hover': {
-                        bgcolor: '#800000',
-                        color: 'white',
-                        borderColor: '#800000'
+                      background: 'linear-gradient(135deg, #6b0000 0%, #e55a5a 100%)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 30px rgba(128, 0, 0, 0.4)'
                       }
                     }}
                   >
                     Edit Profile
                   </Button>
-                </Box>
               </CardContent>
             </Card>
           </Grid>
 
-          {/* Profile Information Display */}
+          {/* Enhanced Profile Information Display */}
           <Grid item xs={12} md={8}>
             <Card sx={{
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.9)',
-              border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
-              borderRadius: 2,
-              boxShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.95)',
+              border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(0, 0, 0, 0.12)',
+              borderRadius: 4,
+              boxShadow: theme.palette.mode === 'dark' 
+                ? '0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                : '0 12px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+              backdropFilter: 'blur(20px)',
+              overflow: 'hidden',
+              position: 'relative',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: theme.palette.mode === 'dark' 
+                  ? '0 16px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                  : '0 16px 50px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.08)'
+              },
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '3px',
+                background: 'linear-gradient(90deg, #800000 0%, #ff6b6b 50%, #800000 100%)'
+              }
             }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ 
+              <CardContent sx={{ p: 4 }}>
+                <Box sx={{ 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: 1,
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
+                  gap: 2,
+                  mb: 4,
+                  pb: 2,
+                  borderBottom: `2px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(128, 0, 0, 0.1)'}`
                 }}>
-                  <Person /> Personal Information
+                  <Box sx={{
+                    p: 1.5,
+                    borderRadius: 2,
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.2)' : 'rgba(128, 0, 0, 0.1)',
+                    color: '#800000'
+                  }}>
+                    <Person sx={{ fontSize: '1.5rem' }} />
+                  </Box>
+                  <Typography variant="h5" fontWeight={700} sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333',
+                    background: theme.palette.mode === 'dark' 
+                      ? 'linear-gradient(45deg, #ffffff 30%, #e0e0e0 90%)'
+                      : 'linear-gradient(45deg, #800000 30%, #ff6b6b 90%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}>
+                    Personal Information
                 </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
+                </Box>
+                {/* Personal Information Display - Matching UserDashboard Style */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: 2, 
+                  mt: 2
+                }}>
+                  {/* Name Display */}
+                  <Box sx={{ 
+                    p: 2,
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.05)',
+                    borderRadius: 2,
+                    border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(128, 0, 0, 0.1)'}`,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.08)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: theme.palette.mode === 'dark' 
+                        ? '0 4px 12px rgba(0, 0, 0, 0.2)'
+                        : '0 4px 12px rgba(128, 0, 0, 0.1)'
+                    }
+                  }}>
+                    <Typography variant="body2" sx={{
+                      color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                      fontWeight: 600,
+                      mb: 1,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      fontSize: '0.8rem'
+                    }}>
+                      Full Name
+                    </Typography>
+                    <Typography variant="h6" sx={{
+                      fontWeight: 700,
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                      fontSize: '1.2rem'
+                    }}>
+                      {profile.firstName} {profile.lastName}
+                    </Typography>
+                  </Box>
+
+                  {/* Email Display - Matching UserDashboard */}
+                  <Box sx={{ 
+                    p: 2,
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.15)' : 'rgba(128, 0, 0, 0.08)',
+                    borderRadius: 2,
+                    border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.3)' : 'rgba(128, 0, 0, 0.2)'}`,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(128, 0, 0, 0.2)' : 'rgba(128, 0, 0, 0.12)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: theme.palette.mode === 'dark' 
+                        ? '0 4px 12px rgba(128, 0, 0, 0.3)'
+                        : '0 4px 12px rgba(128, 0, 0, 0.15)'
+                    }
+                  }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Typography variant="body2" sx={{ 
-                        color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary'
-                      }} gutterBottom>
-                        First Name
-                      </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'grey.50',
-                        borderRadius: 1,
-                        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e0e0e0',
-                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
+                        color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                        fontWeight: 600,
+                        fontSize: '0.8rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        minWidth: '80px'
                       }}>
-                        {profile.firstName || 'Not provided'}
+                        Gmail:
                       </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
                       <Typography variant="body2" sx={{ 
-                        color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary'
-                      }} gutterBottom>
-                        Last Name
-                      </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'grey.50',
-                        borderRadius: 1,
-                        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e0e0e0',
-                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
-                      }}>
-                        {profile.lastName || 'Not provided'}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Middle Initial
-                      </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
-                      }}>
-                        {profile.middleInitial || 'Not provided'}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Email Address
-                      </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                        fontWeight: 600,
+                        fontSize: '0.9rem'
                       }}>
                         {profile.email || 'Not provided'}
                       </Typography>
                     </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Contact Number
-                      </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
-                      }}>
-                        {profile.contact || 'Not provided'}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Course
-                      </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
-                      }}>
-                        {profile.course || 'Not provided'}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Year Level
-                      </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
-                      }}>
-                        {profile.year || 'Not provided'}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Section
-                      </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
-                      }}>
-                        {profile.section || 'Not provided'}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Sex
-                      </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
-                      }}>
-                        {profile.sex || 'Not provided'}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Age
-                      </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
-                      }}>
-                        {profile.age || 'Not provided'}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Birthday
-                      </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0'
-                      }}>
-                        {profile.birthdate ? new Date(profile.birthdate).toLocaleDateString() : 'Not provided'}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" sx={{ 
-                        color: theme.palette.mode === 'dark' ? '#cccccc' : 'text.secondary'
-                      }} gutterBottom>
-                        Student ID
-                      </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'grey.50',
-                        borderRadius: 1,
-                        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e0e0e0',
-                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#333333'
-                      }}>
-                        {profile.studentId || 'Not provided'}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
+                  </Box>
 
-                <Divider sx={{ my: 3 }} />
-
-                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Home /> Address Information
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Home Address
-                      </Typography>
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 500,
-                        p: 1.5,
-                        bgcolor: 'grey.50',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0',
-                        minHeight: '60px',
-                        display: 'flex',
-                        alignItems: 'center'
+                  {/* Academic Information - Read Only (Admin Only) - Only for Students */}
+                  {profile.role === 'Student' && (
+                    <Box sx={{ 
+                      p: 2,
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 193, 7, 0.1)' : 'rgba(255, 193, 7, 0.05)',
+                      borderRadius: 2,
+                      border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 193, 7, 0.3)' : 'rgba(255, 193, 7, 0.2)'}`,
+                      transition: 'all 0.3s ease',
+                      position: 'relative',
+                      '&:hover': {
+                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 193, 7, 0.15)' : 'rgba(255, 193, 7, 0.08)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: theme.palette.mode === 'dark' 
+                          ? '0 4px 12px rgba(255, 193, 7, 0.2)'
+                          : '0 4px 12px rgba(255, 193, 7, 0.1)'
+                      }
+                    }}>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 1, 
+                        mb: 1.5,
+                        position: 'relative'
                       }}>
-                        {profile.homeAddress || 'Not provided'}
-                      </Typography>
+                        <Typography variant="body2" sx={{
+                          color: theme.palette.mode === 'dark' ? '#ffc107' : '#f57c00',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          fontSize: '0.8rem'
+                        }}>
+                          Academic Information
+                        </Typography>
+                        <Chip 
+                          label="Admin Only" 
+                          size="small"
+                          sx={{
+                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 193, 7, 0.2)' : 'rgba(255, 193, 7, 0.1)',
+                            color: theme.palette.mode === 'dark' ? '#ffc107' : '#f57c00',
+                            border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 193, 7, 0.3)' : 'rgba(255, 193, 7, 0.3)'}`,
+                            fontWeight: 600,
+                            fontSize: '0.65rem',
+                            height: '20px'
+                          }}
+                        />
+                      </Box>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body2" sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                              minWidth: '60px'
+                            }}>
+                              Student ID:
+                            </Typography>
+                            <Typography variant="body2" sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                              fontWeight: 600,
+                              fontSize: '0.9rem',
+                              fontFamily: 'monospace'
+                            }}>
+                              {profile.studentId || 'Not assigned'}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body2" sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                              minWidth: '60px'
+                            }}>
+                              Course:
+                            </Typography>
+                            <Typography variant="body2" sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                              fontWeight: 600,
+                              fontSize: '0.9rem'
+                            }}>
+                              {profile.course || 'Not assigned'}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body2" sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                              minWidth: '60px'
+                            }}>
+                              Year:
+                            </Typography>
+                            <Typography variant="body2" sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                              fontWeight: 600,
+                              fontSize: '0.9rem'
+                            }}>
+                              {profile.year || 'Not assigned'}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body2" sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                              minWidth: '60px'
+                            }}>
+                              Section:
+                            </Typography>
+                            <Typography variant="body2" sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                              fontWeight: 600,
+                              fontSize: '0.9rem'
+                            }}>
+                              {profile.section || 'Not assigned'}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      </Grid>
                     </Box>
-                  </Grid>
-                </Grid>
+                  )}
+
+                  {/* Personal Details - Editable */}
+                  <Box sx={{ 
+                    p: 2,
+                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.05)',
+                    borderRadius: 2,
+                    border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(128, 0, 0, 0.1)'}`,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(128, 0, 0, 0.08)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: theme.palette.mode === 'dark' 
+                        ? '0 4px 12px rgba(0, 0, 0, 0.2)'
+                        : '0 4px 12px rgba(128, 0, 0, 0.1)'
+                    }
+                  }}>
+                    <Typography variant="body2" sx={{
+                      color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                      fontWeight: 600,
+                      mb: 1.5,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      fontSize: '0.8rem'
+                    }}>
+                      Personal Details
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="body2" sx={{ 
+                            color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            minWidth: '60px'
+                          }}>
+                            Gender:
+                          </Typography>
+                          <Typography variant="body2" sx={{ 
+                            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                            fontWeight: 600,
+                            fontSize: '0.9rem'
+                          }}>
+                            {profile.sex || 'Not provided'}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="body2" sx={{ 
+                            color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            minWidth: '60px'
+                          }}>
+                            Birthday:
+                          </Typography>
+                          <Typography variant="body2" sx={{ 
+                            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                            fontWeight: 600,
+                            fontSize: '0.9rem'
+                          }}>
+                            {profile.birthdate || 'Not provided'}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="body2" sx={{ 
+                            color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            minWidth: '60px'
+                          }}>
+                            Contact:
+                          </Typography>
+                          <Typography variant="body2" sx={{ 
+                            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                            fontWeight: 600,
+                            fontSize: '0.9rem'
+                          }}>
+                            {profile.contact || 'Not provided'}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                          <Typography variant="body2" sx={{ 
+                            color: theme.palette.mode === 'dark' ? '#cccccc' : '#666666',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            minWidth: '60px',
+                            mt: 0.5
+                          }}>
+                            Address:
+                          </Typography>
+                          <Typography variant="body2" sx={{ 
+                            color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                            fontWeight: 600,
+                            fontSize: '0.9rem',
+                            lineHeight: 1.4
+                          }}>
+                            {profile.homeAddress || 'Not provided'}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
@@ -929,106 +1532,132 @@ export default function Profile() {
 
       {activeTab === 1 && (
         <Box sx={{ 
-          maxWidth: 400, 
+          maxWidth: 500, 
           mx: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center'
+          gap: 2,
+          p: 3,
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.95)',
+            borderRadius: 4,
+          border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(0, 0, 0, 0.12)',
+            boxShadow: theme.palette.mode === 'dark' 
+              ? '0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+            : '0 12px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05)'
         }}>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-            <Security /> Change Password
-          </Typography>
-          <Stack spacing={2} sx={{ width: '100%' }}>
+          <Typography variant="h6" sx={{ 
+            fontWeight: 700, 
+            color: '#800000', 
+            textAlign: 'center',
+                  mb: 2,
+            fontSize: '1.2rem'
+                }}>
+                  Change Password
+                </Typography>
+          
             <TextField
+            fullWidth
               label="Current Password"
-              name="currentPassword"
-              type={showPassword ? "text" : "password"}
+            type={showCurrentPassword ? 'text' : 'password'}
               value={passwordForm.currentPassword}
-              onChange={handlePasswordChange}
-              fullWidth
+            onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
               InputProps={{
                 endAdornment: (
                   <IconButton
-                    size="small"
-                    onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                     edge="end"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  size="small"
+                >
+                  {showCurrentPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
                 ),
               }}
-            />
-            <TextField
-              label="New Password"
-              name="newPassword"
-              type={showNewPassword ? "text" : "password"}
-              value={passwordForm.newPassword}
-              onChange={handlePasswordChange}
-              fullWidth
+                  sx={{
+              '& .MuiInputBase-input': {
+                fontSize: '0.875rem'
+              },
+              '& .MuiInputLabel-root': {
+                fontSize: '0.875rem'
+              }
+            }}
+          />
+          
+          <TextField
+            fullWidth
+            label="New Password"
+            type={showNewPassword ? 'text' : 'password'}
+            value={passwordForm.newPassword}
+            onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
               InputProps={{
                 endAdornment: (
                   <IconButton
-                    size="small"
                     onClick={() => setShowNewPassword(!showNewPassword)}
                     edge="end"
+                  size="small"
                   >
                     {showNewPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
                 ),
               }}
-            />
-            <TextField
-              label="Confirm New Password"
-              name="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
-              value={passwordForm.confirmPassword}
-              onChange={handlePasswordChange}
-              fullWidth
+                  sx={{
+              '& .MuiInputBase-input': {
+                fontSize: '0.875rem'
+              },
+              '& .MuiInputLabel-root': {
+                fontSize: '0.875rem'
+              }
+            }}
+          />
+          
+          <TextField
+            fullWidth
+            label="Confirm New Password"
+            type={showConfirmPassword ? 'text' : 'password'}
+            value={passwordForm.confirmPassword}
+            onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
               InputProps={{
                 endAdornment: (
                   <IconButton
-                    size="small"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     edge="end"
+                  size="small"
                   >
                     {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
                 ),
               }}
-            />
-          </Stack>
-          <Typography variant="body2" color="textSecondary" sx={{ mt: 2, textAlign: 'center' }}>
-            Password must be at least 6 characters long.
-          </Typography>
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+            sx={{
+              '& .MuiInputBase-input': {
+                fontSize: '0.875rem'
+              },
+              '& .MuiInputLabel-root': {
+                fontSize: '0.875rem'
+              }
+            }}
+          />
+          
             <Button 
-              variant="outlined" 
-              size="small"
+            fullWidth
+                  variant="contained"
               onClick={handleChangePassword}
-              disabled={saving || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword || passwordSuccess}
-              startIcon={<Security />}
+            disabled={saving}
               sx={{
-                color: passwordSuccess ? '#4caf50' : 'black',
-                borderColor: passwordSuccess ? '#4caf50' : 'black',
-                fontWeight: 600,
-                '&:hover': {
-                  bgcolor: passwordSuccess ? '#4caf50' : '#800000',
-                  color: 'white',
-                  borderColor: passwordSuccess ? '#4caf50' : '#800000'
-                }
-              }}
-            >
-              {saving ? 'Changing Password...' : passwordSuccess ? 'Password Changed!' : 'Change Password'}
+              bgcolor: '#800000',
+              fontSize: '0.875rem',
+              py: 1.5,
+                    '&:hover': {
+                bgcolor: '#a00000'
+              }
+            }}
+          >
+            {saving ? 'Changing Password...' : 'Change Password'}
             </Button>
-          </Box>
         </Box>
       )}
 
-
-
       {/* Edit Profile Modal */}
       <Dialog open={openEditModal} onClose={() => setOpenEditModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, color: '#800000', pb: 1 }}>
+        <DialogTitle sx={{ fontWeight: 700, color: '#800000', pb: 1, fontSize: '1.1rem' }}>
           Edit Profile
         </DialogTitle>
         <DialogContent sx={{ pt: 1 }}>
@@ -1039,18 +1668,13 @@ export default function Profile() {
                 <Avatar 
                   src={editProfile.image} 
                   sx={{ 
-                    width: 60, 
-                    height: 60, 
-                    fontSize: '1.5rem',
-                    bgcolor: 'primary.main',
-                    mb: 1,
+                    width: 80, 
+                    height: 80, 
                     mx: 'auto',
-                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)'
+                    mb: 2,
+                    border: '3px solid #800000'
                   }}
-                >
-                  {editProfile.firstName?.charAt(0)}{editProfile.lastName?.charAt(0)}
-                </Avatar>
-                <Box>
+                />
                   <input
                     accept="image/*"
                     style={{ display: 'none' }}
@@ -1065,155 +1689,89 @@ export default function Profile() {
                       startIcon={<PhotoCamera />}
                       size="small"
                       sx={{
-                        color: 'black',
-                        borderColor: 'black',
+                      color: '#800000',
+                      borderColor: '#800000',
                         fontSize: '0.75rem',
-                        py: 0.5,
-                        px: 1,
                         '&:hover': {
-                          bgcolor: 'rgba(0,0,0,0.1)',
-                          borderColor: 'black'
+                        bgcolor: 'rgba(128, 0, 0, 0.1)',
+                        borderColor: '#800000'
                         }
                       }}
                     >
-                      Change Picture
+                    Change Photo
                     </Button>
                   </label>
-                </Box>
               </Box>
             </Grid>
 
+            {/* Form Fields */}
             <Grid item xs={12} sm={6}>
               <TextField
+                fullWidth
                 label="First Name"
-                name="firstName"
                 value={editProfile.firstName}
-                onChange={handleEditProfileChange}
-                fullWidth
+                onChange={(e) => setEditProfile({ ...editProfile, firstName: e.target.value })}
                 size="small"
-                required
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
+                fullWidth
                 label="Last Name"
-                name="lastName"
                 value={editProfile.lastName}
-                onChange={handleEditProfileChange}
-                fullWidth
+                onChange={(e) => setEditProfile({ ...editProfile, lastName: e.target.value })}
                 size="small"
-                required
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Email"
+                value={editProfile.email}
+                onChange={(e) => setEditProfile({ ...editProfile, email: e.target.value })}
+                size="small"
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Middle Initial"
-                name="middleInitial"
-                value={editProfile.middleInitial}
-                onChange={handleEditProfileChange}
                 fullWidth
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Student ID"
-                name="studentId"
-                value={editProfile.studentId}
-                onChange={handleEditProfileChange}
-                fullWidth
-                size="small"
-                required
-                disabled={profile.role !== 'Admin' && profile.studentId} // Allow editing if not set, but disable if already set
-                helperText={profile.role !== 'Admin' && profile.studentId ? 'Student ID cannot be changed once set' : ''}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Contact Number"
-                name="contact"
-                value={editProfile.contact}
-                onChange={handleEditProfileChange}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Course"
-                name="course"
-                value={editProfile.course}
-                onChange={handleEditProfileChange}
-                fullWidth
-                size="small"
                 select
-              >
-                <MenuItem value="BSIT">BSIT</MenuItem>
-                <MenuItem value="BSBA">BSBA</MenuItem>
-                <MenuItem value="BSCRIM">BSCRIM</MenuItem>
-                <MenuItem value="BSHTM">BSHTM</MenuItem>
-                <MenuItem value="BEED">BEED</MenuItem>
-                <MenuItem value="BSED">BSED</MenuItem>
-                <MenuItem value="BSHM">BSHM</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Year Level"
-                name="year"
-                value={editProfile.year}
-                onChange={handleEditProfileChange}
-                fullWidth
-                size="small"
-                select
-              >
-                <MenuItem value="1st Year">1st Year</MenuItem>
-                <MenuItem value="2nd Year">2nd Year</MenuItem>
-                <MenuItem value="3rd Year">3rd Year</MenuItem>
-                <MenuItem value="4th Year">4th Year</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Section"
-                name="section"
-                value={editProfile.section}
-                onChange={handleEditProfileChange}
-                fullWidth
-                size="small"
-                select
-              >
-                <MenuItem value="A">A</MenuItem>
-                <MenuItem value="B">B</MenuItem>
-                <MenuItem value="C">C</MenuItem>
-                <MenuItem value="D">D</MenuItem>
-                <MenuItem value="E">E</MenuItem>
-                <MenuItem value="F">F</MenuItem>
-                <MenuItem value="G">G</MenuItem>
-                <MenuItem value="H">H</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Birthdate"
-                name="birthdate"
-                value={editProfile.birthdate}
-                onChange={handleEditProfileChange}
-                fullWidth
-                size="small"
-                type="date"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Sex"
-                name="sex"
+                label="Gender"
                 value={editProfile.sex}
-                onChange={handleEditProfileChange}
-                fullWidth
+                onChange={(e) => setEditProfile({ ...editProfile, sex: e.target.value })}
                 size="small"
-                select
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               >
                 <MenuItem value="Male">Male</MenuItem>
                 <MenuItem value="Female">Female</MenuItem>
@@ -1222,50 +1780,58 @@ export default function Profile() {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Age"
-                name="age"
-                value={editProfile.age}
-                onChange={handleEditProfileChange}
                 fullWidth
+                label="Birthday"
+                type="date"
+                value={editProfile.birthdate}
+                onChange={(e) => setEditProfile({ ...editProfile, birthdate: e.target.value })}
                 size="small"
-                type="number"
-                inputProps={{ min: 1, max: 150 }}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="SCC Number"
-                name="sccNumber"
-                value={editProfile.sccNumber}
-                onChange={handleEditProfileChange}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-            {profile.role === 'Admin' && (
-              <Grid item xs={12}>
-                <TextField
-                  label="Email Address"
-                  name="email"
-                  type="email"
-                  value={editProfile.email}
-                  onChange={handleEditProfileChange}
-                  fullWidth
-                  size="small"
-                  required
-                />
-              </Grid>
-            )}
             <Grid item xs={12}>
               <TextField
-                label="Home Address"
-                name="homeAddress"
-                value={editProfile.homeAddress}
-                onChange={handleEditProfileChange}
                 fullWidth
+                label="Phone"
+                value={editProfile.contact}
+                onChange={(e) => setEditProfile({ ...editProfile, contact: e.target.value })}
                 size="small"
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Home Address"
+                value={editProfile.homeAddress}
+                onChange={(e) => setEditProfile({ ...editProfile, homeAddress: e.target.value })}
                 multiline
                 rows={2}
+                sx={{
+                  '& .MuiInputBase-input': {
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem'
+                  }
+                }}
               />
             </Grid>
           </Grid>
@@ -1278,6 +1844,7 @@ export default function Profile() {
             sx={{
               color: 'black',
               borderColor: 'black',
+              fontSize: '0.875rem',
               '&:hover': {
                 bgcolor: 'rgba(0,0,0,0.1)',
                 borderColor: 'black'
@@ -1294,6 +1861,7 @@ export default function Profile() {
             size="small"
             sx={{
               bgcolor: '#800000',
+              fontSize: '0.875rem',
               '&:hover': {
                 bgcolor: '#a00000'
               }

@@ -5,11 +5,11 @@ import {
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Stack, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText,
   IconButton, Tooltip, Chip, InputAdornment, CircularProgress, useTheme, Tabs, Tab, TablePagination
 } from "@mui/material";
-import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete, Search, CloudUpload, PictureAsPdf, Close, ArrowBack } from "@mui/icons-material";
+import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete, Search, CloudUpload, PictureAsPdf, Close, ArrowBack, Refresh } from "@mui/icons-material";
 import { db, storage, logActivity } from "../firebase";
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, where, query, onSnapshot, orderBy, setDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, where, query, onSnapshot, orderBy, setDoc, getDocsFromServer } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { validateStudentId } from "../utils/studentValidation";
+import { validateStudentId, getStudentById } from "../utils/studentValidation";
 import StudentImport from "./StudentImport";
 
 const courses = ["BSIT", "BSBA", "BSCRIM", "BSHTM", "BEED", "BSED", "BSHM"];
@@ -356,6 +356,7 @@ function AddStudent({ onClose, isModal = false }) {
       // Prepare data for Firebase
       const dataToSave = {
         ...profile,
+        fullName: `${profile.firstName || ''} ${profile.lastName || ''}`.trim(),
         image: imageUrl || "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -647,24 +648,53 @@ function LostFound() {
         
         // Fetch from 'students' collection (manually added students)
         const studentsQuerySnapshot = await getDocs(collection(db, "students"));
-        const studentsData = studentsQuerySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        // Fetch from 'users' collection (registered students)
-        const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
-        const registeredStudentsData = usersQuerySnapshot.docs.map(doc => {
+        const studentsData = studentsQuerySnapshot.docs.map(doc => {
           const data = doc.data();
           return {
             id: doc.id,
-            firstName: data.firstName || data.fullName?.split(' ')[0] || '',
-            lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
-            email: data.email || '',
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+            email: data.registeredEmail || data.email || '', // Use registeredEmail first, then email field
             course: data.course || '',
             year: data.year || '',
             section: data.section || '',
-            studentId: data.studentId || '',
+            studentId: data.id || data.studentId || doc.id, // Use 'id' field first (SCC-22-00000002), then fallback to studentId, then doc.id
+            sex: data.sex || '',
+            age: data.age || '',
+            birthdate: data.birthdate || '',
+            contact: data.contact || '',
+            profilePic: data.profilePic || '',
             createdAt: data.createdAt || '',
             updatedAt: data.updatedAt || '',
+            isRegisteredUser: Boolean(data.isRegistered) // Use isRegistered field from students collection
+          };
+        }).filter(student => !student.isRegistered);
+        
+        // Fetch from 'RegisteredStudents' collection (registered students)
+        const registeredStudentsQuerySnapshot = await getDocs(collection(db, "RegisteredStudents"));
+        const registeredStudentsData = registeredStudentsQuerySnapshot.docs.map(doc => {
+          const data = doc.data();
+          // The document ID is the studentId
+          const studentId = doc.id;
+          
+          return {
+            id: studentId, // Use studentId as ID
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+            email: data.registeredEmail || data.email || '', // Use registeredEmail first, then email field
+            course: data.course || '',
+            year: data.year || '',
+            section: data.section || '',
+            studentId: studentId, // Student ID from document ID
+            sex: data.sex || '',
+            age: data.age || '',
+            birthdate: data.birthdate || '',
+            contact: data.contact || '',
             profilePic: data.profilePic || '',
+            createdAt: data.registeredAt || '',
+            updatedAt: data.updatedAt || '',
             isRegisteredUser: true // Flag to identify registered users
           };
         });
@@ -1056,25 +1086,54 @@ function CourseDashboard({
         
         // Fetch from 'students' collection (manually added students)
         const studentsQuerySnapshot = await getDocs(collection(db, "students"));
-        const studentsData = studentsQuerySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        // Fetch from 'users' collection (registered students)
-        const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
-        const registeredStudentsData = usersQuerySnapshot.docs.map(doc => {
+        const studentsData = studentsQuerySnapshot.docs.map(doc => {
           const data = doc.data();
           return {
             id: doc.id,
-            firstName: data.firstName || data.fullName?.split(' ')[0] || '',
-            lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
-            email: data.email || '',
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+            email: data.registeredEmail || data.email || '', // Use registeredEmail first, then email field
             course: data.course || '',
             year: data.year || '',
             section: data.section || '',
-            studentId: data.studentId || '',
+            studentId: data.id || data.studentId || doc.id, // Use 'id' field first (SCC-22-00000002), then fallback to studentId, then doc.id
+            sex: data.sex || '',
+            age: data.age || '',
+            birthdate: data.birthdate || '',
+            contact: data.contact || '',
+            profilePic: data.profilePic || '',
             createdAt: data.createdAt || '',
             updatedAt: data.updatedAt || '',
+            isRegisteredUser: Boolean(data.isRegistered) // Use isRegistered field from students collection
+          };
+        }).filter(student => !student.isRegistered);
+        
+        // Fetch from 'RegisteredStudents' collection (registered students)
+        const registeredStudentsQuerySnapshot = await getDocs(collection(db, "RegisteredStudents"));
+        const registeredStudentsData = registeredStudentsQuerySnapshot.docs.map(doc => {
+          const data = doc.data();
+          // The document ID is the studentId
+          const studentId = doc.id;
+          
+          return {
+            id: studentId, // Use studentId as ID
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+            email: data.registeredEmail || data.email || '', // Use registeredEmail first, then email field
+            course: data.course || '',
+            year: data.year || '',
+            section: data.section || '',
+            studentId: studentId, // Student ID from document ID
+            sex: data.sex || '',
+            age: data.age || '',
+            birthdate: data.birthdate || '',
+            contact: data.contact || '',
             profilePic: data.profilePic || '',
-            isRegisteredUser: true
+            createdAt: data.registeredAt || '',
+            updatedAt: data.updatedAt || '',
+            isRegisteredUser: true // Flag to identify registered users
           };
         });
         
@@ -1084,12 +1143,17 @@ function CourseDashboard({
         
         // Sort students by name
         const sortedStudents = courseStudents.sort((a, b) => {
-          const nameA = `${a.firstName || ""} ${a.lastName || ""}`.trim().toLowerCase();
-          const nameB = `${b.firstName || ""} ${b.lastName || ""}`.trim().toLowerCase();
+          const nameA = (a.fullName || `${a.firstName || ""} ${a.lastName || ""}`.trim()).toLowerCase();
+          const nameB = (b.fullName || `${b.firstName || ""} ${b.lastName || ""}`.trim()).toLowerCase();
           return nameA.localeCompare(nameB);
         });
         
         console.log(`${courseName} students fetched successfully:`, sortedStudents.length);
+        console.log('📧 Sample student email data:', sortedStudents.slice(0, 3).map(s => ({ 
+          name: s.fullName, 
+          email: s.email, 
+          studentId: s.studentId 
+        })));
         setStudents(sortedStudents);
       } catch (error) {
         console.error("Error fetching students:", error);
@@ -1114,9 +1178,9 @@ function CourseDashboard({
     // Search filter
     const searchMatch = !search.trim() || (() => {
       const term = search.trim().toLowerCase();
-      const fullName = `${student.firstName || ""} ${student.lastName || ""}`.trim().toLowerCase();
+      const fullName = (student.fullName || `${student.firstName || ""} ${student.lastName || ""}`.trim()).toLowerCase();
       const email = (student.email || "").toLowerCase();
-      const studentId = (student.id || "").toLowerCase();
+      const studentId = (student.studentId || "").toLowerCase();
       
       return fullName.includes(term) || 
              email.includes(term) || 
@@ -1140,42 +1204,18 @@ function CourseDashboard({
     setOpenEditStudent(true);
   };
 
-  // Handle delete student - move to recycle bin
+  // Handle delete student
   const handleDeleteStudent = async (student) => {
-    if (window.confirm(`Are you sure you want to delete ${student.firstName} ${student.lastName}? This will move the student to the recycle bin.`)) {
+    if (window.confirm(`Are you sure you want to delete ${student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()}?`)) {
       try {
-        console.log("Moving student to recycle bin:", student.id);
+        await deleteDoc(doc(db, "students", student.id));
+        setSnackbar({ open: true, message: "Student deleted successfully!", severity: "success" });
         
-        if (!student.isRegisteredUser) {
-          // Move to recycle bin instead of permanent deletion
-          const studentData = {
-            ...student,
-            deletedAt: new Date().toISOString(),
-            deletedBy: 'admin', // You can get this from current user context
-            originalCollection: 'students'
-          };
-          
-          // Add to recycle bin
-          await addDoc(collection(db, "recycle_bin_students"), studentData);
-          
-          // Remove from original collection
-          await deleteDoc(doc(db, "students", student.id));
-          
-          await logActivity({ message: `Moved student to recycle bin: ${student.firstName} ${student.lastName}`, type: 'delete_student' });
-          setSnackbar({ open: true, message: "Student moved to recycle bin successfully!", severity: "success" });
-          
-          // Refresh the student list
-          setStudents(prev => prev.filter(s => s.id !== student.id));
-        } else {
-          setSnackbar({ 
-            open: true, 
-            message: "Cannot delete registered users. They must be removed from the users collection.", 
-            severity: "warning" 
-          });
-        }
+        // Refresh the student list
+        setStudents(prev => prev.filter(s => s.id !== student.id));
       } catch (error) {
-        console.error("Error moving student to recycle bin:", error);
-        setSnackbar({ open: true, message: "Error moving student to recycle bin: " + error.message, severity: "error" });
+        console.error("Error deleting student:", error);
+        setSnackbar({ open: true, message: "Error deleting student: " + error.message, severity: "error" });
       }
     }
   };
@@ -1429,12 +1469,12 @@ function CourseDashboard({
           <Table>
             <TableHead>
               <TableRow sx={{ 
-                bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#fafafa' 
+                bgcolor: '#800000' 
               }}>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: '#1976d2', // Blue color for Student
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '140px',
@@ -1443,9 +1483,9 @@ function CourseDashboard({
                   Student
                 </TableCell>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '120px',
@@ -1454,9 +1494,20 @@ function CourseDashboard({
                   Student ID
                 </TableCell>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px',
+                  minWidth: '180px',
+                  maxWidth: '180px'
+                }}>
+                  Email
+                </TableCell>
+                <TableCell sx={{ 
+                  bgcolor: '#800000',
+                  fontWeight: 'bold',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '100px',
@@ -1465,9 +1516,9 @@ function CourseDashboard({
                   Course
                 </TableCell>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '120px',
@@ -1476,9 +1527,9 @@ function CourseDashboard({
                   Year & Section
                 </TableCell>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '100px',
@@ -1487,9 +1538,9 @@ function CourseDashboard({
                   Status
                 </TableCell>
                 <TableCell sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#f5f5f5',
+                  bgcolor: '#800000',
                   fontWeight: 'bold',
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                  color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
                   minWidth: '120px',
@@ -1517,19 +1568,38 @@ function CourseDashboard({
                           fontSize: '0.875rem'
                         }}
                       >
-                        {student.firstName?.charAt(0)}{student.lastName?.charAt(0)}
+                        {(student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()).charAt(0)}
                       </Avatar>
                       <Box sx={{ minWidth: 0, flex: 1 }}>
-                        <Typography variant="body2" sx={{ 
-                          fontWeight: 'medium',
-                          fontSize: '0.875rem',
-                          lineHeight: 1.2,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {student.firstName} {student.lastName}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="body2" sx={{ 
+                            fontWeight: 'medium',
+                            fontSize: '0.875rem',
+                            lineHeight: 1.2,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()}
+                          </Typography>
+                          {/* Show indicator for recent updates */}
+                          {student.lastUpdated && 
+                           new Date(student.lastUpdated) > new Date(Date.now() - 5 * 60 * 1000) && (
+                            <Chip
+                              label="Updated"
+                              size="small"
+                              sx={{
+                                height: 16,
+                                fontSize: '0.65rem',
+                                bgcolor: '#4caf50',
+                                color: 'white',
+                                '& .MuiChip-label': {
+                                  px: 0.5
+                                }
+                              }}
+                            />
+                          )}
+                        </Box>
                         <Typography variant="caption" sx={{ 
                           color: 'text.secondary',
                           fontSize: '0.75rem',
@@ -1541,12 +1611,29 @@ function CourseDashboard({
                     </Box>
                   </TableCell>
                   <TableCell sx={{ padding: '12px 16px', minWidth: '120px', maxWidth: '120px' }}>
+                    <Tooltip 
+                      title={student.lastUpdated ? `Last updated: ${new Date(student.lastUpdated).toLocaleString()}${student.updatedBy ? ` by ${student.updatedBy}` : ''}` : 'No update information'}
+                      arrow
+                    >
+                      <Typography variant="body2" sx={{ 
+                        fontSize: '0.875rem',
+                        fontWeight: 'medium',
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                        cursor: student.lastUpdated ? 'help' : 'default'
+                      }}>
+                        {student.studentId || 'N/A'}
+                      </Typography>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell sx={{ padding: '12px 16px', minWidth: '180px', maxWidth: '180px' }}>
                     <Typography variant="body2" sx={{ 
                       fontSize: '0.875rem',
-                      fontWeight: 'medium',
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
                     }}>
-                      {student.studentId || student.id}
+                      {student.email || 'N/A'}
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ padding: '12px 16px', minWidth: '100px', maxWidth: '100px' }}>
@@ -1671,92 +1758,191 @@ function StudentList({
   }, [activeTab]);
 
   useEffect(() => {
+    console.log('🎯 Setting up real-time listeners for students...');
+    
+    let unsubStudents = null;
+    let isSubscribed = true;
+    
+    // Function to fetch students data
     const fetchStudents = async () => {
       try {
-        console.log("Fetching students from Firebase...");
+        setLoading(true);
+        const snapshot = await getDocs(collection(db, "students"));
         
-        // Fetch from 'students' collection (manually added students)
-        const studentsQuerySnapshot = await getDocs(collection(db, "students"));
-        const studentsData = studentsQuerySnapshot.docs.map(doc => {
+        if (!isSubscribed) return;
+        
+        const studentsData = snapshot.docs.map(doc => {
           const data = doc.data();
           return {
             id: doc.id,
-            ...data,
-            studentId: data.id, // Map the 'id' field to 'studentId' for consistency
-            isRegisteredUser: Boolean(data.isRegistered) // Ensure boolean value
-          };
-        });
-        
-        // Fetch from 'users' collection (registered students)
-        const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
-        const registeredStudentsData = usersQuerySnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            firstName: data.firstName || data.fullName?.split(' ')[0] || '',
-            lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
-            email: data.email || '',
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+            email: data.registeredEmail || data.email || '', // Use registeredEmail first, then email field
             course: data.course || '',
             year: data.year || '',
             section: data.section || '',
-            studentId: data.studentId || '',
+            studentId: data.id || data.studentId || doc.id, // Use 'id' field first (SCC-22-00000002), then fallback to studentId, then doc.id
+            sex: data.sex || '',
+            age: data.age || '',
+            birthdate: data.birthdate || '',
+            contact: data.contact || '',
+            profilePic: data.profilePic || '',
             createdAt: data.createdAt || '',
             updatedAt: data.updatedAt || '',
-            profilePic: data.profilePic || '',
-            isRegisteredUser: true // Flag to identify registered users
+            lastUpdated: data.lastUpdated || '', // Add lastUpdated field
+            updatedBy: data.updatedBy || '', // Add updatedBy field
+            isRegisteredUser: Boolean(data.isRegistered), // Use isRegistered field from students collection
+            isRegistered: Boolean(data.isRegistered), // Add this field for consistency
+            registeredAt: data.registeredAt || '',
+            registeredEmail: data.registeredEmail || '',
+            registeredUserId: data.registeredUserId || '',
+            // Add additional fields that might be updated by students
+            middleInitial: data.middleInitial || '',
+            sccNumber: data.sccNumber || '',
+            fatherName: data.fatherName || '',
+            fatherOccupation: data.fatherOccupation || '',
+            motherName: data.motherName || '',
+            motherOccupation: data.motherOccupation || '',
+            guardian: data.guardian || '',
+            guardianContact: data.guardianContact || '',
+            homeAddress: data.homeAddress || '',
+            teacherId: data.teacherId || '',
+            classroomUpdatedAt: data.classroomUpdatedAt || '',
+            classroomUpdatedBy: data.classroomUpdatedBy || ''
           };
         });
         
-        // Combine both collections
-        const allStudents = [...studentsData, ...registeredStudentsData];
+        console.log('👥 All students loaded:', studentsData.length);
         
-        // Sort students by creation date (newest first)
-        const sortedStudents = allStudents.sort((a, b) => {
-          const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-          const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-          return dateB - dateA; // Descending order (newest first)
-        });
+        // Debug: Count registered vs unregistered
+        const registeredCount = studentsData.filter(s => s.isRegisteredUser).length;
+        const unregisteredCount = studentsData.filter(s => !s.isRegisteredUser).length;
+        console.log(`📈 Registration status: ${registeredCount} registered, ${unregisteredCount} unregistered`);
         
-        console.log("Students fetched successfully:", sortedStudents.length);
-        console.log("Manual students:", studentsData.length);
-        console.log("Registered students:", registeredStudentsData.length);
-        setStudents(sortedStudents);
-      } catch (error) {
-        console.error("Error fetching students:", error);
-        
-        // Try to load from localStorage as fallback
-        try {
-          const offlineStudents = JSON.parse(localStorage.getItem('offlineStudents') || '[]');
-          if (offlineStudents.length > 0) {
-            console.log("Loading students from offline storage:", offlineStudents.length);
-            setStudents(offlineStudents);
-            setSnackbar({ 
-              open: true, 
-              message: `Loaded ${offlineStudents.length} students from offline storage. Some features may be limited.`, 
-              severity: "warning" 
-            });
-          } else {
-            setStudents([]);
-            setSnackbar({ 
-              open: true, 
-              message: "Error loading students: " + error.message, 
-              severity: "error" 
-            });
-          }
-        } catch (offlineError) {
-          console.error("Error loading offline students:", offlineError);
-          setStudents([]);
-          setSnackbar({ 
-            open: true, 
-            message: "Error loading students: " + error.message, 
-            severity: "error" 
-          });
-        }
-      } finally {
+        setStudents(studentsData);
         setLoading(false);
+        
+        // Set up real-time listener after initial fetch
+        setupListener();
+      } catch (error) {
+        console.error('❌ Error fetching students:', error);
+        setLoading(false);
+        
+        // Retry with listener if direct fetch fails
+        setupListener();
       }
     };
+    
+    // Function to set up real-time listener
+    const setupListener = () => {
+      try {
+        if (unsubStudents) {
+          console.log('🔄 Cleaning up existing listener before creating new one...');
+          unsubStudents();
+        }
+        
+        // Real-time listener for students collection with error recovery
+        unsubStudents = onSnapshot(
+          collection(db, "students"),
+          {
+            // Include metadata changes to handle offline/online transitions
+            includeMetadataChanges: false
+          },
+          (snapshot) => {
+            if (!isSubscribed) return;
+            
+            const studentsData = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                firstName: data.firstName || '',
+                lastName: data.lastName || '',
+                fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+                email: data.registeredEmail || data.email || '',
+                course: data.course || '',
+                year: data.year || '',
+                section: data.section || '',
+                studentId: data.id || data.studentId || doc.id,
+                sex: data.sex || '',
+                age: data.age || '',
+                birthdate: data.birthdate || '',
+                contact: data.contact || '',
+                profilePic: data.profilePic || '',
+                createdAt: data.createdAt || '',
+                updatedAt: data.updatedAt || '',
+                lastUpdated: data.lastUpdated || '',
+                updatedBy: data.updatedBy || '',
+                isRegisteredUser: Boolean(data.isRegistered),
+                isRegistered: Boolean(data.isRegistered),
+                registeredAt: data.registeredAt || '',
+                registeredEmail: data.registeredEmail || '',
+                registeredUserId: data.registeredUserId || '',
+                middleInitial: data.middleInitial || '',
+                sccNumber: data.sccNumber || '',
+                fatherName: data.fatherName || '',
+                fatherOccupation: data.fatherOccupation || '',
+                motherName: data.motherName || '',
+                motherOccupation: data.motherOccupation || '',
+                guardian: data.guardian || '',
+                guardianContact: data.guardianContact || '',
+                homeAddress: data.homeAddress || '',
+                teacherId: data.teacherId || '',
+                classroomUpdatedAt: data.classroomUpdatedAt || '',
+                classroomUpdatedBy: data.classroomUpdatedBy || ''
+              };
+            });
+            
+            console.log('🔄 Students updated via listener:', studentsData.length);
+            
+            setStudents(studentsData);
+            setLoading(false);
+          },
+          (error) => {
+            console.error('❌ Error in students listener:', error);
+            
+            // If listener fails, fall back to periodic fetching
+            if (error.code === 'internal' || error.message.includes('INTERNAL ASSERTION FAILED')) {
+              console.warn('⚠️ Firestore listener encountered internal error. Falling back to direct fetch...');
+              
+              // Clean up failed listener
+              if (unsubStudents) {
+                try {
+                  unsubStudents();
+                } catch (e) {
+                  console.error('Error cleaning up listener:', e);
+                }
+                unsubStudents = null;
+              }
+              
+              // Fetch data directly
+              fetchStudents();
+            }
+            
+            setLoading(false);
+          }
+        );
+      } catch (error) {
+        console.error('❌ Error setting up listener:', error);
+        // Fall back to direct fetch if listener setup fails
+        fetchStudents();
+      }
+    };
+    
+    // Start with direct fetch, then set up listener
     fetchStudents();
+    
+    return () => {
+      console.log('🔄 Cleaning up students component...');
+      isSubscribed = false;
+      if (unsubStudents) {
+        try {
+          unsubStudents();
+        } catch (error) {
+          console.error('Error cleaning up listener:', error);
+        }
+      }
+    };
   }, []);
 
   // Keyboard shortcut for search (Ctrl+F or Cmd+F)
@@ -1829,7 +2015,7 @@ function StudentList({
         // Ensure isRegisteredUser is properly defined (default to false if undefined)
         const isRegistered = Boolean(student.isRegisteredUser);
         const isUnregistered = !isRegistered;
-        console.log(`Student ${student.firstName} ${student.lastName}: isRegisteredUser=${student.isRegisteredUser}, isRegistered=${isRegistered}, isUnregistered=${isUnregistered}`);
+        console.log(`Student ${student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()}: isRegisteredUser=${student.isRegisteredUser}, isRegistered=${isRegistered}, isUnregistered=${isUnregistered}`);
         return isUnregistered;
       });
       console.log('📊 Students after unregistered filter:', filtered.length);
@@ -1840,7 +2026,7 @@ function StudentList({
       filtered = filtered.filter(student => {
         // Ensure isRegisteredUser is properly defined (default to false if undefined)
         const isRegistered = Boolean(student.isRegisteredUser);
-        console.log(`Student ${student.firstName} ${student.lastName}: isRegisteredUser=${student.isRegisteredUser}, isRegistered=${isRegistered}`);
+        console.log(`Student ${student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()}: isRegisteredUser=${student.isRegisteredUser}, isRegistered=${isRegistered}`);
         return isRegistered;
       });
       console.log('📊 Students after registered filter:', filtered.length);
@@ -1854,9 +2040,9 @@ function StudentList({
 
   // Get unique courses for filter dropdown
   const availableCourses = useMemo(() => {
-    const courses = [...new Set(students.map(student => student.course).filter(course => course && course.trim() !== ''))];
+    // Use the predefined courses list instead of dynamically generating from students
     return courses.sort();
-  }, [students]);
+  }, []);
 
   // Pagination handlers
   const handleChangePage = (event, newPage) => {
@@ -1886,8 +2072,8 @@ function StudentList({
     // This is a simple approach that works across all browsers
     const printWindow = window.open('', '_blank');
     const tableData = filteredStudents.map(student => ({
-      name: `${student.firstName} ${student.lastName}`,
-      studentId: student.studentId || student.id,
+      name: student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim(),
+      studentId: student.studentId || 'N/A',
       course: student.course || 'Not Assigned',
       year: student.year || 'N/A',
       section: student.section || 'N/A',
@@ -1956,44 +2142,72 @@ function StudentList({
   const handleRefresh = useCallback(async () => {
     setLoading(true);
     try {
-      console.log("Refreshing students from Firebase...");
+      console.log("Refreshing students from Firebase (bypassing cache)...");
       
-      // Fetch from 'students' collection (manually added students)
-      const studentsQuerySnapshot = await getDocs(collection(db, "students"));
-      const studentsData = studentsQuerySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
-      // Fetch from 'users' collection (registered students)
-      const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
-      const registeredStudentsData = usersQuerySnapshot.docs.map(doc => {
+      // Fetch from 'students' collection (both registered and unregistered students)
+      // Use getDocsFromServer to bypass the cache and fix "INTERNAL ASSERTION FAILED" errors
+      const studentsQuerySnapshot = await getDocsFromServer(collection(db, "students"));
+      const studentsData = studentsQuerySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
-          firstName: data.firstName || data.fullName?.split(' ')[0] || '',
-          lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
           email: data.email || '',
           course: data.course || '',
           year: data.year || '',
           section: data.section || '',
-          studentId: data.studentId || '',
+          studentId: data.studentId || data.id || doc.id, // Use actual studentId if available, otherwise fallback to document id
+          sex: data.sex || '',
+          age: data.age || '',
+          birthdate: data.birthdate || '',
+          contact: data.contact || '',
+          profilePic: data.profilePic || '',
           createdAt: data.createdAt || '',
           updatedAt: data.updatedAt || '',
-          profilePic: data.profilePic || '',
-          isRegisteredUser: true
+          lastUpdated: data.lastUpdated || '', // Add lastUpdated field
+          updatedBy: data.updatedBy || '', // Add updatedBy field
+          isRegisteredUser: Boolean(data.isRegistered), // Ensure boolean value
+          isRegistered: Boolean(data.isRegistered), // Add this field for consistency
+          registeredAt: data.registeredAt || '',
+          registeredEmail: data.registeredEmail || '',
+          registeredUserId: data.registeredUserId || '',
+          // Add additional fields that might be updated by students
+          middleInitial: data.middleInitial || '',
+          sccNumber: data.sccNumber || '',
+          fatherName: data.fatherName || '',
+          fatherOccupation: data.fatherOccupation || '',
+          motherName: data.motherName || '',
+          motherOccupation: data.motherOccupation || '',
+          guardian: data.guardian || '',
+          guardianContact: data.guardianContact || '',
+          homeAddress: data.homeAddress || '',
+          teacherId: data.teacherId || '',
+          classroomUpdatedAt: data.classroomUpdatedAt || '',
+          classroomUpdatedBy: data.classroomUpdatedBy || ''
         };
-      });
-      
-      // Combine both collections
-      const allStudents = [...studentsData, ...registeredStudentsData];
+      }); // Show both registered and unregistered students
       
       // Sort students by creation date (newest first)
-      const sortedStudents = allStudents.sort((a, b) => {
+      const sortedStudents = studentsData.sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
         const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
         return dateB - dateA;
       });
       
+      // Debug: Count registered vs unregistered
+      const registeredCount = sortedStudents.filter(s => s.isRegisteredUser).length;
+      const unregisteredCount = sortedStudents.filter(s => !s.isRegisteredUser).length;
+      console.log(`🔄 Refresh complete: ${registeredCount} registered, ${unregisteredCount} unregistered`);
+      console.log('📧 Sample student email data (StudentList):', sortedStudents.slice(0, 3).map(s => ({ 
+        name: s.fullName, 
+        email: s.email, 
+        studentId: s.studentId 
+      })));
+      
       setStudents(sortedStudents);
-      setSnackbar({ open: true, message: "Student list refreshed successfully!", severity: "success" });
+      setSnackbar({ open: true, message: `Student list refreshed successfully! Loaded ${sortedStudents.length} students from server.`, severity: "success" });
     } catch (error) {
       console.error("Error refreshing students:", error);
       setSnackbar({ open: true, message: "Error refreshing students: " + error.message, severity: "error" });
@@ -2001,6 +2215,285 @@ function StudentList({
       setLoading(false);
     }
   }, []);
+
+  // Debug function to check specific student ID
+  const debugStudentId = useCallback(async (studentId) => {
+    try {
+      console.log(`🔍 Debugging student ID: ${studentId}`);
+      
+      // Check all collections for this student ID
+      const [studentsSnapshot, usersSnapshot, registeredStudentsSnapshot] = await Promise.all([
+        getDocs(query(collection(db, "students"), where("studentId", "==", studentId))),
+        getDocs(query(collection(db, "users"), where("studentId", "==", studentId))),
+        getDocs(query(collection(db, "RegisteredStudents"), where("studentId", "==", studentId)))
+      ]);
+      
+      // Also check by document ID
+      const [studentsByIdSnapshot, registeredStudentsByIdSnapshot] = await Promise.all([
+        getDocs(query(collection(db, "students"), where("id", "==", studentId))),
+        getDocs(query(collection(db, "RegisteredStudents"), where("id", "==", studentId)))
+      ]);
+      
+      const debugInfo = {
+        studentId,
+        studentsCollection: {
+          byStudentId: studentsSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() })),
+          byDocumentId: studentsByIdSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
+        },
+        usersCollection: {
+          byStudentId: usersSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
+        },
+        registeredStudentsCollection: {
+          byStudentId: registeredStudentsSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() })),
+          byDocumentId: registeredStudentsByIdSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
+        }
+      };
+      
+      console.log('🔍 Debug results:', debugInfo);
+      
+      // Analyze the situation
+      const hasUsersData = usersSnapshot.size > 0;
+      const hasStudentsData = studentsSnapshot.size > 0 || studentsByIdSnapshot.size > 0;
+      const hasRegisteredStudentsData = registeredStudentsSnapshot.size > 0 || registeredStudentsByIdSnapshot.size > 0;
+      
+      let analysisMessage = '';
+      if (hasUsersData && !hasStudentsData && !hasRegisteredStudentsData) {
+        analysisMessage = 'Student registered but missing from students collections. This is the issue!';
+      } else if (hasUsersData && hasRegisteredStudentsData && !hasStudentsData) {
+        analysisMessage = 'Student properly registered and in RegisteredStudents, but missing from original students collection.';
+      } else if (!hasUsersData && !hasStudentsData && !hasRegisteredStudentsData) {
+        analysisMessage = 'Student not found in any collection. May need to be imported first.';
+      } else {
+        analysisMessage = 'Student data found in some collections.';
+      }
+      
+      console.log('📊 Analysis:', analysisMessage);
+      
+      // Show results in snackbar
+      const totalFound = studentsSnapshot.size + usersSnapshot.size + registeredStudentsSnapshot.size + 
+                        studentsByIdSnapshot.size + registeredStudentsByIdSnapshot.size;
+      
+      setSnackbar({ 
+        open: true, 
+        message: `${analysisMessage} Found ${totalFound} records. Check console for details.`, 
+        severity: totalFound > 0 ? "success" : "warning" 
+      });
+      
+      return debugInfo;
+    } catch (error) {
+      console.error('❌ Error debugging student ID:', error);
+      setSnackbar({ 
+        open: true, 
+        message: `Error debugging student ID: ${error.message}`, 
+        severity: "error" 
+      });
+    }
+  }, []);
+
+  // Function to manually fix a student registration
+  const fixStudentRegistration = useCallback(async (studentId) => {
+    try {
+      console.log(`🔧 Attempting to fix registration for student ID: ${studentId}`);
+      
+      // First, check if student exists in users collection
+      const usersSnapshot = await getDocs(query(collection(db, "users"), where("studentId", "==", studentId)));
+      
+      if (usersSnapshot.empty) {
+        setSnackbar({ 
+          open: true, 
+          message: `Student ${studentId} not found in users collection. Cannot fix registration.`, 
+          severity: "error" 
+        });
+        return;
+      }
+      
+      const userDoc = usersSnapshot.docs[0];
+      const userData = userDoc.data();
+      
+      console.log('📋 Found user data:', userData);
+      
+      // Check if already exists in RegisteredStudents
+      const registeredStudentsSnapshot = await getDocs(query(collection(db, "RegisteredStudents"), where("studentId", "==", studentId)));
+      
+      if (!registeredStudentsSnapshot.empty) {
+        setSnackbar({ 
+          open: true, 
+          message: `Student ${studentId} already exists in RegisteredStudents collection.`, 
+          severity: "info" 
+        });
+        return;
+      }
+      
+      // Create RegisteredStudents entry
+      const registeredStudentData = {
+        studentId: studentId,
+        email: userData.email,
+        fullName: userData.fullName,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        course: userData.course || '',
+        year: userData.year || '',
+        section: userData.section || '',
+        sex: userData.sex || '',
+        contact: userData.contact || '',
+        birthdate: userData.birthdate || '',
+        age: userData.age || '',
+        profilePic: userData.profilePic || '',
+        uid: userData.uid,
+        registeredAt: userData.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        transferredFromStudents: userData.transferredFromStudents || false,
+        transferDate: userData.transferDate || null,
+        originalStudentData: userData.originalStudentData || null,
+        manuallyFixed: true,
+        fixedAt: new Date().toISOString()
+      };
+      
+      console.log('📦 Creating RegisteredStudents entry:', registeredStudentData);
+      
+      await setDoc(doc(db, 'RegisteredStudents', studentId), registeredStudentData);
+      
+      // Also update the original student record if it exists
+      const studentsSnapshot = await getDocs(query(collection(db, "students"), where("studentId", "==", studentId)));
+      if (!studentsSnapshot.empty) {
+        const studentDoc = studentsSnapshot.docs[0];
+        await updateDoc(studentDoc.ref, {
+          isRegistered: true,
+          registeredAt: new Date().toISOString(),
+          registeredEmail: userData.email,
+          transferredToUsers: true,
+          transferredToRegisteredStudents: true,
+          manuallyFixed: true
+        });
+        console.log('✅ Updated original student record');
+      }
+      
+      setSnackbar({ 
+        open: true, 
+        message: `Successfully fixed registration for ${studentId}! Student should now appear in registered table.`, 
+        severity: "success" 
+      });
+      
+      // Refresh the student list
+      setTimeout(() => {
+        handleRefresh();
+      }, 1000);
+      
+    } catch (error) {
+      console.error('❌ Error fixing student registration:', error);
+      setSnackbar({ 
+        open: true, 
+        message: `Error fixing registration: ${error.message}`, 
+        severity: "error" 
+      });
+    }
+  }, [handleRefresh]);
+
+  // Function to test the complete registration process
+  const testRegistrationProcess = useCallback(async (studentId) => {
+    try {
+      console.log(`🧪 Testing registration process for: ${studentId}`);
+      
+      // Check if student exists in users collection
+      const usersSnapshot = await getDocs(query(collection(db, "users"), where("studentId", "==", studentId)));
+      
+      if (usersSnapshot.empty) {
+        setSnackbar({ 
+          open: true, 
+          message: `Student ${studentId} not found in users collection. Cannot test registration process.`, 
+          severity: "error" 
+        });
+        return;
+      }
+      
+      const userDoc = usersSnapshot.docs[0];
+      const userData = userDoc.data();
+      
+      console.log('📋 Found user data:', userData);
+      
+      // Simulate the registration process by calling createSingleUser logic
+      const studentData = {
+        id: studentId,
+        studentId: studentId,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        fullName: userData.fullName || '',
+        email: userData.email || '',
+        sex: userData.sex || '',
+        course: userData.course || '',
+        year: userData.year || '',
+        section: userData.section || '',
+        contact: userData.contact || '',
+        birthdate: userData.birthdate || '',
+        age: userData.age || '',
+        image: userData.profilePic || '',
+        createdAt: userData.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isRegistered: true,
+        registeredAt: userData.createdAt || new Date().toISOString(),
+        registeredEmail: userData.email,
+        registeredUserId: userData.uid,
+        transferredToUsers: true,
+        transferredToRegisteredStudents: true,
+        source: 'manual_test',
+        uid: userData.uid
+      };
+      
+      console.log('📦 Creating student record in students collection:', studentData);
+      
+      // Create/update student record in students collection
+      await setDoc(doc(db, 'students', studentId), studentData);
+      console.log('✅ Student record created/updated in students collection');
+      
+      // Also create RegisteredStudents entry
+      const registeredStudentData = {
+        studentId: studentId,
+        email: userData.email,
+        fullName: userData.fullName,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        course: userData.course || '',
+        year: userData.year || '',
+        section: userData.section || '',
+        sex: userData.sex || '',
+        contact: userData.contact || '',
+        birthdate: userData.birthdate || '',
+        age: userData.age || '',
+        profilePic: userData.profilePic || '',
+        uid: userData.uid,
+        registeredAt: userData.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        transferredFromStudents: false,
+        transferDate: null,
+        originalStudentData: null,
+        manuallyTested: true,
+        testedAt: new Date().toISOString()
+      };
+      
+      console.log('📦 Creating RegisteredStudents entry:', registeredStudentData);
+      await setDoc(doc(db, 'RegisteredStudents', studentId), registeredStudentData);
+      console.log('✅ RegisteredStudents entry created');
+      
+      setSnackbar({ 
+        open: true, 
+        message: `Successfully tested registration process for ${studentId}! Student should now appear in both collections.`, 
+        severity: "success" 
+      });
+      
+      // Refresh the student list
+      setTimeout(() => {
+        handleRefresh();
+      }, 1000);
+      
+    } catch (error) {
+      console.error('❌ Error testing registration process:', error);
+      setSnackbar({ 
+        open: true, 
+        message: `Error testing registration process: ${error.message}`, 
+        severity: "error" 
+      });
+    }
+  }, [handleRefresh]);
 
   // Handle view student details
   const handleViewStudent = (student) => {
@@ -2016,84 +2509,15 @@ function StudentList({
     setOpenEditStudent(true);
   };
 
-  // Handle delete student - move to recycle bin
+  // Handle delete student
   const handleDeleteStudent = async (student) => {
-    if (window.confirm(`Are you sure you want to delete ${student.firstName} ${student.lastName}? This will move the student to the recycle bin.`)) {
+    if (window.confirm(`Are you sure you want to delete ${student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()}?`)) {
       try {
-        console.log("Moving student to recycle bin:", student.id);
+        await deleteDoc(doc(db, "students", student.id));
+        setSnackbar({ open: true, message: "Student deleted successfully!", severity: "success" });
         
-        // Only move to recycle bin if it's not a registered user
-        if (!student.isRegisteredUser) {
-          // Move to recycle bin instead of permanent deletion
-          const studentData = {
-            ...student,
-            deletedAt: new Date().toISOString(),
-            deletedBy: 'admin', // You can get this from current user context
-            originalCollection: 'students'
-          };
-          
-          // Add to recycle bin
-          await addDoc(collection(db, "recycle_bin_students"), studentData);
-          
-          // Remove from original collection
-          await deleteDoc(doc(db, "students", student.id));
-          
-          await logActivity({ message: `Moved student to recycle bin: ${student.firstName} ${student.lastName}`, type: 'delete_student' });
-          setSnackbar({ open: true, message: "Student moved to recycle bin successfully!", severity: "success" });
-        } else {
-          setSnackbar({ 
-            open: true, 
-            message: "Cannot delete registered users. They must be removed from the users collection.", 
-            severity: "warning" 
-          });
-          return;
-        }
-        
-        // Refresh the student list with error handling
-        try {
-          // Fetch from 'students' collection (manually added students)
-          const studentsQuerySnapshot = await getDocs(collection(db, "students"));
-          const studentsData = studentsQuerySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          
-          // Fetch from 'users' collection (registered students)
-          const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
-          const registeredStudentsData = usersQuerySnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              firstName: data.firstName || data.fullName?.split(' ')[0] || '',
-              lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
-              email: data.email || '',
-              course: data.course || '',
-              year: data.year || '',
-              section: data.section || '',
-              studentId: data.studentId || '',
-              createdAt: data.createdAt || '',
-              updatedAt: data.updatedAt || '',
-              profilePic: data.profilePic || '',
-              isRegisteredUser: true
-            };
-          });
-          
-          // Combine both collections
-          const allStudents = [...studentsData, ...registeredStudentsData];
-          
-          // Sort students by creation date (newest first)
-          const sortedStudents = allStudents.sort((a, b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-            const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-            return dateB - dateA;
-          });
-          
-          setStudents(sortedStudents);
-        } catch (refreshError) {
-          console.error("Error refreshing student list:", refreshError);
-          setSnackbar({ 
-            open: true, 
-            message: "Student deleted but error refreshing list: " + refreshError.message, 
-            severity: "warning" 
-          });
-        }
+        // Refresh the student list
+        setStudents(prev => prev.filter(s => s.id !== student.id));
       } catch (error) {
         console.error("Error deleting student:", error);
         setSnackbar({ open: true, message: "Error deleting student: " + error.message, severity: "error" });
@@ -2628,16 +3052,16 @@ School Administration
               value={search}
               onChange={e => setSearch(e.target.value)}
               size="small"
-              placeholder="Search by name, course, ID, year, or section..."
+              placeholder="Search students..."
               sx={{ 
-                width: '300px',
+                width: '200px',
                 bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#ffffff',
                 '& .MuiOutlinedInput-root': {
                   '&:hover fieldset': {
-                    borderColor: '#1976d2',
+                    borderColor: '#800000',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#1976d2',
+                    borderColor: '#800000',
                     borderWidth: 2,
                   },
                 }
@@ -2645,7 +3069,7 @@ School Administration
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Search sx={{ fontSize: 18, color: search.trim() ? '#1976d2' : 'text.secondary' }} />
+                    <Search sx={{ fontSize: 18, color: search.trim() ? '#800000' : 'text.secondary' }} />
                   </InputAdornment>
                 ),
                 endAdornment: search.trim() && (
@@ -2655,7 +3079,7 @@ School Administration
                       onClick={() => setSearch("")}
                       sx={{ 
                         color: 'text.secondary',
-                        '&:hover': { color: '#1976d2' }
+                        '&:hover': { color: '#800000' }
                       }}
                     >
                       ✕
@@ -2674,10 +3098,10 @@ School Administration
                 minWidth: 200,
                 '& .MuiOutlinedInput-root': {
                   '&:hover fieldset': {
-                    borderColor: '#1976d2',
+                    borderColor: '#800000',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#1976d2',
+                    borderColor: '#800000',
                     borderWidth: 2,
                   },
                 }
@@ -2718,6 +3142,17 @@ School Administration
                   maxWidth: '120px'
                 }}>
                   Student ID
+                </TableCell>
+                <TableCell sx={{ 
+                  bgcolor: '#800000',
+                  fontWeight: 'bold',
+                  color: '#ffffff',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px',
+                  minWidth: '180px',
+                  maxWidth: '180px'
+                }}>
+                  Email
                 </TableCell>
                 <TableCell sx={{ 
                   bgcolor: '#800000',
@@ -2796,7 +3231,7 @@ School Administration
                           fontSize: '0.75rem'
                         }}
                       >
-                        {student.firstName?.charAt(0)}{student.lastName?.charAt(0)}
+                        {(student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()).charAt(0)}
                       </Avatar>
                       <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Typography variant="body2" sx={{ 
@@ -2807,7 +3242,7 @@ School Administration
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap'
                         }}>
-                          {student.firstName} {student.lastName}
+                          {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()}
                         </Typography>
                         <Typography variant="caption" sx={{ 
                           color: 'text.secondary',
@@ -2820,16 +3255,27 @@ School Administration
                     </Box>
                   </TableCell>
                   <TableCell sx={{ padding: '8px 12px', minWidth: '120px', maxWidth: '120px' }}>
-                    <Tooltip title={student.studentId || student.id || 'N/A'} arrow>
+                    <Tooltip title={student.studentId || 'N/A'} arrow>
                       <Typography variant="body2" sx={{ 
                         fontSize: '0.8rem',
                         lineHeight: 1.2,
                         fontFamily: 'monospace',
                         cursor: 'help'
                       }}>
-                        {student.studentId || student.id || 'N/A'}
+                        {student.studentId || 'N/A'}
                       </Typography>
                     </Tooltip>
+                  </TableCell>
+                  <TableCell sx={{ padding: '8px 12px', minWidth: '180px', maxWidth: '180px' }}>
+                    <Typography variant="body2" sx={{ 
+                      fontSize: '0.8rem',
+                      lineHeight: 1.2,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {student.email || 'N/A'}
+                    </Typography>
                   </TableCell>
                   <TableCell sx={{ padding: '8px 12px', minWidth: '100px', maxWidth: '100px' }}>
                     <Chip 
@@ -3145,7 +3591,7 @@ function EditStudentForm({ student, onClose, onSuccess }) {
   const theme = useTheme();
   const [formKey, setFormKey] = useState(0); // Force re-render key
   const [profile, setProfile] = useState({
-    id: student.studentId || student.id || "",
+    id: student.studentId || "",
     lastName: student.lastName || "",
     firstName: student.firstName || "",
     middleInitial: student.middleInitial || "",
@@ -3212,7 +3658,7 @@ function EditStudentForm({ student, onClose, onSuccess }) {
   const resetForm = () => {
     console.log('🔄 Resetting EditStudentForm');
     setProfile({
-      id: student.studentId || student.id || "",
+      id: student.studentId || "",
       lastName: student.lastName || "",
       firstName: student.firstName || "",
       middleInitial: student.middleInitial || "",
@@ -3242,7 +3688,6 @@ function EditStudentForm({ student, onClose, onSuccess }) {
     }));
   };
 
-  // Handle student ID validation
   const handleStudentIdChange = async (e) => {
     const studentId = e.target.value;
     setProfile(prev => ({ ...prev, id: studentId }));
@@ -3347,6 +3792,7 @@ function EditStudentForm({ student, onClose, onSuccess }) {
       // Update data in Firebase
       const dataToUpdate = {
         ...profile,
+        fullName: `${profile.firstName || ''} ${profile.lastName || ''}`.trim(),
         image: imageUrl,
         updatedAt: new Date().toISOString()
       };
@@ -3466,61 +3912,103 @@ function EditStudentForm({ student, onClose, onSuccess }) {
               <MenuItem value="E">E</MenuItem>
             </TextField>
           </Grid>
-          <Grid item xs={12}>
-            <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>Profile Image</Typography>
-          </Grid>
           <Grid item xs={12} sm={6}>
-            <Button 
-              variant="contained" 
-              component="label" 
-              startIcon={<CloudUpload />}
-              sx={{ 
-                mt: 2,
-                backgroundColor: 'white',
-                color: 'black',
-                border: '1px solid #ccc',
-                '&:hover': {
-                  backgroundColor: '#1976d2',
-                  color: 'white',
-                  border: '1px solid #1976d2'
-                }
-              }}
-            >
-              Update Profile Image
-              <input type="file" accept="image/*" hidden onChange={handleImage} />
-            </Button>
-            {profile.image && (
-              <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar src={profile.image} sx={{ width: 80, height: 80 }} />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Button 
+                  variant="outlined" 
+                  component="label" 
+                  startIcon={<CloudUpload />}
+                  sx={{ 
+                    bgcolor: '#ffffff', 
+                    color: '#000000', 
+                    borderColor: '#000000', 
+                    fontSize: '0.75rem',
+                    fontWeight: 400,
+                    textTransform: 'none',
+                    padding: '6px 12px',
+                    minHeight: '32px',
+                    boxShadow: 'none',
+                    '&:hover': { 
+                      bgcolor: '#800000', 
+                      color: '#fff', 
+                      borderColor: '#800000',
+                      boxShadow: 'none'
+                    }
+                  }}
+                >
+                  Update Profile Image
+                  <input type="file" accept="image/*" hidden onChange={handleImage} />
+                </Button>
+                {profile.image && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar src={profile.image} sx={{ width: 40, height: 40 }} />
+                  </Box>
+                )}
               </Box>
-            )}
-          </Grid>
-          <Grid item xs={12}>
-            <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-              <Button 
-                type="submit" 
-                variant="contained" 
-                color="primary" 
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Updating..." : "Update Student"}
-              </Button>
-              <Button 
-                variant="outlined" 
-                onClick={resetForm}
-                disabled={isSubmitting}
-                sx={{ color: '#666', borderColor: '#666' }}
-              >
-                🔄 Reset
-              </Button>
-              <Button 
-                variant="outlined" 
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-            </Stack>
+              <Stack direction="row" spacing={0.5} sx={{ alignSelf: 'flex-end' }}>
+                <Button 
+                  type="submit" 
+                  variant="outlined"
+                  disabled={isSubmitting}
+                  sx={{ 
+                    color: '#666666',
+                    padding: '4px',
+                    fontSize: '0.75rem',
+                    fontWeight: 400,
+                    textTransform: 'none',
+                    minHeight: '32px',
+                    boxShadow: 'none',
+                    '&:hover': { 
+                      color: '#f57c00',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(245, 124, 0, 0.1)' : 'rgba(245, 124, 0, 0.04)'
+                    }
+                  }}
+                >
+                  {isSubmitting ? "Updating..." : "Update Student"}
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  onClick={resetForm}
+                  disabled={isSubmitting}
+                  sx={{ 
+                    color: '#666666',
+                    padding: '4px',
+                    fontSize: '0.75rem',
+                    fontWeight: 400,
+                    textTransform: 'none',
+                    minHeight: '32px',
+                    boxShadow: 'none',
+                    '&:hover': { 
+                      color: '#1976d2',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.1)' : 'rgba(25, 118, 210, 0.04)'
+                    }
+                  }}
+                >
+                  🔄 Reset
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                  sx={{ 
+                    color: '#666666',
+                    padding: '4px',
+                    fontSize: '0.75rem',
+                    fontWeight: 400,
+                    textTransform: 'none',
+                    minHeight: '32px',
+                    boxShadow: 'none',
+                    '&:hover': { 
+                      color: '#d32f2f',
+                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(211, 47, 47, 0.1)' : 'rgba(211, 47, 47, 0.04)'
+                    }
+                  }}
+                >
+                  Cancel
+                </Button>
+              </Stack>
+            </Box>
           </Grid>
         </Grid>
       </form>
@@ -3708,18 +4196,12 @@ export default function Students() {
       <Dialog 
         open={openViewDetails} 
         onClose={() => setOpenViewDetails(false)} 
-        maxWidth="sm" 
-        fullWidth
-        PaperProps={{
-          sx: {
-            maxHeight: '90vh',
-            overflow: 'hidden'
-          }
-        }}
+        maxWidth="md"
+        fullWidth={false}
       >
-        <DialogTitle sx={{ pb: 1 }}>
+        <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">
+            <Typography variant="h6" sx={{ color: '#800000' }}>
               Student Details - {studentToView && `${studentToView.firstName} ${studentToView.lastName}`}
             </Typography>
             <IconButton onClick={() => setOpenViewDetails(false)} size="small">
@@ -3727,17 +4209,7 @@ export default function Students() {
             </IconButton>
           </Box>
         </DialogTitle>
-        <DialogContent 
-          sx={{ 
-            overflow: 'hidden',
-            p: 2,
-            '&::-webkit-scrollbar': {
-              display: 'none'
-            },
-            msOverflowStyle: 'none',
-            scrollbarWidth: 'none'
-          }}
-        >
+        <DialogContent>
           {studentToView && (
             <Box>
               <Grid container spacing={1.5}>
@@ -3785,7 +4257,7 @@ export default function Students() {
                         display: 'block',
                         textAlign: 'center'
                       }}>
-                        {studentToView.studentId || studentToView.id || 'N/A'}
+                        {studentToView.studentId || 'N/A'}
                       </Typography>
                     </Typography>
                   </Grid>
@@ -3957,16 +4429,60 @@ export default function Students() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => window.print()} color="info">Print</Button>
-          <Button onClick={() => setOpenViewDetails(false)}>Close</Button>
+          <Button 
+            onClick={() => window.print()}
+            variant="outlined"
+            sx={{ 
+              bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff', 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+              borderColor: theme.palette.mode === 'dark' ? '#666666' : '#000000', 
+              fontSize: '0.75rem',
+              fontWeight: 400,
+              textTransform: 'none',
+              padding: '6px 12px',
+              minHeight: '32px',
+              boxShadow: 'none',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000',
+                boxShadow: 'none'
+              }
+            }}
+          >
+            Print
+          </Button>
+          <Button 
+            onClick={() => setOpenViewDetails(false)}
+            variant="outlined"
+            sx={{ 
+              bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#ffffff', 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+              borderColor: theme.palette.mode === 'dark' ? '#666666' : '#000000', 
+              fontSize: '0.75rem',
+              fontWeight: 400,
+              textTransform: 'none',
+              padding: '6px 12px',
+              minHeight: '32px',
+              boxShadow: 'none',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000',
+                boxShadow: 'none'
+              }
+            }}
+          >
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
 
       {/* Edit Student Modal */}
-      <Dialog open={openEditStudent} onClose={() => setOpenEditStudent(false)} maxWidth="md" fullWidth>
+      <Dialog open={openEditStudent} onClose={() => setOpenEditStudent(false)} maxWidth="md" fullWidth={false}>
         <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">
+            <Typography variant="h6" sx={{ color: '#800000' }}>
               Edit Student - {studentToEdit && `${studentToEdit.firstName} ${studentToEdit.lastName}`}
             </Typography>
             <IconButton onClick={() => setOpenEditStudent(false)} size="small">

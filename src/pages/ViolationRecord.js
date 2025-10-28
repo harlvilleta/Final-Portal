@@ -942,10 +942,10 @@ School Administration
             <TextField
               value={historyFilter.name}
               onChange={(e) => setHistoryFilter({...historyFilter, name: e.target.value})}
-              placeholder="Search by name, ID, violation, or location..."
+              placeholder="Search violations..."
               size="small"
               sx={{ 
-                width: '300px',
+                width: '200px',
                 '& .MuiOutlinedInput-root': {
                   bgcolor: '#ffffff',
                   '&:hover': {
@@ -978,37 +978,41 @@ School Administration
             }}>
               <Table stickyHeader>
                 <TableHead>
-                  <TableRow sx={{ 
-                    bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#f5f5f5' 
-                  }}>
+                  <TableRow>
                     <TableCell sx={{ 
+                      bgcolor: '#800000',
                       fontWeight: 600, 
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      color: '#ffffff',
                       borderBottom: '2px solid #e0e0e0'
                     }}>Name</TableCell>
                     <TableCell sx={{ 
+                      bgcolor: '#800000',
                       fontWeight: 600, 
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      color: '#ffffff',
                       borderBottom: '2px solid #e0e0e0'
                     }}>Student ID</TableCell>
                     <TableCell sx={{ 
+                      bgcolor: '#800000',
                       fontWeight: 600, 
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      color: '#ffffff',
                       borderBottom: '2px solid #e0e0e0'
                     }}>Violation</TableCell>
                     <TableCell sx={{ 
+                      bgcolor: '#800000',
                       fontWeight: 600, 
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      color: '#ffffff',
                       borderBottom: '2px solid #e0e0e0'
                     }}>Date</TableCell>
                     <TableCell sx={{ 
+                      bgcolor: '#800000',
                       fontWeight: 600, 
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      color: '#ffffff',
                       borderBottom: '2px solid #e0e0e0'
                     }}>Location</TableCell>
                     <TableCell sx={{ 
+                      bgcolor: '#800000',
                       fontWeight: 600, 
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      color: '#ffffff',
                       borderBottom: '2px solid #e0e0e0'
                     }} align="center">Actions</TableCell>
                   </TableRow>
@@ -1212,37 +1216,42 @@ School Administration
           <Table size="small" stickyHeader sx={{ minWidth: 880 }}>
             <TableHead>
                 <TableRow sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#f5f5f5' 
+                  bgcolor: '#800000' 
                 }}>
                   <TableCell sx={{ 
+                    bgcolor: '#800000',
                     minWidth: 160, 
                     fontSize: 16, 
                     fontWeight: 700, 
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
+                    color: '#ffffff' 
                   }}>Name</TableCell>
                   <TableCell sx={{ 
+                    bgcolor: '#800000',
                     minWidth: 110, 
                     fontSize: 16, 
                     fontWeight: 700, 
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
+                    color: '#ffffff' 
                   }}>Student ID</TableCell>
                   <TableCell sx={{ 
+                    bgcolor: '#800000',
                     minWidth: 180, 
                     fontSize: 16, 
                     fontWeight: 700, 
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
+                    color: '#ffffff' 
                   }}>Violation</TableCell>
                   <TableCell sx={{ 
+                    bgcolor: '#800000',
                     minWidth: 110, 
                     fontSize: 16, 
                     fontWeight: 700, 
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
+                    color: '#ffffff' 
                   }}>Date</TableCell>
                   <TableCell sx={{ 
+                    bgcolor: '#800000',
                     minWidth: 120, 
                     fontSize: 16, 
                     fontWeight: 700, 
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' 
+                    color: '#ffffff' 
                   }} align="center">Actions</TableCell>
                 </TableRow>
             </TableHead>
@@ -1335,8 +1344,8 @@ School Administration
         </DialogActions>
       </Dialog>
       {/* View Violation Modal (Detail document-style with print and attach/replace evidence) */}
-      <Dialog open={!!viewViolation} onClose={() => setViewViolation(null)} maxWidth="sm" fullWidth>
-        <DialogTitle className="no-print" sx={{ fontWeight: 700 }}>Student Violation Record</DialogTitle>
+      <Dialog open={!!viewViolation} onClose={() => setViewViolation(null)} maxWidth="md" fullWidth>
+        <DialogTitle className="no-print" sx={{ fontWeight: 700, color: '#800000' }}>Student Violation Record</DialogTitle>
         <DialogContent dividers>
           {viewViolation && (
             <Box id="violation-document" sx={{ typography: 'body1' }}>
@@ -1401,8 +1410,8 @@ School Administration
         </DialogActions>
       </Dialog>
       {/* Edit Violation Modal */}
-      <Dialog open={!!editViolation} onClose={() => setEditViolation(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Edit Violation</DialogTitle>
+      <Dialog open={!!editViolation} onClose={() => setEditViolation(null)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ color: '#800000' }}>Edit Violation</DialogTitle>
         <DialogContent dividers>
           {editViolation && (
             <Box component="form" onSubmit={e => { e.preventDefault(); handleEditSave(editViolation); }}>

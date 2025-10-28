@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork } from "firebase/firestore";
+import { getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork, clearIndexedDbPersistence, terminate } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { addDoc, collection } from "firebase/firestore";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
@@ -94,4 +94,39 @@ export async function logActivity({ message, type, user }) {
     // Optionally handle/log error
     console.warn('Failed to log activity after retries:', e);
   }
-} 
+}
+
+// Clear Firestore cache to fix "INTERNAL ASSERTION FAILED" errors
+// This is useful after bulk imports or when encountering cache inconsistencies
+export const clearFirestoreCache = async () => {
+  try {
+    console.log('🧹 Clearing Firestore cache...');
+    
+    // Terminate the current Firestore instance
+    await terminate(db);
+    console.log('✅ Firestore instance terminated');
+    
+    // Clear the IndexedDB persistence
+    await clearIndexedDbPersistence(db);
+    console.log('✅ IndexedDB persistence cleared');
+    
+    // Re-enable network to restart the instance
+    await enableNetwork(db);
+    console.log('✅ Firestore cache cleared and reconnected');
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Error clearing Firestore cache:', error);
+    
+    // If clearing fails, try to at least restart the network
+    try {
+      await disableNetwork(db);
+      await enableNetwork(db);
+      console.log('✅ Firestore network restarted as fallback');
+      return true;
+    } catch (fallbackError) {
+      console.error('❌ Fallback network restart failed:', fallbackError);
+      return false;
+    }
+  }
+}; 

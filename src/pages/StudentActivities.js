@@ -325,6 +325,7 @@ export default function StudentActivities() {
           placeholder="Search activities..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          size="small"
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">

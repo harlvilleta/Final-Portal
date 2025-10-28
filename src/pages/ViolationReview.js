@@ -233,34 +233,41 @@ export default function ViolationReview() {
             <Table>
               <TableHead>
                 <TableRow sx={{ 
-                  bgcolor: theme.palette.mode === 'dark' ? '#800000' : '#fafafa' 
+                  bgcolor: '#800000' 
                 }}>
                   <TableCell sx={{ 
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    bgcolor: '#800000',
+                    color: '#ffffff', 
                     fontWeight: 600 
                   }}>Date Reported</TableCell>
                   <TableCell sx={{ 
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    bgcolor: '#800000',
+                    color: '#ffffff', 
                     fontWeight: 600 
                   }}>Student</TableCell>
                   <TableCell sx={{ 
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    bgcolor: '#800000',
+                    color: '#ffffff', 
                     fontWeight: 600 
                   }}>Teacher</TableCell>
                   <TableCell sx={{ 
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    bgcolor: '#800000',
+                    color: '#ffffff', 
                     fontWeight: 600 
                   }}>Violation Type</TableCell>
                   <TableCell sx={{ 
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    bgcolor: '#800000',
+                    color: '#ffffff', 
                     fontWeight: 600 
                   }}>Severity</TableCell>
                   <TableCell sx={{ 
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    bgcolor: '#800000',
+                    color: '#ffffff', 
                     fontWeight: 600 
                   }}>Status</TableCell>
                   <TableCell sx={{ 
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                    bgcolor: '#800000',
+                    color: '#ffffff', 
                     fontWeight: 600 
                   }}>Actions</TableCell>
                 </TableRow>
