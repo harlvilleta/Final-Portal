@@ -3052,9 +3052,9 @@ School Administration
               value={search}
               onChange={e => setSearch(e.target.value)}
               size="small"
-              placeholder="Search students..."
+              placeholder="Search students by name, email, course, ID, year, or section..."
               sx={{ 
-                width: '200px',
+                width: '500px',
                 bgcolor: theme.palette.mode === 'dark' ? '#404040' : '#ffffff',
                 '& .MuiOutlinedInput-root': {
                   '&:hover fieldset': {

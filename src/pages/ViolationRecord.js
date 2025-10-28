@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Typography, Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, TextField, Grid, Chip, Avatar, InputAdornment, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Card, CardContent, CardHeader, Divider, Tooltip, CircularProgress, Snackbar, Alert, Stack, Autocomplete, useTheme } from "@mui/material";
+import { Typography, Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, TextField, Grid, Chip, Avatar, InputAdornment, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Card, CardContent, CardHeader, Divider, Tooltip, CircularProgress, Snackbar, Alert, Stack, Autocomplete, useTheme, TablePagination } from "@mui/material";
 import { collection, getDocs, addDoc, doc, deleteDoc, updateDoc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { validateStudentId } from "../utils/studentValidation";
@@ -63,7 +63,7 @@ export default function ViolationRecord() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [selectedMeetingStudent, setSelectedMeetingStudent] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [openAddModal, setOpenAddModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [historyFilter, setHistoryFilter] = useState({
     name: '',
@@ -71,10 +71,12 @@ export default function ViolationRecord() {
     violation: '',
     location: ''
   });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(8);
 
-  const toggleAddForm = () => {
-    setShowAddForm(!showAddForm);
-    if (showAddForm) {
+  const toggleAddModal = () => {
+    setOpenAddModal(!openAddModal);
+    if (openAddModal) {
       // Reset form when closing
       setForm({
         studentId: "",
@@ -226,45 +228,37 @@ export default function ViolationRecord() {
     }
     
     setIsSubmitting(true);
-    let imageUrl = null;
-    let uploadTimedOut = false;
     try {
-      if (imageFile) {
-        try {
-          const storageRef = ref(storage, `violation_evidence/${form.studentId}_${Date.now()}_${imageFile.name}`);
-          // Add timeout for uploadBytes (15s)
-          const uploadPromise = uploadBytes(storageRef, imageFile);
-          const uploadTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Image upload timed out')), 15000));
-          await Promise.race([uploadPromise, uploadTimeout]);
-          // Only try getDownloadURL if uploadBytes succeeded
-          try {
-            const urlPromise = getDownloadURL(storageRef);
-            const urlTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Image URL fetch timed out')), 15000));
-            imageUrl = await Promise.race([urlPromise, urlTimeout]);
-          } catch (urlErr) {
-            console.error("Image getDownloadURL error:", urlErr);
-            setSnackbar({ open: true, message: "Image uploaded but URL fetch failed. Violation will be saved without image.", severity: "warning" });
-            imageUrl = null;
-          }
-        } catch (imgErr) {
-          console.error("Image upload error:", imgErr);
-          uploadTimedOut = true;
-          setSnackbar({ open: true, message: "Image upload failed or timed out. Violation will be saved without image.", severity: "warning" });
-          imageUrl = null;
-        }
-      }
-      
       // Get student details for notification
       const student = students.find(s => s.id === form.studentId);
       const studentEmail = student?.email;
       const studentName = student ? `${student.firstName} ${student.lastName}` : form.studentName;
       
+      // Admin-created violations are automatically approved
       const violationData = {
-        ...form,
-        image: imageUrl,
+        studentId: form.studentId,
+        studentIdNumber: form.studentId,
+        studentName: studentName,
+        studentEmail: studentEmail,
+        violation: form.violation,
+        violationType: form.violation,
+        classification: form.classification,
+        severity: form.severity,
+        date: form.date,
+        description: form.description,
+        witnesses: form.witnesses,
+        image: imageFile,  // Save base64 image directly
         timestamp: new Date().toISOString(),
         createdAt: new Date().toISOString(),
-        status: "Pending"
+        // Auto-approve admin-created violations
+        status: "Approved",
+        adminReviewed: true,
+        adminDecision: "Approved",
+        adminReviewDate: new Date().toISOString(),
+        adminReviewReason: "Created by Administrator",
+        reportedBy: "Admin",
+        reportedByName: "Administrator",
+        reportedByEmail: "admin@school.com"
       };
       
       const violationRef = await addDoc(collection(db, "violations"), violationData);
@@ -274,30 +268,27 @@ export default function ViolationRecord() {
         try {
           // Create comprehensive notification message with all violation details
           const notificationMessage = `
-🚨 NEW VIOLATION REPORTED
+🚨 VIOLATION RECORDED
 
 Dear ${studentName},
 
-A new violation has been reported for you with the following details:
+A violation has been recorded for you with the following details:
 
 📋 VIOLATION DETAILS:
 • Type: ${form.violation}
 • Classification: ${form.classification}
 • Severity: ${form.severity || 'Not specified'}
 • Date: ${form.date}
-• Time: ${form.time || 'Not specified'}
-• Location: ${form.location || 'Not specified'}
+• Status: Approved
 
 📝 DESCRIPTION:
 ${form.description || 'No description provided'}
 
 👥 ADDITIONAL INFORMATION:
 • Witnesses: ${form.witnesses || 'None specified'}
-• Reported By: ${form.reportedBy || 'Not specified'}
-• Action Taken: ${form.actionTaken || 'Pending review'}
 
 ⚠️ IMPORTANT:
-Please review this violation in your student dashboard. You may need to take action or attend a meeting regarding this matter.
+This violation has been recorded by the administrator. Please review this violation in your student dashboard.
 
 For questions or concerns, please contact the administration office.
 
@@ -308,7 +299,7 @@ School Administration
           await addDoc(collection(db, "notifications"), {
             recipientEmail: studentEmail,
             recipientName: studentName,
-            title: `🚨 New Violation: ${form.violation}`,
+            title: `🚨 Violation Recorded: ${form.violation}`,
             message: notificationMessage,
             type: "violation",
             severity: form.severity || "Medium",
@@ -320,12 +311,9 @@ School Administration
               classification: form.classification,
               severity: form.severity,
               date: form.date,
-              time: form.time,
-              location: form.location,
               description: form.description,
               witnesses: form.witnesses,
-              reportedBy: form.reportedBy,
-              actionTaken: form.actionTaken
+              status: "Approved"
             },
             priority: form.severity === "Critical" ? "high" : 
                      form.severity === "High" ? "high" : 
@@ -373,9 +361,9 @@ School Administration
       setStudentInputValue('');
       setStudentName("");
       setImageFile(null);
-      setSnackbar({ open: true, message: uploadTimedOut ? "Violation added (image upload failed) - Student notified!" : "Violation added successfully - Student notified!", severity: uploadTimedOut ? "warning" : "success" });
+      setSnackbar({ open: true, message: "Violation recorded and approved - Student notified!", severity: "success" });
       setDataRefresh(r => r + 1); // refresh table after add
-      setShowAddForm(false); // Close the form after successful submission
+      setOpenAddModal(false); // Close the modal after successful submission
     } catch (e) {
       console.error("Error saving violation:", e);
       setSnackbar({ open: true, message: "Error adding violation.", severity: "error" });
@@ -489,7 +477,12 @@ School Administration
   };
 
   return (
-    <Box sx={{ p: { xs: 0.5, sm: 1 }, pt: { xs: 2, sm: 3 }, pl: { xs: 2, sm: 3, md: 4 }, pr: { xs: 2, sm: 3, md: 4 } }}>
+    <Box sx={{ 
+      p: { xs: 2, sm: 2, md: 3 }, 
+      width: '100%',
+      minHeight: 'calc(100vh - 64px)',
+      maxWidth: '100vw'
+    }}>
       <style>
         {`
           @media print {
@@ -501,19 +494,20 @@ School Administration
         `}
       </style>
       {/* Welcome Section */}
-      <Box sx={{ mb: 2, pt: { xs: 1, sm: 1 }, px: { xs: 0, sm: 0 } }}>
+      <Box sx={{ mb: 3 }}>
         <Typography 
           variant="h4" 
           fontWeight={700} 
           gutterBottom 
           sx={{ 
             color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
-            wordBreak: 'break-word',
-            fontSize: { xs: '1.75rem', sm: '2.125rem' },
-            lineHeight: 1.2
+            fontSize: { xs: '1.75rem', sm: '2.125rem' }
           }}
         >
           Violation Records
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Manage and track all student violation records
         </Typography>
       </Box>
       {/* Summary Cards */}
@@ -568,33 +562,32 @@ School Administration
         </Grid>
       </Grid>
       {/* Add Violation and History Buttons */}
-      {!showAddForm && (
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-start', gap: 2 }}>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => setShowAddForm(true)}
-            sx={{
-              bgcolor: '#ffffff',
-              color: '#000000',
-              borderColor: '#000000',
-              px: 2,
-              py: 1,
-              fontSize: '0.75rem',
-              fontWeight: 500,
-              borderRadius: 1,
-              '&:hover': {
-                bgcolor: '#800000',
-                color: '#ffffff',
-                borderColor: '#800000',
-                transform: 'translateY(-1px)',
-                boxShadow: '0 2px 8px rgba(128, 0, 0, 0.3)'
-              },
-              transition: 'all 0.3s ease'
-            }}
-          >
-            Add New Violation
-          </Button>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-start', gap: 2 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => setOpenAddModal(true)}
+          sx={{
+            bgcolor: '#ffffff',
+            color: '#000000',
+            borderColor: '#000000',
+            px: 2,
+            py: 1,
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            borderRadius: 1,
+            '&:hover': {
+              bgcolor: '#800000',
+              color: '#ffffff',
+              borderColor: '#800000',
+              transform: 'translateY(-1px)',
+              boxShadow: '0 2px 8px rgba(128, 0, 0, 0.3)'
+            },
+            transition: 'all 0.3s ease'
+          }}
+        >
+          Add New Violation
+        </Button>
           <Button
             variant="outlined"
             size="small"
@@ -621,12 +614,17 @@ School Administration
             History
           </Button>
         </Box>
-      )}
       
-      {/* Expandable Form */}
-      {showAddForm && (
-        <Paper sx={{ p: { xs: 1, sm: 3 }, mb: 3, maxWidth: 1200, mx: 'auto', borderRadius: 3, boxShadow: 3 }}>
-          <form onSubmit={handleSubmit}>
+      {/* Add New Violation Modal */}
+      <Dialog 
+        open={openAddModal} 
+        onClose={() => setOpenAddModal(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 700, color: '#800000' }}>Add New Violation</DialogTitle>
+        <DialogContent>
+          <form onSubmit={handleSubmit} id="violation-form">
           <Grid container spacing={2}>
             <Grid item xs={12} sm={3}>
               <Autocomplete
@@ -661,6 +659,10 @@ School Administration
                 value={selectedStudent}
                 onChange={(event, newValue) => {
                   setSelectedStudent(newValue);
+                  if (newValue) {
+                    // Set the display name when selected
+                    setStudentInputValue(`${newValue.firstName} ${newValue.lastName}`);
+                  }
                   setForm(f => ({
                     ...f,
                     studentId: newValue ? newValue.id : '',
@@ -668,10 +670,20 @@ School Administration
                   }));
                 }}
                 inputValue={studentInputValue}
-                onInputChange={(event, newInputValue) => {
-                  setStudentInputValue(newInputValue);
+                onInputChange={(event, newInputValue, reason) => {
+                  // Only update input when typing, not when selecting
+                  if (reason === 'input') {
+                    setStudentInputValue(newInputValue);
+                  }
                 }}
-                open={studentInputValue && studentInputValue.length > 0} // Only open when typing
+                onClose={() => {
+                  // Keep the selected student's name displayed after closing
+                  if (selectedStudent) {
+                    setStudentInputValue(`${selectedStudent.firstName} ${selectedStudent.lastName}`);
+                  }
+                }}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                open={studentInputValue && studentInputValue.length > 0 && !selectedStudent} // Close when student is selected
                 disablePortal={false}
                 PaperComponent={({ children, ...other }) => (
                   <Paper 
@@ -764,132 +776,112 @@ School Administration
                 handleHomeEndKeys
               />
             </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField label="Violation" name="violation" value={form.violation} onChange={handleFormChange} required fullWidth helperText="Type of violation" />
+            <Grid item xs={12} sm={6}>
+              <TextField label="Violation Type" name="violation" value={form.violation} onChange={handleFormChange} fullWidth required helperText="Type of violation" />
             </Grid>
-            <Grid item xs={12} sm={2}>
-              <TextField label="Classification" name="classification" value={form.classification} onChange={handleFormChange} select fullWidth required helperText="Select classification">
-                <MenuItem value="">Select</MenuItem>
-                <MenuItem value="Academic">Academic</MenuItem>
-                <MenuItem value="Behavioral">Behavioral</MenuItem>
-                <MenuItem value="Policy/Rules">Policy/Rules</MenuItem>
-                <MenuItem value="Other">Other</MenuItem>
+            <Grid item xs={12} sm={6}>
+              <TextField label="Date" name="date" type="date" value={form.date} onChange={handleFormChange} InputLabelProps={{ shrink: true }} fullWidth required helperText="Date of violation" />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField select label="Classification" name="classification" value={form.classification} onChange={handleFormChange} fullWidth required helperText="Select classification">
+                <MenuItem value="Grave">Grave</MenuItem>
+                <MenuItem value="Serious">Serious</MenuItem>
+                <MenuItem value="Major">Major</MenuItem>
+                <MenuItem value="Minor">Minor</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={2}>
-              <TextField label="Severity" name="severity" value={form.severity} onChange={handleFormChange} select fullWidth required helperText="Severity level">
-                <MenuItem value="">Select</MenuItem>
-                <MenuItem value="Low">Low</MenuItem>
-                <MenuItem value="Medium">Medium</MenuItem>
-                <MenuItem value="High">High</MenuItem>
+            <Grid item xs={12} sm={4}>
+              <TextField select label="Severity" name="severity" value={form.severity} onChange={handleFormChange} fullWidth helperText="Severity level">
                 <MenuItem value="Critical">Critical</MenuItem>
+                <MenuItem value="High">High</MenuItem>
+                <MenuItem value="Medium">Medium</MenuItem>
+                <MenuItem value="Low">Low</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={2}>
-              <TextField label="Status" name="status" value={form.status} onChange={handleFormChange} select fullWidth required helperText="Mark as pending or solved">
+            <Grid item xs={12} sm={4}>
+              <TextField select label="Status" name="status" value={form.status} onChange={handleFormChange} fullWidth>
                 <MenuItem value="Pending">Pending</MenuItem>
                 <MenuItem value="Solved">Solved</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={2}>
-              <TextField label="Date" name="date" type="date" value={form.date} onChange={handleFormChange} InputLabelProps={{ shrink: true }} fullWidth required helperText="Date of violation" />
-            </Grid>
-            <Grid item xs={12} sm={2}>
-              <TextField label="Time" name="time" type="time" value={form.time} onChange={handleFormChange} InputLabelProps={{ shrink: true }} fullWidth helperText="Time (optional)" />
-            </Grid>
-            <Grid item xs={12} sm={2}>
-              <TextField label="Location" name="location" value={form.location} onChange={handleFormChange} fullWidth helperText="Location (optional)" />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField label="Reported By" name="reportedBy" value={form.reportedBy} onChange={handleFormChange} fullWidth helperText="Who reported?" />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField label="Action Taken" name="actionTaken" value={form.actionTaken} onChange={handleFormChange} fullWidth helperText="Action taken (optional)" />
-            </Grid>
-            <Grid item xs={12} sm={3}>
+            <Grid item xs={12}>
               <TextField label="Witnesses" name="witnesses" value={form.witnesses} onChange={handleFormChange} fullWidth helperText="Witnesses (optional)" />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField label="Description" name="description" value={form.description} onChange={handleFormChange} fullWidth multiline minRows={2} helperText="Describe the violation (optional)" />
+            <Grid item xs={12}>
+              <TextField label="Description" name="description" value={form.description} onChange={handleFormChange} fullWidth multiline rows={3} helperText="Describe the violation (optional)" />
             </Grid>
-            <Grid item xs={12} sm={3}>
-              <Tooltip title="Attach an image as evidence (optional)">
-                <Button variant="contained" component="label" fullWidth sx={{ bgcolor: '#800000', color: '#fff', '&:hover': { bgcolor: '#6b0000' } }}>
-                  Attach Evidence Image
-                  <input type="file" accept="image/*" hidden onChange={handleImage} />
-                </Button>
-              </Tooltip>
-              {imageFile && (
-                <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar src={imageFile} sx={{ width: 40, height: 40 }} variant="rounded" />
-                  <Button variant="outlined" color="error" size="small" onClick={() => setImageFile(null)}>Remove</Button>
-                </Box>
-              )}
-            </Grid>
-            {/* Buttons row: Cancel and Add Violation */}
-            <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-start' }}>
-              <Stack direction="row" spacing={2}>
-                <Button 
-                  type="button" 
-                  variant="outlined" 
-                  size="small" 
-                  onClick={() => {
-                    setShowAddForm(false);
-                    // Reset form when canceling
-                    setForm({
-                      studentId: "",
-                      violation: "",
-                      classification: "",
-                      severity: "",
-                      date: "",
-                      time: "",
-                      location: "",
-                      description: "",
-                      witnesses: "",
-                      actionTaken: "",
-                      reportedBy: "",
-                      status: "Pending",
-                      image: null,
-                      studentName: ""
-                    });
-                    setImageFile(null);
-                    setSelectedStudent(null);
-                    setStudentInputValue('');
-                  }}
-                  sx={{ 
-                    minWidth: 120, 
-                    maxWidth: 160,
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000',
-                    borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#000',
-                    '&:hover': {
-                      borderColor: '#d32f2f',
-                      backgroundColor: '#d32f2f',
-                      color: '#fff'
-                    }
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" variant="outlined" size="small" sx={{ 
-                  minWidth: 120, 
-                  maxWidth: 160,
-                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000',
-                  borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#000',
-                  '&:hover': {
-                    borderColor: '#800000',
-                    backgroundColor: '#800000',
-                    color: '#fff'
-                  }
-                }}
-                  startIcon={isSubmitting ? <CircularProgress size={14} color="inherit" /> : null}>
-                  {isSubmitting ? "Saving..." : "Add Violation"}
-                </Button>
-              </Stack>
+            <Grid item xs={12}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Tooltip title="Attach an image as evidence (optional)">
+                  <Button variant="outlined" component="label" size="small" sx={{ borderColor: '#800000', color: '#800000', '&:hover': { bgcolor: '#800000', color: '#fff' } }}>
+                    Attach Evidence
+                    <input type="file" accept="image/*" hidden onChange={handleImage} />
+                  </Button>
+                </Tooltip>
+                {imageFile && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Avatar src={imageFile} sx={{ width: 40, height: 40 }} variant="rounded" />
+                    <Button variant="outlined" color="error" size="small" onClick={() => setImageFile(null)}>Remove</Button>
+                  </Box>
+                )}
+              </Box>
             </Grid>
           </Grid>
           </form>
-        </Paper>
-      )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button 
+            onClick={() => {
+              setOpenAddModal(false);
+              // Reset form when canceling
+              setForm({
+                studentId: "",
+                violation: "",
+                classification: "",
+                severity: "",
+                date: "",
+                time: "",
+                location: "",
+                description: "",
+                witnesses: "",
+                actionTaken: "",
+                reportedBy: "",
+                status: "Pending",
+                image: null,
+                studentName: ""
+              });
+              setImageFile(null);
+              setSelectedStudent(null);
+              setStudentInputValue('');
+            }}
+            variant="outlined"
+            sx={{ 
+              color: '#000',
+              borderColor: '#000',
+              '&:hover': {
+                borderColor: '#800000',
+                backgroundColor: '#800000',
+                color: '#fff'
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit"
+            form="violation-form"
+            variant="contained"
+            disabled={isSubmitting}
+            startIcon={isSubmitting ? <CircularProgress size={14} color="inherit" /> : null}
+            sx={{ 
+              bgcolor: '#800000',
+              '&:hover': { bgcolor: '#600000' }
+            }}
+          >
+            {isSubmitting ? "Saving..." : "Add Violation"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* History Modal */}
       <Dialog 
@@ -1193,13 +1185,13 @@ School Administration
 
       <Divider sx={{ mb: 3 }} />
       {/* Search and Table */}
-      <Paper sx={{ p: 2, mb: 3, maxWidth: 1200, mx: 'auto', borderRadius: 3, boxShadow: 2 }}>
+      <Paper sx={{ p: 3, mb: 3, width: '100%', borderRadius: 2, boxShadow: 3 }}>
         <TextField
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search by Student ID, Violation, Classification, or Reporter..."
           size="small"
-          sx={{ mb: 2, width: { xs: '100%', sm: '50%' } }}
+          sx={{ mb: 3, width: { xs: '100%', sm: '400px' } }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -1208,64 +1200,106 @@ School Administration
             )
           }}
         />
-        <TableContainer component={Paper} sx={{ 
-          maxHeight: 500, 
-          width: '100%', 
-          bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : 'inherit'
-        }}>
-          <Table size="small" stickyHeader sx={{ minWidth: 880 }}>
+        <TableContainer component={Paper} elevation={2} sx={{ width: '100%', overflow: 'auto' }}>
+          <Table>
             <TableHead>
-                <TableRow sx={{ 
-                  bgcolor: '#800000' 
-                }}>
+                <TableRow sx={{ bgcolor: '#800000' }}>
                   <TableCell sx={{ 
                     bgcolor: '#800000',
-                    minWidth: 160, 
-                    fontSize: 16, 
-                    fontWeight: 700, 
-                    color: '#ffffff' 
-                  }}>Name</TableCell>
+                    color: '#ffffff', 
+                    fontWeight: 600 
+                  }}>Student Name</TableCell>
                   <TableCell sx={{ 
                     bgcolor: '#800000',
-                    minWidth: 110, 
-                    fontSize: 16, 
-                    fontWeight: 700, 
-                    color: '#ffffff' 
+                    color: '#ffffff', 
+                    fontWeight: 600 
                   }}>Student ID</TableCell>
                   <TableCell sx={{ 
                     bgcolor: '#800000',
-                    minWidth: 180, 
-                    fontSize: 16, 
-                    fontWeight: 700, 
-                    color: '#ffffff' 
-                  }}>Violation</TableCell>
+                    color: '#ffffff', 
+                    fontWeight: 600 
+                  }}>Violation Type</TableCell>
                   <TableCell sx={{ 
                     bgcolor: '#800000',
-                    minWidth: 110, 
-                    fontSize: 16, 
-                    fontWeight: 700, 
-                    color: '#ffffff' 
+                    color: '#ffffff', 
+                    fontWeight: 600 
+                  }}>Classification</TableCell>
+                  <TableCell sx={{ 
+                    bgcolor: '#800000',
+                    color: '#ffffff', 
+                    fontWeight: 600 
+                  }}>Severity</TableCell>
+                  <TableCell sx={{ 
+                    bgcolor: '#800000',
+                    color: '#ffffff', 
+                    fontWeight: 600 
                   }}>Date</TableCell>
                   <TableCell sx={{ 
                     bgcolor: '#800000',
-                    minWidth: 120, 
-                    fontSize: 16, 
-                    fontWeight: 700, 
-                    color: '#ffffff' 
-                  }} align="center">Actions</TableCell>
+                    color: '#ffffff', 
+                    fontWeight: 600 
+                  }}>Status</TableCell>
+                  <TableCell sx={{ 
+                    bgcolor: '#800000',
+                    color: '#ffffff', 
+                    fontWeight: 600 
+                  }}>Actions</TableCell>
                 </TableRow>
             </TableHead>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={5} sx={{ fontSize: 14, fontWeight: 400, textAlign: 'center' }}>No violations found.</TableCell></TableRow>
-              ) : filtered.map((v, idx) => (
-                <TableRow key={v.id || idx} hover sx={{ cursor: 'pointer' }}>
-                  <TableCell sx={{ fontSize: 14, fontWeight: 400 }} onClick={() => setViewViolation(v)}>{v.studentName || 'N/A'}</TableCell>
-                  <TableCell sx={{ fontSize: 14, fontWeight: 400 }} onClick={() => setViewViolation(v)}>{v.studentId || 'N/A'}</TableCell>
-                  <TableCell sx={{ fontSize: 14, fontWeight: 400, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setViewViolation(v)}>
-                    <Tooltip title={v.violation || ''}><span>{v.violation || 'N/A'}</span></Tooltip>
+                <TableRow>
+                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No violations found
+                    </Typography>
                   </TableCell>
-                  <TableCell sx={{ fontSize: 14, fontWeight: 400 }} onClick={() => setViewViolation(v)}>{v.date || 'N/A'}</TableCell>
+                </TableRow>
+              ) : filtered
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((v, idx) => (
+                <TableRow key={v.id || idx} hover>
+                  <TableCell onClick={() => setViewViolation(v)} sx={{ cursor: 'pointer' }}>
+                    {v.studentName || 'N/A'}
+                  </TableCell>
+                  <TableCell onClick={() => setViewViolation(v)} sx={{ cursor: 'pointer' }}>
+                    {v.studentId || 'N/A'}
+                  </TableCell>
+                  <TableCell onClick={() => setViewViolation(v)} sx={{ cursor: 'pointer' }}>
+                    {v.violation || v.violationType || 'N/A'}
+                  </TableCell>
+                  <TableCell onClick={() => setViewViolation(v)} sx={{ cursor: 'pointer' }}>
+                    <Chip 
+                      label={v.classification || 'N/A'} 
+                      size="small"
+                      color={
+                        v.classification === 'Grave' ? 'error' :
+                        v.classification === 'Serious' ? 'warning' :
+                        v.classification === 'Major' ? 'info' : 'success'
+                      }
+                    />
+                  </TableCell>
+                  <TableCell onClick={() => setViewViolation(v)} sx={{ cursor: 'pointer' }}>
+                    <Chip 
+                      label={v.severity || 'N/A'} 
+                      size="small"
+                      color={
+                        v.severity === 'Critical' ? 'error' :
+                        v.severity === 'High' ? 'warning' :
+                        v.severity === 'Medium' ? 'info' : 'success'
+                      }
+                    />
+                  </TableCell>
+                  <TableCell onClick={() => setViewViolation(v)} sx={{ cursor: 'pointer' }}>
+                    {v.date || 'N/A'}
+                  </TableCell>
+                  <TableCell onClick={() => setViewViolation(v)} sx={{ cursor: 'pointer' }}>
+                    <Chip 
+                      label={v.status || 'Pending'} 
+                      size="small"
+                      color={v.status === 'Solved' ? 'success' : 'warning'}
+                    />
+                  </TableCell>
                   <TableCell align="center">
                     <Stack direction="row" spacing={1} justifyContent="center">
                       <Tooltip title="View record">
@@ -1317,6 +1351,22 @@ School Administration
               ))}
             </TableBody>
           </Table>
+          <TablePagination
+            rowsPerPageOptions={[8, 16, 24, 50]}
+            component="div"
+            count={filtered.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={(event, newPage) => setPage(newPage)}
+            onRowsPerPageChange={(event) => {
+              setRowsPerPage(parseInt(event.target.value, 10));
+              setPage(0);
+            }}
+            sx={{
+              borderTop: '1px solid',
+              borderColor: theme.palette.mode === 'dark' ? '#404040' : '#e0e0e0'
+            }}
+          />
         </TableContainer>
       </Paper>
       {/* Image Preview Modal */}

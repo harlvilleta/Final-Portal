@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { 
   Box, Typography, Grid, Card, CardContent, List, ListItem, ListItemAvatar, 
-  ListItemText, Avatar, Chip, Button, CircularProgress, useTheme, Divider
+  ListItemText, Avatar, Chip, Button, CircularProgress, useTheme, Divider, Paper
 } from "@mui/material";
-import { CheckCircle, Warning, Announcement, EventNote, Report, Event, Campaign, People } from "@mui/icons-material";
+import { CheckCircle, Warning, Announcement, EventNote, Report, Event, Campaign, People, Receipt, Person, Security, FindInPage, History } from "@mui/icons-material";
 import { Link, useNavigate } from "react-router-dom";
 import { db, auth, logActivity } from "../firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, where, query, onSnapshot, orderBy, setDoc, getDoc, limit } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useTheme as useCustomTheme } from "../contexts/ThemeContext";
 
 // User Overview Component
 function UserOverview({ currentUser }) {
   const theme = useTheme();
+  const { isDark } = useCustomTheme();
   const navigate = useNavigate();
   const [userViolations, setUserViolations] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
@@ -20,11 +22,16 @@ function UserOverview({ currentUser }) {
   const [notifications, setNotifications] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [studentData, setStudentData] = useState(null);
+  const [receiptSubmissions, setReceiptSubmissions] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
   const [stats, setStats] = useState({
     totalViolations: 0,
     pendingViolations: 0,
     resolvedViolations: 0,
-    unreadNotifications: 0
+    unreadNotifications: 0,
+    totalActivities: 0,
+    totalAnnouncements: 0,
+    totalReceipts: 0
   });
 
   useEffect(() => {
@@ -128,21 +135,35 @@ function UserOverview({ currentUser }) {
       orderBy("createdAt", "desc")
     );
 
-    // Fetch notifications from admin records
+    // Fetch notifications from admin records (without orderBy to avoid index requirement)
     const notificationsQuery = query(
       collection(db, "notifications"),
-      where("recipientEmail", "==", currentUser.email),
-      orderBy("createdAt", "desc")
+      where("recipientEmail", "==", currentUser.email)
     );
-    // Fetch recent activities
+    
+    // Fetch all activities for total count
     const activitiesQuery = query(
       collection(db, "activities"),
-      orderBy("createdAt", "desc"),
-      limit(5)
+      orderBy("createdAt", "desc")
     );
+    
     const unsubActivities = onSnapshot(activitiesQuery, (snap) => {
       const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setActivities(items);
+      setActivities(items.slice(0, 5)); // Keep only 5 for display
+      
+      // Update stats with total activities count (all activities)
+      setStats(prev => ({
+        ...prev,
+        totalActivities: snap.docs.length
+      }));
+    }, (error) => {
+      console.error("Dashboard - Activities query error:", error);
+      // Set empty activities on error
+      setActivities([]);
+      setStats(prev => ({
+        ...prev,
+        totalActivities: 0
+      }));
     });
 
 
@@ -178,13 +199,35 @@ function UserOverview({ currentUser }) {
       const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setAnnouncements(items);
       setAnnouncementCount(items.length);
+      
+      // Update stats with total announcements count
+      setStats(prev => ({
+        ...prev,
+        totalAnnouncements: items.length
+      }));
+    }, (error) => {
+      console.error("Dashboard - Announcements query error:", error);
+      // Set empty announcements on error
+      setAnnouncements([]);
+      setAnnouncementCount(0);
+      setStats(prev => ({
+        ...prev,
+        totalAnnouncements: 0
+      }));
     });
 
     const unsubNotifications = onSnapshot(notificationsQuery, (snap) => {
       const allNotifications = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
+      // Sort by createdAt in descending order (newest first) in JavaScript
+      const sortedNotifications = allNotifications.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+        return dateB - dateA; // Descending order (newest first)
+      });
+      
       // Filter out enrollment/joining related notifications for students
-      const filteredNotifications = allNotifications.filter(notification => {
+      const filteredNotifications = sortedNotifications.filter(notification => {
         // Exclude notifications related to student enrollment, joining, or registration
         const title = notification.title?.toLowerCase() || '';
         const message = notification.message?.toLowerCase() || '';
@@ -219,15 +262,219 @@ function UserOverview({ currentUser }) {
         ...prev,
         unreadNotifications: unreadCount
       }));
+    }, (error) => {
+      console.error("Dashboard - Notifications query error:", error);
+      // Set empty notifications on error
+      setNotifications([]);
+      setStats(prev => ({
+        ...prev,
+        unreadNotifications: 0
+      }));
     });
+
+    // Fetch receipt submissions for the current user
+    const receiptsQuery = query(
+      collection(db, "receipt_submissions"),
+      where("userEmail", "==", currentUser.email)
+    );
+    
+    const unsubReceipts = onSnapshot(receiptsQuery, (snap) => {
+      const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setReceiptSubmissions(items);
+      
+      // Update stats with total receipts count
+      setStats(prev => ({
+        ...prev,
+        totalReceipts: items.length
+      }));
+    }, (error) => {
+      console.error("Dashboard - Receipts query error:", error);
+      // Set empty receipts on error
+      setReceiptSubmissions([]);
+      setStats(prev => ({
+        ...prev,
+        totalReceipts: 0
+      }));
+    });
+
+    // Set up real-time listeners for lost/found items
+    // Note: We'll fetch all and filter client-side to avoid composite index requirements
+    const lostItemsQuery = collection(db, 'lost_items');
+    const foundItemsQuery = collection(db, 'found_items');
+    const pendingLostQuery = collection(db, 'pending_lost_reports');
+
+    let lostItemsData = [];
+    let foundItemsData = [];
+    let pendingItemsData = [];
+
+    const unsubLostItems = onSnapshot(lostItemsQuery, (snap) => {
+      // Filter client-side to match current user's email
+      lostItemsData = snap.docs
+        .filter(doc => {
+          const data = doc.data();
+          return data.contactInfo === currentUser.email || 
+                 data.reportedBy === currentUser.email ||
+                 data.submittedBy === currentUser.email;
+        })
+        .map(doc => ({
+          id: doc.id,
+          type: 'lost_item',
+          title: 'Lost Item Posted',
+          description: `Posted: ${doc.data().name}`,
+          timestamp: doc.data().createdAt,
+          icon: FindInPage,
+          color: '#ff9800',
+          link: '/lost-found'
+        }));
+      updateRecentActivities();
+    }, (error) => {
+      console.error('Lost items query error:', error);
+      lostItemsData = [];
+    });
+
+    const unsubFoundItems = onSnapshot(foundItemsQuery, (snap) => {
+      // Filter client-side to match current user's email
+      foundItemsData = snap.docs
+        .filter(doc => {
+          const data = doc.data();
+          return data.contactInfo === currentUser.email || 
+                 data.reportedBy === currentUser.email ||
+                 data.submittedBy === currentUser.email;
+        })
+        .map(doc => ({
+          id: doc.id,
+          type: 'found_item',
+          title: 'Found Item Posted',
+          description: `Posted: ${doc.data().name}`,
+          timestamp: doc.data().createdAt,
+          icon: FindInPage,
+          color: '#2196f3',
+          link: '/lost-found'
+        }));
+      updateRecentActivities();
+    }, (error) => {
+      console.error('Found items query error:', error);
+      foundItemsData = [];
+    });
+
+    const unsubPendingItems = onSnapshot(pendingLostQuery, (snap) => {
+      // Filter client-side to match current user's email
+      pendingItemsData = snap.docs
+        .filter(doc => {
+          const data = doc.data();
+          return data.submittedBy === currentUser.email || 
+                 data.contactInfo === currentUser.email ||
+                 data.reportedBy === currentUser.email;
+        })
+        .map(doc => ({
+          id: doc.id,
+          type: 'pending_lost',
+          title: 'Lost Item Report Submitted',
+          description: `Pending: ${doc.data().name}`,
+          timestamp: doc.data().createdAt,
+          icon: FindInPage,
+          color: '#9c27b0',
+          link: '/lost-found'
+        }));
+      updateRecentActivities();
+    }, (error) => {
+      console.error('Pending items query error:', error);
+      pendingItemsData = [];
+    });
+
+    // Function to update recent activities
+    const updateRecentActivities = () => {
+      try {
+        const activities = [];
+        
+        // 1. Profile updates (from users collection)
+        if (studentData || userProfile) {
+          const profileData = studentData || userProfile;
+          if (profileData.updatedAt) {
+            activities.push({
+              id: 'profile-update',
+              type: 'profile_update',
+              title: 'Profile Updated',
+              description: 'Updated personal information',
+              timestamp: profileData.updatedAt,
+              icon: Person,
+              color: '#4caf50',
+              link: '/profile'
+            });
+          }
+        }
+
+        // 2. Recent violations (last 5)
+        const recentViolations = userViolations.slice(0, 5).map(violation => ({
+          id: violation.id,
+          type: 'violation_received',
+          title: 'Violation Received',
+          description: `${violation.violationType || violation.violation || 'Violation'} - ${violation.status}`,
+          timestamp: violation.createdAt,
+          icon: Warning,
+          color: '#f44336',
+          link: '/violations'
+        }));
+
+        // 4. Recent receipt submissions
+        const recentReceipts = receiptSubmissions.slice(0, 3).map(receipt => ({
+          id: receipt.id,
+          type: 'receipt_submission',
+          title: 'Receipt Submitted',
+          description: `${receipt.receiptType} - ₱${receipt.amount}`,
+          timestamp: receipt.createdAt,
+          icon: Receipt,
+          color: '#4caf50',
+          link: '/receipt-history'
+        }));
+
+        // 5. Lost & Found approval/rejection notifications
+        const lostFoundNotifications = notifications
+          .filter(n => n.type === 'lost_found_approval' || n.type === 'lost_found_rejection')
+          .slice(0, 3)
+          .map(notification => ({
+            id: notification.id,
+            type: notification.type,
+            title: notification.type === 'lost_found_approval' ? 'Report Approved' : 'Report Rejected',
+            description: notification.message,
+            timestamp: notification.createdAt,
+            icon: notification.type === 'lost_found_approval' ? CheckCircle : Warning,
+            color: notification.type === 'lost_found_approval' ? '#4caf50' : '#f44336',
+            link: '/lost-found'
+          }));
+
+        // Combine all activities and sort by timestamp
+        const allActivities = [
+          ...activities,
+          ...recentViolations,
+          ...lostItemsData,
+          ...foundItemsData,
+          ...pendingItemsData,
+          ...recentReceipts,
+          ...lostFoundNotifications
+        ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        setRecentActivities(allActivities.slice(0, 10)); // Show last 10 activities
+      } catch (error) {
+        console.error('Error updating recent activities:', error);
+        setRecentActivities([]);
+      }
+    };
+
+    // Initial call to update activities
+    updateRecentActivities();
 
     return () => {
       unsubViolations();
       unsubAnnouncements();
       unsubNotifications();
       unsubActivities();
+      unsubReceipts();
+      unsubLostItems();
+      unsubFoundItems();
+      unsubPendingItems();
     };
-  }, [currentUser]);
+  }, [currentUser, userViolations, receiptSubmissions, studentData, userProfile]);
 
   const recentAnnouncements = announcements?.slice(0, 3) || [];
   const recentNotifications = notifications?.slice(0, 5) || [];
@@ -353,7 +600,156 @@ function UserOverview({ currentUser }) {
         </Typography>
       </Box>
 
+      {/* Statistics Cards */}
+      <Grid container spacing={2} sx={{ mb: 3, mt: 1 }}>
+        {/* Total Violations Card */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper 
+            sx={{ 
+              p: 2, 
+              textAlign: 'center', 
+              bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+              border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+              borderLeft: '4px solid #800000',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                boxShadow: 4,
+                transform: 'translateY(-2px)',
+                borderLeft: '4px solid #600000'
+              }
+            }}
+            onClick={() => navigate('/violations')}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+              <Report sx={{ fontSize: 32, color: '#800000', mr: 1 }} />
+            </Box>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+              fontWeight: 'bold',
+              mb: 0.5
+            }}>
+              {stats.totalViolations}
+            </Typography>
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
+              Total Violations
+            </Typography>
+          </Paper>
+        </Grid>
 
+        {/* Total Activities Card */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper 
+            sx={{ 
+              p: 2, 
+              textAlign: 'center', 
+              bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+              border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+              borderLeft: '4px solid #800000',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                boxShadow: 4,
+                transform: 'translateY(-2px)',
+                borderLeft: '4px solid #600000'
+              }
+            }}
+            onClick={() => navigate('/student-activities')}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+              <Event sx={{ fontSize: 32, color: '#800000', mr: 1 }} />
+            </Box>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+              fontWeight: 'bold',
+              mb: 0.5
+            }}>
+              {stats.totalActivities}
+            </Typography>
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
+              Total Activities
+            </Typography>
+          </Paper>
+        </Grid>
+
+        {/* Total Announcements Card */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper 
+            sx={{ 
+              p: 2, 
+              textAlign: 'center', 
+              bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+              border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+              borderLeft: '4px solid #800000',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                boxShadow: 4,
+                transform: 'translateY(-2px)',
+                borderLeft: '4px solid #600000'
+              }
+            }}
+            onClick={() => navigate('/announcements')}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+              <Campaign sx={{ fontSize: 32, color: '#800000', mr: 1 }} />
+            </Box>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+              fontWeight: 'bold',
+              mb: 0.5
+            }}>
+              {stats.totalAnnouncements}
+            </Typography>
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
+              Total Announcements
+            </Typography>
+          </Paper>
+        </Grid>
+
+        {/* Total Receipt Submissions Card */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper 
+            sx={{ 
+              p: 2, 
+              textAlign: 'center', 
+              bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+              border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+              borderLeft: '4px solid #800000',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                boxShadow: 4,
+                transform: 'translateY(-2px)',
+                borderLeft: '4px solid #600000'
+              }
+            }}
+            onClick={() => navigate('/receipt-history')}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+              <Receipt sx={{ fontSize: 32, color: '#800000', mr: 1 }} />
+            </Box>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+              fontWeight: 'bold',
+              mb: 0.5
+            }}>
+              {stats.totalReceipts}
+            </Typography>
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
+              Total Receipt Submissions
+            </Typography>
+          </Paper>
+        </Grid>
+      </Grid>
 
       {/* Main Content */}
       <Grid container spacing={3}>
@@ -519,12 +915,18 @@ function UserOverview({ currentUser }) {
                         <ListItemAvatar>
                           <Avatar sx={{ 
                             bgcolor: notification.read ? 'grey.300' : 
-                                     notification.type === 'violation' ? 'error.main' : 'primary.main',
+                                     notification.type === 'violation' ? 'error.main' : 
+                                     notification.type === 'lost_found_approval' ? '#4caf50' :
+                                     notification.type === 'lost_found_rejection' ? '#f44336' :
+                                     'primary.main',
                             border: !notification.read ? '2px solid #ff9800' : 'none',
                             width: 40, 
                             height: 40
                           }}>
-                            {notification.type === 'violation' ? <Warning sx={{ fontSize: 20 }} color="error" /> : <Announcement sx={{ fontSize: 20 }} color="primary" />}
+                            {notification.type === 'violation' ? <Warning sx={{ fontSize: 20 }} color="error" /> : 
+                             notification.type === 'lost_found_approval' ? <CheckCircle sx={{ fontSize: 20, color: 'white' }} /> :
+                             notification.type === 'lost_found_rejection' ? <Warning sx={{ fontSize: 20, color: 'white' }} /> :
+                             <Announcement sx={{ fontSize: 20 }} color="primary" />}
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
@@ -562,6 +964,125 @@ function UserOverview({ currentUser }) {
                   <Campaign sx={{ fontSize: 48, color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 1 }} />
                   <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
                     No notifications yet
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Recent Activities Section */}
+      <Grid container spacing={3} sx={{ mt: 2 }}>
+        <Grid item xs={12}>
+          <Card sx={{ 
+            borderLeft: '4px solid #800000',
+            boxShadow: 3,
+            bgcolor: theme.palette.mode === 'dark' ? '#1a1a1a' : 'transparent',
+            borderRadius: 2,
+            height: 'fit-content'
+          }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000' }}>
+                  Recent Activities
+                </Typography>
+                <Button 
+                  size="small" 
+                  sx={{ 
+                    textTransform: 'none',
+                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                    borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#800000',
+                    '&:hover': {
+                      backgroundColor: 'rgba(128, 0, 0, 0.1)',
+                      borderColor: '#800000',
+                      color: '#800000',
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 4px 8px rgba(128, 0, 0, 0.2)'
+                    },
+                    transition: 'all 0.2s ease-in-out'
+                  }}
+                  variant="outlined"
+                  startIcon={<History />}
+                >
+                  View All Activities
+                </Button>
+              </Box>
+              
+              {recentActivities.length > 0 ? (
+                <List>
+                  {recentActivities.map((activity, index) => {
+                    const IconComponent = activity.icon;
+                    return (
+                      <React.Fragment key={activity.id}>
+                        <ListItem 
+                          sx={{ 
+                            px: 0, 
+                            py: 1.5,
+                            cursor: 'pointer',
+                            borderRadius: 1,
+                            '&:hover': {
+                              backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(128, 0, 0, 0.05)',
+                              transform: 'translateX(4px)',
+                              transition: 'all 0.2s ease-in-out'
+                            }
+                          }}
+                          onClick={() => navigate(activity.link)}
+                        >
+                          <ListItemAvatar>
+                            <Avatar sx={{ 
+                              bgcolor: activity.color,
+                              width: 40, 
+                              height: 40,
+                              border: `2px solid ${activity.color}20`
+                            }}>
+                              <IconComponent sx={{ fontSize: 20, color: 'white' }} />
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                <Typography variant="subtitle2" fontWeight={600} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>
+                                  {activity.title}
+                                </Typography>
+                                <Chip 
+                                  label={activity.type.replace('_', ' ').toUpperCase()} 
+                                  size="small" 
+                                  sx={{ 
+                                    fontWeight: 500,
+                                    bgcolor: `${activity.color}20`,
+                                    color: activity.color,
+                                    border: `1px solid ${activity.color}40`,
+                                    fontSize: '0.7rem'
+                                  }} 
+                                />
+                              </Box>
+                            }
+                            secondary={
+                              <Box>
+                                <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 0.5 }}>
+                                  {activity.description}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
+                                  {new Date(activity.timestamp).toLocaleString()}
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                        {index < recentActivities.length - 1 && <Divider sx={{ mx: 5 }} />}
+                      </React.Fragment>
+                    );
+                  })}
+                </List>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <History sx={{ fontSize: 48, color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', mb: 1 }} />
+                  <Typography variant="body2" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' }}>
+                    No recent activities found
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary', display: 'block', mt: 1 }}>
+                    Your activities will appear here as you use the system
                   </Typography>
                 </Box>
               )}

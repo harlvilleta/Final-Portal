@@ -142,16 +142,16 @@ export default function Overview() {
     
     try {
       // Optimize: Use count queries instead of fetching all documents
-      const [studentsSnapshot, usersSnapshot, violationsSnapshot, activitiesSnapshot, announcementsSnapshot] = await Promise.allSettled([
+      // Only fetch from 'students' collection to match StudentList
+      const [studentsSnapshot, violationsSnapshot, activitiesSnapshot, announcementsSnapshot] = await Promise.allSettled([
         getDocs(collection(db, "students")),
-        getDocs(query(collection(db, "users"), where("role", "==", "Student"))),
         getDocs(collection(db, "violations")),
         getDocs(collection(db, "activities")).catch(() => ({ size: 0 })),
         getDocs(collection(db, "announcements")).catch(() => ({ size: 0 }))
       ]);
 
-      const studentsCount = (studentsSnapshot.status === 'fulfilled' ? studentsSnapshot.value.size : 0) + 
-                           (usersSnapshot.status === 'fulfilled' ? usersSnapshot.value.size : 0);
+      // Count only from students collection (matches StudentList behavior)
+      const studentsCount = studentsSnapshot.status === 'fulfilled' ? studentsSnapshot.value.size : 0;
       const violationsCount = violationsSnapshot.status === 'fulfilled' ? violationsSnapshot.value.size : 0;
       const activitiesCount = activitiesSnapshot.status === 'fulfilled' ? activitiesSnapshot.value.size : 0;
       const announcementsCount = announcementsSnapshot.status === 'fulfilled' ? announcementsSnapshot.value.size : 0;
@@ -166,7 +166,7 @@ export default function Overview() {
       // Optimize: Generate monthly data only once with cached results
       const monthlyData = await generateOptimizedMonthlyData(
         studentsSnapshot.status === 'fulfilled' ? studentsSnapshot.value.docs : [],
-        usersSnapshot.status === 'fulfilled' ? usersSnapshot.value.docs : [],
+        [], // Empty array for users since we're not counting them anymore
         violationsSnapshot.status === 'fulfilled' ? violationsSnapshot.value.docs : []
       );
 
@@ -213,55 +213,28 @@ export default function Overview() {
     
     try {
       if (collectionName === "students") {
-        // For students, fetch ALL students from both collections and distribute by month
-        const [studentsSnapshot, usersSnapshot] = await Promise.allSettled([
-          getDocs(collection(db, "students")),
-          getDocs(query(collection(db, "users"), where("role", "==", "Student")))
-        ]);
+        // For students, only fetch from students collection (matches StudentList)
+        const studentsSnapshot = await getDocs(collection(db, "students"));
         
-        // Process students from "students" collection
-        if (studentsSnapshot.status === 'fulfilled') {
-          studentsSnapshot.value.docs.forEach(doc => {
-            const data = doc.data();
-            const createdAt = data[dateField];
-            if (createdAt) {
-              const createdDate = new Date(createdAt);
-              const createdMonth = createdDate.getMonth();
-              const createdYear = createdDate.getFullYear();
-              
-              // Find matching month in our array
-              const monthIndex = months.findIndex(m => 
-                m.monthNumber === createdMonth && m.year === createdYear
-              );
-              
-              if (monthIndex !== -1) {
-                months[monthIndex].count++;
-              }
+        // Process students from "students" collection only
+        studentsSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          const createdAt = data[dateField];
+          if (createdAt) {
+            const createdDate = new Date(createdAt);
+            const createdMonth = createdDate.getMonth();
+            const createdYear = createdDate.getFullYear();
+            
+            // Find matching month in our array
+            const monthIndex = months.findIndex(m => 
+              m.monthNumber === createdMonth && m.year === createdYear
+            );
+            
+            if (monthIndex !== -1) {
+              months[monthIndex].count++;
             }
-          });
-        }
-        
-        // Process students from "users" collection
-        if (usersSnapshot.status === 'fulfilled') {
-          usersSnapshot.value.docs.forEach(doc => {
-            const data = doc.data();
-            const createdAt = data[dateField];
-            if (createdAt) {
-              const createdDate = new Date(createdAt);
-              const createdMonth = createdDate.getMonth();
-              const createdYear = createdDate.getFullYear();
-              
-              // Find matching month in our array
-              const monthIndex = months.findIndex(m => 
-                m.monthNumber === createdMonth && m.year === createdYear
-              );
-              
-              if (monthIndex !== -1) {
-                months[monthIndex].count++;
-              }
-            }
-          });
-        }
+          }
+        });
       } else {
         // For other collections (violations, etc.), use the original logic
         for (let i = 0; i < months.length; i++) {
@@ -541,7 +514,156 @@ export default function Overview() {
         </Typography>
       </Box>
       
+      {/* Statistics Cards */}
+      <Grid container spacing={2} sx={{ mb: 3, mt: 1 }}>
+        {/* Total Students Card */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper 
+            sx={{ 
+              p: 2, 
+              textAlign: 'center', 
+              bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+              border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+              borderLeft: '4px solid #800000',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                boxShadow: 4,
+                transform: 'translateY(-2px)',
+                borderLeft: '4px solid #600000'
+              }
+            }}
+            onClick={() => navigate('/students')}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+              <PeopleIcon sx={{ fontSize: 32, color: '#800000', mr: 1 }} />
+            </Box>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+              fontWeight: 'bold',
+              mb: 0.5
+            }}>
+              {stats.students}
+            </Typography>
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
+              Total Students
+            </Typography>
+          </Paper>
+        </Grid>
 
+        {/* Total Violations Card */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper 
+            sx={{ 
+              p: 2, 
+              textAlign: 'center', 
+              bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+              border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+              borderLeft: '4px solid #800000',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                boxShadow: 4,
+                transform: 'translateY(-2px)',
+                borderLeft: '4px solid #600000'
+              }
+            }}
+            onClick={() => navigate('/violation-record')}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+              <ReportIcon sx={{ fontSize: 32, color: '#800000', mr: 1 }} />
+            </Box>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+              fontWeight: 'bold',
+              mb: 0.5
+            }}>
+              {stats.violations}
+            </Typography>
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
+              Total Violations
+            </Typography>
+          </Paper>
+        </Grid>
+
+        {/* Total Announcements Card */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper 
+            sx={{ 
+              p: 2, 
+              textAlign: 'center', 
+              bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+              border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+              borderLeft: '4px solid #800000',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                boxShadow: 4,
+                transform: 'translateY(-2px)',
+                borderLeft: '4px solid #600000'
+              }
+            }}
+            onClick={() => navigate('/announcements')}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+              <CampaignIcon sx={{ fontSize: 32, color: '#800000', mr: 1 }} />
+            </Box>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+              fontWeight: 'bold',
+              mb: 0.5
+            }}>
+              {stats.announcements}
+            </Typography>
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
+              Total Announcements
+            </Typography>
+          </Paper>
+        </Grid>
+
+        {/* Total Activities Card */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper 
+            sx={{ 
+              p: 2, 
+              textAlign: 'center', 
+              bgcolor: theme.palette.mode === 'dark' ? '#2d2d2d' : '#f8f9fa', 
+              border: theme.palette.mode === 'dark' ? '1px solid #404040' : '1px solid #e9ecef',
+              borderLeft: '4px solid #800000',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                boxShadow: 4,
+                transform: 'translateY(-2px)',
+                borderLeft: '4px solid #600000'
+              }
+            }}
+            onClick={() => navigate('/activity')}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+              <EventIcon sx={{ fontSize: 32, color: '#800000', mr: 1 }} />
+            </Box>
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+              fontWeight: 'bold',
+              mb: 0.5
+            }}>
+              {stats.activities}
+            </Typography>
+            <Typography variant="body2" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#ffffff' : 'text.secondary' 
+            }}>
+              Total Activities
+            </Typography>
+          </Paper>
+        </Grid>
+      </Grid>
 
       {/* Monthly Charts - Side by Side */}
       <Grid container spacing={3} sx={{ mt: 2 }}>

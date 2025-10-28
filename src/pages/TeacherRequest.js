@@ -423,7 +423,7 @@ export default function TeacherRequest() {
             onChange={(e) => setSearchTerm(e.target.value)}
             size="small"
             sx={{
-              maxWidth: 400,
+              width: 500,
               '& .MuiOutlinedInput-root': {
                 '&:hover fieldset': {
                   borderColor: '#800000',

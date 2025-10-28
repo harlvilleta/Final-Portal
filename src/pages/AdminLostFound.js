@@ -529,11 +529,36 @@ export default function AdminLostFound() {
       const docRef = await addDoc(collection(db, targetCollection), itemData);
       console.log('Item added to collection with ID:', docRef.id);
       
+      // Send notification to student
+      try {
+        if (reportData.submittedBy) {
+          await addDoc(collection(db, 'notifications'), {
+            recipientEmail: reportData.submittedBy,
+            recipientRole: 'Student',
+            title: `${reportType === 'lost' ? 'Lost' : 'Found'} Item Report Approved`,
+            message: `Your ${reportType} item report "${reportData.name}" has been approved and published to the Lost & Found board.`,
+            type: 'lost_found_approval',
+            read: false,
+            createdAt: new Date().toISOString(),
+            data: {
+              itemId: docRef.id,
+              itemName: reportData.name,
+              itemType: reportType,
+              status: 'approved'
+            }
+          });
+          console.log('Notification sent to student:', reportData.submittedBy);
+        }
+      } catch (notificationError) {
+        console.error('Failed to send notification:', notificationError);
+        // Don't fail the entire operation if notification fails
+      }
+      
       // Delete from pending collection
       await deleteDoc(reportRef);
       console.log('Report deleted from pending collection');
       
-      setSnackbar({ open: true, message: `${reportType} report approved and published!`, severity: 'success' });
+      setSnackbar({ open: true, message: `${reportType} report approved and published! Student notified.`, severity: 'success' });
     } catch (err) {
       console.error('Error approving report:', err);
       setSnackbar({ open: true, message: 'Failed to approve report: ' + err.message, severity: 'error' });
@@ -545,8 +570,41 @@ export default function AdminLostFound() {
     if (window.confirm('Are you sure you want to reject this report? This action cannot be undone.')) {
       try {
         const collectionName = reportType === 'lost' ? 'pending_lost_reports' : 'pending_found_reports';
-        await deleteDoc(doc(db, collectionName, reportId));
-        setSnackbar({ open: true, message: `${reportType} report rejected`, severity: 'success' });
+        
+        // Get the report data before deleting
+        const reportRef = doc(db, collectionName, reportId);
+        const reportDoc = await getDoc(reportRef);
+        
+        if (reportDoc.exists()) {
+          const reportData = reportDoc.data();
+          
+          // Send notification to student about rejection
+          try {
+            if (reportData.submittedBy) {
+              await addDoc(collection(db, 'notifications'), {
+                recipientEmail: reportData.submittedBy,
+                recipientRole: 'Student',
+                title: `${reportType === 'lost' ? 'Lost' : 'Found'} Item Report Rejected`,
+                message: `Your ${reportType} item report "${reportData.name}" has been reviewed and rejected by the administrator.`,
+                type: 'lost_found_rejection',
+                read: false,
+                createdAt: new Date().toISOString(),
+                data: {
+                  itemName: reportData.name,
+                  itemType: reportType,
+                  status: 'rejected'
+                }
+              });
+              console.log('Rejection notification sent to student:', reportData.submittedBy);
+            }
+          } catch (notificationError) {
+            console.error('Failed to send rejection notification:', notificationError);
+          }
+        }
+        
+        // Delete the report
+        await deleteDoc(reportRef);
+        setSnackbar({ open: true, message: `${reportType} report rejected and student notified`, severity: 'success' });
       } catch (err) {
         setSnackbar({ open: true, message: 'Failed to reject report: ' + err.message, severity: 'error' });
       }
