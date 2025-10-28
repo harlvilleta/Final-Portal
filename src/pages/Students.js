@@ -5,11 +5,11 @@ import {
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Stack, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText,
   IconButton, Tooltip, Chip, InputAdornment, CircularProgress, useTheme, Tabs, Tab, TablePagination
 } from "@mui/material";
-import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete, Search, CloudUpload, PictureAsPdf, Close, ArrowBack } from "@mui/icons-material";
+import { Assignment, PersonAdd, ListAlt, Report, ImportExport, Dashboard, Visibility, Edit, Delete, Search, CloudUpload, PictureAsPdf, Close, ArrowBack, Refresh } from "@mui/icons-material";
 import { db, storage, logActivity } from "../firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, where, query, onSnapshot, orderBy, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { validateStudentId } from "../utils/studentValidation";
+import { validateStudentId, getStudentById } from "../utils/studentValidation";
 import StudentImport from "./StudentImport";
 
 const courses = ["BSIT", "BSBA", "BSCRIM", "BSHTM", "BEED", "BSED", "BSHM"];
@@ -655,11 +655,11 @@ function LostFound() {
             firstName: data.firstName || '',
             lastName: data.lastName || '',
             fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
-            email: data.email || '',
+            email: data.registeredEmail || data.email || '', // Use registeredEmail first, then email field
             course: data.course || '',
             year: data.year || '',
             section: data.section || '',
-            studentId: data.studentId || data.id || doc.id, // Use actual studentId if available, otherwise fallback to document id
+            studentId: data.id || data.studentId || doc.id, // Use 'id' field first (SCC-22-00000002), then fallback to studentId, then doc.id
             sex: data.sex || '',
             age: data.age || '',
             birthdate: data.birthdate || '',
@@ -667,30 +667,33 @@ function LostFound() {
             profilePic: data.profilePic || '',
             createdAt: data.createdAt || '',
             updatedAt: data.updatedAt || '',
-            isRegisteredUser: Boolean(data.isRegistered)
+            isRegisteredUser: Boolean(data.isRegistered) // Use isRegistered field from students collection
           };
         }).filter(student => !student.isRegistered);
         
-        // Fetch from 'users' collection (registered students)
-        const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
-        const registeredStudentsData = usersQuerySnapshot.docs.map(doc => {
+        // Fetch from 'RegisteredStudents' collection (registered students)
+        const registeredStudentsQuerySnapshot = await getDocs(collection(db, "RegisteredStudents"));
+        const registeredStudentsData = registeredStudentsQuerySnapshot.docs.map(doc => {
           const data = doc.data();
+          // The document ID is the studentId
+          const studentId = doc.id;
+          
           return {
-            id: doc.id,
-            firstName: data.firstName || data.fullName?.split(' ')[0] || '',
-            lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
+            id: studentId, // Use studentId as ID
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
             fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
-            email: data.email || '',
+            email: data.registeredEmail || data.email || '', // Use registeredEmail first, then email field
             course: data.course || '',
             year: data.year || '',
             section: data.section || '',
-            studentId: data.studentId || '',
+            studentId: studentId, // Student ID from document ID
             sex: data.sex || '',
             age: data.age || '',
             birthdate: data.birthdate || '',
             contact: data.contact || '',
             profilePic: data.profilePic || '',
-            createdAt: data.createdAt || '',
+            createdAt: data.registeredAt || '',
             updatedAt: data.updatedAt || '',
             isRegisteredUser: true // Flag to identify registered users
           };
@@ -1090,11 +1093,11 @@ function CourseDashboard({
             firstName: data.firstName || '',
             lastName: data.lastName || '',
             fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
-            email: data.email || '',
+            email: data.registeredEmail || data.email || '', // Use registeredEmail first, then email field
             course: data.course || '',
             year: data.year || '',
             section: data.section || '',
-            studentId: data.studentId || data.id || doc.id, // Use actual studentId if available, otherwise fallback to document id
+            studentId: data.id || data.studentId || doc.id, // Use 'id' field first (SCC-22-00000002), then fallback to studentId, then doc.id
             sex: data.sex || '',
             age: data.age || '',
             birthdate: data.birthdate || '',
@@ -1102,27 +1105,35 @@ function CourseDashboard({
             profilePic: data.profilePic || '',
             createdAt: data.createdAt || '',
             updatedAt: data.updatedAt || '',
-            isRegisteredUser: Boolean(data.isRegistered)
+            isRegisteredUser: Boolean(data.isRegistered) // Use isRegistered field from students collection
           };
         }).filter(student => !student.isRegistered);
         
-        // Fetch from 'users' collection (registered students)
-        const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
-        const registeredStudentsData = usersQuerySnapshot.docs.map(doc => {
+        // Fetch from 'RegisteredStudents' collection (registered students)
+        const registeredStudentsQuerySnapshot = await getDocs(collection(db, "RegisteredStudents"));
+        const registeredStudentsData = registeredStudentsQuerySnapshot.docs.map(doc => {
           const data = doc.data();
+          // The document ID is the studentId
+          const studentId = doc.id;
+          
           return {
-            id: doc.id,
-            firstName: data.firstName || data.fullName?.split(' ')[0] || '',
-            lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
-            email: data.email || '',
+            id: studentId, // Use studentId as ID
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+            email: data.registeredEmail || data.email || '', // Use registeredEmail first, then email field
             course: data.course || '',
             year: data.year || '',
             section: data.section || '',
-            studentId: data.studentId || '',
-            createdAt: data.createdAt || '',
-            updatedAt: data.updatedAt || '',
+            studentId: studentId, // Student ID from document ID
+            sex: data.sex || '',
+            age: data.age || '',
+            birthdate: data.birthdate || '',
+            contact: data.contact || '',
             profilePic: data.profilePic || '',
-            isRegisteredUser: true
+            createdAt: data.registeredAt || '',
+            updatedAt: data.updatedAt || '',
+            isRegisteredUser: true // Flag to identify registered users
           };
         });
         
@@ -1138,6 +1149,11 @@ function CourseDashboard({
         });
         
         console.log(`${courseName} students fetched successfully:`, sortedStudents.length);
+        console.log('📧 Sample student email data:', sortedStudents.slice(0, 3).map(s => ({ 
+          name: s.fullName, 
+          email: s.email, 
+          studentId: s.studentId 
+        })));
         setStudents(sortedStudents);
       } catch (error) {
         console.error("Error fetching students:", error);
@@ -1483,6 +1499,17 @@ function CourseDashboard({
                   color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
+                  minWidth: '180px',
+                  maxWidth: '180px'
+                }}>
+                  Email
+                </TableCell>
+                <TableCell sx={{ 
+                  bgcolor: '#800000',
+                  fontWeight: 'bold',
+                  color: '#ffffff',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px',
                   minWidth: '100px',
                   maxWidth: '100px'
                 }}>
@@ -1544,16 +1571,35 @@ function CourseDashboard({
                         {(student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()).charAt(0)}
                       </Avatar>
                       <Box sx={{ minWidth: 0, flex: 1 }}>
-                        <Typography variant="body2" sx={{ 
-                          fontWeight: 'medium',
-                          fontSize: '0.875rem',
-                          lineHeight: 1.2,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="body2" sx={{ 
+                            fontWeight: 'medium',
+                            fontSize: '0.875rem',
+                            lineHeight: 1.2,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim()}
+                          </Typography>
+                          {/* Show indicator for recent updates */}
+                          {student.lastUpdated && 
+                           new Date(student.lastUpdated) > new Date(Date.now() - 5 * 60 * 1000) && (
+                            <Chip
+                              label="Updated"
+                              size="small"
+                              sx={{
+                                height: 16,
+                                fontSize: '0.65rem',
+                                bgcolor: '#4caf50',
+                                color: 'white',
+                                '& .MuiChip-label': {
+                                  px: 0.5
+                                }
+                              }}
+                            />
+                          )}
+                        </Box>
                         <Typography variant="caption" sx={{ 
                           color: 'text.secondary',
                           fontSize: '0.75rem',
@@ -1565,12 +1611,29 @@ function CourseDashboard({
                     </Box>
                   </TableCell>
                   <TableCell sx={{ padding: '12px 16px', minWidth: '120px', maxWidth: '120px' }}>
+                    <Tooltip 
+                      title={student.lastUpdated ? `Last updated: ${new Date(student.lastUpdated).toLocaleString()}${student.updatedBy ? ` by ${student.updatedBy}` : ''}` : 'No update information'}
+                      arrow
+                    >
+                      <Typography variant="body2" sx={{ 
+                        fontSize: '0.875rem',
+                        fontWeight: 'medium',
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                        cursor: student.lastUpdated ? 'help' : 'default'
+                      }}>
+                        {student.studentId || 'N/A'}
+                      </Typography>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell sx={{ padding: '12px 16px', minWidth: '180px', maxWidth: '180px' }}>
                     <Typography variant="body2" sx={{ 
                       fontSize: '0.875rem',
-                      fontWeight: 'medium',
-                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+                      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
                     }}>
-                      {student.studentId || 'N/A'}
+                      {student.email || 'N/A'}
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ padding: '12px 16px', minWidth: '100px', maxWidth: '100px' }}>
@@ -1697,7 +1760,7 @@ function StudentList({
   useEffect(() => {
     console.log('🎯 Setting up real-time listeners for students...');
     
-    // Real-time listener for unregistered students
+    // Real-time listener for students collection (both unregistered and registered students)
     const unsubStudents = onSnapshot(
       collection(db, "students"),
       (snapshot) => {
@@ -1708,11 +1771,11 @@ function StudentList({
             firstName: data.firstName || '',
             lastName: data.lastName || '',
             fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
-            email: data.email || '',
+            email: data.registeredEmail || data.email || '', // Use registeredEmail first, then email field
             course: data.course || '',
             year: data.year || '',
             section: data.section || '',
-            studentId: data.studentId || data.id || doc.id, // Use actual studentId if available, otherwise fallback to document id
+            studentId: data.id || data.studentId || doc.id, // Use 'id' field first (SCC-22-00000002), then fallback to studentId, then doc.id
             sex: data.sex || '',
             age: data.age || '',
             birthdate: data.birthdate || '',
@@ -1720,26 +1783,73 @@ function StudentList({
             profilePic: data.profilePic || '',
             createdAt: data.createdAt || '',
             updatedAt: data.updatedAt || '',
-            isRegisteredUser: Boolean(data.isRegistered) // Ensure boolean value
+            lastUpdated: data.lastUpdated || '', // Add lastUpdated field
+            updatedBy: data.updatedBy || '', // Add updatedBy field
+            isRegisteredUser: Boolean(data.isRegistered), // Use isRegistered field from students collection
+            isRegistered: Boolean(data.isRegistered), // Add this field for consistency
+            registeredAt: data.registeredAt || '',
+            registeredEmail: data.registeredEmail || '',
+            registeredUserId: data.registeredUserId || '',
+            // Add additional fields that might be updated by students
+            middleInitial: data.middleInitial || '',
+            sccNumber: data.sccNumber || '',
+            fatherName: data.fatherName || '',
+            fatherOccupation: data.fatherOccupation || '',
+            motherName: data.motherName || '',
+            motherOccupation: data.motherOccupation || '',
+            guardian: data.guardian || '',
+            guardianContact: data.guardianContact || '',
+            homeAddress: data.homeAddress || '',
+            teacherId: data.teacherId || '',
+            classroomUpdatedAt: data.classroomUpdatedAt || '',
+            classroomUpdatedBy: data.classroomUpdatedBy || ''
           };
-        }).filter(student => !student.isRegistered); // Only show unregistered students
+        }); // Remove filter - show both registered and unregistered
         
-        console.log('📋 Unregistered students updated:', studentsData.length);
+        console.log('👥 All students updated:', studentsData.length);
+        console.log('📊 Students data:', studentsData.map(s => ({
+          id: s.id,
+          studentId: s.studentId,
+          fullName: s.fullName,
+          isRegisteredUser: s.isRegisteredUser,
+          isRegistered: s.isRegistered,
+          lastUpdated: s.lastUpdated,
+          updatedBy: s.updatedBy
+        })));
         
-        // Update unregistered students in state
-        setStudents(prevStudents => {
-          const registeredStudents = prevStudents.filter(s => s.isRegisteredUser);
-          const allStudents = [...studentsData, ...registeredStudents];
+        // Debug: Count registered vs unregistered
+        const registeredCount = studentsData.filter(s => s.isRegisteredUser).length;
+        const unregisteredCount = studentsData.filter(s => !s.isRegisteredUser).length;
+        console.log(`📈 Registration status: ${registeredCount} registered, ${unregisteredCount} unregistered`);
+        
+        // Debug: Show recent updates
+        const recentUpdates = studentsData.filter(s => s.lastUpdated && 
+          new Date(s.lastUpdated) > new Date(Date.now() - 5 * 60 * 1000) // Last 5 minutes
+        );
+        if (recentUpdates.length > 0) {
+          console.log('🔄 Recent updates detected:', recentUpdates.map(s => ({
+            name: s.fullName,
+            studentId: s.studentId,
+            lastUpdated: s.lastUpdated,
+            updatedBy: s.updatedBy
+          })));
           
-          // Sort students by creation date (newest first)
-          const sortedStudents = allStudents.sort((a, b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-            const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-            return dateB - dateA; // Descending order (newest first)
+          // Show notification for recent updates
+          const updateMessage = recentUpdates.length === 1 
+            ? `${recentUpdates[0].fullName} updated their profile`
+            : `${recentUpdates.length} students updated their profiles`;
+          
+          setSnackbar({
+            open: true,
+            message: updateMessage,
+            severity: 'info'
           });
-          
-          return sortedStudents;
-        });
+        }
+        
+        // Update all students in state
+        setStudents(studentsData);
+        
+        setLoading(false);
       },
       (error) => {
         console.error('❌ Error listening to students collection:', error);
@@ -1747,62 +1857,12 @@ function StudentList({
       }
     );
     
-    // Real-time listener for registered students
-    const unsubUsers = onSnapshot(
-      query(collection(db, "users"), where("role", "==", "Student")),
-      (snapshot) => {
-        const registeredStudentsData = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            firstName: data.firstName || data.fullName?.split(' ')[0] || '',
-            lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
-            fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
-            email: data.email || '',
-            course: data.course || '',
-            year: data.year || '',
-            section: data.section || '',
-            studentId: data.studentId || '',
-            sex: data.sex || '',
-            age: data.age || '',
-            birthdate: data.birthdate || '',
-            contact: data.contact || '',
-            profilePic: data.profilePic || '',
-            createdAt: data.createdAt || '',
-            updatedAt: data.updatedAt || '',
-            isRegisteredUser: true // Flag to identify registered users
-          };
-        });
-        
-        console.log('👥 Registered students updated:', registeredStudentsData.length);
-        
-        // Update registered students in state
-        setStudents(prevStudents => {
-          const unregisteredStudents = prevStudents.filter(s => !s.isRegisteredUser);
-          const allStudents = [...unregisteredStudents, ...registeredStudentsData];
-          
-          // Sort students by creation date (newest first)
-          const sortedStudents = allStudents.sort((a, b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-            const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-            return dateB - dateA; // Descending order (newest first)
-          });
-          
-          return sortedStudents;
-        });
-        
-        setLoading(false);
-      },
-      (error) => {
-        console.error('❌ Error listening to users collection:', error);
-        setLoading(false);
-      }
-    );
+    // Note: No longer need separate RegisteredStudents listener since all students 
+    // (both registered and unregistered) are now stored in the students collection
     
     return () => {
       console.log('🔄 Cleaning up real-time listeners...');
       unsubStudents();
-      unsubUsers();
     };
   }, []);
 
@@ -1901,9 +1961,9 @@ function StudentList({
 
   // Get unique courses for filter dropdown
   const availableCourses = useMemo(() => {
-    const courses = [...new Set(students.map(student => student.course).filter(course => course && course.trim() !== ''))];
+    // Use the predefined courses list instead of dynamically generating from students
     return courses.sort();
-  }, [students]);
+  }, []);
 
   // Pagination handlers
   const handleChangePage = (event, newPage) => {
@@ -2005,39 +2065,66 @@ function StudentList({
     try {
       console.log("Refreshing students from Firebase...");
       
-      // Fetch from 'students' collection (manually added students)
+      // Fetch from 'students' collection (both registered and unregistered students)
       const studentsQuerySnapshot = await getDocs(collection(db, "students"));
-      const studentsData = studentsQuerySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
-      // Fetch from 'users' collection (registered students)
-      const usersQuerySnapshot = await getDocs(query(collection(db, "users"), where("role", "==", "Student")));
-      const registeredStudentsData = usersQuerySnapshot.docs.map(doc => {
+      const studentsData = studentsQuerySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
-          firstName: data.firstName || data.fullName?.split(' ')[0] || '',
-          lastName: data.lastName || data.fullName?.split(' ').slice(1).join(' ') || '',
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
           email: data.email || '',
           course: data.course || '',
           year: data.year || '',
           section: data.section || '',
-          studentId: data.studentId || '',
+          studentId: data.studentId || data.id || doc.id, // Use actual studentId if available, otherwise fallback to document id
+          sex: data.sex || '',
+          age: data.age || '',
+          birthdate: data.birthdate || '',
+          contact: data.contact || '',
+          profilePic: data.profilePic || '',
           createdAt: data.createdAt || '',
           updatedAt: data.updatedAt || '',
-          profilePic: data.profilePic || '',
-          isRegisteredUser: true
+          lastUpdated: data.lastUpdated || '', // Add lastUpdated field
+          updatedBy: data.updatedBy || '', // Add updatedBy field
+          isRegisteredUser: Boolean(data.isRegistered), // Ensure boolean value
+          isRegistered: Boolean(data.isRegistered), // Add this field for consistency
+          registeredAt: data.registeredAt || '',
+          registeredEmail: data.registeredEmail || '',
+          registeredUserId: data.registeredUserId || '',
+          // Add additional fields that might be updated by students
+          middleInitial: data.middleInitial || '',
+          sccNumber: data.sccNumber || '',
+          fatherName: data.fatherName || '',
+          fatherOccupation: data.fatherOccupation || '',
+          motherName: data.motherName || '',
+          motherOccupation: data.motherOccupation || '',
+          guardian: data.guardian || '',
+          guardianContact: data.guardianContact || '',
+          homeAddress: data.homeAddress || '',
+          teacherId: data.teacherId || '',
+          classroomUpdatedAt: data.classroomUpdatedAt || '',
+          classroomUpdatedBy: data.classroomUpdatedBy || ''
         };
-      });
-      
-      // Combine both collections
-      const allStudents = [...studentsData, ...registeredStudentsData];
+      }); // Show both registered and unregistered students
       
       // Sort students by creation date (newest first)
-      const sortedStudents = allStudents.sort((a, b) => {
+      const sortedStudents = studentsData.sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
         const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
         return dateB - dateA;
       });
+      
+      // Debug: Count registered vs unregistered
+      const registeredCount = sortedStudents.filter(s => s.isRegisteredUser).length;
+      const unregisteredCount = sortedStudents.filter(s => !s.isRegisteredUser).length;
+      console.log(`🔄 Refresh complete: ${registeredCount} registered, ${unregisteredCount} unregistered`);
+      console.log('📧 Sample student email data (StudentList):', sortedStudents.slice(0, 3).map(s => ({ 
+        name: s.fullName, 
+        email: s.email, 
+        studentId: s.studentId 
+      })));
       
       setStudents(sortedStudents);
       setSnackbar({ open: true, message: "Student list refreshed successfully!", severity: "success" });
@@ -2048,6 +2135,285 @@ function StudentList({
       setLoading(false);
     }
   }, []);
+
+  // Debug function to check specific student ID
+  const debugStudentId = useCallback(async (studentId) => {
+    try {
+      console.log(`🔍 Debugging student ID: ${studentId}`);
+      
+      // Check all collections for this student ID
+      const [studentsSnapshot, usersSnapshot, registeredStudentsSnapshot] = await Promise.all([
+        getDocs(query(collection(db, "students"), where("studentId", "==", studentId))),
+        getDocs(query(collection(db, "users"), where("studentId", "==", studentId))),
+        getDocs(query(collection(db, "RegisteredStudents"), where("studentId", "==", studentId)))
+      ]);
+      
+      // Also check by document ID
+      const [studentsByIdSnapshot, registeredStudentsByIdSnapshot] = await Promise.all([
+        getDocs(query(collection(db, "students"), where("id", "==", studentId))),
+        getDocs(query(collection(db, "RegisteredStudents"), where("id", "==", studentId)))
+      ]);
+      
+      const debugInfo = {
+        studentId,
+        studentsCollection: {
+          byStudentId: studentsSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() })),
+          byDocumentId: studentsByIdSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
+        },
+        usersCollection: {
+          byStudentId: usersSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
+        },
+        registeredStudentsCollection: {
+          byStudentId: registeredStudentsSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() })),
+          byDocumentId: registeredStudentsByIdSnapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
+        }
+      };
+      
+      console.log('🔍 Debug results:', debugInfo);
+      
+      // Analyze the situation
+      const hasUsersData = usersSnapshot.size > 0;
+      const hasStudentsData = studentsSnapshot.size > 0 || studentsByIdSnapshot.size > 0;
+      const hasRegisteredStudentsData = registeredStudentsSnapshot.size > 0 || registeredStudentsByIdSnapshot.size > 0;
+      
+      let analysisMessage = '';
+      if (hasUsersData && !hasStudentsData && !hasRegisteredStudentsData) {
+        analysisMessage = 'Student registered but missing from students collections. This is the issue!';
+      } else if (hasUsersData && hasRegisteredStudentsData && !hasStudentsData) {
+        analysisMessage = 'Student properly registered and in RegisteredStudents, but missing from original students collection.';
+      } else if (!hasUsersData && !hasStudentsData && !hasRegisteredStudentsData) {
+        analysisMessage = 'Student not found in any collection. May need to be imported first.';
+      } else {
+        analysisMessage = 'Student data found in some collections.';
+      }
+      
+      console.log('📊 Analysis:', analysisMessage);
+      
+      // Show results in snackbar
+      const totalFound = studentsSnapshot.size + usersSnapshot.size + registeredStudentsSnapshot.size + 
+                        studentsByIdSnapshot.size + registeredStudentsByIdSnapshot.size;
+      
+      setSnackbar({ 
+        open: true, 
+        message: `${analysisMessage} Found ${totalFound} records. Check console for details.`, 
+        severity: totalFound > 0 ? "success" : "warning" 
+      });
+      
+      return debugInfo;
+    } catch (error) {
+      console.error('❌ Error debugging student ID:', error);
+      setSnackbar({ 
+        open: true, 
+        message: `Error debugging student ID: ${error.message}`, 
+        severity: "error" 
+      });
+    }
+  }, []);
+
+  // Function to manually fix a student registration
+  const fixStudentRegistration = useCallback(async (studentId) => {
+    try {
+      console.log(`🔧 Attempting to fix registration for student ID: ${studentId}`);
+      
+      // First, check if student exists in users collection
+      const usersSnapshot = await getDocs(query(collection(db, "users"), where("studentId", "==", studentId)));
+      
+      if (usersSnapshot.empty) {
+        setSnackbar({ 
+          open: true, 
+          message: `Student ${studentId} not found in users collection. Cannot fix registration.`, 
+          severity: "error" 
+        });
+        return;
+      }
+      
+      const userDoc = usersSnapshot.docs[0];
+      const userData = userDoc.data();
+      
+      console.log('📋 Found user data:', userData);
+      
+      // Check if already exists in RegisteredStudents
+      const registeredStudentsSnapshot = await getDocs(query(collection(db, "RegisteredStudents"), where("studentId", "==", studentId)));
+      
+      if (!registeredStudentsSnapshot.empty) {
+        setSnackbar({ 
+          open: true, 
+          message: `Student ${studentId} already exists in RegisteredStudents collection.`, 
+          severity: "info" 
+        });
+        return;
+      }
+      
+      // Create RegisteredStudents entry
+      const registeredStudentData = {
+        studentId: studentId,
+        email: userData.email,
+        fullName: userData.fullName,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        course: userData.course || '',
+        year: userData.year || '',
+        section: userData.section || '',
+        sex: userData.sex || '',
+        contact: userData.contact || '',
+        birthdate: userData.birthdate || '',
+        age: userData.age || '',
+        profilePic: userData.profilePic || '',
+        uid: userData.uid,
+        registeredAt: userData.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        transferredFromStudents: userData.transferredFromStudents || false,
+        transferDate: userData.transferDate || null,
+        originalStudentData: userData.originalStudentData || null,
+        manuallyFixed: true,
+        fixedAt: new Date().toISOString()
+      };
+      
+      console.log('📦 Creating RegisteredStudents entry:', registeredStudentData);
+      
+      await setDoc(doc(db, 'RegisteredStudents', studentId), registeredStudentData);
+      
+      // Also update the original student record if it exists
+      const studentsSnapshot = await getDocs(query(collection(db, "students"), where("studentId", "==", studentId)));
+      if (!studentsSnapshot.empty) {
+        const studentDoc = studentsSnapshot.docs[0];
+        await updateDoc(studentDoc.ref, {
+          isRegistered: true,
+          registeredAt: new Date().toISOString(),
+          registeredEmail: userData.email,
+          transferredToUsers: true,
+          transferredToRegisteredStudents: true,
+          manuallyFixed: true
+        });
+        console.log('✅ Updated original student record');
+      }
+      
+      setSnackbar({ 
+        open: true, 
+        message: `Successfully fixed registration for ${studentId}! Student should now appear in registered table.`, 
+        severity: "success" 
+      });
+      
+      // Refresh the student list
+      setTimeout(() => {
+        handleRefresh();
+      }, 1000);
+      
+    } catch (error) {
+      console.error('❌ Error fixing student registration:', error);
+      setSnackbar({ 
+        open: true, 
+        message: `Error fixing registration: ${error.message}`, 
+        severity: "error" 
+      });
+    }
+  }, [handleRefresh]);
+
+  // Function to test the complete registration process
+  const testRegistrationProcess = useCallback(async (studentId) => {
+    try {
+      console.log(`🧪 Testing registration process for: ${studentId}`);
+      
+      // Check if student exists in users collection
+      const usersSnapshot = await getDocs(query(collection(db, "users"), where("studentId", "==", studentId)));
+      
+      if (usersSnapshot.empty) {
+        setSnackbar({ 
+          open: true, 
+          message: `Student ${studentId} not found in users collection. Cannot test registration process.`, 
+          severity: "error" 
+        });
+        return;
+      }
+      
+      const userDoc = usersSnapshot.docs[0];
+      const userData = userDoc.data();
+      
+      console.log('📋 Found user data:', userData);
+      
+      // Simulate the registration process by calling createSingleUser logic
+      const studentData = {
+        id: studentId,
+        studentId: studentId,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        fullName: userData.fullName || '',
+        email: userData.email || '',
+        sex: userData.sex || '',
+        course: userData.course || '',
+        year: userData.year || '',
+        section: userData.section || '',
+        contact: userData.contact || '',
+        birthdate: userData.birthdate || '',
+        age: userData.age || '',
+        image: userData.profilePic || '',
+        createdAt: userData.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isRegistered: true,
+        registeredAt: userData.createdAt || new Date().toISOString(),
+        registeredEmail: userData.email,
+        registeredUserId: userData.uid,
+        transferredToUsers: true,
+        transferredToRegisteredStudents: true,
+        source: 'manual_test',
+        uid: userData.uid
+      };
+      
+      console.log('📦 Creating student record in students collection:', studentData);
+      
+      // Create/update student record in students collection
+      await setDoc(doc(db, 'students', studentId), studentData);
+      console.log('✅ Student record created/updated in students collection');
+      
+      // Also create RegisteredStudents entry
+      const registeredStudentData = {
+        studentId: studentId,
+        email: userData.email,
+        fullName: userData.fullName,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        course: userData.course || '',
+        year: userData.year || '',
+        section: userData.section || '',
+        sex: userData.sex || '',
+        contact: userData.contact || '',
+        birthdate: userData.birthdate || '',
+        age: userData.age || '',
+        profilePic: userData.profilePic || '',
+        uid: userData.uid,
+        registeredAt: userData.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        transferredFromStudents: false,
+        transferDate: null,
+        originalStudentData: null,
+        manuallyTested: true,
+        testedAt: new Date().toISOString()
+      };
+      
+      console.log('📦 Creating RegisteredStudents entry:', registeredStudentData);
+      await setDoc(doc(db, 'RegisteredStudents', studentId), registeredStudentData);
+      console.log('✅ RegisteredStudents entry created');
+      
+      setSnackbar({ 
+        open: true, 
+        message: `Successfully tested registration process for ${studentId}! Student should now appear in both collections.`, 
+        severity: "success" 
+      });
+      
+      // Refresh the student list
+      setTimeout(() => {
+        handleRefresh();
+      }, 1000);
+      
+    } catch (error) {
+      console.error('❌ Error testing registration process:', error);
+      setSnackbar({ 
+        open: true, 
+        message: `Error testing registration process: ${error.message}`, 
+        severity: "error" 
+      });
+    }
+  }, [handleRefresh]);
 
   // Handle view student details
   const handleViewStudent = (student) => {
@@ -2489,6 +2855,98 @@ School Administration
           </Button>
           <Button 
             variant="outlined" 
+            onClick={() => debugStudentId('SCC-22-12345672')}
+            sx={{ 
+              bgcolor: '#ffffff', 
+              color: '#000000', 
+              borderColor: '#000000', 
+              fontSize: '0.75rem',
+              fontWeight: 400,
+              textTransform: 'none',
+              padding: '6px 12px',
+              minHeight: '32px',
+              boxShadow: 'none',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000',
+                boxShadow: 'none'
+              } 
+            }}
+          >
+            Debug KEVIN
+          </Button>
+          <Button 
+            variant="outlined" 
+            onClick={() => fixStudentRegistration('SCC-22-12345672')}
+            sx={{ 
+              bgcolor: '#ffffff', 
+              color: '#000000', 
+              borderColor: '#000000', 
+              fontSize: '0.75rem',
+              fontWeight: 400,
+              textTransform: 'none',
+              padding: '6px 12px',
+              minHeight: '32px',
+              boxShadow: 'none',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000',
+                boxShadow: 'none'
+              } 
+            }}
+          >
+            Fix KEVIN
+          </Button>
+          <Button 
+            variant="outlined" 
+            onClick={() => createMissingStudentRecord('SCC-22-12345672')}
+            sx={{ 
+              bgcolor: '#ffffff', 
+              color: '#000000', 
+              borderColor: '#000000', 
+              fontSize: '0.75rem',
+              fontWeight: 400,
+              textTransform: 'none',
+              padding: '6px 12px',
+              minHeight: '32px',
+              boxShadow: 'none',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000',
+                boxShadow: 'none'
+              } 
+            }}
+          >
+            Create KEVIN Record
+          </Button>
+          <Button 
+            variant="outlined" 
+            onClick={() => testRegistrationProcess('SCC-22-12345672')}
+            sx={{ 
+              bgcolor: '#ffffff', 
+              color: '#000000', 
+              borderColor: '#000000', 
+              fontSize: '0.75rem',
+              fontWeight: 400,
+              textTransform: 'none',
+              padding: '6px 12px',
+              minHeight: '32px',
+              boxShadow: 'none',
+              '&:hover': { 
+                bgcolor: '#800000', 
+                color: '#fff', 
+                borderColor: '#800000',
+                boxShadow: 'none'
+              } 
+            }}
+          >
+            Test Registration
+          </Button>
+          <Button 
+            variant="outlined" 
             onClick={handleExportToPDF}
             disabled={filteredStudents.length === 0}
             sx={{ 
@@ -2703,6 +3161,17 @@ School Administration
                   color: '#ffffff',
                   fontSize: '0.875rem',
                   padding: '12px 16px',
+                  minWidth: '180px',
+                  maxWidth: '180px'
+                }}>
+                  Email
+                </TableCell>
+                <TableCell sx={{ 
+                  bgcolor: '#800000',
+                  fontWeight: 'bold',
+                  color: '#ffffff',
+                  fontSize: '0.875rem',
+                  padding: '12px 16px',
                   minWidth: '100px',
                   maxWidth: '100px'
                 }}>
@@ -2808,6 +3277,17 @@ School Administration
                         {student.studentId || 'N/A'}
                       </Typography>
                     </Tooltip>
+                  </TableCell>
+                  <TableCell sx={{ padding: '8px 12px', minWidth: '180px', maxWidth: '180px' }}>
+                    <Typography variant="body2" sx={{ 
+                      fontSize: '0.8rem',
+                      lineHeight: 1.2,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {student.email || 'N/A'}
+                    </Typography>
                   </TableCell>
                   <TableCell sx={{ padding: '8px 12px', minWidth: '100px', maxWidth: '100px' }}>
                     <Chip 
@@ -3220,7 +3700,6 @@ function EditStudentForm({ student, onClose, onSuccess }) {
     }));
   };
 
-  // Handle student ID validation
   const handleStudentIdChange = async (e) => {
     const studentId = e.target.value;
     setProfile(prev => ({ ...prev, id: studentId }));
