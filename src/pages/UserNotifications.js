@@ -28,12 +28,18 @@ export default function UserNotifications({ currentUser }) {
 
     const notificationsQuery = query(
       collection(db, "notifications"),
-      where("recipientEmail", "==", currentUser.email),
-      orderBy("createdAt", "desc")
+      where("recipientEmail", "==", currentUser.email)
+      // Removed orderBy to avoid composite index requirement - sorting client-side instead
     );
     
     const unsubscribe = onSnapshot(notificationsQuery, (snap) => {
-      const allNotifications = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const allNotifications = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => {
+          // Sort by createdAt in descending order (newest first)
+          const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          return dateB - dateA;
+        });
       
       console.log('📊 All notifications received for student:', {
         email: currentUser.email,
@@ -317,7 +323,7 @@ export default function UserNotifications({ currentUser }) {
         <List>
           {notifications.map((notification) => (
             <Card key={notification.id} sx={{ mb: 2, border: notification.read ? '1px solid #e0e0e0' : '2px solid #1976d2' }}>
-              <CardContent>
+              <CardContent sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                   <Avatar sx={{ bgcolor: notification.read ? 'grey.300' : 'primary.main' }}>
                     {getNotificationIcon(notification.type, notification.severity)}
@@ -384,20 +390,8 @@ export default function UserNotifications({ currentUser }) {
                       </Alert>
                     )}
                     
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="caption" color="textSecondary">
-                        {new Date(notification.createdAt).toLocaleString()}
-                      </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
                       <Stack direction="row" spacing={1}>
-                        {notification.type === 'violation' && notification.violationDetails && (
-                          <Button 
-                            size="small" 
-                            onClick={() => handleViewDetails(notification)}
-                            variant="outlined"
-                          >
-                            View Details
-                          </Button>
-                        )}
                         {!notification.read && (
                           <Button 
                             size="small" 
@@ -407,7 +401,19 @@ export default function UserNotifications({ currentUser }) {
                             Mark as Read
                           </Button>
                         )}
+                        {notification.type === 'violation' && notification.violationDetails && (
+                          <Button 
+                            size="small" 
+                            onClick={() => handleViewDetails(notification)}
+                            variant="outlined"
+                          >
+                            View Details
+                          </Button>
+                        )}
                       </Stack>
+                      <Typography variant="caption" color="textSecondary">
+                        {new Date(notification.createdAt).toLocaleString()}
+                      </Typography>
                     </Box>
                   </Box>
                 </Box>

@@ -56,15 +56,21 @@ export default function UserViolations({ currentUser }) {
     
     const violationsQuery = query(
       collection(db, "violations"),
-      where("studentEmail", "==", activeUser.email),
-      orderBy("createdAt", "desc")
+      where("studentEmail", "==", activeUser.email)
+      // Removed orderBy to avoid composite index requirement - sorting client-side instead
     );
 
     const unsubscribe = onSnapshot(violationsQuery, (snapshot) => {
       const violationsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }));
+      }))
+      .sort((a, b) => {
+        // Sort by createdAt in descending order (newest first)
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+        return dateB - dateA;
+      });
       console.log("UserViolations - Received violations:", violationsData.length);
       setViolations(violationsData);
       setLoading(false);

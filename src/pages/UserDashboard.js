@@ -1089,6 +1089,248 @@ function UserOverview({ currentUser }) {
             </CardContent>
           </Card>
         </Grid>
+
+        {/* My Violation Records */}
+        <Grid item xs={12}>
+          <Box sx={{ mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="h5" fontWeight={700} sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#d32f2f' }}>
+                  My Violation Records
+                </Typography>
+                {stats.totalViolations > 0 && (
+                  <Chip 
+                    label={`${stats.totalViolations} Total`} 
+                    sx={{ 
+                      fontWeight: 600,
+                      bgcolor: '#d32f2f',
+                      color: 'white'
+                    }}
+                  />
+                )}
+                {stats.pendingViolations > 0 && (
+                  <Chip 
+                    label={`${stats.pendingViolations} Pending`} 
+                    sx={{ 
+                      fontWeight: 600,
+                      bgcolor: '#ff9800',
+                      color: 'white'
+                    }}
+                  />
+                )}
+              </Box>
+              <Button 
+                size="small" 
+                sx={{ 
+                  textTransform: 'none',
+                  color: theme.palette.mode === 'dark' ? '#ffffff' : '#d32f2f',
+                  borderColor: theme.palette.mode === 'dark' ? '#ffffff' : '#d32f2f',
+                  '&:hover': {
+                    backgroundColor: 'rgba(211, 47, 47, 0.1)',
+                    borderColor: '#d32f2f',
+                    color: '#d32f2f',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 4px 8px rgba(211, 47, 47, 0.2)'
+                  },
+                  transition: 'all 0.2s ease-in-out'
+                }}
+                variant="outlined"
+                component={Link} 
+                to="/violations"
+                startIcon={<Security />}
+              >
+                View All Violations
+              </Button>
+            </Box>
+            
+            {userViolations.length > 0 ? (
+              <Grid container spacing={3}>
+                {userViolations.map((violation) => {
+                  // Determine severity color
+                  const getSeverityColor = () => {
+                    switch (violation.severity) {
+                      case 'Critical': return '#d32f2f';
+                      case 'Major': return '#f57c00';
+                      case 'Minor': return '#fbc02d';
+                      default: return '#616161';
+                    }
+                  };
+
+                  // Determine status color
+                  const getStatusColor = () => {
+                    switch (violation.status) {
+                      case 'Pending': return '#ff9800';
+                      case 'Solved': return '#4caf50';
+                      case 'In Progress': return '#2196f3';
+                      default: return '#757575';
+                    }
+                  };
+
+                  // Determine classification color
+                  const getClassificationColor = () => {
+                    switch (violation.classification) {
+                      case 'Behavioral': return '#e91e63';
+                      case 'Academic': return '#9c27b0';
+                      case 'Attendance': return '#3f51b5';
+                      case 'Dress Code': return '#00bcd4';
+                      default: return '#607d8b';
+                    }
+                  };
+
+                  return (
+                    <Grid item xs={12} sm={6} md={4} key={violation.id}>
+                      <Card 
+                        sx={{ 
+                          height: '100%',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease-in-out',
+                          borderLeft: `4px solid ${getSeverityColor()}`,
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: 6
+                          }
+                        }}
+                        onClick={() => navigate('/violations')}
+                      >
+                        <CardContent>
+                          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+                            <Typography 
+                              variant="h6" 
+                              fontWeight={700} 
+                              sx={{ 
+                                color: theme.palette.mode === 'dark' ? '#ffffff' : 'inherit',
+                                flex: 1,
+                                pr: 1
+                              }}
+                            >
+                              {violation.violationType || violation.violation || 'Violation'}
+                            </Typography>
+                            <Avatar sx={{ 
+                              bgcolor: getSeverityColor(),
+                              width: 40, 
+                              height: 40
+                            }}>
+                              <Warning sx={{ fontSize: 20, color: 'white' }} />
+                            </Avatar>
+                          </Box>
+
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                            <Chip 
+                              label={violation.severity || 'N/A'} 
+                              size="small"
+                              sx={{ 
+                                fontWeight: 600,
+                                bgcolor: `${getSeverityColor()}20`,
+                                color: getSeverityColor(),
+                                border: `1px solid ${getSeverityColor()}`,
+                                fontSize: '0.7rem'
+                              }}
+                            />
+                            <Chip 
+                              label={violation.classification || 'N/A'} 
+                              size="small"
+                              sx={{ 
+                                fontWeight: 600,
+                                bgcolor: `${getClassificationColor()}20`,
+                                color: getClassificationColor(),
+                                border: `1px solid ${getClassificationColor()}`,
+                                fontSize: '0.7rem'
+                              }}
+                            />
+                            <Chip 
+                              label={violation.status || 'Pending'} 
+                              size="small"
+                              sx={{ 
+                                fontWeight: 600,
+                                bgcolor: getStatusColor(),
+                                color: 'white',
+                                fontSize: '0.7rem'
+                              }}
+                            />
+                          </Box>
+
+                          <Typography 
+                            variant="body2" 
+                            color="text.secondary" 
+                            sx={{ 
+                              mb: 2,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden'
+                            }}
+                          >
+                            {violation.description || 'No description provided'}
+                          </Typography>
+
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                            <Chip 
+                              label={`📅 ${violation.date || (violation.createdAt ? new Date(violation.createdAt).toLocaleDateString() : 'N/A')}`} 
+                              size="small" 
+                              variant="outlined" 
+                              sx={{ fontSize: '0.7rem', justifyContent: 'flex-start' }}
+                            />
+                            {violation.reportedByName && (
+                              <Chip 
+                                label={`👤 Reported by: ${violation.reportedByName}`} 
+                                size="small" 
+                                variant="outlined"
+                                sx={{ fontSize: '0.7rem', justifyContent: 'flex-start' }}
+                              />
+                            )}
+                          </Box>
+
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography 
+                              variant="caption" 
+                              color="text.secondary" 
+                              sx={{ fontWeight: 500 }}
+                            >
+                              {violation.createdAt ? new Date(violation.createdAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              }) : 'Recent'}
+                            </Typography>
+                            <Button 
+                              size="small" 
+                              variant="outlined"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate('/violations');
+                              }}
+                              sx={{ 
+                                minWidth: 'auto',
+                                px: 2,
+                                py: 0.5,
+                                fontSize: '0.75rem',
+                                textTransform: 'none'
+                              }}
+                            >
+                              View
+                            </Button>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            ) : (
+              <Card>
+                <CardContent sx={{ textAlign: 'center', py: 6 }}>
+                  <Security sx={{ fontSize: 64, color: '#4caf50', mb: 2 }} />
+                  <Typography variant="h6" fontWeight={600} sx={{ color: '#4caf50', mb: 1 }}>
+                    No Violations Found
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Great! You have a clean record. Keep up the excellent behavior!
+                  </Typography>
+                </CardContent>
+              </Card>
+            )}
+          </Box>
+        </Grid>
       </Grid>
     </Box>
   );

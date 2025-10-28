@@ -30,8 +30,15 @@ export default function ViolationHistory() {
         setViolations(violationsData);
 
         // Fetch violation meetings
-        const meetingsSnap = await getDocs(query(collection(db, "meetings"), where("type", "==", "violation_meeting"), orderBy("createdAt", "desc")));
-        const meetingsData = meetingsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Removed orderBy to avoid composite index requirement - sorting client-side instead
+        const meetingsSnap = await getDocs(query(collection(db, "meetings"), where("type", "==", "violation_meeting")));
+        const meetingsData = meetingsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+          .sort((a, b) => {
+            // Sort by createdAt in descending order (newest first)
+            const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+            const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+            return dateB - dateA;
+          });
         setMeetings(meetingsData);
 
         // Fetch violation-related activities

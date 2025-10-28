@@ -31,9 +31,8 @@ export default function NotificationBadge() {
         // Fetch notifications for the current user only
         const notificationsQuery = query(
           collection(db, "notifications"),
-          where("recipientEmail", "==", currentUser.email),
-          orderBy("createdAt", "desc"),
-          limit(20)
+          where("recipientEmail", "==", currentUser.email)
+          // Removed orderBy to avoid composite index requirement - sorting client-side instead
         );
 
         const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
@@ -42,7 +41,14 @@ export default function NotificationBadge() {
             ...doc.data(),
             type: doc.data().type || 'general',
             timestamp: doc.data().createdAt
-          }));
+          }))
+          .sort((a, b) => {
+            // Sort by createdAt in descending order (newest first)
+            const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+            const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+            return dateB - dateA;
+          })
+          .slice(0, 20); // Limit to 20 after sorting
           
           // Filter out enrollment/joining related notifications for students
           const filteredNotifications = allNotifications.filter(notification => {

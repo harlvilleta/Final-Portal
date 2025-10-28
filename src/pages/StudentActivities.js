@@ -116,7 +116,7 @@ export default function StudentActivities() {
     });
 
     // Query activities that match the student's course, year, and section
-    // First try the compound query, but if it fails, we'll use a fallback approach
+    // Removed orderBy to avoid composite index requirement - sorting client-side instead
     let activitiesQuery;
     try {
       activitiesQuery = query(
@@ -124,16 +124,16 @@ export default function StudentActivities() {
         where('course', '==', userProfile.course),
         where('year', '==', userProfile.year),
         where('section', '==', userProfile.section),
-        where('status', '==', 'approved'), // Only show approved activities
-        orderBy('date', 'asc')
+        where('status', '==', 'approved') // Only show approved activities
+        // Removed orderBy - will sort client-side
       );
     } catch (queryError) {
       console.log('Compound query failed, using fallback approach:', queryError);
       // Use a simpler query and filter in JavaScript
       activitiesQuery = query(
         collection(db, 'activity_bookings'),
-        where('status', '==', 'approved'),
-        orderBy('date', 'asc')
+        where('status', '==', 'approved')
+        // Removed orderBy - will sort client-side
       );
     }
 
@@ -141,7 +141,13 @@ export default function StudentActivities() {
       const allActivities = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }));
+      }))
+      .sort((a, b) => {
+        // Sort by date in ascending order (earliest first)
+        const dateA = a.date ? new Date(a.date) : new Date(0);
+        const dateB = b.date ? new Date(b.date) : new Date(0);
+        return dateA - dateB;
+      });
       
       console.log('All approved activities from query:', allActivities);
       console.log('Student profile for filtering:', {

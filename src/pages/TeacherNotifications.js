@@ -44,22 +44,28 @@ export default function TeacherNotifications() {
 
     try {
       // Fetch regular notifications
+      // Removed orderBy to avoid composite index requirement - sorting client-side instead
       const notificationsQuery = query(
         collection(db, "notifications"),
-        where("recipientEmail", "==", teacherEmail),
-        orderBy("createdAt", "desc")
+        where("recipientEmail", "==", teacherEmail)
       );
       
       const unsubscribeNotifications = onSnapshot(notificationsQuery, (snap) => {
-        const notificationsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const notificationsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+          .sort((a, b) => {
+            // Sort by createdAt in descending order (newest first)
+            const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+            const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+            return dateB - dateA;
+          });
         setNotifications(notificationsData);
       });
 
       // Fetch meeting notifications
+      // Removed orderBy to avoid composite index requirement - sorting client-side instead
       const meetingsQuery = query(
         collection(db, "meetings"),
-        where("participants", "array-contains", teacherEmail),
-        orderBy("date", "desc")
+        where("participants", "array-contains", teacherEmail)
       );
 
       const unsubscribeMeetings = onSnapshot(meetingsQuery, (snap) => {
@@ -71,7 +77,13 @@ export default function TeacherNotifications() {
           title: `Meeting: ${doc.data().title}`,
           message: `You have a meeting scheduled for ${new Date(doc.data().date).toLocaleDateString()}`,
           read: false
-        }));
+        }))
+        .sort((a, b) => {
+          // Sort by date in descending order (newest first)
+          const dateA = a.date ? new Date(a.date) : new Date(0);
+          const dateB = b.date ? new Date(b.date) : new Date(0);
+          return dateB - dateA;
+        });
         setMeetingNotifications(meetingsData);
       });
 
